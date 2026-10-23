@@ -386,7 +386,7 @@ export default function Home() {
       </section>
 
       <footer className="border-t border-slate-200 bg-white px-5 py-6 text-center text-sm text-slate-500">
-        © {new Date().getFullYear()} Átomo Productivity — Versão Beta
+        © 2026 Átomo Productivity — Versão Beta
       </footer>
     </main>
   );
