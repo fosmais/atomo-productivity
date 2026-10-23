@@ -1,25 +1,52 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { validateTaskInput } from "@/lib/task-validation";
+import {
+  deletePlan,
+  getSavedPlans,
+  savePlan,
+  updateSavedPlan,
+  type SavedPlan,
+  type SavedTask,
+} from "@/lib/plan-storage";
 
 type Task = {
   id: number;
   title: string;
+  priority: SavedTask["priority"];
+  dueDate: string | null;
   done: boolean;
 };
 
 export default function Home() {
   const [text, setText] = useState("");
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [savedPlans, setSavedPlans] = useState<SavedPlan[]>([]);
+  const [activePlanId, setActivePlanId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    try {
+      setSavedPlans(getSavedPlans());
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Não foi possível carregar os planos salvos."
+      );
+    }
+  }, []);
+
   function generate() {
-    if (!text.trim()) {
-      setError("Digite suas anotações primeiro.");
+    const validation = validateTaskInput(text);
+
+    if (!validation.valid) {
+      setError(validation.error);
       return;
     }
 
-    const result = text
+    const result = validation.text
       .split(/\r?\n|[.!?]+/)
       .map((item) => item.trim())
       .filter((item) => item.length > 2)
@@ -27,11 +54,65 @@ export default function Home() {
       .map((title, id) => ({
         id,
         title,
+        priority: "Normal" as const,
+        dueDate: null,
         done: false,
       }));
 
     setTasks(result);
     setError("");
+  }
+
+  function handleSavePlan() {
+    try {
+      const saved = savePlan(
+        text.trim().split(/\r?\n|[.!?]/)[0].slice(0, 100),
+        tasks.map(({ title, priority, dueDate, done }) => ({
+          title,
+          priority,
+          dueDate,
+          completed: done,
+        }))
+      );
+      setSavedPlans(getSavedPlans());
+      setActivePlanId(saved.id);
+      setError("");
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Não foi possível salvar o plano."
+      );
+    }
+  }
+
+  function handleDeletePlan(id: string) {
+    try {
+      deletePlan(id);
+      setSavedPlans(getSavedPlans());
+      setActivePlanId((current) => (current === id ? null : current));
+      setError("");
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Não foi possível excluir o plano."
+      );
+    }
+  }
+
+  function handleUpdatePlan(plan: SavedPlan) {
+    try {
+      updateSavedPlan(plan);
+      setSavedPlans(getSavedPlans());
+      setError("");
+    } catch (updateError) {
+      setError(
+        updateError instanceof Error
+          ? updateError.message
+          : "Não foi possível atualizar o plano."
+      );
+    }
   }
 
   const completed = tasks.filter((task) => task.done).length;
@@ -142,12 +223,119 @@ export default function Home() {
                       )
                     }
                   />
-                  <span className={task.done ? "line-through text-slate-400" : ""}>
-                    {task.title}
+                  <span>
+                    <span className={task.done ? "line-through text-slate-400" : ""}>
+                      {task.title}
+                    </span>
+                    <span className="mt-1 block text-xs text-slate-500">
+                      {task.priority}
+                      {task.dueDate ? ` · Prazo: ${task.dueDate}` : ""}
+                    </span>
                   </span>
                 </label>
               ))}
             </div>
+
+            <button
+              type="button"
+              onClick={handleSavePlan}
+              className="mt-6 rounded-xl bg-teal-600 px-5 py-3 font-semibold text-white hover:bg-teal-700"
+            >
+              Salvar plano
+            </button>
+          </div>
+        )}
+      </section>
+
+      <section className="mx-auto mt-12 max-w-4xl px-5 pb-12">
+        <h2 className="mb-2 text-2xl font-bold text-slate-900">
+          Histórico de planos
+        </h2>
+
+        <p className="mb-6 text-sm text-slate-500">
+          Seus planos ficam salvos neste navegador.
+        </p>
+
+        {savedPlans.length === 0 ? (
+          <div className="rounded-xl border border-slate-200 p-6 text-slate-500">
+            Nenhum plano salvo ainda.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {savedPlans.map((plan) => (
+              <div
+                key={plan.id}
+                className="rounded-xl border border-slate-200 bg-white p-5"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-semibold text-slate-900">{plan.name}</h3>
+
+                    <p className="text-sm text-slate-500">
+                      {plan.tasks.length} tarefas
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setActivePlanId(
+                            activePlanId === plan.id ? null : plan.id
+                        )
+                      }
+                      className="rounded-lg bg-teal-600 px-4 py-2 text-sm text-white"
+                    >
+                      {activePlanId === plan.id ? "Fechar" : "Abrir"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePlan(plan.id)}
+                      className="rounded-lg border border-red-200 px-4 py-2 text-sm text-red-600"
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+
+                {activePlanId === plan.id && (
+                  <div className="mt-5 space-y-3 border-t border-slate-100 pt-4">
+                    {plan.tasks.map((task, index) => (
+                      <label
+                        key={`${plan.id}-${index}`}
+                        className="flex items-start gap-3 text-sm text-slate-700"
+                      >
+                        <input
+                            type="checkbox"
+                            checked={task.completed}
+                            onChange={() => {
+                              const updatedTasks = plan.tasks.map((item, i) =>
+                                i === index
+                                  ? { ...item, completed: !item.completed }
+                                  : item
+                              );
+
+                              handleUpdatePlan({
+                                ...plan,
+                                tasks: updatedTasks,
+                              });
+                            }}
+                        />
+
+                        <span
+                            className={
+                              task.completed ? "line-through opacity-50" : ""
+                            }
+                        >
+                            {task.title} — {task.priority}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </section>
