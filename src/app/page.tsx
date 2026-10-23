@@ -27,15 +27,28 @@ export default function Home() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    try {
-      setSavedPlans(getSavedPlans());
-    } catch (loadError) {
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Não foi possível carregar os planos salvos."
+    let active = true;
+
+    Promise.resolve()
+      .then(getSavedPlans)
+      .then(
+        (plans) => {
+          if (active) setSavedPlans(plans);
+        },
+        (loadError: unknown) => {
+          if (active) {
+            setError(
+              loadError instanceof Error
+                ? loadError.message
+                : "Não foi possível carregar os planos salvos."
+            );
+          }
+        }
       );
-    }
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   function generate() {
