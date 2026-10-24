@@ -6,6 +6,7 @@ import {
   getCloudPlans,
   saveCloudPlan,
   deleteCloudPlan,
+  updateCloudTask,
 } from "@/lib/plan-cloud";
 import type { SavedPlan } from "@/lib/plan-storage";
 
@@ -70,6 +71,27 @@ export default function CloudPlans() {
     }
   }
 
+  async function handleToggleTask(
+    planId: string,
+    taskId: string,
+    completed: boolean
+  ) {
+    try {
+      setError("");
+
+      await updateCloudTask(planId, taskId, completed);
+
+      const updatedPlans = await getCloudPlans();
+      setPlans(updatedPlans);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Não foi possível atualizar a tarefa."
+      );
+    }
+  }
+
   return (
     <section className="rounded-xl border border-slate-800 p-6">
       <h2 className="text-xl font-semibold">Meus planos na nuvem</h2>
@@ -115,6 +137,37 @@ export default function CloudPlans() {
                 <p className="text-sm text-slate-400">
                   {plan.tasks.length} tarefas
                 </p>
+                <ul className="mt-3 space-y-2">
+                  {plan.tasks.map((task, index) => (
+                    <li key={task.id ?? index}>
+                      <label className="flex items-center gap-3 text-sm text-slate-300">
+                        <input
+                          type="checkbox"
+                          checked={task.completed}
+                          disabled={!task.id}
+                          onChange={(event) => {
+                            if (!task.id) return;
+
+                            void handleToggleTask(
+                              plan.id,
+                              task.id,
+                              event.target.checked
+                            );
+                          }}
+                          className="h-4 w-4 accent-teal-500"
+                        />
+
+                        <span
+                          className={
+                            task.completed ? "text-slate-500 line-through" : ""
+                          }
+                        >
+                          {task.title}
+                        </span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
               </div>
 
               <button

@@ -1,4 +1,5 @@
 export type SavedTask = {
+  id?: string;
   title: string;
   priority: "Alta" | "Média" | "Normal";
   dueDate: string | null;
@@ -22,6 +23,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function isSavedTask(value: unknown): value is SavedTask {
   return (
     isRecord(value) &&
+    (value.id === undefined || typeof value.id === "string") &&
     typeof value.title === "string" &&
     (value.priority === "Alta" ||
       value.priority === "Média" ||

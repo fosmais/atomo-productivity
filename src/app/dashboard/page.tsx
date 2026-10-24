@@ -1,10 +1,13 @@
 import { Suspense } from "react";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import CloudPlans from "./cloud-plans";
 import { LogoutButton } from "./logout-button";
 
 async function DashboardContent() {
+  await cookies();
+
   const supabase = await createClient();
 
   const {
