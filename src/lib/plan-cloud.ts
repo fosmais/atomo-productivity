@@ -148,3 +148,46 @@ export async function deleteCloudPlan(id: string): Promise<void> {
 
   if (error) throw error;
 }
+
+export async function addCloudTask(
+  planId: string,
+  title: string,
+  priority: "Alta" | "Média" | "Normal" = "Normal"
+): Promise<void> {
+  const { supabase, userId } = await getAuthenticatedUser();
+
+  const cleanTitle = title.trim();
+
+  if (!cleanTitle || cleanTitle.length > 200) {
+    throw new Error("Informe uma tarefa com até 200 caracteres.");
+  }
+
+  if (!["Alta", "Média", "Normal"].includes(priority)) {
+    throw new Error("Prioridade inválida.");
+  }
+
+  // Confirma que o plano pertence ao usuário autenticado.
+  const { data: plan, error: planError } = await supabase
+    .from("plans")
+    .select("id")
+    .eq("id", planId)
+    .eq("user_id", userId)
+    .single();
+
+  if (planError || !plan) {
+    throw new Error("Plano não encontrado ou acesso não autorizado.");
+  }
+
+  const { error } = await supabase.from("tasks").insert({
+    plan_id: planId,
+    user_id: userId,
+    title: cleanTitle,
+    priority,
+    due_date: null,
+    completed: false,
+  });
+
+  if (error) {
+    throw new Error(`Erro ao adicionar tarefa: ${error.message}`);
+  }
+}

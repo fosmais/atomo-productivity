@@ -6,6 +6,7 @@ import {
   getCloudPlans,
   saveCloudPlan,
   deleteCloudPlan,
+  addCloudTask,
 } from "@/lib/plan-cloud";
 import type { SavedPlan } from "@/lib/plan-storage";
 
@@ -15,6 +16,11 @@ export default function CloudPlans() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [newTaskTitles, setNewTaskTitles] = useState<Record<string, string>>({});
+  const [newTaskPriorities, setNewTaskPriorities] = useState<
+    Record<string, "Alta" | "Média" | "Normal">
+  >({});
+  const [addingTaskId, setAddingTaskId] = useState<string | null>(null);
 
   async function loadPlans() {
     setLoading(true);
@@ -115,6 +121,82 @@ export default function CloudPlans() {
                 <p className="text-sm text-slate-400">
                   {plan.tasks.length} tarefas
                 </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <input
+                    type="text"
+                    value={newTaskTitles[plan.id] ?? ""}
+                    onChange={(event) =>
+                      setNewTaskTitles((previous) => ({
+                        ...previous,
+                        [plan.id]: event.target.value,
+                      }))
+                    }
+                    maxLength={200}
+                    placeholder="Nome da nova tarefa"
+                    className="min-w-0 flex-1 rounded bg-slate-800 p-2 text-white"
+                  />
+
+                  <select
+                    value={newTaskPriorities[plan.id] ?? "Normal"}
+                    onChange={(event) =>
+                      setNewTaskPriorities((previous) => ({
+                        ...previous,
+                        [plan.id]: event.target.value as
+                          | "Alta"
+                          | "Média"
+                          | "Normal",
+                      }))
+                    }
+                    className="rounded bg-slate-800 p-2 text-white"
+                  >
+                    <option value="Normal">Normal</option>
+                    <option value="Média">Média</option>
+                    <option value="Alta">Alta</option>
+                  </select>
+
+                  <button
+                    type="button"
+                    disabled={
+                      addingTaskId !== null ||
+                      !(newTaskTitles[plan.id] ?? "").trim()
+                    }
+                    onClick={async () => {
+                      const title = (newTaskTitles[plan.id] ?? "").trim();
+                      if (!title) return;
+
+                      setAddingTaskId(plan.id);
+                      setError("");
+
+                      try {
+                        await addCloudTask(
+                          plan.id,
+                          title,
+                          newTaskPriorities[plan.id] ?? "Normal"
+                        );
+
+                        await loadPlans();
+
+                        setNewTaskTitles((previous) => ({
+                          ...previous,
+                          [plan.id]: "",
+                        }));
+                      } catch (err) {
+                        setError(
+                          err instanceof Error
+                            ? err.message
+                            : "Erro ao adicionar tarefa."
+                        );
+                      } finally {
+                        setAddingTaskId(null);
+                      }
+                    }}
+                    className="rounded bg-teal-600 px-3 py-2 font-semibold text-white disabled:opacity-50"
+                  >
+                    {addingTaskId === plan.id
+                      ? "Adicionando..."
+                      : "Adicionar tarefa"}
+                  </button>
+                </div>
               </div>
 
               <button
