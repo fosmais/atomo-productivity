@@ -1,10 +1,13 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import CloudPlans from "./cloud-plans";
 import { LogoutButton } from "./logout-button";
 
 async function DashboardContent() {
+  await connection();
+
   const supabase = await createClient();
 
   const {
