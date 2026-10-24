@@ -10,6 +10,7 @@ import {
   type SavedPlan,
   type SavedTask,
 } from "@/lib/plan-storage";
+import { saveCloudPlan } from "@/lib/plan-cloud";
 
 type Task = {
   id: number;
@@ -19,11 +20,30 @@ type Task = {
   done: boolean;
 };
 
+type GeneratedTask = Omit<Task, "id" | "done">;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isGeneratedTask(value: unknown): value is GeneratedTask {
+  return (
+    isRecord(value) &&
+    typeof value.title === "string" &&
+    value.title.trim().length > 0 &&
+    (value.priority === "Alta" ||
+      value.priority === "Média" ||
+      value.priority === "Normal") &&
+    (typeof value.dueDate === "string" || value.dueDate === null)
+  );
+}
+
 export default function Home() {
   const [text, setText] = useState("");
   const [tasks, setTasks] = useState<Task[]>([]);
   const [savedPlans, setSavedPlans] = useState<SavedPlan[]>([]);
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -51,7 +71,9 @@ export default function Home() {
     };
   }, []);
 
-  function generate() {
+  async function generate() {
+    if (loading) return;
+
     const validation = validateTaskInput(text);
 
     if (!validation.valid) {
@@ -59,21 +81,80 @@ export default function Home() {
       return;
     }
 
-    const result = validation.text
-      .split(/\r?\n|[.!?]+/)
-      .map((item) => item.trim())
-      .filter((item) => item.length > 2)
-      .slice(0, 30)
-      .map((title, id) => ({
+    setLoading(true);
+    setTasks([]);
+    setError("");
+
+    try {
+      const response = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: validation.text }),
+      });
+
+      let data: unknown;
+
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error("O servidor retornou uma resposta inválida.");
+      }
+
+      if (!response.ok) {
+        const message =
+          isRecord(data) && typeof data.error === "string"
+            ? data.error
+            : "Não foi possível gerar as tarefas. Tente novamente.";
+        throw new Error(message);
+      }
+
+      if (
+        !isRecord(data) ||
+        !Array.isArray(data.tasks) ||
+        !data.tasks.every(isGeneratedTask)
+      ) {
+        throw new Error("A API retornou um formato de tarefas inválido.");
+      }
+
+      const generated = data.tasks.slice(0, 10).map((task, id) => ({
+        ...task,
+        title: task.title.trim(),
+        dueDate: task.dueDate?.trim() || null,
         id,
-        title,
-        priority: "Normal" as const,
-        dueDate: null,
         done: false,
       }));
 
-    setTasks(result);
-    setError("");
+      if (generated.length === 0) {
+        throw new Error("Nenhuma tarefa válida foi gerada.");
+      }
+
+      setTasks(generated);
+
+      // Salva na nuvem sem impedir a exibição das tarefas.
+      try {
+        const cloudTasks = generated.map((task) => ({
+          title: task.title,
+          priority: task.priority,
+          dueDate: task.dueDate,
+          completed: task.done,
+        }));
+
+        const planName =
+          validation.text.trim().slice(0, 100) || "Plano gerado por IA";
+
+        await saveCloudPlan(planName, cloudTasks);
+      } catch (cloudError) {
+        console.error("Falha ao salvar plano na nuvem:", cloudError);
+      }
+    } catch (generateError) {
+      setError(
+        generateError instanceof Error
+          ? generateError.message
+          : "Ocorreu um erro inesperado. Tente novamente."
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleSavePlan() {
@@ -167,44 +248,56 @@ export default function Home() {
             }}
             rows={7}
             maxLength={5000}
+            disabled={loading}
             placeholder="Digite suas tarefas aqui..."
-            className="mt-5 w-full rounded-xl border p-4"
+            className="mt-5 w-full rounded-xl border p-4 disabled:opacity-50"
           />
 
-          {error && <p className="text-red-600">{error}</p>}
+          {error && (
+            <p role="alert" className="mt-4 text-sm text-red-600">
+              {error}
+            </p>
+          )}
 
           <div className="mt-5 flex flex-wrap gap-3">
             <button
+              type="button"
               onClick={generate}
-              className="rounded-xl bg-teal-600 px-6 py-3 font-semibold text-white"
+              disabled={loading}
+              className="rounded-xl bg-teal-600 px-6 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Gerar plano de ação
+              {loading ? "Gerando com IA..." : "Gerar plano com IA"}
             </button>
 
             <button
+              type="button"
+              disabled={loading}
               onClick={() => {
                 setText("Preparar apresentação.\nRevisar orçamento.\nAgendar reunião.");
                 setTasks([]);
                 setError("");
               }}
-              className="rounded-xl border px-6 py-3"
+              className="rounded-xl border px-6 py-3 disabled:opacity-50"
             >
               Usar exemplo
             </button>
 
             <button
+              type="button"
+              disabled={loading}
               onClick={() => {
                 setText("");
                 setTasks([]);
                 setError("");
               }}
-              className="rounded-xl border px-6 py-3"
+              className="rounded-xl border px-6 py-3 disabled:opacity-50"
             >
               Limpar
             </button>
           </div>
           <p className="mt-5 text-xs text-slate-500">
-            Protótipo local baseado em regras, ainda sem IA.
+            O texto será enviado a um provedor de IA para processamento. Não
+            insira dados pessoais, bancários ou confidenciais.
           </p>
         </div>
 
