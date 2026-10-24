@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import CloudPlans from "./cloud-plans";
 import { LogoutButton } from "./logout-button";
 
 async function DashboardContent() {
@@ -30,10 +31,7 @@ async function DashboardContent() {
           Meus planos
         </h2>
 
-        <p className="mt-2 text-slate-400">
-          Em breve, seus planos estarão sincronizados
-          com o Supabase.
-        </p>
+        <CloudPlans />
       </section>
 
       <LogoutButton />
