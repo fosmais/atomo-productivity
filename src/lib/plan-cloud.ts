@@ -44,7 +44,7 @@ export async function getCloudPlans(): Promise<SavedPlan[]> {
 
   const { data: tasks, error: tasksError } = await supabase
     .from("tasks")
-    .select("plan_id, title, priority, due_date, completed")
+    .select("id, plan_id, title, priority, due_date, completed")
     .eq("user_id", userId)
     .in(
       "plan_id",
@@ -65,6 +65,7 @@ export async function getCloudPlans(): Promise<SavedPlan[]> {
         }
 
         return {
+          id: task.id,
           title: task.title,
           priority: task.priority,
           dueDate: task.due_date,
@@ -147,4 +148,29 @@ export async function deleteCloudPlan(id: string): Promise<void> {
     .eq("user_id", userId);
 
   if (error) throw error;
+}
+
+export async function updateCloudTaskStatus(
+  taskId: string,
+  completed: boolean
+): Promise<void> {
+  if (!taskId) {
+    throw new Error("Identificador da tarefa não informado.");
+  }
+
+  const { supabase, userId } = await getAuthenticatedUser();
+
+  const { data, error } = await supabase
+    .from("tasks")
+    .update({ completed })
+    .eq("id", taskId)
+    .eq("user_id", userId)
+    .select("id")
+    .single();
+
+  if (error) throw error;
+
+  if (!data) {
+    throw new Error("Tarefa não encontrada ou sem permissão.");
+  }
 }
