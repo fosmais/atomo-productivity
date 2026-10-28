@@ -10,7 +10,6 @@ import AvailabilityPanel from "./availability-panel";
 import { LogoutButton } from "./logout-button";
 import PlanningSettings from "./planning-settings";
 import GoogleCalendarSettings from "./google-calendar-settings";
-import RlsWriteTest from "./rls-write-test";
 import SmartSchedulingPanel from "./smart-scheduling-panel";
 import TaskKanban from "./task-kanban";
 import PerformanceInsights from "./performance-insights";
