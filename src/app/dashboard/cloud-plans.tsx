@@ -85,7 +85,7 @@ export default function CloudPlans() {
         <button
           onClick={handleSave}
           disabled={saving || !name.trim()}
-          className="rounded bg-teal-600 px-4 py-3 font-semibold disabled:opacity-50"
+          className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-3 font-semibold text-white transition hover:brightness-110 disabled:opacity-50"
         >
           {saving ? "Salvando..." : "Criar plano"}
         </button>

@@ -44,7 +44,7 @@ export async function getCloudPlans(): Promise<SavedPlan[]> {
 
   const { data: tasks, error: tasksError } = await supabase
     .from("tasks")
-    .select("plan_id, title, priority, due_date, completed")
+    .select("id, plan_id, title, priority, due_date, completed")
     .eq("user_id", userId)
     .in(
       "plan_id",
@@ -65,6 +65,7 @@ export async function getCloudPlans(): Promise<SavedPlan[]> {
         }
 
         return {
+          id: task.id,
           title: task.title,
           priority: task.priority,
           dueDate: task.due_date,

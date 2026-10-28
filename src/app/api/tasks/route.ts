@@ -1,5 +1,7 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { checkConciergeRateLimit } from "@/lib/rate-limit";
 import { validateTaskInput } from "@/lib/task-validation";
 
 type GeneratedTask = {
@@ -25,6 +27,46 @@ function isGeneratedTask(value: unknown): value is GeneratedTask {
 }
 
 export async function POST(request: Request) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json(
+      { error: "Usuário não autenticado." },
+      { status: 401 }
+    );
+  }
+
+  let rateLimit;
+
+  try {
+    rateLimit = await checkConciergeRateLimit(user.id);
+  } catch {
+    console.error("VYRA: Rate limiting indisponível.");
+
+    return NextResponse.json(
+      { error: "Serviço temporariamente indisponível. Tente novamente." },
+      { status: 503 }
+    );
+  }
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Limite de requisições atingido. Tente novamente mais tarde." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(
+            Math.max(1, Math.ceil((rateLimit.reset - Date.now()) / 1000))
+          ),
+        },
+      }
+    );
+  }
   const contentType = request.headers.get("content-type") ?? "";
   const mediaType = contentType.split(";")[0].trim().toLowerCase();
 

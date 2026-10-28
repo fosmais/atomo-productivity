@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { validateTaskInput } from "@/lib/task-validation";
@@ -218,7 +218,7 @@ export default function Home() {
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <header className="border-b bg-white px-6 py-5">
         <div className="mx-auto max-w-5xl text-xl font-bold">
-          <span className="text-teal-600">✦</span> Átomo Productivity
+          <span className="text-teal-600">✦</span> VYRA
         </div>
       </header>
 
