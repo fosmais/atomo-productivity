@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { saveCloudPlan } from "@/lib/plan-cloud";
 import { useVyraNavigation } from "./vyra-module-context";
 
 type TaskStatus = "todo" | "in_progress" | "waiting" | "done";
@@ -28,6 +29,11 @@ export default function TaskKanban() {
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [showCreate, setShowCreate] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newPriority, setNewPriority] = useState<"Alta" | "Média" | "Normal">("Normal");
+  const [newDueDate, setNewDueDate] = useState("");
+  const [creating, setCreating] = useState(false);
 
   const loadTasks = useCallback(async () => {
     setLoading(true);
@@ -82,6 +88,33 @@ export default function TaskKanban() {
     });
   }, [focusedTaskId, loading]);
 
+  async function createTask(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (creating || !newTitle.trim()) return;
+
+    setCreating(true);
+    setError("");
+
+    try {
+      await saveCloudPlan("Tarefas manuais", [{
+        id: crypto.randomUUID(),
+        title: newTitle.trim(),
+        priority: newPriority,
+        dueDate: newDueDate || null,
+        completed: false,
+      }]);
+
+      setNewTitle("");
+      setNewPriority("Normal");
+      setNewDueDate("");
+      setShowCreate(false);
+      await loadTasks();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao criar tarefa.");
+    } finally {
+      setCreating(false);
+    }
+  }
   async function moveTask(id: string, status: TaskStatus) {
     if (savingId) return;
 
@@ -149,6 +182,14 @@ export default function TaskKanban() {
           </p>
           <h2 className="text-2xl font-bold">Pipeline de tarefas</h2>
         </div>
+        <button
+          type="button"
+          onClick={() => setShowCreate((value) => !value)}
+          disabled={creating}
+          className="rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+        >
+          + Nova tarefa
+        </button>
 
         <button
           type="button"
@@ -160,6 +201,50 @@ export default function TaskKanban() {
         </button>
       </div>
 
+      {showCreate && (
+        <form onSubmit={createTask} className="mb-5 grid gap-3 rounded-xl border border-violet-500/40 bg-slate-950 p-4 sm:grid-cols-2">
+          <label className="sm:col-span-2 text-sm">
+            Título da tarefa
+            <input
+              value={newTitle}
+              onChange={(event) => setNewTitle(event.target.value)}
+              maxLength={200}
+              required
+              placeholder="O que você precisa fazer?"
+              className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-800 p-3 text-white"
+            />
+          </label>
+          <label className="text-sm">
+            Prioridade
+            <select
+              value={newPriority}
+              onChange={(event) => setNewPriority(event.target.value as "Alta" | "Média" | "Normal")}
+              className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-800 p-3 text-white"
+            >
+              <option value="Normal">Normal</option>
+              <option value="Média">Média</option>
+              <option value="Alta">Alta</option>
+            </select>
+          </label>
+          <label className="text-sm">
+            Prazo (opcional)
+            <input
+              type="date"
+              value={newDueDate}
+              onChange={(event) => setNewDueDate(event.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-800 p-3 text-white"
+            />
+          </label>
+          <div className="flex flex-wrap gap-2 sm:col-span-2">
+            <button type="submit" disabled={creating || !newTitle.trim()} className="rounded-lg bg-violet-600 px-5 py-2 font-semibold disabled:opacity-50">
+              {creating ? "Salvando..." : "Criar tarefa"}
+            </button>
+            <button type="button" onClick={() => setShowCreate(false)} disabled={creating} className="rounded-lg border border-slate-600 px-5 py-2">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      )}
       {error && (
         <p role="alert" className="mb-4 text-sm text-red-400">
           {error}
