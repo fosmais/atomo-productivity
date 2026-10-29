@@ -12,6 +12,42 @@ export default function VyraHome() {
   const [metrics, setMetrics] = useState<VyraMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  // MYRYRA_GOOGLE_HOME_CARD
+  const [googleStatus, setGoogleStatus] = useState<"loading" | "connected" | "disconnected" | "error">("loading");
+
+  useEffect(() => {
+    if (activeModule !== "home") return;
+
+    let cancelled = false;
+
+    async function checkGoogleConnection() {
+      setGoogleStatus("loading");
+
+      try {
+        const response = await fetch("/api/google/events", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error("Falha ao verificar conexão Google.");
+        }
+
+        const result: { connected?: boolean } = await response.json();
+
+        if (!cancelled) {
+          setGoogleStatus(result.connected ? "connected" : "disconnected");
+        }
+      } catch {
+        if (!cancelled) setGoogleStatus("error");
+      }
+    }
+
+    void checkGoogleConnection();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeModule]);
 
   useEffect(() => {
     if (activeModule !== "home") return;
@@ -69,6 +105,39 @@ export default function VyraHome() {
           Priorize o que importa. A MYRYRA ajuda você a decidir o próximo passo.
         </p>
       </div>
+      {/* MYRYRA_GOOGLE_HOME_CARD */}
+      {googleStatus !== "connected" && (
+        <section className="rounded-2xl border border-violet-500/25 bg-gradient-to-r from-violet-950/40 to-slate-900/70 p-5 md:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-violet-400">
+                Integração Google Calendar
+              </p>
+              <h2 className="mt-2 text-lg font-semibold text-white">
+                {googleStatus === "error"
+                  ? "Verifique sua conexão com o Google Calendar"
+                  : "Sua agenda em sintonia com a MYRYRA"}
+              </h2>
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-400">
+                {googleStatus === "error"
+                  ? "Não foi possível verificar sua integração. Você pode tentar novamente ou conectar sua agenda."
+                  : "Conecte seu Google Calendar para sincronizar compromissos e receber sugestões inteligentes da Myka."}
+              </p>
+            </div>
+
+            <a
+              href="/api/google/connect"
+              className="inline-flex shrink-0 items-center justify-center rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400"
+            >
+              {googleStatus === "loading"
+                ? "Conectar Google Calendar"
+                : googleStatus === "error"
+                  ? "Conectar ou reconectar"
+                  : "Conectar Google Calendar"}
+            </a>
+          </div>
+        </section>
+      )}
       <WhatNowCard />
 
       <div className="space-y-3">
