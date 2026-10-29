@@ -82,13 +82,59 @@ export async function GET() {
       throw messagesError;
     }
 
+    const taskDecisionsByMessage = new Map<
+      string,
+      Array<{ taskIndex: number; decision: "saved" | "cancelled" }>
+    >();
+
+    if (statusEnabled && messages && messages.length > 0) {
+      const messageIds = messages
+        .filter((message) => message.role === "assistant")
+        .map((message) => message.id);
+
+      if (messageIds.length > 0) {
+        const { data: decisions, error: decisionsError } = await supabase
+          .from("myka_task_confirmations")
+          .select("message_id, task_index, decision")
+          .eq("user_id", userId)
+          .in("message_id", messageIds);
+
+        if (decisionsError) {
+          throw decisionsError;
+        }
+
+        for (const item of decisions ?? []) {
+          if (
+            (item.decision !== "saved" && item.decision !== "cancelled") ||
+            !Number.isInteger(item.task_index)
+          ) {
+            continue;
+          }
+
+          const existing = taskDecisionsByMessage.get(item.message_id) ?? [];
+          existing.push({
+            taskIndex: item.task_index,
+            decision: item.decision,
+          });
+          taskDecisionsByMessage.set(item.message_id, existing);
+        }
+      }
+    }
     return NextResponse.json({
       conversationId: conversation.id,
       messages: (messages ?? []).reverse().map((message) => ({
         id: message.id,
         role: message.role,
         content: message.content,
-        proposedTask: message.proposed_task,
+        proposedTask: Array.isArray(message.proposed_task)
+          ? null
+          : message.proposed_task,
+        proposedTasks: Array.isArray(message.proposed_task)
+          ? message.proposed_task
+          : message.proposed_task
+            ? [message.proposed_task]
+            : [],
+        taskDecisions: taskDecisionsByMessage.get(message.id) ?? [],
         proposedEvent: message.proposed_event,
         taskStatus:
           "task_status" in message && typeof message.task_status === "string"

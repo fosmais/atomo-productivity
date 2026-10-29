@@ -28,6 +28,7 @@ type ConciergeEventProposal = {
 type ConciergeResponse = {
   reply: string;
   proposedTask: ConciergeProposal | null;
+  proposedTasks: ConciergeProposal[];
   proposedEvent?: ConciergeEventProposal | null;
 };
 
@@ -85,7 +86,7 @@ function isConciergeEventProposal(
 function isConciergeResponse(value: unknown): value is ConciergeResponse {
   return (
     isRecord(value) &&
-    typeof value.reply === "string" &&
+    typeof value.reply === "string" && Array.isArray(value.proposedTasks) && value.proposedTasks.length <= 10 && value.proposedTasks.every(isConciergeProposal) &&
     (
       value.proposedTask === null ||
       isConciergeProposal(value.proposedTask)
@@ -499,7 +500,7 @@ if (!rateLimit.allowed) {
         "retorne os dados dela em proposedTask para confirmação explícita.",
         "Não proponha uma tarefa em outros casos; use null.",
         "Nunca afirme que a tarefa foi salva antes da confirmação do usuário.",
-        "A resposta deve conter reply e proposedTask.",
+        "Quando houver varias tarefas, retorne cada uma separadamente em proposedTasks.", "Limite de 10 tarefas por resposta. Nunca agrupe tarefas distintas em um unico titulo.", "Para uma unica tarefa, preencha proposedTask e proposedTasks com essa tarefa.", "Para varias tarefas, use proposedTask null e preencha proposedTasks.", "Se nao houver pedido de tarefa, use proposedTask null e proposedTasks [].", "Nunca salve tarefas automaticamente.",
         "CRIACAO DE EVENTOS:",
         "Quando o usuario solicitar explicitamente agendar um compromisso,",
         "uma reuniao ou bloquear um horario, preencha proposedEvent.",
@@ -543,7 +544,7 @@ if (!rateLimit.allowed) {
             type: "object",
             properties: {
               reply: { type: "string" },
-              proposedTask: {
+              proposedTasks: { type: "array", items: { type: "object", properties: { title: { type: "string" }, priority: { type: "string", enum: ["Alta", "Média", "Normal"] }, dueDate: { type: ["string", "null"] } }, required: ["title", "priority", "dueDate"], additionalProperties: false } }, proposedTask: {
                 type: ["object", "null"],
                 properties: {
                   title: { type: "string" },
@@ -581,7 +582,7 @@ if (!rateLimit.allowed) {
                 additionalProperties: false,
               },
             },
-            required: ["reply", "proposedTask", "proposedEvent"],            additionalProperties: false,
+            required: ["reply", "proposedTask", "proposedTasks", "proposedEvent"],            additionalProperties: false,
           },
         },
       },
@@ -595,7 +596,7 @@ if (!rateLimit.allowed) {
         scheduleConflicts,
         conversation: messages,
       }),
-      max_output_tokens: 650,
+      max_output_tokens: 2000,
     });
 
     let parsed: unknown;
@@ -677,11 +678,11 @@ if (!rateLimit.allowed) {
           user_id: user.id,
           role: "assistant",
           content: parsed.reply,
-          proposed_task: parsed.proposedTask,
+          proposed_task: parsed.proposedTasks.length > 0 ? parsed.proposedTasks : parsed.proposedTask,
           proposed_event: parsed.proposedEvent ?? null,
           ...(process.env.MYRYRA_PROPOSAL_STATUS_ENABLED === "true"
             ? {
-                task_status: parsed.proposedTask ? "pending" : "legacy",
+                task_status: (parsed.proposedTask || parsed.proposedTasks.length > 0) ? "pending" : "legacy",
                 event_status: parsed.proposedEvent ? "pending" : "legacy",
               }
             : {}),
@@ -711,6 +712,7 @@ if (!rateLimit.allowed) {
       messageId: assistantMessage.id,
       reply: parsed.reply,
       proposedTask: parsed.proposedTask,
+      proposedTasks: parsed.proposedTasks,
       proposedEvent: parsed.proposedEvent ?? null,
     });
   } catch (error) {

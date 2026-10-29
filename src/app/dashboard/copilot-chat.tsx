@@ -15,6 +15,11 @@ type ChatMessage = {
   role: "user" | "assistant";
   content: string;
   proposedTask?: SavedTask | null;
+  proposedTasks?: SavedTask[];
+  taskDecisions?: Array<{
+    taskIndex: number;
+    decision: "saved" | "cancelled";
+  }>;
   proposedEvent?: NewCalendarEvent | null;
 
 };
@@ -127,6 +132,32 @@ function isEventProposal(
             content: item.content as string,
             taskStatus: item.taskStatus === "saved" || item.taskStatus === "cancelled" || item.taskStatus === "pending" ? item.taskStatus : "legacy",
             eventStatus: item.eventStatus === "saved" || item.eventStatus === "cancelled" || item.eventStatus === "pending" ? item.eventStatus : "legacy",
+            taskDecisions: Array.isArray(item.taskDecisions)
+              ? item.taskDecisions
+                  .filter(
+                    (decision): decision is Record<string, unknown> =>
+                      isRecord(decision) &&
+                      Number.isInteger(decision.taskIndex) &&
+                      typeof decision.taskIndex === "number" &&
+                      decision.taskIndex >= 0 &&
+                      decision.taskIndex < 10 &&
+                      (decision.decision === "saved" ||
+                        decision.decision === "cancelled")
+                  )
+                  .map((decision) => ({
+                    taskIndex: decision.taskIndex as number,
+                    decision: decision.decision as "saved" | "cancelled",
+                  }))
+              : [],
+            proposedTasks: Array.isArray(item.proposedTasks)
+              ? item.proposedTasks
+                  .filter(isTaskProposal)
+                  .slice(0, 10)
+                  .map((task) => ({
+                    ...task,
+                    completed: false,
+                  }))
+              : [],
             proposedTask: isTaskProposal(item.proposedTask)
               ? { ...item.proposedTask, completed: false }
               : null,
@@ -294,6 +325,16 @@ function isEventProposal(
         throw new Error("A tarefa sugerida pelo Concierge é inválida.");
       }
 
+    const proposedTasks =
+      Array.isArray(data.proposedTasks) &&
+      data.proposedTasks.length <= 10 &&
+      data.proposedTasks.every(isTaskProposal)
+        ? data.proposedTasks.map((task) => ({
+            ...task,
+            completed: false,
+          }))
+        : [];
+
     const proposedTask =
   data.proposedTask === null
     ? undefined
@@ -331,10 +372,10 @@ setConversationId(data.conversationId);
     {
       role: "assistant" as const,
       id: assistantMessageId,
-      taskStatus: proposedTask ? "pending" as const : "legacy" as const,
+      taskStatus: (proposedTask || proposedTasks.length > 0) ? "pending" as const : "legacy" as const,
       eventStatus: proposedEvent ? "pending" as const : "legacy" as const,
       content: reply,
-      ...(proposedTask ? { proposedTask } : {}),
+      ...(proposedTask ? { proposedTask } : {}), ...(proposedTasks.length ? { proposedTasks } : {}),
       ...(proposedEvent ? { proposedEvent } : {}),
     },
   ]);
@@ -414,22 +455,120 @@ setConversationId(data.conversationId);
             </div>
             </div>
 
-            {message.role === "assistant" && message.proposedTask && message.taskStatus === "saved" && (
+                        {message.role === "assistant" &&
+  Array.isArray(message.proposedTasks) &&
+  message.proposedTasks.length > 0 && (
+    <div className="mt-3 space-y-3">
+      <p className="text-sm font-semibold text-violet-300">
+        {message.proposedTasks.length} tarefa(s) identificada(s) pela Myka
+      </p>
+
+      {message.proposedTasks.map((task, taskIndex) => (
+        <div key={`${message.id ?? "myka"}-${taskIndex}`}>
+          {message.taskDecisions?.some(
+            (item) =>
+              item.taskIndex === taskIndex &&
+              item.decision === "saved"
+          ) ? (
+            <div role="status" className="rounded-xl border border-green-500/30 bg-slate-800 p-4">
+              <p className="font-semibold text-white">{task.title}</p>
+              <p className="mt-2 text-sm text-green-400">
+                Tarefa salva com sucesso!
+              </p>
+            </div>
+          ) : message.taskDecisions?.some(
+            (item) =>
+              item.taskIndex === taskIndex &&
+              item.decision === "cancelled"
+          ) ? (
+            <div className="rounded-xl border border-slate-600 bg-slate-800 p-4">
+              <p className="font-semibold text-white">{task.title}</p>
+              <p className="mt-2 text-sm text-slate-400">
+                Sugestão descartada.
+              </p>
+            </div>
+          ) : message.taskStatus === "pending" && message.id ? (
+            <TaskConfirmation
+              task={task}
+              messageId={message.id}
+              taskIndex={taskIndex}
+              onSaved={() => {
+                setMessages((previous) =>
+                  previous.map((item) =>
+                    item.id === message.id
+                      ? {
+                          ...item,
+                          taskDecisions: [
+                            ...(item.taskDecisions ?? []).filter(
+                              (decision) => decision.taskIndex !== taskIndex
+                            ),
+                            { taskIndex, decision: "saved" as const },
+                          ],
+                        }
+                      : item
+                  )
+                );
+                router.refresh();
+              }}
+              onCancel={() => {
+                setMessages((previous) =>
+                  previous.map((item) =>
+                    item.id === message.id
+                      ? {
+                          ...item,
+                          taskDecisions: [
+                            ...(item.taskDecisions ?? []).filter(
+                              (decision) => decision.taskIndex !== taskIndex
+                            ),
+                            { taskIndex, decision: "cancelled" as const },
+                          ],
+                        }
+                      : item
+                  )
+                );
+              }}
+            />
+          ) : (
+            <div className="rounded-xl border border-violet-500/30 bg-slate-800 p-4">
+              <p className="text-xs font-semibold text-violet-400">
+                Tarefa {taskIndex + 1}
+              </p>
+              <h3 className="mt-1 font-semibold text-white">
+                {task.title}
+              </h3>
+              <p className="mt-2 text-sm text-slate-300">
+                Prioridade: {task.priority}
+              </p>
+              <p className="text-sm text-slate-300">
+                Prazo: {task.dueDate ?? "Não definido"}
+              </p>
+              <p className="mt-2 text-xs text-slate-400">
+                {message.taskStatus === "legacy"
+                  ? "Sugestão anterior à atualização. Confirmação indisponível."
+                  : "Confirmação indisponível para esta sugestão."}
+              </p>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )}
+{message.role === "assistant" && (!message.proposedTasks || message.proposedTasks.length === 0) && message.proposedTask && message.taskStatus === "saved" && (
   <p role="status" className="mt-3 text-sm text-green-400">
     Tarefa salva com sucesso!
   </p>
 )}
-{message.role === "assistant" && message.proposedTask && message.taskStatus === "cancelled" && (
+{message.role === "assistant" && (!message.proposedTasks || message.proposedTasks.length === 0) && message.proposedTask && message.taskStatus === "cancelled" && (
   <p className="mt-3 text-sm text-slate-400">
     Sugestão cancelada.
   </p>
 )}
-{message.role === "assistant" && message.proposedTask && message.taskStatus === "legacy" && (
+{message.role === "assistant" && (!message.proposedTasks || message.proposedTasks.length === 0) && message.proposedTask && message.taskStatus === "legacy" && (
   <p className="mt-3 text-sm text-slate-400">
     Sugestão anterior à atualização. Confirmação indisponível para evitar duplicidade.
   </p>
 )}
-{message.role === "assistant" && message.proposedTask && message.taskStatus === "pending" && (
+{message.role === "assistant" && (!message.proposedTasks || message.proposedTasks.length === 0) && message.proposedTask && message.taskStatus === "pending" && (
               <TaskConfirmation
                 task={message.proposedTask}
                 messageId={message.id}
