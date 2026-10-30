@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { getCloudEvents, saveCloudEvent } from "@/lib/event-cloud";
+import { getCloudEvents } from "@/lib/event-cloud";
+import { createClient } from "@/lib/supabase/client";
 import { getCloudAvailability } from "@/lib/cloud-availability";
 import { getCloudTasksForScheduling } from "@/lib/cloud-task-scheduling";
 import { getPlanningPreferences } from "@/lib/planning-preferences";
@@ -142,14 +143,18 @@ export default function AutoPilot() {
         interval.start.getTime() <= start && interval.end.getTime() >= end
       ));
       if (!withinWindow) throw new Error("O horário não está mais disponível. Gere uma nova prévia.");
-      await saveCloudEvent({
-        title: `AutoPilot · ${item.title}`,
-        startsAt: item.start.toISOString(),
-        endsAt: item.end.toISOString(),
-        notes: `Tarefa MYRYRA: ${item.taskId}`,
-        eventType: "appointment",
-        blocksTime: true,
+      const supabase = createClient();
+      const { error: reservationError } = await supabase.rpc("reserve_autopilot_task", {
+        p_task_id: item.taskId,
+        p_start: item.start.toISOString(),
+        p_end: item.end.toISOString(),
       });
+      if (reservationError) {
+        if (reservationError.code === "PGRST202" || reservationError.code === "42883") {
+          throw new Error("A confirmação segura ainda não está disponível. É necessário aplicar a migração 28.9 no Supabase.");
+        }
+        throw new Error(reservationError.message);
+      }
       setSavedIds((ids) => [...ids, taskId]);
       setNotice("Horário reservado na agenda MYRYRA. Google Calendar não foi alterado.");
     } catch (err) {
@@ -205,7 +210,7 @@ export default function AutoPilot() {
             ))}
           </ol>
           <p className="text-xs text-slate-400">
-            A confirmação cria um compromisso bloqueante apenas na MYRYRA. Conflitos são revalidados antes da gravação; alterações simultâneas ainda exigem proteção transacional no servidor.
+            A confirmação cria um compromisso bloqueante apenas na MYRYRA. A confirmação usa uma transação no Supabase para impedir reservas simultâneas pelo AutoPilot. Compromissos externos ainda podem mudar entre a consulta e a confirmação.
           </p>
         </div>
       )}
