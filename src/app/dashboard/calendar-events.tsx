@@ -119,6 +119,7 @@ export default function CalendarEvents() {
       });
 
       await loadEvents();
+      window.dispatchEvent(new Event("myryra:events-updated"));
 
       setTitle("");
       setStartsAt("");
@@ -144,6 +145,7 @@ export default function CalendarEvents() {
     try {
       await deleteCloudEvent(id);
       await loadEvents();
+      window.dispatchEvent(new Event("myryra:events-updated"));
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Erro ao excluir compromisso."
