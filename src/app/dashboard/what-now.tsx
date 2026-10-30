@@ -13,7 +13,9 @@ function rank(task: Omit<Candidate, "score">): number {
   if (!task.dueDate) return priority;
   const due = new Date(task.dueDate.slice(0, 10) + "T12:00:00");
   if (Number.isNaN(due.getTime())) return priority;
-  const days = Math.ceil((due.getTime() - Date.now()) / 86400000);
+  const today = new Date();
+  const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12);
+  const days = Math.round((due.getTime() - todayLocal.getTime()) / 86400000);
   return priority + (days < 0 ? 40 : days <= 1 ? 25 : days <= 3 ? 15 : 0);
 }
 
@@ -47,7 +49,7 @@ export default function WhatNow() {
         .map((interval) => ({ start: new Date(Math.max(interval.start.getTime(), now.getTime())), end: interval.end }))
         .filter((interval) => interval.end.getTime() > interval.start.getTime())
         .sort((a, b) => a.start.getTime() - b.start.getTime());
-      const active = slots.find((slot) => slot.start.getTime() <= now.getTime() + 60000);
+      const active = slots.find((slot) => slot.start.getTime() <= now.getTime() && slot.end.getTime() > now.getTime());
       const freeMinutes = active ? Math.floor((active.end.getTime() - now.getTime()) / 60000) : 0;
       const sorted = pending.sort((a, b) => b.score - a.score);
       const fitting = active ? sorted.find((task) => task.duration !== null && task.duration <= freeMinutes) : undefined;
