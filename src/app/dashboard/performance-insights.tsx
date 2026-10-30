@@ -123,6 +123,11 @@ export default function PerformanceInsights() {
         </button>
       </div>
 
+      <details className="group rounded-2xl border border-violet-500/20 bg-slate-900/60">
+        <summary className="cursor-pointer list-none rounded-2xl px-5 py-4 text-sm font-semibold text-violet-200 hover:bg-violet-500/10 focus-visible:outline-2 focus-visible:outline-violet-400">
+          <span className="flex items-center justify-between gap-3">Análises, recomendações e evolução detalhada <span className="text-xs text-slate-400 group-open:hidden">Expandir +</span><span className="hidden text-xs text-slate-400 group-open:inline">Recolher −</span></span>
+        </summary>
+        <div className="p-3 pt-0 sm:p-5 sm:pt-0">
       <section className="rounded-3xl border border-violet-500/20 bg-slate-950/80 p-5 sm:p-7">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -446,6 +451,8 @@ export default function PerformanceInsights() {
           Períodos anteriores ao início desse registro podem estar incompletos.
         </p>
       </section>
+        </div>
+      </details>
       {error && (
         <p role="alert" className="text-sm text-red-400">
           {error}
@@ -478,6 +485,9 @@ export default function PerformanceInsights() {
           />
         </div>
       </div>
+      <details className="group rounded-2xl border border-violet-500/20 bg-slate-900">
+        <summary className="cursor-pointer list-none px-5 py-4 text-sm font-semibold text-violet-200 hover:bg-violet-500/10">Gráficos de distribuição e prioridade <span className="ml-2 text-slate-400 group-open:hidden">+</span><span className="ml-2 hidden text-slate-400 group-open:inline">−</span></summary>
+        <div className="space-y-4 p-3 pt-0 sm:p-5 sm:pt-0">
       <div className="rounded-2xl border border-violet-500/20 bg-slate-900 p-5">
         <h3 className="mb-2 text-lg font-semibold text-white">
           Distribuição das tarefas
@@ -565,6 +575,8 @@ export default function PerformanceInsights() {
           </p>
         )}
       </div>
+        </div>
+      </details>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((card) => (
           <div
