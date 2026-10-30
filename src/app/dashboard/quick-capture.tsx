@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { saveCloudPlan } from "@/lib/plan-cloud";
 
 type Draft = { id: string; title: string; priority: "Alta" | "Média" | "Normal"; selected: boolean };
@@ -23,6 +23,7 @@ export default function QuickCapture() {
   const [input, setInput] = useState("");
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -39,7 +40,8 @@ export default function QuickCapture() {
 
   async function confirm() {
     const selected = drafts.filter((draft) => draft.selected && draft.title.trim());
-    if (!selected.length || saving) return;
+    if (!selected.length || savingRef.current) return;
+    savingRef.current = true;
     setSaving(true);
     setError("");
     setSuccess("");
@@ -58,6 +60,7 @@ export default function QuickCapture() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível salvar as tarefas.");
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   }
@@ -84,10 +87,10 @@ export default function QuickCapture() {
                 onChange={(event) => setDrafts((items) => items.map((item) => item.id === draft.id ? { ...item, selected: event.target.checked } : item))} />
               <input aria-label="Editar título da tarefa" value={draft.title} maxLength={200}
                 onChange={(event) => setDrafts((items) => items.map((item) => item.id === draft.id ? { ...item, title: event.target.value } : item))}
-                className="min-w-[150px] flex-1 rounded-lg border border-slate-700 bg-slate-950 p-2 text-sm" />
+                className="min-w-0 basis-full flex-1 rounded-lg sm:basis-auto border border-slate-700 bg-slate-950 p-2 text-sm" />
               <select aria-label={`Prioridade de ${draft.title}`} value={draft.priority}
                 onChange={(event) => setDrafts((items) => items.map((item) => item.id === draft.id ? { ...item, priority: event.target.value as Draft["priority"] } : item))}
-                className="rounded-lg border border-slate-700 bg-slate-950 p-2 text-sm">
+                className="max-w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-sm">
                 <option value="Normal">Normal</option><option value="Média">Média</option><option value="Alta">Alta</option>
               </select>
             </div>

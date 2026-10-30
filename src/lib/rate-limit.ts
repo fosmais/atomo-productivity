@@ -32,6 +32,12 @@ const dailyLimiter = redis
 
 export async function checkConciergeRateLimit(userId: string) {
   if (!minuteLimiter || !dailyLimiter) {
+    const missing = [
+      !redisUrl ? "UPSTASH_REDIS_REST_URL" : null,
+      !redisToken ? "UPSTASH_REDIS_REST_TOKEN" : null,
+    ].filter(Boolean);
+    // Only variable names are logged; never log credentials or user identifiers.
+    console.error("[MYKA] Rate limit indisponível: variáveis ausentes:", missing.join(", ") || "configuração inválida");
     throw new Error("Rate limiting não configurado.");
   }
 

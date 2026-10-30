@@ -159,7 +159,7 @@ async function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <main className="min-h-screen bg-slate-950 p-8 text-white">
+    <main className="min-h-screen min-w-0 bg-slate-950 px-3 py-4 text-white sm:px-5 sm:py-6 lg:p-8">
       <Suspense
         fallback={
           <div className="mx-auto max-w-4xl text-slate-300">
