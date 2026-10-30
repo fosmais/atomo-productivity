@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const DEFAULT_MINUTES = 25;
 
@@ -14,23 +14,45 @@ export default function FocusMode() {
   const [running, setRunning] = useState(false);
   const [task, setTask] = useState("");
   const [finished, setFinished] = useState(false);
+  const deadlineRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!running) return;
-    const interval = window.setInterval(() => {
-      setRemaining((current) => {
-        if (current <= 1) {
-          setRunning(false);
-          setFinished(true);
-          return 0;
-        }
-        return current - 1;
-      });
-    }, 1000);
-    return () => window.clearInterval(interval);
+    if (!running || deadlineRef.current === null) return;
+    const tick = () => {
+      if (deadlineRef.current === null) return;
+      const seconds = Math.max(0, Math.ceil((deadlineRef.current - Date.now()) / 1000));
+      setRemaining(seconds);
+      if (seconds === 0) {
+        deadlineRef.current = null;
+        setRunning(false);
+        setFinished(true);
+      }
+    };
+    tick();
+    const interval = window.setInterval(tick, 500);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", tick);
+    };
   }, [running]);
 
+  function toggle() {
+    if (running) {
+      if (deadlineRef.current !== null) {
+        setRemaining(Math.max(0, Math.ceil((deadlineRef.current - Date.now()) / 1000)));
+      }
+      deadlineRef.current = null;
+      setRunning(false);
+    } else if (remaining > 0) {
+      deadlineRef.current = Date.now() + remaining * 1000;
+      setFinished(false);
+      setRunning(true);
+    }
+  }
+
   function reset(nextMinutes = minutes) {
+    deadlineRef.current = null;
     setRunning(false);
     setFinished(false);
     setRemaining(nextMinutes * 60);
@@ -63,14 +85,14 @@ export default function FocusMode() {
         placeholder="Ex.: preparar apresentação" className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white placeholder:text-slate-500" />
       <p role="timer" aria-label="Tempo restante" className="my-5 text-center font-mono text-5xl font-semibold tabular-nums text-violet-200">{formatTime(remaining)}</p>
       <div className="flex flex-wrap justify-center gap-3">
-        <button type="button" disabled={remaining === 0} onClick={() => setRunning((value) => !value)}
+        <button type="button" disabled={remaining === 0} onClick={toggle}
           className="rounded-xl bg-violet-600 px-5 py-3 font-semibold text-white hover:bg-violet-500 disabled:opacity-50">
           {running ? "Pausar" : remaining < minutes * 60 ? "Continuar" : "Iniciar foco"}
         </button>
         <button type="button" onClick={() => reset()} className="rounded-xl border border-slate-700 px-5 py-3 text-slate-200 hover:bg-slate-800">Reiniciar</button>
       </div>
       {finished && <p role="status" className="mt-4 text-center text-emerald-300">Sessão concluída! Faça uma pausa antes da próxima.</p>}
-      <p className="mt-4 text-xs text-slate-400">Temporizador local. Mantenha esta aba aberta; nesta versão as sessões não são gravadas no banco.</p>
+      <p className="mt-4 text-xs text-slate-400">Temporizador local com correção de tempo ao retornar à aba. Sessões não são gravadas no banco e a contagem é reiniciada ao recarregar a página.</p>
     </section>
   );
 }
