@@ -18,6 +18,14 @@ export default function LoginPage() {
 
   useEffect(() => {
     let active = true;
+    const errorCode = new URLSearchParams(window.location.search).get("error");
+    if (errorCode === "recovery") {
+      setIsError(true);
+      setMessage("O link de recuperação é inválido ou expirou. Solicite um novo e-mail.");
+    } else if (errorCode === "confirm") {
+      setIsError(true);
+      setMessage("Não foi possível confirmar o link. Solicite um novo e-mail.");
+    }
     async function resumeMfa() {
       try {
         const supabase = createClient();
