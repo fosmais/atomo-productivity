@@ -31,6 +31,7 @@ export default function MfaSettings() {
       }
       const result = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "MYRYRA autenticador adicional" });
       if (result.error) throw result.error;
+      setCode("");
       setFactorId(result.data.id);
       setQr(result.data.totp.qr_code);
       setSecret(result.data.totp.secret);
