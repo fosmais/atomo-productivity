@@ -13,6 +13,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -48,6 +50,17 @@ export default function LoginPage() {
 
         if (error) throw error;
 
+        const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (assurance.error) throw assurance.error;
+        if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
+          const factors = await supabase.auth.mfa.listFactors();
+          if (factors.error) throw factors.error;
+          const factor = factors.data.totp.find((item) => item.status === "verified");
+          if (!factor) throw new Error("Segundo fator não disponível. Entre em contato com o suporte.");
+          setMfaFactorId(factor.id);
+          setPassword("");
+          return;
+        }
         router.push("/dashboard");
         router.refresh();
       }
@@ -58,6 +71,30 @@ export default function LoginPage() {
           ? error.message
           : "Ocorreu um erro. Tente novamente."
       );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function verifyMfa(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (loading || !/^\\d{6}$/.test(mfaCode)) return;
+    setLoading(true);
+    setMessage("");
+    try {
+      const supabase = createClient();
+      const challenge = await supabase.auth.mfa.challenge({ factorId: mfaFactorId });
+      if (challenge.error) throw challenge.error;
+      const result = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId, challengeId: challenge.data.id, code: mfaCode,
+      });
+      if (result.error) throw result.error;
+      setMfaCode("");
+      router.push("/dashboard");
+      router.refresh();
+    } catch (error) {
+      setIsError(true);
+      setMessage(error instanceof Error ? error.message : "Código inválido.");
     } finally {
       setLoading(false);
     }
@@ -75,7 +112,14 @@ export default function LoginPage() {
             : "Crie sua conta gratuitamente."}
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+        {mfaFactorId ? (
+          <form onSubmit={verifyMfa} className="mt-8 space-y-4">
+            <label htmlFor="mfa-code" className="block text-sm">Código do aplicativo autenticador</label>
+            <input id="mfa-code" type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" required value={mfaCode} onChange={(event) => setMfaCode(event.target.value.replace(/\\D/g, "").slice(0, 6))} className="w-full rounded-xl border border-violet-400/30 bg-slate-900 p-3 text-white" />
+            <button type="submit" disabled={loading || mfaCode.length !== 6} className="w-full rounded-xl bg-violet-600 p-3 font-semibold disabled:opacity-50">{loading ? "Verificando..." : "Verificar e entrar"}</button>
+            <button type="button" onClick={async () => { await createClient().auth.signOut(); setMfaFactorId(""); setMfaCode(""); setMessage(""); }} className="text-sm text-violet-300">Voltar ao login</button>
+          </form>
+        ) : <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <div>
             <label htmlFor="email" className="mb-2 block text-sm">
               E-mail
@@ -122,7 +166,7 @@ export default function LoginPage() {
                 ? "Entrar"
                 : "Criar conta"}
           </button>
-        </form>
+        </form>}
 
         {message && (
           <p
@@ -135,7 +179,7 @@ export default function LoginPage() {
           </p>
         )}
 
-        <button
+        {!mfaFactorId && <button
           type="button"
           disabled={loading}
           onClick={() => {
@@ -148,7 +192,7 @@ export default function LoginPage() {
           {mode === "login"
             ? "Ainda não tem conta? Cadastre-se"
             : "Já tem conta? Faça login"}
-        </button>
+        </button>}
       </div>
     </main>
   );
