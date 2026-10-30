@@ -15,6 +15,7 @@ import AvailabilityPanel from "./availability-panel";
 import { LogoutButton } from "./logout-button";
 import PlanningSettings from "./planning-settings";
 import MfaSettings from "./mfa-settings";
+import FavoritesPanel from "./favorites-panel";
 import GoogleCalendarSettings from "./google-calendar-settings";
 import SmartSchedulingPanel from "./smart-scheduling-panel";
 import AutoPilot from "./auto-pilot";
@@ -95,6 +96,7 @@ async function DashboardContent() {
         title="Transforme planos em conquistas."
         description="Acompanhe suas tarefas, prioridades e progresso em um único lugar."
       >
+        <FavoritesPanel />
         <QuickCapture />
         <TaskKanban />
       </VyraSection>
