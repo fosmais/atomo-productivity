@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -15,6 +15,34 @@ export default function LoginPage() {
   const [isError, setIsError] = useState(false);
   const [mfaFactorId, setMfaFactorId] = useState("");
   const [mfaCode, setMfaCode] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    async function resumeMfa() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user || !active) return;
+        const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (assurance.error || !active) return;
+        if (assurance.data.currentLevel === "aal2" || assurance.data.nextLevel === "aal1") {
+          router.replace("/dashboard");
+          router.refresh();
+          return;
+        }
+        if (assurance.data.nextLevel === "aal2") {
+          const factors = await supabase.auth.mfa.listFactors();
+          if (factors.error || !active) return;
+          const factor = factors.data.totp.find(item => item.status === "verified");
+          if (factor) setMfaFactorId(factor.id);
+        }
+      } catch {
+        // The regular sign-in form remains available when session restoration fails.
+      }
+    }
+    void resumeMfa();
+    return () => { active = false; };
+  }, [router]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
