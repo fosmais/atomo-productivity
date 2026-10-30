@@ -1,160 +1,96 @@
-              messageId={message.id}
-              taskIndex={taskIndex}
-              onSaved={() => {
-                setMessages((previous) =>
-                  previous.map((item) =>
-                    item.id === message.id
-                      ? {
-                          ...item,
-                          taskDecisions: [
-                            ...(item.taskDecisions ?? []).filter(
-                              (decision) => decision.taskIndex !== taskIndex
-                            ),
-                            { taskIndex, decision: "saved" as const },
-                          ],
-                        }
-                      : item
-                  )
-                );
-                router.refresh();
-              }}
-              onCancel={() => {
-                setMessages((previous) =>
-                  previous.map((item) =>
-                    item.id === message.id
-                      ? {
-                          ...item,
-                          taskDecisions: [
-                            ...(item.taskDecisions ?? []).filter(
-                              (decision) => decision.taskIndex !== taskIndex
-                            ),
-                            { taskIndex, decision: "cancelled" as const },
-                          ],
-                        }
-                      : item
-                  )
-                );
-              }}
-            />
-          ) : (
-            <div className="rounded-xl border border-violet-500/30 bg-slate-800 p-4">
-              <p className="text-xs font-semibold text-violet-400">
-                Tarefa {taskIndex + 1}
-              </p>
-              <h3 className="mt-1 font-semibold text-white">
-                {task.title}
-              </h3>
-              <p className="mt-2 text-sm text-slate-300">
-                Prioridade: {task.priority}
-              </p>
-              <p className="text-sm text-slate-300">
-                Prazo: {task.dueDate ?? "Não definido"}
-              </p>
-              <p className="mt-2 text-xs text-slate-400">
-                {message.taskStatus === "legacy"
-                  ? "Sugestão anterior à atualização. Confirmação indisponível."
-                  : "Confirmação indisponível para esta sugestão."}
-              </p>
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  )}
-{message.role === "assistant" && (!message.proposedTasks || message.proposedTasks.length === 0) && message.proposedTask && message.taskStatus === "saved" && (
-  <p role="status" className="mt-3 text-sm text-green-400">
-    Tarefa salva com sucesso!
-  </p>
-)}
-{message.role === "assistant" && (!message.proposedTasks || message.proposedTasks.length === 0) && message.proposedTask && message.taskStatus === "cancelled" && (
-  <p className="mt-3 text-sm text-slate-400">
-    Sugestão cancelada.
-  </p>
-)}
-{message.role === "assistant" && (!message.proposedTasks || message.proposedTasks.length === 0) && message.proposedTask && message.taskStatus === "legacy" && (
-  <p className="mt-3 text-sm text-slate-400">
-    Sugestão anterior à atualização. Confirmação indisponível para evitar duplicidade.
-  </p>
-)}
-{message.role === "assistant" && (!message.proposedTasks || message.proposedTasks.length === 0) && message.proposedTask && message.taskStatus === "pending" && (
-              <TaskConfirmation
-                task={message.proposedTask}
-                messageId={message.id}
-                onSaved={() => {
-                  setMessages((previous) =>
-                    previous.map((item) =>
-                      item.id === message.id
-                        ? { ...item, taskStatus: "saved" as const }
-                        : item
-                    )
-                  );
-                  router.refresh();
-                }}
-                onCancel={async () => {
-                  if (!message.id) {
-                    setError("Identificador da mensagem indisponível.");
-                    return;
-                  }
+"use client";
 
-                  try {
-                    const response = await fetch("/api/myka/proposal", {
-                      method: "PATCH",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        messageId: message.id,
-                        kind: "task",
-                      }),
-                    });
+import { useRef, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import type { FormEvent } from "react";
+import TaskConfirmation from "./task-confirmation";
+import EventConfirmation from "./event-confirmation";
+import type { SavedTask } from "@/lib/plan-storage";
+import type { NewCalendarEvent } from "@/lib/event-cloud";
 
-                    if (!response.ok) {
-                      throw new Error(
-                        "Não foi possível cancelar a sugestão no servidor."
-                      );
-                    }
+type ChatMessage = {
+  id?: string;
+  taskStatus?: "legacy" | "pending" | "saved" | "cancelled";
+  eventStatus?: "legacy" | "pending" | "saved" | "cancelled";
+  role: "user" | "assistant";
+  content: string;
+  proposedTask?: SavedTask | null;
+  proposedTasks?: SavedTask[];
+  taskDecisions?: Array<{
+    taskIndex: number;
+    decision: "saved" | "cancelled";
+  }>;
+  proposedEvent?: NewCalendarEvent | null;
 
-                    setMessages((previous) =>
-                      previous.map((item) =>
-                        item.id === message.id
-                          ? { ...item, taskStatus: "cancelled" as const }
-                          : item
-                      )
-                    );
-                  } catch (err) {
-                    setError(
-                      err instanceof Error
-                        ? err.message
-                        : "Falha ao cancelar sugestão."
-                    );
-                  }
-                }}
-              />
-            )}
-            {message.role === "assistant" && message.proposedEvent && (
-              <EventConfirmation
-                event={message.proposedEvent}
-               onSaved={() => {
-  window.dispatchEvent(new Event("vyra:events-updated"));
-  router.refresh();
-}}
+};
 
-                onCancel={() =>
-                  setMessages((previous) =>
-                    previous.map((item, itemIndex) =>
-                      itemIndex === index
-                        ? { ...item, proposedEvent: null }
-                        : item
-                    )
-                  )
-                }
-              />
-            )}
-          </div>
-        ))}
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
-        {loading && (
-          <p className="animate-pulse text-sm font-medium text-violet-300 motion-reduce:animate-none">
-            Myka está analisando suas tarefas...
-          </p>
-        )}
+function isTaskProposal(
+  value: unknown
+): value is Omit<SavedTask, "completed"> {
+  return (
+    isRecord(value) &&
+    typeof value.title === "string" &&
+    value.title.trim().length > 0 &&
+    value.title.length <= 200 &&
+    (value.priority === "Alta" ||
+      value.priority === "Média" ||
+      value.priority === "Normal") &&
+    (typeof value.dueDate === "string" || value.dueDate === null)
+  );
+}
 
-        <div ref={bottomRef} />
+export default function CopilotChat() {
+function isEventProposal(
+  value: unknown
+): value is NewCalendarEvent {
+  if (!isRecord(value)) return false;
+
+  if (
+    typeof value.title !== "string" ||
+    !value.title.trim() ||
+    value.title.length > 200
+  ) {
+    return false;
+  }
+
+  if (
+    typeof value.startsAt !== "string" ||
+    typeof value.endsAt !== "string"
+  ) {
+    return false;
+  }
+
+  const start = new Date(value.startsAt);
+  const end = new Date(value.endsAt);
+
+  if (
+    !Number.isFinite(start.getTime()) ||
+    !Number.isFinite(end.getTime()) ||
+    end <= start
+  ) {
+    return false;
+  }
+
+  return (
+    (value.location === null ||
+      typeof value.location === "string") &&
+    (value.eventType === "appointment" ||
+      value.eventType === "unavailable") &&
+    typeof value.blocksTime === "boolean"
+  );
+}
+  const router = useRouter();
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [pendingTask, setPendingTask] = useState<SavedTask | null>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+const [listening, setListening] = useState(false);
