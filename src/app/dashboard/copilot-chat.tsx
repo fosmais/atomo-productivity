@@ -773,6 +773,25 @@ setConversationId(data.conversationId);
           className="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-800/80 px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:ring-2 focus:ring-violet-500/20"
         />
 
+<input
+  ref={attachmentInputRef}
+  type="file"
+  accept=".pdf,.png,.jpg,.jpeg,.txt,.docx"
+  className="hidden"
+  onChange={(event) =>
+    handleAttachment(event.target.files?.[0])
+  }
+/>
+
+<button
+  type="button"
+  onClick={() => attachmentInputRef.current?.click()}
+  className="rounded-xl border border-violet-500 px-4 py-3 text-violet-200"
+  aria-label="Anexar arquivo"
+>
+  📎
+</button>
+
         <button
   type="button"
   onClick={startVoice}
