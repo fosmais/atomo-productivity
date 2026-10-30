@@ -32,7 +32,21 @@ export default function FavoritesPanel() {
   }
 
   useEffect(() => {
-    void refresh().catch(err => setError(err instanceof Error ? err.message : "Erro ao carregar."));
+    let active = true;
+    const reload = () => {
+      if (!active) return;
+      void refresh().catch(err => {
+        if (active) setError(err instanceof Error ? err.message : "Erro ao carregar.");
+      });
+    };
+    reload();
+    window.addEventListener("myryra:tasks-updated", reload);
+    window.addEventListener("myryra:events-updated", reload);
+    return () => {
+      active = false;
+      window.removeEventListener("myryra:tasks-updated", reload);
+      window.removeEventListener("myryra:events-updated", reload);
+    };
   }, []);
 
   function find(item: Item) {
@@ -76,6 +90,8 @@ export default function FavoritesPanel() {
         {showAll ? "Mostrar favoritos" : "Escolher favoritos"}
       </button>
       {error && <p role="alert" className="mt-3 text-rose-300">{error}</p>}
+      {items.length === 0 && !error && <p className="mt-3 text-sm text-slate-400">Crie uma tarefa ou compromisso para começar.</p>}
+      {items.length > 0 && !showAll && !items.some(item => find(item)) && <p className="mt-3 text-sm text-slate-400">Nenhum favorito ainda. Clique em Escolher favoritos.</p>}
       <ul className="mt-3 max-h-72 space-y-2 overflow-y-auto">
         {items.filter(item => showAll || find(item)).map(item => (
           <li key={item.kind + item.id} className="flex items-center justify-between gap-3 rounded-lg bg-slate-950 p-3">
