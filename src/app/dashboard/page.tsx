@@ -14,6 +14,7 @@ import WeeklyIntelligence from "./weekly-intelligence";
 import AvailabilityPanel from "./availability-panel";
 import { LogoutButton } from "./logout-button";
 import PlanningSettings from "./planning-settings";
+import MfaSettings from "./mfa-settings";
 import GoogleCalendarSettings from "./google-calendar-settings";
 import SmartSchedulingPanel from "./smart-scheduling-panel";
 import AutoPilot from "./auto-pilot";
@@ -37,6 +38,11 @@ async function DashboardContent() {
   } = await supabase.auth.getUser();
 
   if (error || !user) {
+    redirect("/login");
+  }
+
+  const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (assurance.error || (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2")) {
     redirect("/login");
   }
 
@@ -133,6 +139,7 @@ async function DashboardContent() {
         title="Uma experiência feita para você."
         description="Configure seus dias, horários e preferências de planejamento."
       >
+        <MfaSettings />
         <PlanningSettings />
         <div className="mt-6">
           <GoogleCalendarSettings />
