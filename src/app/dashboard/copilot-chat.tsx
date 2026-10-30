@@ -93,6 +93,63 @@ function isEventProposal(
   const [pendingTask, setPendingTask] = useState<SavedTask | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+const [listening, setListening] = useState(false);
+
+async function startVoice() {
+  type Recognition = {
+    lang: string;
+    onresult: ((event: {
+      results: ArrayLike<ArrayLike<{ transcript: string }>>;
+    }) => void) | null;
+    onend: (() => void) | null;
+    onerror: (() => void) | null;
+    start: () => void;
+  };
+
+  const browser = window as Window & {
+    SpeechRecognition?: new () => Recognition;
+    webkitSpeechRecognition?: new () => Recognition;
+  };
+
+  const SpeechAPI =
+    browser.SpeechRecognition ??
+    browser.webkitSpeechRecognition;
+
+  if (!SpeechAPI) {
+    setError("Seu navegador não suporta reconhecimento de voz.");
+    return;
+  }
+
+  const recognition = new SpeechAPI();
+  recognition.lang = "pt-BR";
+
+  recognition.onresult = (event) => {
+    const text = Array.from(event.results)
+      .map((result) => result[0]?.transcript ?? "")
+      .join(" ");
+
+    setInput((previous) =>
+      [previous, text].filter(Boolean).join(" ").slice(0, 1500)
+    );
+  };
+
+  recognition.onend = () => setListening(false);
+
+  recognition.onerror = () => {
+    setListening(false);
+    setError("Não foi possível reconhecer sua voz.");
+  };
+
+  try {
+    setError("");
+    recognition.start();
+    setListening(true);
+  } catch {
+    setListening(false);
+    setError("Não foi possível iniciar o microfone.");
+  }
+}
+
   useEffect(() => {
     let active = true;
 
@@ -670,6 +727,14 @@ setConversationId(data.conversationId);
         />
 
         <button
+  type="button"
+  onClick={startVoice}
+  disabled={listening || loading}
+  className="rounded-xl border border-violet-500 px-4 py-3 text-violet-200 disabled:opacity-50"
+>
+  {listening ? "🎙 Ouvindo..." : "🎙 Voz"}
+</button>
+
           type="submit"
           disabled={loading || historyLoading || !!error || !input.trim()}
           className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-3 font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
