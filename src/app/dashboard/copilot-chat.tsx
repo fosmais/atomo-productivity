@@ -95,6 +95,53 @@ function isEventProposal(
 
 const [listening, setListening] = useState(false);
 
+const [attachment, setAttachment] = useState<File | null>(null);
+const attachmentInputRef = useRef<HTMLInputElement>(null);
+
+function handleAttachment(file?: File) {
+  if (!file) return;
+
+  const allowedTypes = [
+    "application/pdf",
+    "image/png",
+    "image/jpeg",
+    "text/plain",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ];
+
+  if (!allowedTypes.includes(file.type)) {
+    setError("Formato de arquivo não suportado.");
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    setError("O arquivo deve ter no máximo 5 MB.");
+    return;
+  }
+
+  setError("");
+  setAttachment(file);
+}
+
+<input
+  ref={attachmentInputRef}
+  type="file"
+  accept=".pdf,.png,.jpg,.jpeg,.txt,.docx"
+  className="hidden"
+  onChange={(event) =>
+    handleAttachment(event.target.files?.[0])
+  }
+/>
+
+<button
+  type="button"
+  onClick={() => attachmentInputRef.current?.click()}
+  className="rounded-xl border border-violet-500 px-4 py-3 text-violet-200"
+  aria-label="Anexar arquivo"
+>
+  📎
+</button>
+
 async function startVoice() {
   type Recognition = {
     lang: string;
