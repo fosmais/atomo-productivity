@@ -734,7 +734,7 @@ setConversationId(data.conversationId);
 >
   {listening ? "🎙 Ouvindo..." : "🎙 Voz"}
 </button>
-
+        <button
           type="submit"
           disabled={loading || historyLoading || !!error || !input.trim()}
           className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-3 font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
