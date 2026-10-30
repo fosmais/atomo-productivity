@@ -58,6 +58,7 @@ export default function MfaSettings() {
       setCode("");
       setMessage("Autenticador verificado e ativado com sucesso.");
     } catch (err) {
+      setCode("");
       setError(err instanceof Error ? err.message : "Código inválido.");
     } finally {
       setBusy(false);
