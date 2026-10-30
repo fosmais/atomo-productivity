@@ -24,3 +24,17 @@
 - Layout funcional em celular e desktop.
 - Testar fluxos autenticados e persistência antes de declarar concluído.
 - Não bloquear o lançamento por integrações de Google Maps, voz ou Business.
+
+## Ampliação aprovada — acesso seguro e favoritos (2026-10-30)
+
+| Entrega | Escopo MVP 1 | Critério de aceite | Estado |
+|---|---|---|---|
+| Login MYRYRA | Identidade roxa/dark, responsividade, acessibilidade e mensagens de erro | Login e cadastro existentes preservados; QA mobile | Layout atualizado; QA pendente |
+| MFA TOTP | Enrolamento com QR/segredo, verificação do código, gerenciamento e recuperação segura | Desafiar sessão AAL1 quando houver fator verificado; bloquear rotas protegidas até AAL2; testar login, logout e recuperação | Pendente de implementação |
+| Favoritos | Favoritar/desfavoritar tarefas e eventos, visualização unificada | Persistência por usuário com RLS; sem acesso entre contas; mobile | Pendente de implementação |
+
+### Ordem de entrega e segurança
+1. Login visual e testes de regressão.
+2. MFA nativo Supabase Auth com enforcement também no servidor, sem guardar segredos TOTP na aplicação; definir fluxo de recuperação antes de liberar.
+3. Favoritos com tabela associada a `auth.uid()`, unicidade por item e RLS; integrar tarefas e agenda.
+4. Testes automatizados, autenticação real e homologação mobile. Nenhuma funcionalidade será declarada concluída antes do QA.
