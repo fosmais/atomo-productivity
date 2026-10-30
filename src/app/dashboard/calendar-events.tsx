@@ -299,7 +299,7 @@ export default function CalendarEvents() {
         {saving ? "Salvando..." : "Adicionar compromisso"}
       </button>
 
-      </div>
+      </div>}
       {error && (
         <p role="alert" className="mt-3 text-sm text-red-400">
           {error}
