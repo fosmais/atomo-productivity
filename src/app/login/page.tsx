@@ -104,6 +104,30 @@ export default function LoginPage() {
     }
   }
 
+  async function requestPasswordReset() {
+    if (loading) return;
+    if (!email.trim()) {
+      setIsError(true);
+      setMessage("Informe seu e-mail acima para receber o link de recuperação.");
+      return;
+    }
+    setLoading(true);
+    setMessage("");
+    setIsError(false);
+    try {
+      const result = await createClient().auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/auth/confirm`,
+      });
+      if (result.error) throw result.error;
+      setMessage("Se este e-mail estiver cadastrado, você receberá instruções para redefinir sua senha.");
+    } catch {
+      setIsError(true);
+      setMessage("Não foi possível solicitar a recuperação. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function verifyMfa(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (loading || !/^\d{6}$/.test(mfaCode)) return;
@@ -207,6 +231,8 @@ export default function LoginPage() {
             {message}
           </p>
         )}
+
+        {!mfaFactorId && mode === "login" && <button type="button" disabled={loading} onClick={() => void requestPasswordReset()} className="mt-4 block text-sm text-violet-300 hover:text-violet-200 disabled:opacity-50">Esqueci minha senha</button>}
 
         {!mfaFactorId && <button
           type="button"
