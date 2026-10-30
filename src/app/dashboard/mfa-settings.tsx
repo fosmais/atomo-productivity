@@ -38,7 +38,7 @@ export default function MfaSettings() {
   }
 
   async function confirm() {
-    if (busy || !factorId || !/^\\d{6}$/.test(code)) return;
+    if (busy || !factorId || !/^\d{6}$/.test(code)) return;
     setBusy(true);
     setError("");
     try {
@@ -73,7 +73,7 @@ export default function MfaSettings() {
           {qr && <img src={qr} alt="QR code para cadastrar o autenticador" className="h-44 w-44 rounded-xl bg-white p-2" />}
           <details className="text-sm text-slate-300"><summary>Não consegue escanear? Mostrar chave manual</summary><code className="mt-2 block break-all select-all rounded bg-slate-950 p-2">{secret}</code></details>
           <label htmlFor="totp-enroll-code" className="block text-sm">Código de verificação</label>
-          <input id="totp-enroll-code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\\D/g, "").slice(0, 6))} className="w-full max-w-xs rounded-xl border border-slate-700 bg-slate-950 p-3 text-white" />
+          <input id="totp-enroll-code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} className="w-full max-w-xs rounded-xl border border-slate-700 bg-slate-950 p-3 text-white" />
           <button type="button" disabled={busy || code.length !== 6} onClick={() => void confirm()} className="block rounded-xl bg-violet-600 px-4 py-2 font-semibold text-white disabled:opacity-50">Ativar 2FA</button>
           <p className="text-xs text-amber-200">Guarde o acesso ao aplicativo autenticador. A recuperação de acesso ainda está em preparação.</p>
         </div>
