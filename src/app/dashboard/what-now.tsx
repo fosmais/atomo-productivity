@@ -30,7 +30,7 @@ export default function WhatNow() {
       const [plans, availability, scheduling] = await Promise.all([
         getCloudPlans(), getCloudAvailability(new Date(), 1), getCloudTasksForScheduling(),
       ]);
-      const durationById = new Map(scheduling.tasks.map((task) => [task.id, task.durationMinutes]));
+      const durationById = new Map(scheduling.ready.map((task) => [task.id, task.durationMinutes]));
       const pending: Candidate[] = plans.flatMap((plan) => plan.tasks)
         .filter((task) => !task.completed)
         .map((task) => {
