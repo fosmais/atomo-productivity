@@ -7,6 +7,7 @@ import CloudPlans from "./cloud-plans";
 import CopilotChat from "./copilot-chat";
 import DailyCopilot from "./daily-copilot";
 import WhatNow from "./what-now";
+import FocusMode from "./focus-mode";
 import AvailabilityPanel from "./availability-panel";
 import { LogoutButton } from "./logout-button";
 import PlanningSettings from "./planning-settings";
@@ -66,6 +67,7 @@ async function DashboardContent() {
         description="Transforme suas prioridades em um planejamento claro e objetivo."
       >
         <WhatNow />
+        <FocusMode />
         <DailyCopilot />
       </VyraSection>
 <section className="rounded-xl border border-slate-800 p-6">
