@@ -8,6 +8,7 @@ import CopilotChat from "./copilot-chat";
 import DailyCopilot from "./daily-copilot";
 import WhatNow from "./what-now";
 import FocusMode from "./focus-mode";
+import QuickCapture from "./quick-capture";
 import AvailabilityPanel from "./availability-panel";
 import { LogoutButton } from "./logout-button";
 import PlanningSettings from "./planning-settings";
@@ -85,6 +86,7 @@ async function DashboardContent() {
         title="Transforme planos em conquistas."
         description="Acompanhe suas tarefas, prioridades e progresso em um único lugar."
       >
+        <QuickCapture />
         <TaskKanban />
       </VyraSection>
 </VyraModule>
