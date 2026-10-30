@@ -113,6 +113,7 @@ export default function TaskKanban() {
       setNewDueDate("");
       setShowCreate(false);
       await loadTasks();
+      window.dispatchEvent(new Event("myryra:tasks-updated"));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao criar tarefa.");
     } finally {
@@ -167,6 +168,7 @@ export default function TaskKanban() {
           updateError?.message ?? "Não foi possível atualizar a tarefa."
         );
       }
+      window.dispatchEvent(new Event("myryra:tasks-updated"));
     } catch (err) {
       setTasks(previous);
       setError(
