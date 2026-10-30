@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createClient } from "@/lib/supabase/server";
 
-export const runtime = "nodejs";
+
 
 const MAX_SIZE = 5 * 1024 * 1024;
 

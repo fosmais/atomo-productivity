@@ -106,7 +106,6 @@ function handleAttachment(file?: File) {
     "image/png",
     "image/jpeg",
     "text/plain",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   ];
 
   if (!allowedTypes.includes(file.type)) {
@@ -122,25 +121,6 @@ function handleAttachment(file?: File) {
   setError("");
   setAttachment(file);
 }
-
-<input
-  ref={attachmentInputRef}
-  type="file"
-  accept=".pdf,.png,.jpg,.jpeg,.txt,.docx"
-  className="hidden"
-  onChange={(event) =>
-    handleAttachment(event.target.files?.[0])
-  }
-/>
-
-<button
-  type="button"
-  onClick={() => attachmentInputRef.current?.click()}
-  className="rounded-xl border border-violet-500 px-4 py-3 text-violet-200"
-  aria-label="Anexar arquivo"
->
-  📎
-</button>
 
 async function startVoice() {
   type Recognition = {
@@ -378,7 +358,42 @@ async function startVoice() {
 
     const content = input.trim();
 
-    if (!content || loading || historyLoading || error) return;
+    if ((!content && !attachment) || loading || historyLoading || error) return;
+
+    if (attachment) {
+      setLoading(true);
+      setError("");
+      const selectedFile = attachment;
+      try {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        formData.append("question", content || "Analise este arquivo e apresente um resumo objetivo.");
+        const response = await fetch("/api/myka/analyze-file", {
+          method: "POST",
+          body: formData,
+        });
+        const result: unknown = await response.json();
+        if (!response.ok) {
+          throw new Error(isRecord(result) && typeof result.error === "string"
+            ? result.error : "NÃ£o foi possÃ­vel analisar o arquivo.");
+        }
+        if (!isRecord(result) || typeof result.analysis !== "string") {
+          throw new Error("Resposta invÃ¡lida da anÃ¡lise de arquivo.");
+        }
+        setMessages((previous) => [...previous,
+          { role: "user", content: content ? `${content} (anexo: ${selectedFile.name})` : `Analise o anexo: ${selectedFile.name}` },
+          { role: "assistant", content: result.analysis as string },
+        ]);
+        setAttachment(null);
+        setInput("");
+        if (attachmentInputRef.current) attachmentInputRef.current.value = "";
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Erro ao analisar arquivo.");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
 
     const nextMessages: ChatMessage[] = [
       ...messages,
@@ -762,6 +777,17 @@ setConversationId(data.conversationId);
         </p>
       )}
 
+      {attachment && (
+        <div className="mb-3 flex items-center gap-2 text-sm text-violet-200">
+          <span className="truncate">ðŸ“Ž {attachment.name}</span>
+          <button type="button" onClick={() => {
+            setAttachment(null);
+            if (attachmentInputRef.current) attachmentInputRef.current.value = "";
+          }} aria-label="Remover anexo" className="rounded border border-white/20 px-2 py-1">
+            Remover
+          </button>
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="flex gap-2">
         <input
           type="text"
@@ -776,7 +802,7 @@ setConversationId(data.conversationId);
 <input
   ref={attachmentInputRef}
   type="file"
-  accept=".pdf,.png,.jpg,.jpeg,.txt,.docx"
+  accept=".pdf,.png,.jpg,.jpeg,.txt"
   className="hidden"
   onChange={(event) =>
     handleAttachment(event.target.files?.[0])
@@ -802,7 +828,7 @@ setConversationId(data.conversationId);
 </button>
         <button
           type="submit"
-          disabled={loading || historyLoading || !!error || !input.trim()}
+          disabled={loading || historyLoading || !!error || (!input.trim() && !attachment)}
           className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-3 font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? "Enviando..." : "Enviar"}
