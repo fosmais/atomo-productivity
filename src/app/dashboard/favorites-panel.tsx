@@ -12,6 +12,7 @@ export default function FavoritesPanel() {
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [showAll, setShowAll] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   async function refresh() {
@@ -35,9 +36,10 @@ export default function FavoritesPanel() {
     let active = true;
     const reload = () => {
       if (!active) return;
-      void refresh().catch(err => {
+      setLoading(true);
+      void refresh().then(() => { if (active) setError(""); }).catch(err => {
         if (active) setError(err instanceof Error ? err.message : "Erro ao carregar.");
-      });
+      }).finally(() => { if (active) setLoading(false); });
     };
     reload();
     window.addEventListener("myryra:tasks-updated", reload);
@@ -90,7 +92,8 @@ export default function FavoritesPanel() {
         {showAll ? "Mostrar favoritos" : "Escolher favoritos"}
       </button>
       {error && <p role="alert" className="mt-3 text-rose-300">{error}</p>}
-      {items.length === 0 && !error && <p className="mt-3 text-sm text-slate-400">Crie uma tarefa ou compromisso para começar.</p>}
+      {loading && <p role="status" className="mt-3 text-sm text-slate-400">Carregando favoritos...</p>}
+      {!loading && items.length === 0 && !error && <p className="mt-3 text-sm text-slate-400">Crie uma tarefa ou compromisso para começar.</p>}
       {items.length > 0 && !showAll && !items.some(item => find(item)) && <p className="mt-3 text-sm text-slate-400">Nenhum favorito ainda. Clique em Escolher favoritos.</p>}
       <ul className="mt-3 max-h-72 space-y-2 overflow-y-auto">
         {items.filter(item => showAll || find(item)).map(item => (
