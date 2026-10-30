@@ -115,6 +115,12 @@ export async function POST(request: Request) {
       );
     }
 
+    const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assurance.error) return NextResponse.json({ error: "Verificação de sessão indisponível." }, { status: 503 });
+    if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
+      return NextResponse.json({ error: "Segundo fator obrigatório.", code: "MFA_REQUIRED" }, { status: 403 });
+    }
+
 const rateLimit = await checkConciergeRateLimit(user.id);
 
 if (!rateLimit.allowed) {
