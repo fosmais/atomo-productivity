@@ -21,6 +21,9 @@ type GoogleCalendarEvent = {
 };
 export default function CalendarEvents() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [showAllGoogle, setShowAllGoogle] = useState(false);
+  const [showAllLocal, setShowAllLocal] = useState(false);
   // VYRA_GOOGLE_CALENDAR_INTEGRATION
   const [googleEvents, setGoogleEvents] = useState<GoogleCalendarEvent[]>([]);
   const [googleConnected, setGoogleConnected] = useState(false);
@@ -155,6 +158,9 @@ export default function CalendarEvents() {
     }).format(new Date(value));
   }
 
+  const visibleGoogle = showAllGoogle ? googleEvents : googleEvents.slice(0, 5);
+  const visibleLocal = showAllLocal ? events : events.slice(0, 5);
+
   return (
     <section className="rounded-2xl border border-violet-400/20 bg-gradient-to-b from-slate-900 to-slate-950 p-5 text-white shadow-xl shadow-violet-950/20 sm:p-7">
       <p className="text-sm font-semibold text-violet-400">MYRYRA CALENDAR</p>
@@ -165,7 +171,13 @@ export default function CalendarEvents() {
         Cadastre seus eventos e organize seus horários.
       </p>
 
-      <div className="mt-5 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+      <button type="button" onClick={() => setShowForm((value) => !value)}
+        aria-expanded={showForm}
+        className="mt-4 rounded-xl border border-violet-500/40 px-4 py-2 text-sm font-semibold text-violet-200 hover:bg-violet-500/10">
+        {showForm ? "Fechar formulário" : "+ Novo compromisso"}
+      </button>
+      {showForm && <div className="mt-4 rounded-xl border border-slate-700 p-4">
+      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
         <input
           type="text"
           value={title}
@@ -245,6 +257,7 @@ export default function CalendarEvents() {
         {saving ? "Salvando..." : "Adicionar compromisso"}
       </button>
 
+      </div>
       {error && (
         <p role="alert" className="mt-3 text-sm text-red-400">
           {error}
@@ -294,7 +307,7 @@ export default function CalendarEvents() {
                 Nenhum compromisso encontrado nos próximos 30 dias.
               </p>
             ) : (
-              googleEvents.map((event, index) => (
+              visibleGoogle.map((event, index) => (
                 <div
                   key={event.id ?? `google-${index}`}
                   className="min-w-0 max-w-full overflow-hidden rounded-lg border border-slate-700 p-3"
@@ -356,6 +369,7 @@ export default function CalendarEvents() {
                 </div>
               ))
             )}
+            {googleEvents.length > 5 && <button type="button" onClick={() => setShowAllGoogle((value) => !value)} className="text-sm font-semibold text-violet-300 underline">{showAllGoogle ? "Mostrar menos" : `Ver todos os ${googleEvents.length} compromissos`}</button>}
           </div>
         )}
       </div>
@@ -369,7 +383,7 @@ export default function CalendarEvents() {
             Nenhum compromisso cadastrado.
           </p>
         ) : (
-          events.map((event) => (
+          visibleLocal.map((event) => (
             <div
               key={event.id}
               className="rounded-lg border border-slate-700 p-4"
@@ -411,6 +425,7 @@ export default function CalendarEvents() {
             </div>
           ))
         )}
+        {events.length > 5 && <button type="button" onClick={() => setShowAllLocal((value) => !value)} className="text-sm font-semibold text-violet-300 underline">{showAllLocal ? "Mostrar menos" : `Ver todos os ${events.length} eventos`}</button>}
       </div>
     </section>
   );
