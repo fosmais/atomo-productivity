@@ -13,6 +13,7 @@ export default function FavoritesPanel() {
   const [items, setItems] = useState<Item[]>([]);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [showAll, setShowAll] = useState(false);
+  const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -93,12 +94,14 @@ export default function FavoritesPanel() {
         className="mt-3 rounded-lg border border-violet-500 px-3 py-2 text-sm">
         {showAll ? "Mostrar favoritos" : "Escolher favoritos"}
       </button>
+      <label className="mt-3 block text-sm text-slate-300" htmlFor="myryra-favorites-search">Buscar tarefa ou compromisso</label>
+      <input id="myryra-favorites-search" type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Buscar nos favoritos" className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white placeholder:text-slate-500 focus-visible:outline-2 focus-visible:outline-violet-400" />
       {error && <p role="alert" className="mt-3 text-rose-300">{error}</p>}
       {loading && <p role="status" className="mt-3 text-sm text-slate-400">Carregando favoritos...</p>}
       {!loading && items.length === 0 && !error && <p className="mt-3 text-sm text-slate-400">Crie uma tarefa ou compromisso para começar.</p>}
       {!loading && items.length > 0 && !showAll && !items.some(item => find(item)) && <p className="mt-3 text-sm text-slate-400">Nenhum favorito ainda. Clique em Escolher favoritos.</p>}
       <ul aria-label={showAll ? "Selecionar favoritos" : "Itens favoritos"} className="mt-3 max-h-72 space-y-2 overflow-y-auto">
-        {items.filter(item => showAll || find(item)).map(item => (
+        {items.filter(item => (showAll || find(item)) && item.title.toLocaleLowerCase("pt-BR").includes(search.trim().toLocaleLowerCase("pt-BR"))).map(item => (
           <li key={item.kind + item.id} className="flex items-center justify-between gap-3 rounded-lg bg-slate-950 p-3">
             <button type="button" onClick={() => item.kind === "task" ? navigateToTask?.(item.id) : navigateTo("vyra-calendar")} className="min-w-0 truncate text-left text-sm">
               {item.kind === "task" ? "Tarefa" : "Agenda"} · {item.title}
