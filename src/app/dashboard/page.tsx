@@ -12,6 +12,7 @@ import { LogoutButton } from "./logout-button";
 import PlanningSettings from "./planning-settings";
 import GoogleCalendarSettings from "./google-calendar-settings";
 import SmartSchedulingPanel from "./smart-scheduling-panel";
+import AutoPilot from "./auto-pilot";
 import TaskKanban from "./task-kanban";
 import PerformanceInsights from "./performance-insights";
 import VyraHeader from "./vyra-header";
@@ -103,6 +104,7 @@ async function DashboardContent() {
         title="Seu tempo, melhor aproveitado."
         description="Descubra os melhores horários para suas tarefas com base nas prioridades, durações e compromissos da sua agenda."
       >
+        <AutoPilot />
         <SmartSchedulingPanel />
       </VyraSection>
 </VyraModule>
