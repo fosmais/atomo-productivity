@@ -85,6 +85,7 @@ export default function MfaSettings() {
         </div>
       )}
       {message && <p role="status" className="mt-3 text-sm text-emerald-300">{message}</p>}
+      {factorId && <p className="mt-3 text-xs text-slate-400">O cadastro só será concluído após a validação do código.</p>}
       {error && <p role="alert" className="mt-3 text-sm text-rose-300">{error}</p>}
     </section>
   );
