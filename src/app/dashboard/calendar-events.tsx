@@ -24,6 +24,7 @@ export default function CalendarEvents() {
   const [showForm, setShowForm] = useState(false);
   const [showAllGoogle, setShowAllGoogle] = useState(false);
   const [showAllLocal, setShowAllLocal] = useState(false);
+  const [periodFilter, setPeriodFilter] = useState<"today" | "week" | "all">("week");
   // VYRA_GOOGLE_CALENDAR_INTEGRATION
   const [googleEvents, setGoogleEvents] = useState<GoogleCalendarEvent[]>([]);
   const [googleConnected, setGoogleConnected] = useState(false);
@@ -158,8 +159,34 @@ export default function CalendarEvents() {
     }).format(new Date(value));
   }
 
-  const visibleGoogle = showAllGoogle ? googleEvents : googleEvents.slice(0, 5);
-  const visibleLocal = showAllLocal ? events : events.slice(0, 5);
+  const now = new Date();
+  const todayKey = now.toLocaleDateString("en-CA");
+  const weekEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7);
+  function dateKey(value: string | null) {
+    if (!value) return "";
+    if (/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return value;
+    const date = new Date(value);
+    return Number.isFinite(date.getTime()) ? date.toLocaleDateString("en-CA") : "";
+  }
+  function inPeriod(value: string | null) {
+    const key = dateKey(value);
+    if (!key) return periodFilter === "all";
+    if (periodFilter === "all") return true;
+    if (periodFilter === "today") return key === todayKey;
+    return key >= todayKey && key < weekEnd.toLocaleDateString("en-CA");
+  }
+  function dateHeading(value: string | null) {
+    const key = dateKey(value);
+    if (!key) return "Sem data";
+    const [year, month, day] = key.split("-");
+    return `${day}/${month}/${year}`;
+  }
+  const filteredGoogle = googleEvents.filter((event) => inPeriod(event.start))
+    .sort((a, b) => (a.start ?? "").localeCompare(b.start ?? ""));
+  const filteredLocal = events.filter((event) => inPeriod(event.startsAt))
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  const visibleGoogle = showAllGoogle ? filteredGoogle : filteredGoogle.slice(0, 5);
+  const visibleLocal = showAllLocal ? filteredLocal : filteredLocal.slice(0, 5);
 
   return (
     <section className="rounded-2xl border border-violet-400/20 bg-gradient-to-b from-slate-900 to-slate-950 p-5 text-white shadow-xl shadow-violet-950/20 sm:p-7">
@@ -302,14 +329,15 @@ export default function CalendarEvents() {
 
         {!googleLoading && googleConnected && (
           <div className="mt-4 space-y-3">
-            {googleEvents.length === 0 ? (
+            {filteredGoogle.length === 0 ? (
               <p className="text-sm text-slate-400">
-                Nenhum compromisso encontrado nos próximos 30 dias.
+                Nenhum compromisso neste período.
               </p>
             ) : (
               visibleGoogle.map((event, index) => (
+                <div key={event.id ?? `google-${index}`} className="space-y-2">
+                  {(index === 0 || dateKey(visibleGoogle[index - 1].start) !== dateKey(event.start)) && <h4 className="pt-2 text-xs font-semibold uppercase tracking-wider text-violet-300">{dateHeading(event.start)}</h4>}
                 <div
-                  key={event.id ?? `google-${index}`}
                   className="min-w-0 max-w-full overflow-hidden rounded-lg border border-slate-700 p-3"
                 >
                   <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
@@ -367,9 +395,10 @@ export default function CalendarEvents() {
                     )}
                   </div>
                 </div>
+                </div>
               ))
             )}
-            {googleEvents.length > 5 && <button type="button" onClick={() => setShowAllGoogle((value) => !value)} className="text-sm font-semibold text-violet-300 underline">{showAllGoogle ? "Mostrar menos" : `Ver todos os ${googleEvents.length} compromissos`}</button>}
+            {filteredGoogle.length > 5 && <button type="button" onClick={() => setShowAllGoogle((value) => !value)} className="text-sm font-semibold text-violet-300 underline">{showAllGoogle ? "Mostrar menos" : `Ver todos os ${filteredGoogle.length} compromissos`}</button>}
           </div>
         )}
       </div>
@@ -378,14 +407,15 @@ export default function CalendarEvents() {
 
         {loading ? (
           <p className="text-sm text-slate-400">Carregando eventos...</p>
-        ) : events.length === 0 ? (
+        ) : filteredLocal.length === 0 ? (
           <p className="text-sm text-slate-400">
-            Nenhum compromisso cadastrado.
+            Nenhum compromisso neste período.
           </p>
         ) : (
-          visibleLocal.map((event) => (
+          visibleLocal.map((event, index) => (
+            <div key={event.id} className="space-y-2">
+              {(index === 0 || dateKey(visibleLocal[index - 1].startsAt) !== dateKey(event.startsAt)) && <h4 className="pt-2 text-xs font-semibold uppercase tracking-wider text-violet-300">{dateHeading(event.startsAt)}</h4>}
             <div
-              key={event.id}
               className="rounded-lg border border-slate-700 p-4"
             >
               <div className="flex items-start justify-between gap-3">
@@ -423,9 +453,10 @@ export default function CalendarEvents() {
                 </button>
               </div>
             </div>
+            </div>
           ))
         )}
-        {events.length > 5 && <button type="button" onClick={() => setShowAllLocal((value) => !value)} className="text-sm font-semibold text-violet-300 underline">{showAllLocal ? "Mostrar menos" : `Ver todos os ${events.length} eventos`}</button>}
+        {filteredLocal.length > 5 && <button type="button" onClick={() => setShowAllLocal((value) => !value)} className="text-sm font-semibold text-violet-300 underline">{showAllLocal ? "Mostrar menos" : `Ver todos os ${filteredLocal.length} eventos`}</button>}
       </div>
     </section>
   );
