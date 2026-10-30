@@ -51,7 +51,8 @@ export default function QuickCapture() {
         dueDate: null,
         completed: false,
       })));
-      setSuccess(`${selected.length} tarefa(s) salva(s). Atualize a lista de tarefas para visualizar.`);
+      window.dispatchEvent(new Event("myryra:tasks-updated"));
+      setSuccess(`${selected.length} tarefa(s) salva(s) e adicionada(s) à lista.`);
       setDrafts([]);
       setInput("");
     } catch (err) {

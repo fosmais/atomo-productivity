@@ -73,6 +73,9 @@ export default function TaskKanban() {
 
   useEffect(() => {
     void loadTasks();
+    const refresh = () => { void loadTasks(); };
+    window.addEventListener("myryra:tasks-updated", refresh);
+    return () => window.removeEventListener("myryra:tasks-updated", refresh);
   }, [loadTasks]);
 
   useEffect(() => {
