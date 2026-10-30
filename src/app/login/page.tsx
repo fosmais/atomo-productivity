@@ -78,7 +78,7 @@ export default function LoginPage() {
 
   async function verifyMfa(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (loading || !/^\\d{6}$/.test(mfaCode)) return;
+    if (loading || !/^\d{6}$/.test(mfaCode)) return;
     setLoading(true);
     setMessage("");
     try {
@@ -115,7 +115,7 @@ export default function LoginPage() {
         {mfaFactorId ? (
           <form onSubmit={verifyMfa} className="mt-8 space-y-4">
             <label htmlFor="mfa-code" className="block text-sm">Código do aplicativo autenticador</label>
-            <input id="mfa-code" type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" required value={mfaCode} onChange={(event) => setMfaCode(event.target.value.replace(/\\D/g, "").slice(0, 6))} className="w-full rounded-xl border border-violet-400/30 bg-slate-900 p-3 text-white" />
+            <input id="mfa-code" type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" required value={mfaCode} onChange={(event) => setMfaCode(event.target.value.replace(/\D/g, "").slice(0, 6))} className="w-full rounded-xl border border-violet-400/30 bg-slate-900 p-3 text-white" />
             <button type="submit" disabled={loading || mfaCode.length !== 6} className="w-full rounded-xl bg-violet-600 p-3 font-semibold disabled:opacity-50">{loading ? "Verificando..." : "Verificar e entrar"}</button>
             <button type="button" onClick={async () => { await createClient().auth.signOut(); setMfaFactorId(""); setMfaCode(""); setMessage(""); }} className="text-sm text-violet-300">Voltar ao login</button>
           </form>
