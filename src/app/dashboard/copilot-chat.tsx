@@ -367,6 +367,7 @@ async function startVoice() {
       try {
         const formData = new FormData();
         formData.append("file", selectedFile);
+        if (conversationId) formData.append("conversationId", conversationId);
         formData.append("question", content || "Analise este arquivo e apresente um resumo objetivo.");
         const response = await fetch("/api/myka/analyze-file", {
           method: "POST",
@@ -377,9 +378,10 @@ async function startVoice() {
           throw new Error(isRecord(result) && typeof result.error === "string"
             ? result.error : "NÃ£o foi possÃ­vel analisar o arquivo.");
         }
-        if (!isRecord(result) || typeof result.analysis !== "string") {
+        if (!isRecord(result) || typeof result.analysis !== "string" || typeof result.conversationId !== "string") {
           throw new Error("Resposta invÃ¡lida da anÃ¡lise de arquivo.");
         }
+        setConversationId(result.conversationId as string);
         setMessages((previous) => [...previous,
           { role: "user", content: content ? `${content} (anexo: ${selectedFile.name})` : `Analise o anexo: ${selectedFile.name}` },
           { role: "assistant", content: result.analysis as string },

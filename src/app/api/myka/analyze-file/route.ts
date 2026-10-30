@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createClient } from "@/lib/supabase/server";
+import { createSupabaseAdmin } from "@/lib/supabase/admin";
 
 
 
@@ -38,6 +39,14 @@ export async function POST(request: Request) {
     const form = await request.formData();
     const file = form.get("file");
     const question = form.get("question");
+    const conversationIdInput = form.get("conversationId");
+    if (
+      conversationIdInput !== null &&
+      (typeof conversationIdInput !== "string" ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(conversationIdInput))
+    ) {
+      return NextResponse.json({ error: "Conversa invalida." }, { status: 400 });
+    }
 
     if (!(file instanceof File)) {
       return NextResponse.json(
@@ -107,10 +116,76 @@ export async function POST(request: Request) {
         },
       ],
     });
+    const analysis = response.output_text.trim();
+    if (!analysis) {
+      return NextResponse.json({ error: "A IA nao retornou uma analise." }, { status: 502 });
+    }
+
+    const mykaAdmin = createSupabaseAdmin();
+    const fileNameForHistory = file.name.slice(0, 200);
+    const questionForHistory = prompt.slice(0, 1500);
+    const userMessage = `${questionForHistory} (anexo: ${fileNameForHistory})`;
+    let conversationId: string;
+
+    if (typeof conversationIdInput === "string") {
+      const { data: existing, error: lookupError } = await mykaAdmin
+        .from("myka_conversations")
+        .select("id")
+        .eq("id", conversationIdInput)
+        .eq("user_id", data.user.id)
+        .maybeSingle();
+      if (lookupError) throw lookupError;
+      if (!existing) {
+        return NextResponse.json({ error: "Conversa nao encontrada." }, { status: 404 });
+      }
+      conversationId = existing.id;
+    } else {
+      const { data: created, error: createError } = await mykaAdmin
+        .from("myka_conversations")
+        .insert({ user_id: data.user.id, title: userMessage.slice(0, 100) })
+        .select("id")
+        .single();
+      if (createError || !created) throw createError ?? new Error("Falha ao criar conversa.");
+      conversationId = created.id;
+    }
+
+    const { data: savedMessages, error: saveError } = await mykaAdmin
+      .from("myka_messages")
+      .insert([
+        {
+          conversation_id: conversationId,
+          user_id: data.user.id,
+          role: "user",
+          content: userMessage,
+          proposed_task: null,
+          proposed_event: null,
+        },
+        {
+          conversation_id: conversationId,
+          user_id: data.user.id,
+          role: "assistant",
+          content: analysis,
+          proposed_task: null,
+          proposed_event: null,
+        },
+      ])
+      .select("id, role");
+    if (saveError || !savedMessages || savedMessages.length !== 2) {
+      throw saveError ?? new Error("Falha ao persistir a analise.");
+    }
+
+    const { error: updateError } = await mykaAdmin
+      .from("myka_conversations")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", conversationId)
+      .eq("user_id", data.user.id);
+    if (updateError) throw updateError;
+
 
     return NextResponse.json({
       filename: file.name,
-      analysis: response.output_text,
+      analysis,
+      conversationId,
     });
   } catch (error) {
     console.error("Erro na análise de arquivo:", error);
