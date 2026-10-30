@@ -59,6 +59,12 @@ export async function GET(request: NextRequest) {
     return redirect("unauthorized");
   }
 
+  const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (assurance.error) return redirect("auth_error");
+  if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
+    return redirect("mfa_required");
+  }
+
   try {
     const oauth = createGoogleOAuthClient();
     const { tokens } = await oauth.getToken(code);
