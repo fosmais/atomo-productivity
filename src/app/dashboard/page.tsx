@@ -6,6 +6,7 @@ import CalendarEvents from "./calendar-events";
 import CloudPlans from "./cloud-plans";
 import CopilotChat from "./copilot-chat";
 import DailyCopilot from "./daily-copilot";
+import WhatNow from "./what-now";
 import AvailabilityPanel from "./availability-panel";
 import { LogoutButton } from "./logout-button";
 import PlanningSettings from "./planning-settings";
@@ -63,6 +64,7 @@ async function DashboardContent() {
         title="Seu dia, sob controle."
         description="Transforme suas prioridades em um planejamento claro e objetivo."
       >
+        <WhatNow />
         <DailyCopilot />
       </VyraSection>
 <section className="rounded-xl border border-slate-800 p-6">
