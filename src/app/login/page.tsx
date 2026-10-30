@@ -109,6 +109,7 @@ export default function LoginPage() {
     if (loading || !/^\d{6}$/.test(mfaCode)) return;
     setLoading(true);
     setMessage("");
+    setIsError(false);
     try {
       const supabase = createClient();
       const challenge = await supabase.auth.mfa.challenge({ factorId: mfaFactorId });
