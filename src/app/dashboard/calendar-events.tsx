@@ -25,7 +25,6 @@ export default function CalendarEvents() {
   const [showAllGoogle, setShowAllGoogle] = useState(false);
   const [showAllLocal, setShowAllLocal] = useState(false);
   const [periodFilter, setPeriodFilter] = useState<"today" | "week" | "all">("week");
-  const [expandedEvents, setExpandedEvents] = useState<string[]>([]);
   // VYRA_GOOGLE_CALENDAR_INTEGRATION
   const [googleEvents, setGoogleEvents] = useState<GoogleCalendarEvent[]>([]);
   const [googleConnected, setGoogleConnected] = useState(false);
