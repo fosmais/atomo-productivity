@@ -346,9 +346,15 @@ export default function CalendarEvents() {
                 <div
                   className="relative ml-2 min-w-0 max-w-full overflow-hidden rounded-lg border border-slate-700 border-l-2 border-l-violet-500 bg-slate-950/50 p-3"
                 >
-                  <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+                  <details className="group">
+                    <summary className="cursor-pointer list-none rounded-md py-1 focus-visible:outline-2 focus-visible:outline-violet-400">
+                      <span className="flex min-w-0 items-center justify-between gap-3">
+                        <span className="min-w-0 break-words font-medium"><span className="mr-2 text-xs font-semibold tabular-nums text-violet-300">{timeLabel(event.start)}</span>{event.title}</span>
+                        <span className="shrink-0 text-xs text-slate-400 group-open:hidden">Detalhes +</span><span className="hidden shrink-0 text-xs text-slate-400 group-open:inline">Recolher −</span>
+                      </span>
+                    </summary>
+                    <div className="mt-3 flex min-w-0 flex-wrap items-start justify-between gap-3 border-t border-slate-800 pt-3">
                     <div className="min-w-0 flex-1">
-                      <p className="break-words font-medium"><span className="mr-2 text-xs font-semibold tabular-nums text-violet-300">{timeLabel(event.start)}</span>{event.title}</p>
                       <p className="mt-1 text-xs text-violet-300">
                         Google Calendar · {event.calendarName || "Calendário principal"} · Somente leitura
                       </p>
@@ -400,6 +406,7 @@ export default function CalendarEvents() {
                       </a>
                     )}
                   </div>
+                  </details>
                 </div>
                 </div>
               ))
@@ -424,9 +431,15 @@ export default function CalendarEvents() {
             <div
               className="relative ml-2 rounded-lg border border-slate-700 border-l-2 border-l-violet-500 bg-slate-950/50 p-3"
             >
-              <div className="flex items-start justify-between gap-3">
+              <details className="group">
+                <summary className="cursor-pointer list-none rounded-md py-1 focus-visible:outline-2 focus-visible:outline-violet-400">
+                  <span className="flex min-w-0 items-center justify-between gap-3">
+                    <span className="min-w-0 break-words font-semibold"><span className="mr-2 text-xs font-semibold tabular-nums text-violet-300">{timeLabel(event.startsAt)}</span>{event.title}</span>
+                    <span className="shrink-0 text-xs text-slate-400 group-open:hidden">Detalhes +</span><span className="hidden shrink-0 text-xs text-slate-400 group-open:inline">Recolher −</span>
+                  </span>
+                </summary>
+                <div className="mt-3 flex items-start justify-between gap-3 border-t border-slate-800 pt-3">
                 <div>
-                  <p className="break-words font-semibold"><span className="mr-2 text-xs font-semibold tabular-nums text-violet-300">{timeLabel(event.startsAt)}</span>{event.title}</p>
 
                   <p className="mt-1 text-xs text-violet-300">
                     {event.eventType === "unavailable"
@@ -458,6 +471,7 @@ export default function CalendarEvents() {
                   {deletingId === event.id ? "Excluindo..." : "Excluir"}
                 </button>
               </div>
+              </details>
             </div>
             </div>
           ))
