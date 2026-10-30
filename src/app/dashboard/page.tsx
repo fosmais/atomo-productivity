@@ -9,6 +9,7 @@ import DailyCopilot from "./daily-copilot";
 import WhatNow from "./what-now";
 import FocusMode from "./focus-mode";
 import QuickCapture from "./quick-capture";
+import DailyBriefing from "./daily-briefing";
 import AvailabilityPanel from "./availability-panel";
 import { LogoutButton } from "./logout-button";
 import PlanningSettings from "./planning-settings";
@@ -67,6 +68,7 @@ async function DashboardContent() {
         title="Seu dia, sob controle."
         description="Transforme suas prioridades em um planejamento claro e objetivo."
       >
+        <DailyBriefing />
         <WhatNow />
         <FocusMode />
         <DailyCopilot />
