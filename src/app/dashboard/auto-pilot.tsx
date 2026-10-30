@@ -28,6 +28,7 @@ function formatTime(date: Date, timeZone: string) {
 
 export default function AutoPilot() {
   const [preview, setPreview] = useState<Preview | null>(null);
+  const [showAllSuggestions, setShowAllSuggestions] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -38,6 +39,7 @@ export default function AutoPilot() {
     setBusy(true);
     setError("");
     setPreview(null);
+    setShowAllSuggestions(false);
     setSavedIds([]);
     setNotice("");
     try {
@@ -195,7 +197,7 @@ export default function AutoPilot() {
             </p>
           )}
           <ol className="space-y-2">
-            {preview.result.suggestions.map((item) => (
+            {(showAllSuggestions ? preview.result.suggestions : preview.result.suggestions.slice(0, 4)).map((item) => (
               <li key={item.taskId} className="rounded-lg border border-slate-700 bg-slate-800 p-3">
                 <p className="font-semibold">{item.title}</p>
                 <p className="mt-1 text-sm text-violet-200">
@@ -209,6 +211,12 @@ export default function AutoPilot() {
               </li>
             ))}
           </ol>
+          {preview.result.suggestions.length > 4 && (
+            <button type="button" aria-expanded={showAllSuggestions} onClick={() => setShowAllSuggestions((value) => !value)}
+              className="rounded-lg border border-violet-500/40 px-4 py-2 text-sm font-semibold text-violet-200 hover:bg-violet-500/10">
+              {showAllSuggestions ? "Mostrar menos" : `Ver todas as ${preview.result.suggestions.length} sugestões`}
+            </button>
+          )}
           <p className="text-xs text-slate-400">
             A confirmação cria um compromisso bloqueante apenas na MYRYRA. A confirmação usa uma transação no Supabase para impedir reservas simultâneas pelo AutoPilot. Compromissos externos ainda podem mudar entre a consulta e a confirmação.
           </p>

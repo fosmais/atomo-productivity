@@ -26,6 +26,7 @@ const columns: { status: TaskStatus; label: string }[] = [
 export default function TaskKanban() {
   const { focusedTaskId } = useVyraNavigation();
   const [tasks, setTasks] = useState<KanbanTask[]>([]);
+  const [expandedColumns, setExpandedColumns] = useState<TaskStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -259,6 +260,8 @@ export default function TaskKanban() {
             const columnTasks = tasks.filter(
               (task) => task.status === column.status
             );
+            const expanded = expandedColumns.includes(column.status);
+            const visibleTasks = expanded ? columnTasks : columnTasks.filter((task) => task.id === focusedTaskId).concat(columnTasks.filter((task) => task.id !== focusedTaskId).slice(0, focusedTaskId && columnTasks.some((task) => task.id === focusedTaskId) ? 3 : 4));
 
             return (
               <div
@@ -271,7 +274,7 @@ export default function TaskKanban() {
                 </h3>
 
                 <div className="space-y-3">
-                  {columnTasks.map((task) => (
+                  {visibleTasks.map((task) => (
                     <article
                       key={task.id}
                       id={`vyra-task-${task.id}`}
@@ -319,6 +322,13 @@ export default function TaskKanban() {
                     </article>
                   ))}
 
+                  {columnTasks.length > 4 && (
+                    <button type="button" aria-expanded={expanded}
+                      onClick={() => setExpandedColumns((current) => expanded ? current.filter((status) => status !== column.status) : [...current, column.status])}
+                      className="w-full rounded-lg border border-violet-500/40 px-3 py-2 text-sm text-violet-200 hover:bg-violet-500/10">
+                      {expanded ? "Mostrar menos" : `Ver todas (${columnTasks.length})`}
+                    </button>
+                  )}
                   {columnTasks.length === 0 && (
                     <p className="text-xs text-slate-400">
                       Nenhuma tarefa nesta etapa.
