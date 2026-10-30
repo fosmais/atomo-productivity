@@ -100,9 +100,9 @@ export default function FavoritesPanel() {
       <ul className="mt-3 max-h-72 space-y-2 overflow-y-auto">
         {items.filter(item => showAll || find(item)).map(item => (
           <li key={item.kind + item.id} className="flex items-center justify-between gap-3 rounded-lg bg-slate-950 p-3">
-            <span className="min-w-0 truncate text-sm">
+            <button type="button" onClick={() => item.kind === "task" ? navigateToTask?.(item.id) : navigateTo("vyra-calendar")} className="min-w-0 truncate text-left text-sm">
               {item.kind === "task" ? "Tarefa" : "Agenda"} · {item.title}
-            </span>
+            </button>
             <button type="button" disabled={busy} aria-pressed={!!find(item)}
               aria-label={find(item) ? "Remover favorito" : "Adicionar favorito"}
               onClick={() => void toggle(item)}
