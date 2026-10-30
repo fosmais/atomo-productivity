@@ -25,6 +25,7 @@ export default function CalendarEvents() {
   const [showAllGoogle, setShowAllGoogle] = useState(false);
   const [showAllLocal, setShowAllLocal] = useState(false);
   const [periodFilter, setPeriodFilter] = useState<"today" | "week" | "all">("week");
+  const [expandedEvents, setExpandedEvents] = useState<string[]>([]);
   // VYRA_GOOGLE_CALENDAR_INTEGRATION
   const [googleEvents, setGoogleEvents] = useState<GoogleCalendarEvent[]>([]);
   const [googleConnected, setGoogleConnected] = useState(false);
@@ -174,6 +175,12 @@ export default function CalendarEvents() {
     if (periodFilter === "all") return true;
     if (periodFilter === "today") return key === todayKey;
     return key >= todayKey && key < weekEnd.toLocaleDateString("en-CA");
+  }
+  function timeLabel(value: string | null) {
+    if (!value) return "—";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return "Dia inteiro";
+    const date = new Date(value);
+    return Number.isFinite(date.getTime()) ? date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "—";
   }
   function dateHeading(value: string | null) {
     const key = dateKey(value);
@@ -338,11 +345,11 @@ export default function CalendarEvents() {
                 <div key={event.id ?? `google-${index}`} className="space-y-2">
                   {(index === 0 || dateKey(visibleGoogle[index - 1].start) !== dateKey(event.start)) && <h4 className="pt-2 text-xs font-semibold uppercase tracking-wider text-violet-300">{dateHeading(event.start)}</h4>}
                 <div
-                  className="min-w-0 max-w-full overflow-hidden rounded-lg border border-slate-700 p-3"
+                  className="relative ml-2 min-w-0 max-w-full overflow-hidden rounded-lg border border-slate-700 border-l-2 border-l-violet-500 bg-slate-950/50 p-3"
                 >
                   <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium">{event.title}</p>
+                      <p className="break-words font-medium"><span className="mr-2 text-xs font-semibold tabular-nums text-violet-300">{timeLabel(event.start)}</span>{event.title}</p>
                       <p className="mt-1 text-xs text-violet-300">
                         Google Calendar · {event.calendarName || "Calendário principal"} · Somente leitura
                       </p>
@@ -416,11 +423,11 @@ export default function CalendarEvents() {
             <div key={event.id} className="space-y-2">
               {(index === 0 || dateKey(visibleLocal[index - 1].startsAt) !== dateKey(event.startsAt)) && <h4 className="pt-2 text-xs font-semibold uppercase tracking-wider text-violet-300">{dateHeading(event.startsAt)}</h4>}
             <div
-              className="rounded-lg border border-slate-700 p-4"
+              className="relative ml-2 rounded-lg border border-slate-700 border-l-2 border-l-violet-500 bg-slate-950/50 p-3"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="font-semibold">{event.title}</p>
+                  <p className="break-words font-semibold"><span className="mr-2 text-xs font-semibold tabular-nums text-violet-300">{timeLabel(event.startsAt)}</span>{event.title}</p>
 
                   <p className="mt-1 text-xs text-violet-300">
                     {event.eventType === "unavailable"
