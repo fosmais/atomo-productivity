@@ -3,8 +3,11 @@
 import { useEffect, useState } from "react";
 import { useVyraActiveModule, useVyraNavigation } from "./vyra-module-context";
 import { loadVyraMetrics } from "./vyra-metrics-service";
+import { getCloudEvents } from "@/lib/event-cloud";
 import WhatNowCard from "./what-now-card";
 import { getCompletionRate, type VyraMetrics } from "./vyra-metrics";
+
+type HomeEvent = { id: string; title: string; start: string; source: "MYRYRA" | "Google" };
 
 export default function VyraHome() {
   const activeModule = useVyraActiveModule();
@@ -12,6 +15,9 @@ export default function VyraHome() {
   const [metrics, setMetrics] = useState<VyraMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [upcoming, setUpcoming] = useState<HomeEvent[]>([]);
+  const [agendaLoading, setAgendaLoading] = useState(true);
+  const [agendaError, setAgendaError] = useState(false);
   // MYRYRA_GOOGLE_HOME_CARD
   const [googleStatus, setGoogleStatus] = useState<"loading" | "connected" | "disconnected" | "error">("loading");
 
@@ -47,6 +53,39 @@ export default function VyraHome() {
     return () => {
       cancelled = true;
     };
+  }, [activeModule]);
+
+  useEffect(() => {
+    if (activeModule !== "home") return;
+    let cancelled = false;
+    async function loadAgenda() {
+      setAgendaLoading(true);
+      setAgendaError(false);
+      try {
+        const [local, googleResponse] = await Promise.all([
+          getCloudEvents(),
+          fetch("/api/google/events", { cache: "no-store" }),
+        ]);
+        if (!googleResponse.ok) throw new Error("Agenda externa indisponível");
+        const google: { connected: boolean; events?: Array<{ id: string | null; title: string; start: string | null; status?: string | null }> } = await googleResponse.json();
+        const now = Date.now();
+        const combined: HomeEvent[] = [
+          ...local.map((event) => ({ id: event.id, title: event.title, start: event.startsAt, source: "MYRYRA" as const })),
+          ...(google.connected ? (google.events ?? []).filter((event) => event.start && event.status !== "cancelled").map((event, index) => ({ id: event.id ?? `google-${index}`, title: event.title, start: event.start!, source: "Google" as const })) : []),
+        ];
+        const next = combined.filter((event) => {
+          const time = new Date(event.start).getTime();
+          return Number.isFinite(time) && time >= now;
+        }).sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()).slice(0, 3);
+        if (!cancelled) setUpcoming(next);
+      } catch {
+        if (!cancelled) setAgendaError(true);
+      } finally {
+        if (!cancelled) setAgendaLoading(false);
+      }
+    }
+    void loadAgenda();
+    return () => { cancelled = true; };
   }, [activeModule]);
 
   useEffect(() => {
@@ -139,6 +178,26 @@ export default function VyraHome() {
         </section>
       )}
       <WhatNowCard />
+
+      <section className="rounded-2xl border border-white/10 bg-slate-900/60 p-4 sm:p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-white">Próximos compromissos</h2>
+            <p className="mt-1 text-xs text-slate-400">Sua agenda em poucas linhas</p>
+          </div>
+          <button type="button" onClick={() => navigateTo("vyra-calendar")}
+            className="shrink-0 rounded-lg border border-violet-500/30 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">Ver agenda</button>
+        </div>
+        {agendaLoading ? <p className="mt-4 text-sm text-slate-400">Consultando agenda...</p> : agendaError ?
+          <p role="status" className="mt-4 text-sm text-amber-300">Não foi possível carregar o resumo da agenda.</p> : upcoming.length === 0 ?
+          <p className="mt-4 text-sm text-slate-400">Nenhum próximo compromisso encontrado.</p> :
+          <ol className="mt-4 space-y-2">{upcoming.map((event) => (
+            <li key={`${event.source}-${event.id}`} className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-white/5 bg-slate-950/60 px-3 py-3">
+              <span className="min-w-0 truncate text-sm font-medium text-white" title={event.title}>{event.title}</span>
+              <span className="shrink-0 text-right text-xs text-slate-400">{new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(event.start))}<span className="block text-violet-300">{event.source}</span></span>
+            </li>
+          ))}</ol>}
+      </section>
 
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-3">
