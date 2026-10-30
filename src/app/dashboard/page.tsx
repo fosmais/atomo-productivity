@@ -10,6 +10,7 @@ import WhatNow from "./what-now";
 import FocusMode from "./focus-mode";
 import QuickCapture from "./quick-capture";
 import DailyBriefing from "./daily-briefing";
+import WeeklyIntelligence from "./weekly-intelligence";
 import AvailabilityPanel from "./availability-panel";
 import { LogoutButton } from "./logout-button";
 import PlanningSettings from "./planning-settings";
@@ -121,6 +122,7 @@ async function DashboardContent() {
         title="Sua evolução em números."
         description="Acompanhe suas conquistas, identifique oportunidades de melhoria e tome decisões com base em dados reais."
       >
+        <WeeklyIntelligence />
         <PerformanceInsights />
       </VyraSection>
 </VyraModule>
