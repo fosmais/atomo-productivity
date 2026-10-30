@@ -133,6 +133,14 @@ if (!rateLimit.allowed) {
   );
 }
 
+    const mediaType = (request.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+    if (mediaType !== "application/json") {
+      return NextResponse.json({ error: "Envie JSON." }, { status: 415 });
+    }
+    const length = Number(request.headers.get("content-length"));
+    if (Number.isFinite(length) && length > 32768) {
+      return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+    }
     const body: unknown = await request.json();
 
     if (
