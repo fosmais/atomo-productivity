@@ -141,7 +141,30 @@ if (!rateLimit.allowed) {
     if (Number.isFinite(length) && length > 32768) {
       return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
     }
-    const body: unknown = await request.json();
+    let body: unknown;
+    try {
+      const reader = request.body?.getReader();
+      if (!reader) {
+        return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
+      }
+      const decoder = new TextDecoder();
+      const chunks: string[] = [];
+      let bytes = 0;
+      while (true) {
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        bytes += chunk.value.byteLength;
+        if (bytes > 32768) {
+          await reader.cancel();
+          return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+        }
+        chunks.push(decoder.decode(chunk.value, { stream: true }));
+      }
+      chunks.push(decoder.decode());
+      body = JSON.parse(chunks.join(""));
+    } catch {
+      return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
+    }
 
     if (
       typeof body !== "object" ||
