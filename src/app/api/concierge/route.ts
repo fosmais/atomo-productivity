@@ -753,6 +753,15 @@ if (!rateLimit.allowed) {
   } catch (error) {
     console.error("Erro no chat do Concierge:", error);
 
+    // Fail closed when rate limiting is unavailable, but return an actionable
+    // service-unavailable status instead of misclassifying it as a server bug.
+    if (error instanceof Error && error.message === "Rate limiting não configurado.") {
+      return NextResponse.json(
+        { error: "Assistente temporariamente indisponível. Tente novamente em instantes." },
+        { status: 503, headers: { "Retry-After": "60" } }
+      );
+    }
+
     return NextResponse.json(
       { error: "Não foi possível responder à mensagem." },
       { status: 500 }
