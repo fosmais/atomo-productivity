@@ -3,11 +3,13 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getCloudPlans } from "@/lib/plan-cloud";
 import { getCloudEvents } from "@/lib/event-cloud";
+import { useVyraNavigation } from "./vyra-module-context";
 
 type Item = { id: string; kind: "task" | "event"; title: string };
 type Favorite = { id: string; task_id: string | null; event_id: string | null };
 
 export default function FavoritesPanel() {
+  const { navigateTo, navigateToTask } = useVyraNavigation();
   const [items, setItems] = useState<Item[]>([]);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [showAll, setShowAll] = useState(false);
