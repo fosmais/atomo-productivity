@@ -96,8 +96,8 @@ export default function FavoritesPanel() {
       {error && <p role="alert" className="mt-3 text-rose-300">{error}</p>}
       {loading && <p role="status" className="mt-3 text-sm text-slate-400">Carregando favoritos...</p>}
       {!loading && items.length === 0 && !error && <p className="mt-3 text-sm text-slate-400">Crie uma tarefa ou compromisso para começar.</p>}
-      {items.length > 0 && !showAll && !items.some(item => find(item)) && <p className="mt-3 text-sm text-slate-400">Nenhum favorito ainda. Clique em Escolher favoritos.</p>}
-      <ul className="mt-3 max-h-72 space-y-2 overflow-y-auto">
+      {!loading && items.length > 0 && !showAll && !items.some(item => find(item)) && <p className="mt-3 text-sm text-slate-400">Nenhum favorito ainda. Clique em Escolher favoritos.</p>}
+      <ul aria-label={showAll ? "Selecionar favoritos" : "Itens favoritos"} className="mt-3 max-h-72 space-y-2 overflow-y-auto">
         {items.filter(item => showAll || find(item)).map(item => (
           <li key={item.kind + item.id} className="flex items-center justify-between gap-3 rounded-lg bg-slate-950 p-3">
             <button type="button" onClick={() => item.kind === "task" ? navigateToTask?.(item.id) : navigateTo("vyra-calendar")} className="min-w-0 truncate text-left text-sm">
