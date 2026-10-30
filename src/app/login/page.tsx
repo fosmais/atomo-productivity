@@ -116,7 +116,7 @@ export default function LoginPage() {
     setIsError(false);
     try {
       const result = await createClient().auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/auth/confirm`,
+        redirectTo: `${window.location.origin}/auth/recovery-callback`,
       });
       if (result.error) throw result.error;
       setMessage("Se este e-mail estiver cadastrado, você receberá instruções para redefinir sua senha.");
