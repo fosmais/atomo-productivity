@@ -91,10 +91,22 @@ export async function POST(request: Request) {
   let body: unknown;
 
   try {
-    const rawBody = await new Response(request.body).text();
-    if (new TextEncoder().encode(rawBody).length > 32768) {
-      return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+    const reader = request.body?.getReader();
+    if (!reader) throw new Error("Corpo ausente");
+    const decoder = new TextDecoder("utf-8", { fatal: true });
+    let rawBody = "";
+    let bytes = 0;
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      bytes += chunk.value.byteLength;
+      if (bytes > 32768) {
+        await reader.cancel();
+        return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+      }
+      rawBody += decoder.decode(chunk.value, { stream: true });
     }
+    rawBody += decoder.decode();
     body = JSON.parse(rawBody);
   } catch {
     return NextResponse.json(
