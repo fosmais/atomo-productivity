@@ -125,12 +125,6 @@ export default function VyraHome() {
 
   const progress = metrics ? getCompletionRate(metrics) : 0;
 
-  const cards = [
-    { label: "Pendentes", value: metrics?.pending, symbol: "◷" },
-    { label: "Concluídas", value: metrics?.completed, symbol: "✓" },
-    { label: "Atrasadas", value: metrics?.overdue, symbol: "!" },
-    { label: "Progresso", value: metrics ? `${progress}%` : undefined, symbol: "◈" },
-  ];
 
   return (
     <section className="space-y-6">
@@ -179,85 +173,52 @@ export default function VyraHome() {
           </div>
         </section>
       )}
-      <section className="rounded-2xl border border-white/10 bg-slate-900/60 p-4 sm:p-5">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold text-white">Próximos compromissos</h2>
-            <p className="mt-1 text-xs text-slate-400">Sua agenda em poucas linhas</p>
-          </div>
-          <button type="button" onClick={() => navigateTo("vyra-calendar")}
-            className="shrink-0 rounded-lg border border-violet-500/30 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">Ver agenda</button>
-        </div>
-        {agendaLoading ? <p className="mt-4 text-sm text-slate-400">Consultando agenda...</p> : agendaError ?
-          <p role="status" className="mt-4 text-sm text-amber-300">Não foi possível carregar o resumo da agenda.</p> : upcoming.length === 0 ?
-          <p className="mt-4 text-sm text-slate-400">Nenhum próximo compromisso encontrado.</p> :
-          <ol className="mt-4 space-y-2">{upcoming.map((event) => (
-            <li key={`${event.source}-${event.id}`} className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-white/5 bg-slate-950/60 px-3 py-3">
-              <span className="min-w-0 truncate text-sm font-medium text-white" title={event.title}>{event.title}</span>
-              <span className="shrink-0 text-right text-xs text-slate-400">{new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(event.start))}<span className="block text-violet-300">{event.source}</span></span>
-            </li>
-          ))}</ol>}
-      </section>
-
-      <div className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold text-white">
-            Visão geral
-          </h2>
-          <span className="text-xs text-slate-500">
-            Suas tarefas
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-          {cards.map((card) => (
-            <div
-              key={card.label}
-              className="min-w-0 rounded-2xl border border-white/10 bg-slate-900/60 p-4 transition-colors hover:border-violet-500/30"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-medium text-slate-400">
-                  {card.label}
-                </span>
-                <span
-                  className="text-base text-violet-400"
-                  aria-hidden="true"
-                >
-                  {card.symbol}
-                </span>
-              </div>
-
-              <p className="mt-2 text-2xl font-semibold tracking-tight text-white tabular-nums md:text-3xl">
-                {loading ? (
-                  <span
-                    className="block h-8 w-14 animate-pulse rounded-lg bg-slate-700/60"
-                    role="status"
-                    aria-label="Carregando indicador"
-                  />
-                ) : (
-                  card.value ?? "—"
-                )}
-              </p>
-
-              {card.label === "Progresso" && (
-                <div
-                  role="progressbar"
-                  aria-label="Progresso das tarefas"
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={metrics ? progress : undefined}
-                  className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-800"
-                >
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-400 transition-all duration-700"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              )}
+      <section className="grid gap-3 lg:grid-cols-2" aria-label="Resumo do dia">
+        <div className="min-w-0 rounded-2xl border border-white/10 bg-slate-900/45 p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-white">Próximo compromisso</h2>
+              <p className="mt-1 text-xs text-slate-400">O que vem a seguir na sua agenda</p>
             </div>
-          ))}
+            <button type="button" onClick={() => navigateTo("vyra-calendar")}
+              className="shrink-0 text-xs font-semibold text-violet-300 hover:text-white focus-visible:outline-2 focus-visible:outline-violet-400">Ver agenda →</button>
+          </div>
+          {agendaLoading ? <p role="status" className="mt-5 text-sm text-slate-400">Consultando agenda...</p>
+            : agendaError ? <p role="status" className="mt-5 text-sm text-amber-300">Agenda temporariamente indisponível.</p>
+            : upcoming.length === 0 ? <p className="mt-5 text-sm text-slate-400">Nenhum próximo compromisso encontrado.</p>
+            : <div className="mt-4 flex min-w-0 items-center justify-between gap-3 rounded-xl bg-white/[0.035] px-3 py-3">
+                <span className="min-w-0 truncate text-sm font-medium text-white" title={upcoming[0].title}>{upcoming[0].title}</span>
+                <span className="shrink-0 text-right text-xs text-slate-400">{new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(upcoming[0].start))}<span className="block text-violet-300">{upcoming[0].source}</span></span>
+              </div>}
+          {upcoming.length > 1 && !agendaLoading && !agendaError && (
+            <p className="mt-2 text-xs text-slate-500">Mais {upcoming.length - 1} compromisso(s) na sequência</p>
+          )}
         </div>
-      </div>
+        <div className="min-w-0 rounded-2xl border border-white/10 bg-slate-900/45 p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-white">Seu progresso</h2>
+              <p className="mt-1 text-xs text-slate-400">Um resumo sem distrações</p>
+            </div>
+            <button type="button" onClick={() => navigateTo("vyra-performance")}
+              className="shrink-0 text-xs font-semibold text-violet-300 hover:text-white focus-visible:outline-2 focus-visible:outline-violet-400">Detalhes →</button>
+          </div>
+          <div className="mt-4 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-3xl font-semibold tabular-nums text-white">{loading ? "…" : metrics ? `${progress}%` : "—"}</p>
+              <p className="mt-1 text-xs text-slate-400">Tarefas concluídas</p>
+            </div>
+            <div className="text-right text-xs text-slate-400">
+              <p><span className="font-semibold text-slate-200">{metrics?.pending ?? "—"}</span> pendentes</p>
+              <p className="mt-1"><span className="font-semibold text-slate-200">{metrics?.overdue ?? "—"}</span> atrasadas</p>
+            </div>
+          </div>
+          <div role="progressbar" aria-label="Progresso das tarefas" aria-valuemin={0} aria-valuemax={100}
+            aria-valuenow={metrics ? progress : undefined} className="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-800">
+            <div className="h-full rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-400 transition-all duration-700" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+      </section>
 
       <section className="space-y-3" aria-label="Ferramentas principais">
         <div className="flex items-center justify-between gap-3">
