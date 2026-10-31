@@ -83,6 +83,11 @@ export async function POST(request: Request) {
     );
   }
 
+  const declaredLength = request.headers.get("content-length");
+  if (declaredLength !== null && /^\d+$/.test(declaredLength) && Number(declaredLength) > 32768) {
+    return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+  }
+
   let body: unknown;
 
   try {
