@@ -9,6 +9,7 @@ import DailyCopilot from "./daily-copilot";
 import WhatNow from "./what-now";
 import FocusMode from "./focus-mode";
 import QuickCapture from "./quick-capture";
+import GlobalSearch from "./global-search";
 import DailyBriefing from "./daily-briefing";
 import MyDay from "./my-day";
 import SmartReplan from "./smart-replan";
@@ -62,6 +63,7 @@ async function DashboardContent() {
       <VyraWorkspace>
       <VyraHome />
       <FirstSteps userId={user.id} />
+      <GlobalSearch />
 
         <div className="min-w-0 space-y-6">
 
