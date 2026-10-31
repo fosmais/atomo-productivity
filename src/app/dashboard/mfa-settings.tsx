@@ -42,6 +42,26 @@ export default function MfaSettings() {
     }
   }
 
+  async function cancelEnrollment() {
+    if (busy || !factorId) return;
+    setBusy(true);
+    setError("");
+    try {
+      const supabase = createClient();
+      const result = await supabase.auth.mfa.unenroll({ factorId });
+      if (result.error) throw result.error;
+      setFactorId("");
+      setQr("");
+      setSecret("");
+      setCode("");
+      setMessage("Cadastro do autenticador cancelado.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível cancelar o cadastro.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function confirm() {
     if (busy || !factorId || !/^\d{6}$/.test(code)) return;
     setBusy(true);
@@ -80,7 +100,10 @@ export default function MfaSettings() {
           <details className="text-sm text-slate-300"><summary>Não consegue escanear? Mostrar chave manual</summary><code className="mt-2 block break-all select-all rounded bg-slate-950 p-2">{secret}</code></details>
           <label htmlFor="totp-enroll-code" className="block text-sm">Código de verificação</label>
           <input id="totp-enroll-code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} className="w-full max-w-xs rounded-xl border border-slate-700 bg-slate-950 p-3 text-white" />
-          <button type="button" disabled={busy || code.length !== 6} onClick={() => void confirm()} className="block rounded-xl bg-violet-600 px-4 py-2 font-semibold text-white disabled:opacity-50">Ativar 2FA</button>
+          <div className="flex flex-wrap gap-3">
+            <button type="button" disabled={busy || code.length !== 6} onClick={() => void confirm()} className="rounded-xl bg-violet-600 px-4 py-2 font-semibold text-white disabled:opacity-50">Ativar 2FA</button>
+            <button type="button" disabled={busy} onClick={() => void cancelEnrollment()} className="rounded-xl border border-slate-600 px-4 py-2 text-sm font-medium text-slate-200 disabled:opacity-50">Cancelar cadastro</button>
+          </div>
           <p className="text-xs text-amber-200">Guarde os dois autenticadores em dispositivos seguros. Perder todos os fatores pode bloquear o acesso; recuperação assistida ainda não está disponível.</p>
         </div>
       )}
