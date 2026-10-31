@@ -32,7 +32,7 @@ import VyraWorkspace from "./vyra-workspace";
 import VyraModule from "./vyra-module";
 import VyraHome from "./vyra-home";
 import VyraSection from "./vyra-section";
-import { FeatureAccordion, AccordionControls } from "./feature-accordion";
+import { FeatureAccordion } from "./feature-accordion";
 
 async function DashboardContent() {
   await connection();
@@ -63,7 +63,7 @@ async function DashboardContent() {
       <FirstSteps userId={user.id} />
 
         <div className="min-w-0 space-y-6">
-          <AccordionControls />
+
 
 
 
@@ -85,7 +85,12 @@ async function DashboardContent() {
           description="Seu planejamento organizado por contexto. Abra apenas a ferramenta de que precisa."
         >
           <div className="min-w-0 space-y-6">
-            <div className="min-w-0 rounded-3xl border border-violet-400/20 bg-gradient-to-br from-violet-950/35 via-slate-900/70 to-slate-950/80 p-4 shadow-[0_18px_50px_rgba(49,20,100,0.14)] sm:p-6">
+            <nav aria-label="Acesso rápido ao Planner" className="flex flex-wrap gap-2">
+              <a href="#planner-today" className="rounded-full border border-violet-400/40 bg-violet-500/15 px-4 py-2 text-sm font-medium text-violet-100 transition hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">Meu dia</a>
+              <a href="#planner-focus" className="rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-violet-400/40 hover:text-white focus-visible:outline-2 focus-visible:outline-violet-400">Foco e rotina</a>
+              <a href="#planner-intelligence" className="rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-violet-400/40 hover:text-white focus-visible:outline-2 focus-visible:outline-violet-400">Planejamento inteligente</a>
+            </nav>
+            <div id="planner-today" className="min-w-0 scroll-mt-6 rounded-3xl border border-violet-400/20 bg-gradient-to-br from-violet-950/35 via-slate-900/70 to-slate-950/80 p-4 shadow-[0_18px_50px_rgba(49,20,100,0.14)] sm:p-6">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">Seu ponto de partida</p>
@@ -97,7 +102,7 @@ async function DashboardContent() {
               <div className="min-w-0 rounded-2xl border border-violet-400/20 bg-slate-950/55 p-4 sm:p-6" aria-label="Prioridades e compromissos de hoje"><MyDay /></div>
             </div>
             <div className="grid min-w-0 gap-5 xl:grid-cols-2">
-              <section className="min-w-0 space-y-3" aria-label="Foco e rotina">
+              <section id="planner-focus" className="min-w-0 scroll-mt-6 space-y-3" aria-label="Foco e rotina">
                 <div className="px-1 pb-1">
                   <h3 className="text-base font-semibold text-white">Foco e rotina</h3>
                   <p className="mt-1 text-sm text-slate-400">Saiba o que fazer agora e mantenha o ritmo.</p>
@@ -106,7 +111,7 @@ async function DashboardContent() {
                 <FeatureAccordion id="what-now" title="What Now?" description="Sua próxima ação recomendada" userId={user.id}><WhatNow /></FeatureAccordion>
                 <FeatureAccordion id="focus" title="Focus Mode" description="Sessões para manter a concentração" userId={user.id}><FocusMode /></FeatureAccordion>
               </section>
-              <section className="min-w-0 space-y-3" aria-label="Inteligência e planejamento">
+              <section id="planner-intelligence" className="min-w-0 scroll-mt-6 space-y-3" aria-label="Inteligência e planejamento">
                 <div className="px-1 pb-1">
                   <h3 className="text-base font-semibold text-white">Inteligência e planejamento</h3>
                   <p className="mt-1 text-sm text-slate-400">Ajuste seus planos com o apoio da MYRYRA.</p>
