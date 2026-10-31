@@ -1,4 +1,5 @@
 "use client";
+import FeatureHint from "./feature-hint";
 
 import { useCallback, useEffect, useState } from "react";
 import { getCloudPlans } from "@/lib/plan-cloud";
@@ -72,7 +73,7 @@ export default function DailyBriefing() {
     <section className="rounded-2xl border border-violet-500/30 bg-slate-900 p-5 text-white" aria-label="Resumo do dia">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-violet-400">MYRYRA · DAILY BRIEFING</p>
+          <FeatureHint label="MYRYRA · DAILY BRIEFING" title="Resumo do seu dia" description="Reúne tarefas e compromissos para você começar o dia com clareza." tip="Confira as prioridades antes de iniciar." />
           <h3 className="mt-1 text-xl font-semibold">Seu dia em perspectiva.</h3>
         </div>
         <button type="button" onClick={() => void load()} disabled={loading}
