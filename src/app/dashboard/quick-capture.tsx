@@ -15,9 +15,9 @@ function localDate(offsetDays: number): string {
 }
 
 function extractDate(title: string): { title: string; dueDate: string | null } {
-  const relative = /\b(hoje|amanhã|amanha)\b/i.exec(title);
+  const relative = /(^|[\s,;])(hoje|amanhã|amanha)(?=$|[\s,;.!?])/i.exec(title);
   if (relative) {
-    return { title: title.replace(relative[0], "").replace(/\s+/g, " ").trim().replace(/[,.]$/, ""), dueDate: localDate(/^hoje$/i.test(relative[0]) ? 0 : 1) };
+    return { title: title.replace(relative[0], relative[1] || "").replace(/\s+/g, " ").trim().replace(/[,.]$/, ""), dueDate: localDate(/^hoje$/i.test(relative[2]) ? 0 : 1) };
   }
   const explicit = /\b(\d{2})\/(\d{2})\/(\d{4})\b/.exec(title);
   if (explicit) {
