@@ -65,7 +65,7 @@ export default function QuickCapture() {
     if (savingRef.current) return;
     const startTime = new Date(eventStart).getTime();
     const endTime = new Date(eventEnd).getTime();
-    if (!input.trim() || input.trim().length > 200 || !eventStart || !eventEnd || !Number.isFinite(startTime) || !Number.isFinite(endTime) || endTime <= startTime) {
+    if (!input.trim() || !/[\p{L}\p{N}]/u.test(input) || input.trim().length > 200 || !eventStart || !eventEnd || !Number.isFinite(startTime) || !Number.isFinite(endTime) || endTime <= startTime) {
       setError("Informe título, início e término válidos para o compromisso.");
       return;
     }
