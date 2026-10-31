@@ -1,6 +1,4 @@
-export const dynamic = "force-dynamic";
-
-import { NextResponse } from "next/server";
+import { NextResponse, connection } from "next/server";
 import { google } from "googleapis";
 import { createClient } from "@/lib/supabase/server";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
@@ -8,6 +6,7 @@ import { createGoogleOAuthClient } from "@/lib/google-calendar";
 import { decryptGoogleToken, encryptGoogleToken } from "@/lib/google-token-crypto";
 
 export async function GET() {
+  await connection();
   const supabase = await createClient();
 
   const {
