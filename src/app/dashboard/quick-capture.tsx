@@ -99,7 +99,11 @@ export default function QuickCapture() {
   }
 
   async function confirm() {
-    const selected = drafts.filter((draft) => draft.selected && draft.title.trim());
+    const selected = drafts.filter((draft) => draft.selected);
+    if (selected.some((draft) => !draft.title.trim() || draft.title.trim().length > 200 || !/[\p{L}\p{N}]/u.test(draft.title))) {
+      setError("Revise os títulos selecionados: cada tarefa precisa conter letras ou números.");
+      return;
+    }
     if (!selected.length || savingRef.current) return;
     savingRef.current = true;
     setSaving(true);
@@ -164,7 +168,7 @@ export default function QuickCapture() {
               </select>
             </div>
           ))}
-          <button type="button" disabled={saving || !drafts.some((draft) => draft.selected && draft.title.trim())}
+          <button type="button" disabled={saving || !drafts.some((draft) => draft.selected)}
             onClick={() => void confirm()}
             className="rounded-xl bg-violet-600 px-5 py-3 font-semibold text-white hover:bg-violet-500 disabled:opacity-50">
             {saving ? "Salvando..." : "Confirmar e salvar selecionadas"}
