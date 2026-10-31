@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function MfaSettings() {
@@ -11,6 +11,24 @@ export default function MfaSettings() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [devices, setDevices] = useState<string[]>([]);
+  const [devicesLoading, setDevicesLoading] = useState(true);
+  async function refreshDevices() {
+    const result = await createClient().auth.mfa.listFactors();
+    if (result.error) throw result.error;
+    setDevices(result.data.totp.filter(f => f.status === "verified").map(f => f.friendly_name || "Autenticador"));
+  }
+  useEffect(() => {
+    let active = true;
+    createClient().auth.mfa.listFactors().then(result => {
+      if (!active) return;
+      if (result.error) setError("Não foi possível consultar os autenticadores.");
+      else setDevices(result.data.totp.filter(f => f.status === "verified").map(f => f.friendly_name || "Autenticador"));
+    }).catch(() => { if (active) setError("Não foi possível consultar os autenticadores."); })
+      .finally(() => { if (active) setDevicesLoading(false); });
+    return () => { active = false; };
+  }, []);
+
 
   async function begin() {
     if (busy) return;
@@ -76,6 +94,7 @@ export default function MfaSettings() {
       setQr("");
       setSecret("");
       setCode("");
+      await refreshDevices();
       setMessage("Autenticador verificado e ativado com sucesso.");
     } catch (err) {
       setCode("");
@@ -89,6 +108,15 @@ export default function MfaSettings() {
     <section className="mb-6 rounded-2xl border border-violet-500/30 bg-slate-900 p-5" aria-label="Segurança da conta">
       <h3 className="text-lg font-semibold text-white">Segurança · Autenticação em duas etapas</h3>
       <p className="mt-2 text-sm text-slate-300">Proteja sua conta com um código gerado pelo aplicativo autenticador. Se já utiliza 2FA, cadastre um segundo dispositivo para reduzir o risco de perder o acesso.</p>
+      <div className="mt-4 rounded-xl border border-slate-700 bg-slate-950/60 p-3">
+        <h4 className="text-sm font-semibold text-slate-100">Autenticadores verificados</h4>
+        {devicesLoading ? <p className="mt-2 text-xs text-slate-400">Consultando...</p> :
+          devices.length === 0 ? <p className="mt-2 text-xs text-amber-200">Nenhum dispositivo verificado.</p> :
+          <ul className="mt-2 space-y-2">{devices.map((name, index) =>
+            <li key={index} className="flex justify-between gap-2 text-sm text-slate-200"><span>{name}</span><span className="text-emerald-300">Ativo</span></li>
+          )}</ul>}
+        {devices.length === 1 && <p className="mt-2 text-xs text-amber-200">Cadastre um segundo autenticador para reduzir o risco de perder o acesso.</p>}
+      </div>
       {!factorId ? (
         <button type="button" disabled={busy} onClick={() => void begin()} className="mt-4 rounded-xl bg-violet-600 px-4 py-2 font-semibold text-white disabled:opacity-50">
           {busy ? "Aguarde..." : "Adicionar autenticador"}
