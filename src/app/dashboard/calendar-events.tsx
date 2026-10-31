@@ -247,6 +247,18 @@ export default function CalendarEvents() {
     return { key, date, items };
   });
   const calendarPeriod = anchor.toLocaleDateString("pt-BR", calendarView === "month" ? { month: "long", year: "numeric" } : { day: "numeric", month: "long", year: "numeric" });
+  function startEventOnDay(key: string) {
+    const day = new Date(`${key}T09:00:00`);
+    if (Number.isNaN(day.getTime())) return;
+    const end = new Date(day.getTime() + 60 * 60 * 1000);
+    const localValue = (value: Date) => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}T${String(value.getHours()).padStart(2, "0")}:${String(value.getMinutes()).padStart(2, "0")}`;
+    setStartsAt(localValue(day));
+    setEndsAt(localValue(end));
+    setShowForm(true);
+    setSelectedDay(key);
+    window.requestAnimationFrame(() => document.getElementById("myryra-calendar-event-form")?.scrollIntoView({ behavior: "smooth", block: "center" }));
+  }
+
   const filteredGoogle = googleEvents.filter((event) => inPeriod(event.start))
     .sort((a, b) => (a.start ?? "").localeCompare(b.start ?? ""));
   const filteredLocal = events.filter((event) => inPeriod(event.startsAt))
@@ -285,7 +297,10 @@ export default function CalendarEvents() {
             {items.length > (calendarView === "month" ? 2 : 3) && <span className="mt-1 block text-xs text-slate-400">+{items.length - (calendarView === "month" ? 2 : 3)} eventos</span>}
           </button>)}
         </div>
-        {selectedDay && <button type="button" onClick={() => setSelectedDay(null)} className="mt-3 text-xs font-medium text-violet-300 underline">Limpar filtro do dia selecionado</button>}
+        {selectedDay && <div className="mt-3 flex flex-wrap items-center gap-3">
+          <button type="button" onClick={() => startEventOnDay(selectedDay)} className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500">+ Criar evento neste dia</button>
+          <button type="button" onClick={() => setSelectedDay(null)} className="text-xs font-medium text-violet-300 underline">Limpar filtro do dia selecionado</button>
+        </div>}
       </div>
 
       <button type="button" onClick={() => setShowForm((value) => !value)}
@@ -293,7 +308,7 @@ export default function CalendarEvents() {
         className="mt-4 rounded-xl border border-violet-500/40 px-4 py-2 text-sm font-semibold text-violet-200 hover:bg-violet-500/10">
         {showForm ? "Fechar formulário" : "+ Novo compromisso"}
       </button>
-      {showForm && <div className="mt-4 rounded-xl border border-slate-700 p-4">
+      {showForm && <div id="myryra-calendar-event-form" className="mt-4 scroll-mt-8 rounded-xl border border-slate-700 p-4">
       <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
         <input
           type="text"
