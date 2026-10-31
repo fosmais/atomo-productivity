@@ -247,6 +247,31 @@ export default function CalendarEvents() {
     return { key, date, items };
   });
   const calendarPeriod = anchor.toLocaleDateString("pt-BR", calendarView === "month" ? { month: "long", year: "numeric" } : { day: "numeric", month: "long", year: "numeric" });
+  function suggestFreeHours(key: string): number[] {
+    const busy = [
+      ...events.filter((event) => event.blocksTime && dateKey(event.startsAt) === key).map((event) => ({ start: event.startsAt, end: event.endsAt })),
+      ...googleEvents.filter((event) => dateKey(event.start) === key).map((event) => ({ start: event.start, end: event.end })),
+    ].filter((event) => event.start && event.end);
+    return [9, 10, 11, 13, 14, 15, 16, 17].filter((hour) => {
+      const slotStart = new Date(`${key}T${String(hour).padStart(2, "0")}:00:00`).getTime();
+      const slotEnd = slotStart + 60 * 60 * 1000;
+      return busy.every((event) => {
+        const start = new Date(event.start!).getTime();
+        const end = new Date(event.end!).getTime();
+        return !Number.isFinite(start) || !Number.isFinite(end) || slotEnd <= start || slotStart >= end;
+      });
+    });
+  }
+  function startEventAtHour(key: string, hour: number) {
+    const localValue = (value: Date) => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}T${String(value.getHours()).padStart(2, "0")}:${String(value.getMinutes()).padStart(2, "0")}`;
+    const start = new Date(`${key}T${String(hour).padStart(2, "0")}:00:00`);
+    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    setStartsAt(localValue(start));
+    setEndsAt(localValue(end));
+    setSelectedDay(key);
+    setShowForm(true);
+    window.requestAnimationFrame(() => document.getElementById("myryra-calendar-event-form")?.scrollIntoView({ behavior: "smooth", block: "center" }));
+  }
   function startEventOnDay(key: string) {
     const day = new Date(`${key}T09:00:00`);
     if (Number.isNaN(day.getTime())) return;
@@ -297,6 +322,13 @@ export default function CalendarEvents() {
             {items.length > (calendarView === "month" ? 2 : 3) && <span className="mt-1 block text-xs text-slate-400">+{items.length - (calendarView === "month" ? 2 : 3)} eventos</span>}
           </button>)}
         </div>
+        {selectedDay && <div className="mt-4 rounded-xl border border-violet-400/20 bg-violet-500/5 p-3">
+          <p className="text-sm font-semibold text-violet-100">Horários potencialmente livres · 1 hora</p>
+          <p className="mt-1 text-xs text-slate-400">Sugestões locais com base nos compromissos carregados. Não garantem disponibilidade e ainda não utilizam IA.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {suggestFreeHours(selectedDay).length ? suggestFreeHours(selectedDay).map((hour) => <button key={hour} type="button" onClick={() => startEventAtHour(selectedDay, hour)} className="rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-100 hover:bg-violet-500/25">{String(hour).padStart(2, "0")}:00</button>) : <span className="text-xs text-slate-400">Nenhum horário sugerido neste período.</span>}
+          </div>
+        </div>}
         {selectedDay && <div className="mt-3 flex flex-wrap items-center gap-3">
           <button type="button" onClick={() => startEventOnDay(selectedDay)} className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500">+ Criar evento neste dia</button>
           <button type="button" onClick={() => setSelectedDay(null)} className="text-xs font-medium text-violet-300 underline">Limpar filtro do dia selecionado</button>
