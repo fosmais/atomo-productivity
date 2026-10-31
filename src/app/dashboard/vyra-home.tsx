@@ -15,6 +15,7 @@ export default function VyraHome() {
   const [metrics, setMetrics] = useState<VyraMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showAllTools, setShowAllTools] = useState(false);
   const [upcoming, setUpcoming] = useState<HomeEvent[]>([]);
   const [agendaLoading, setAgendaLoading] = useState(true);
   const [agendaError, setAgendaError] = useState(false);
@@ -124,12 +125,6 @@ export default function VyraHome() {
 
   const progress = metrics ? getCompletionRate(metrics) : 0;
 
-  const cards = [
-    { label: "Pendentes", value: metrics?.pending, symbol: "◷" },
-    { label: "Concluídas", value: metrics?.completed, symbol: "✓" },
-    { label: "Atrasadas", value: metrics?.overdue, symbol: "!" },
-    { label: "Progresso", value: metrics ? `${progress}%` : undefined, symbol: "◈" },
-  ];
 
   return (
     <section className="space-y-6">
@@ -144,165 +139,107 @@ export default function VyraHome() {
           Priorize o que importa. A MYRYRA ajuda você a decidir o próximo passo.
         </p>
       </div>
-      {/* MYRYRA_GOOGLE_HOME_CARD */}
-      {googleStatus !== "connected" && (
-        <section className="rounded-2xl border border-violet-500/25 bg-gradient-to-r from-violet-950/40 to-slate-900/70 p-5 md:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-violet-400">
-                Integração Google Calendar
-              </p>
-              <h2 className="mt-2 text-lg font-semibold text-white">
-                {googleStatus === "error"
-                  ? "Verifique sua conexão com o Google Calendar"
-                  : "Sua agenda em sintonia com a MYRYRA"}
-              </h2>
-              <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-400">
-                {googleStatus === "error"
-                  ? "Não foi possível verificar sua integração. Você pode tentar novamente ou conectar sua agenda."
-                  : "Conecte seu Google Calendar para sincronizar compromissos e receber sugestões inteligentes da Myka."}
-              </p>
-            </div>
-
-            <a
-              href="/api/google/connect"
-              className="inline-flex shrink-0 items-center justify-center rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400"
-            >
-              {googleStatus === "loading"
-                ? "Conectar Google Calendar"
-                : googleStatus === "error"
-                  ? "Conectar ou reconectar"
-                  : "Conectar Google Calendar"}
-            </a>
+      <WhatNowCard />
+      {googleStatus === "disconnected" && (
+        <section className="flex flex-col gap-3 rounded-2xl border border-violet-500/20 bg-slate-900/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-white">Conecte sua agenda Google</h2>
+            <p className="mt-1 text-xs text-slate-400">Sincronize seus compromissos para receber sugestões mais completas.</p>
           </div>
+          <a href="/api/google/connect" className="shrink-0 rounded-xl bg-violet-600 px-4 py-2 text-center text-xs font-semibold text-white hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-violet-400">Conectar calendário</a>
         </section>
       )}
-      <WhatNowCard />
-
-      <section className="rounded-2xl border border-white/10 bg-slate-900/60 p-4 sm:p-5">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold text-white">Próximos compromissos</h2>
-            <p className="mt-1 text-xs text-slate-400">Sua agenda em poucas linhas</p>
+      <section className="grid gap-3 lg:grid-cols-2" aria-label="Resumo do dia">
+        <div className="min-w-0 rounded-2xl border border-white/10 bg-slate-900/45 p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-white">Próximo compromisso</h2>
+              <p className="mt-1 text-xs text-slate-400">O que vem a seguir na sua agenda</p>
+            </div>
+            <button type="button" onClick={() => navigateTo("vyra-calendar")}
+              className="shrink-0 text-xs font-semibold text-violet-300 hover:text-white focus-visible:outline-2 focus-visible:outline-violet-400">Ver agenda →</button>
           </div>
-          <button type="button" onClick={() => navigateTo("vyra-calendar")}
-            className="shrink-0 rounded-lg border border-violet-500/30 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">Ver agenda</button>
+          {agendaLoading ? <p role="status" className="mt-5 text-sm text-slate-400">Consultando agenda...</p>
+            : agendaError ? <p role="status" className="mt-5 text-sm text-amber-300">Agenda temporariamente indisponível.</p>
+            : upcoming.length === 0 ? <p className="mt-5 text-sm text-slate-400">Nenhum próximo compromisso encontrado.</p>
+            : <div className="mt-4 flex min-w-0 items-center justify-between gap-3 rounded-xl bg-white/[0.035] px-3 py-3">
+                <span className="min-w-0 truncate text-sm font-medium text-white" title={upcoming[0].title}>{upcoming[0].title}</span>
+                <span className="shrink-0 text-right text-xs text-slate-400">{new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(upcoming[0].start))}<span className="block text-violet-300">{upcoming[0].source}</span></span>
+              </div>}
+          {upcoming.length > 1 && !agendaLoading && !agendaError && (
+            <p className="mt-2 text-xs text-slate-500">Mais {upcoming.length - 1} compromisso(s) na sequência</p>
+          )}
         </div>
-        {agendaLoading ? <p className="mt-4 text-sm text-slate-400">Consultando agenda...</p> : agendaError ?
-          <p role="status" className="mt-4 text-sm text-amber-300">Não foi possível carregar o resumo da agenda.</p> : upcoming.length === 0 ?
-          <p className="mt-4 text-sm text-slate-400">Nenhum próximo compromisso encontrado.</p> :
-          <ol className="mt-4 space-y-2">{upcoming.map((event) => (
-            <li key={`${event.source}-${event.id}`} className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-white/5 bg-slate-950/60 px-3 py-3">
-              <span className="min-w-0 truncate text-sm font-medium text-white" title={event.title}>{event.title}</span>
-              <span className="shrink-0 text-right text-xs text-slate-400">{new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(event.start))}<span className="block text-violet-300">{event.source}</span></span>
-            </li>
-          ))}</ol>}
+        <div className="min-w-0 rounded-2xl border border-white/10 bg-slate-900/45 p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-white">Seu progresso</h2>
+              <p className="mt-1 text-xs text-slate-400">Um resumo sem distrações</p>
+            </div>
+            <button type="button" onClick={() => navigateTo("vyra-performance")}
+              className="shrink-0 text-xs font-semibold text-violet-300 hover:text-white focus-visible:outline-2 focus-visible:outline-violet-400">Detalhes →</button>
+          </div>
+          <div className="mt-4 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-3xl font-semibold tabular-nums text-white">{loading ? "…" : metrics ? `${progress}%` : "—"}</p>
+              <p className="mt-1 text-xs text-slate-400">Tarefas concluídas</p>
+            </div>
+            <div className="text-right text-xs text-slate-400">
+              <p><span className="font-semibold text-slate-200">{metrics?.pending ?? "—"}</span> pendentes</p>
+              <p className="mt-1"><span className="font-semibold text-slate-200">{metrics?.overdue ?? "—"}</span> atrasadas</p>
+            </div>
+          </div>
+          <div role="progressbar" aria-label="Progresso das tarefas" aria-valuemin={0} aria-valuemax={100}
+            aria-valuenow={metrics ? progress : undefined} className="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-800">
+            <div className="h-full rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-400 transition-all duration-700" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
       </section>
 
-      <div className="space-y-3">
+      <section className="space-y-3" aria-label="Ferramentas principais">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold text-white">
-            Visão geral
-          </h2>
-          <span className="text-xs text-slate-500">
-            Suas tarefas
-          </span>
+          <div>
+            <h2 className="text-sm font-semibold text-white">Seu espaço</h2>
+            <p className="mt-1 text-xs text-slate-400">Tudo o que você precisa, sem distrações.</p>
+          </div>
         </div>
-
-        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-          {cards.map((card) => (
-            <div
-              key={card.label}
-              className="min-w-0 rounded-2xl border border-white/10 bg-slate-900/60 p-4 transition-colors hover:border-violet-500/30"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-medium text-slate-400">
-                  {card.label}
-                </span>
-                <span
-                  className="text-base text-violet-400"
-                  aria-hidden="true"
-                >
-                  {card.symbol}
-                </span>
-              </div>
-
-              <p className="mt-2 text-2xl font-semibold tracking-tight text-white tabular-nums md:text-3xl">
-                {loading ? (
-                  <span
-                    className="block h-8 w-14 animate-pulse rounded-lg bg-slate-700/60"
-                    role="status"
-                    aria-label="Carregando indicador"
-                  />
-                ) : (
-                  card.value ?? "—"
-                )}
-              </p>
-
-              {card.label === "Progresso" && (
-                <div
-                  role="progressbar"
-                  aria-label="Progresso das tarefas"
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={metrics ? progress : undefined}
-                  className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-800"
-                >
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-400 transition-all duration-700"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <div>
-          <h2 className="text-sm font-semibold text-white">
-            Acesso rápido
-          </h2>
-          <p className="mt-1 text-xs text-slate-500">
-            Continue de onde parou
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3">
           {[
-            { label: "Myka AI", icon: "✦", id: "vyra-ai" },
-            { label: "Planner", icon: "◷", id: "vyra-planner" },
-            { label: "Tarefas", icon: "✓", id: "vyra-tasks" },
-            { label: "Agenda", icon: "▦", id: "vyra-calendar" },
+            { label: "Meu dia", detail: "Agenda e prioridades", icon: "▦", id: "vyra-planner" },
+            { label: "Minhas tarefas", detail: "Organize e acompanhe", icon: "✓", id: "vyra-tasks" },
+            { label: "Copiloto IA", detail: "Converse com a Myka", icon: "✦", id: "vyra-ai" },
+            { label: "Meu progresso", detail: "Resultados e evolução", icon: "◈", id: "vyra-performance" },
           ].map((action) => (
-            <button
-              key={action.id}
-              type="button"
-              onClick={() => {
-                navigateTo(action.id);
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-              className="group flex min-w-0 items-center justify-between gap-2 rounded-xl border border-white/10 bg-slate-900/40 px-4 py-3 text-left transition-colors hover:border-violet-500/40 hover:bg-violet-950/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400"
-            >
-              <span className="flex min-w-0 items-center gap-2">
-                <span className="text-lg text-violet-400" aria-hidden="true">
-                  {action.icon}
-                </span>
-                <span className="truncate text-xs font-medium text-slate-200">
-                  {action.label}
-                </span>
-              </span>
-              <span
-                className="text-xs text-slate-500 transition-transform group-hover:translate-x-0.5"
-                aria-hidden="true"
-              >
-                →
-              </span>
+            <button key={action.id} type="button"
+              onClick={() => navigateTo(action.id)}
+              className="group min-w-0 rounded-2xl border border-white/10 bg-slate-900/55 p-4 text-left transition-colors hover:border-violet-400/40 hover:bg-violet-950/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 sm:p-5">
+              <span className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/15 text-lg text-violet-300" aria-hidden="true">{action.icon}</span>
+              <span className="block text-sm font-semibold text-white">{action.label}</span>
+              <span className="mt-1 block text-xs text-slate-400">{action.detail}</span>
             </button>
           ))}
         </div>
-      </div>
+        <button type="button" aria-expanded={showAllTools} aria-controls="myryra-extra-tools"
+          onClick={() => setShowAllTools((value) => !value)}
+          className="flex w-full items-center justify-between rounded-xl px-2 py-3 text-left text-sm font-medium text-violet-300 transition hover:bg-violet-500/10 focus-visible:outline-2 focus-visible:outline-violet-400">
+          <span>{showAllTools ? "Ocultar ferramentas" : "Todas as ferramentas"}</span>
+          <span aria-hidden="true">{showAllTools ? "−" : "+"}</span>
+        </button>
+        {showAllTools && (
+          <div id="myryra-extra-tools" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {[
+              { label: "Calendário", id: "vyra-calendar" },
+              { label: "AutoPilot", id: "vyra-scheduling" },
+              { label: "Configurações", id: "vyra-settings" },
+            ].map((action) => (
+              <button key={action.id} type="button" onClick={() => navigateTo(action.id)}
+                className="rounded-xl border border-white/10 bg-slate-900/50 px-4 py-3 text-left text-xs font-medium text-slate-200 transition hover:border-violet-500/40 hover:text-white focus-visible:outline-2 focus-visible:outline-violet-400">
+                {action.label} <span aria-hidden="true" className="text-violet-400">→</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
 
       {error && (
         <p role="alert" className="text-sm text-red-400">

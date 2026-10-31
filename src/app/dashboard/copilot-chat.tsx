@@ -513,7 +513,7 @@ setConversationId(data.conversationId);
   }
 
   return (
-    <section className="rounded-2xl border border-violet-400/20 bg-gradient-to-b from-slate-900 to-slate-950 p-5 text-white shadow-xl shadow-violet-950/20 sm:p-7">
+    <section className="min-w-0 rounded-2xl border border-violet-400/20 bg-gradient-to-b from-slate-900 to-slate-950 p-3 text-white shadow-xl shadow-violet-950/20 sm:p-7">
       <div className="mb-4">
         <p className="text-sm font-semibold text-violet-400">
           Myka AI
@@ -530,7 +530,7 @@ setConversationId(data.conversationId);
       </div>
 
       <div
-        className="mb-5 min-h-[320px] max-h-[580px] space-y-5 overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/80 p-3 sm:p-5"
+        className="mb-4 min-h-[260px] max-h-[min(58dvh,580px)] space-y-4 overflow-x-hidden overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/80 p-2 sm:min-h-[320px] sm:p-5"
         aria-live="polite"
       >
         {historyLoading && (
@@ -552,22 +552,22 @@ setConversationId(data.conversationId);
 
         {messages.map((message, index) => (
           <div key={index} className="space-y-3">
-            <div className={message.role === "assistant" ? "flex items-start gap-3" : ""}>
+            <div className={message.role === "assistant" ? "flex min-w-0 items-start gap-2 sm:gap-3" : ""}>
               {message.role === "assistant" && (
-                <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-violet-400/40 bg-violet-950/70"><MykaPortrait className="h-10 w-10" /></span>
+                <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-violet-400/40 bg-violet-950/70 sm:h-10 sm:w-10"><MykaPortrait className="h-8 w-8 sm:h-10 sm:w-10" /></span>
               )}
               <div
                 className={
                   message.role === "user"
-                  ? "ml-auto max-w-[88%] rounded-2xl rounded-br-md border border-violet-400/20 bg-violet-700/80 p-4 shadow-md sm:max-w-[78%]"
-                  : "mr-auto max-w-[88%] rounded-2xl rounded-bl-md border border-white/10 bg-slate-800/90 p-4 shadow-md sm:max-w-[78%]"
+                  ? "ml-auto min-w-0 max-w-[94%] rounded-2xl rounded-br-md border border-violet-400/20 bg-violet-700/80 p-3 shadow-md sm:max-w-[78%] sm:p-4"
+                  : "mr-auto min-w-0 max-w-[calc(100%-2.5rem)] rounded-2xl rounded-bl-md border border-white/10 bg-slate-800/90 p-3 shadow-md sm:max-w-[78%] sm:p-4"
               }
             >
               <p className="mb-1 text-xs font-semibold">
                 {message.role === "user" ? "Você" : "Myka"}
               </p>
 
-              <p className="whitespace-pre-wrap text-sm leading-relaxed">
+              <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-sm leading-relaxed">
                 {message.content}
               </p>
             </div>
@@ -787,7 +787,7 @@ setConversationId(data.conversationId);
           </button>
         </div>
       )}
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <form onSubmit={handleSubmit} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_auto_auto] items-stretch gap-1.5 sm:flex sm:gap-2">
         <input
           type="text"
           value={input}
@@ -795,7 +795,7 @@ setConversationId(data.conversationId);
           maxLength={1500}
           placeholder="Pergunte algo à Myka..."
           aria-label="Mensagem para a Myka"
-          className="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-800/80 px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:ring-2 focus:ring-violet-500/20"
+          className="min-w-0 w-full flex-1 rounded-xl border border-white/10 bg-slate-800/80 px-3 py-3 text-base text-white outline-none transition focus:border-violet-400/60 focus:ring-2 focus:ring-violet-500/20 sm:px-4"
         />
 
 <input
@@ -811,7 +811,7 @@ setConversationId(data.conversationId);
 <button
   type="button"
   onClick={() => attachmentInputRef.current?.click()}
-  className="rounded-xl border border-violet-500 px-4 py-3 text-violet-200"
+  className="min-w-11 rounded-xl border border-violet-500 px-2 py-3 text-violet-200 sm:px-4"
   aria-label="Anexar arquivo"
 >
   📎
@@ -821,16 +821,16 @@ setConversationId(data.conversationId);
   type="button"
   onClick={startVoice}
   disabled={listening || loading}
-  className="rounded-xl border border-violet-500 px-4 py-3 text-violet-200 disabled:opacity-50"
+  className="min-w-11 rounded-xl border border-violet-500 px-2 py-3 text-violet-200 disabled:opacity-50 sm:px-4"
 >
-  {listening ? "🎙 Ouvindo..." : "🎙 Voz"}
+  <span className="sm:hidden" aria-label={listening ? "Ouvindo" : "Voz"}>🎙</span><span className="hidden sm:inline">{listening ? "🎙 Ouvindo..." : "🎙 Voz"}</span>
 </button>
         <button
           type="submit"
           disabled={loading || historyLoading || !!error || (!input.trim() && !attachment)}
-          className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-3 font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-w-11 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-2 py-3 font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:px-5"
         >
-          {loading ? "Enviando..." : "Enviar"}
+          <span className="sm:hidden" aria-label={loading ? "Enviando" : "Enviar"}>➤</span><span className="hidden sm:inline">{loading ? "Enviando..." : "Enviar"}</span>
         </button>
       </form>
 

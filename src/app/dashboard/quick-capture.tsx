@@ -3,6 +3,7 @@ import FeatureHint from "./feature-hint";
 
 import { useRef, useState } from "react";
 import { saveCloudPlan } from "@/lib/plan-cloud";
+import { saveCloudEvent } from "@/lib/event-cloud";
 
 type Draft = { id: string; title: string; priority: "Alta" | "Média" | "Normal"; selected: boolean; dueDate: string | null };
 
@@ -33,26 +34,59 @@ function extractDate(title: string): { title: string; dueDate: string | null } {
 
 function parseDrafts(text: string): Draft[] {
   const seen = new Set<string>();
-  return text.split(/[\n;]+/).map((part) => part.trim().replace(/^[\s\-•*\d.)]+/, "").trim())
-    .filter((title) => {
-      if (!title || title.length > 200) return false;
-      const key = title.toLocaleLowerCase("pt-BR");
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    }).slice(0, 10).map((title) => ({
-      id: crypto.randomUUID(), ...extractDate(title), priority: "Normal" as const, selected: true,
-    }));
+  const drafts: Draft[] = [];
+  for (const part of text.split(/[\n;]+/)) {
+    const rawTitle = part.trim().replace(/^(?:[-•*]\s+|\d+[.)]\s+)/, "").trim();
+    if (!rawTitle) continue;
+    const extracted = extractDate(rawTitle);
+    const title = extracted.title.trim();
+    if (!title || title.length > 200 || !/[\p{L}\p{N}]/u.test(title)) continue;
+    const key = `${title.toLocaleLowerCase("pt-BR")}|${extracted.dueDate ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    drafts.push({ id: crypto.randomUUID(), title, dueDate: extracted.dueDate, priority: "Normal", selected: true });
+    if (drafts.length === 10) break;
+  }
+  return drafts;
 }
 
 export default function QuickCapture() {
   const [input, setInput] = useState("");
+  const [captureType, setCaptureType] = useState<"task" | "event">("task");
+  const [eventStart, setEventStart] = useState("");
+  const [eventEnd, setEventEnd] = useState("");
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  async function saveQuickEvent() {
+    if (savingRef.current) return;
+    const startTime = new Date(eventStart).getTime();
+    const endTime = new Date(eventEnd).getTime();
+    if (!input.trim() || !/[\p{L}\p{N}]/u.test(input) || input.trim().length > 200 || !eventStart || !eventEnd || !Number.isFinite(startTime) || !Number.isFinite(endTime) || endTime <= startTime) {
+      setError("Informe título, início e término válidos para o compromisso.");
+      return;
+    }
+    savingRef.current = true;
+    setSaving(true);
+    setError("");
+    setSuccess("");
+    try {
+      await saveCloudEvent({ title: input.trim(), startsAt: eventStart, endsAt: eventEnd, eventType: "appointment", blocksTime: true });
+      window.dispatchEvent(new Event("myryra:events-updated"));
+      setInput("");
+      setEventStart("");
+      setEventEnd("");
+      setSuccess("Compromisso salvo na agenda MYRYRA.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível salvar o compromisso.");
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  }
   function prepare() {
     setError("");
     setSuccess("");
@@ -65,7 +99,11 @@ export default function QuickCapture() {
   }
 
   async function confirm() {
-    const selected = drafts.filter((draft) => draft.selected && draft.title.trim());
+    const selected = drafts.filter((draft) => draft.selected);
+    if (selected.some((draft) => !draft.title.trim() || draft.title.trim().length > 200 || !/[\p{L}\p{N}]/u.test(draft.title))) {
+      setError("Revise os títulos selecionados: cada tarefa precisa conter letras ou números.");
+      return;
+    }
     if (!selected.length || savingRef.current) return;
     savingRef.current = true;
     setSaving(true);
@@ -95,16 +133,24 @@ export default function QuickCapture() {
     <section className="rounded-2xl border border-violet-500/30 bg-slate-900 p-5 text-white" aria-label="Captura rápida">
       <FeatureHint label="MYRYRA · CAPTURA RÁPIDA" title="Tire as ideias da cabeça" description="Transforma anotações em tarefas, reconhecendo datas como hoje, amanhã ou 31/10/2026." tip="Revise os dados e confirme antes de salvar." />
       <h3 className="mt-2 text-xl font-semibold">Tire as ideias da cabeça.</h3>
-      <p className="mt-1 text-sm text-slate-300">Uma tarefa por linha ou separadas por ponto e vírgula. Reconhece hoje, amanhã e datas DD/MM/AAAA. Revise antes de salvar.</p>
-      <label htmlFor="quick-capture-input" className="sr-only">Tarefas para organizar</label>
+      <div className="mt-3 flex gap-2" role="group" aria-label="Tipo de captura">
+        <button type="button" onClick={() => { setCaptureType("task"); setInput(""); setDrafts([]); setError(""); setSuccess(""); }} className={`rounded-lg px-4 py-2 text-sm font-medium ${captureType === "task" ? "bg-violet-600 text-white" : "border border-slate-600 text-slate-300"}`}>Tarefa</button>
+        <button type="button" onClick={() => { setCaptureType("event"); setInput(""); setDrafts([]); setError(""); setSuccess(""); }} className={`rounded-lg px-4 py-2 text-sm font-medium ${captureType === "event" ? "bg-violet-600 text-white" : "border border-slate-600 text-slate-300"}`}>Compromisso</button>
+      </div>
+      <p className="mt-2 text-sm text-slate-300">{captureType === "task" ? "Uma tarefa por linha. Reconhece hoje, amanhã e DD/MM/AAAA." : "Registre um compromisso diretamente na agenda MYRYRA."}</p>
+      <label htmlFor="quick-capture-input" className="sr-only">{captureType === "task" ? "Tarefas para organizar" : "Título do compromisso"}</label>
       <textarea id="quick-capture-input" value={input} onChange={(event) => { setInput(event.target.value); setDrafts([]); setSuccess(""); }}
-        maxLength={2200} rows={4} placeholder={"Preparar reunião de terça\nPagar escola\nMarcar dentista"}
+        maxLength={captureType === "task" ? 2200 : 200} rows={captureType === "task" ? 4 : 2} placeholder={captureType === "task" ? "Preparar reunião de terça\nPagar escola\nMarcar dentista" : "Ex.: Reunião de planejamento"}
         className="mt-4 w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white placeholder:text-slate-500" />
-      <button type="button" onClick={prepare} disabled={!input.trim() || saving}
+      {captureType === "event" && <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <label className="text-sm text-slate-300">Início<input type="datetime-local" value={eventStart} onChange={event => setEventStart(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-white" /></label>
+        <label className="text-sm text-slate-300">Término<input type="datetime-local" value={eventEnd} onChange={event => setEventEnd(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-white" /></label>
+      </div>}
+      <button type="button" onClick={captureType === "task" ? prepare : () => void saveQuickEvent()} disabled={!input.trim() || saving}
         className="mt-3 rounded-xl border border-violet-500 px-4 py-2 font-semibold text-violet-200 hover:bg-violet-900/30 disabled:opacity-50">
-        Revisar tarefas
+        {captureType === "task" ? "Revisar tarefas" : saving ? "Salvando..." : "Salvar compromisso"}
       </button>
-      {drafts.length > 0 && (
+      {captureType === "task" && drafts.length > 0 && (
         <div className="mt-4 space-y-3">
           <p className="text-sm font-medium text-violet-200">Confira e escolha o que salvar:</p>
           {drafts.map((draft) => (
@@ -122,7 +168,7 @@ export default function QuickCapture() {
               </select>
             </div>
           ))}
-          <button type="button" disabled={saving || !drafts.some((draft) => draft.selected && draft.title.trim())}
+          <button type="button" disabled={saving || !drafts.some((draft) => draft.selected)}
             onClick={() => void confirm()}
             className="rounded-xl bg-violet-600 px-5 py-3 font-semibold text-white hover:bg-violet-500 disabled:opacity-50">
             {saving ? "Salvando..." : "Confirmar e salvar selecionadas"}

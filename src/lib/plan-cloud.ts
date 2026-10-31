@@ -33,32 +33,50 @@ function isPriority(value: string): value is Priority {
 export async function getCloudPlans(): Promise<SavedPlan[]> {
   const { supabase, userId } = await getAuthenticatedUser();
 
-  const { data: plans, error: plansError } = await supabase
-    .from("plans")
-    .select("id, title, created_at")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
+  const plans: { id: string; title: string; created_at: string }[] = [];
+  const planPageSize = 500;
+  for (let offset = 0; ; offset += planPageSize) {
+    const { data, error: plansError } = await supabase
+      .from("plans")
+      .select("id, title, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true })
+      .range(offset, offset + planPageSize - 1);
+    if (plansError) throw plansError;
+    const batch = data ?? [];
+    plans.push(...batch);
+    if (batch.length < planPageSize) break;
+  }
+  if (!plans.length) return [];
 
-  if (plansError) throw plansError;
-  if (!plans?.length) return [];
+  const tasks: { id: string; plan_id: string; title: string; priority: string; due_date: string | null; completed: boolean }[] = [];
+  const pageSize = 500;
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error: tasksError } = await supabase
+      .from("tasks")
+      .select("id, plan_id, title, priority, due_date, completed")
+      .eq("user_id", userId)
+      .order("id", { ascending: true })
+      .range(offset, offset + pageSize - 1);
+    if (tasksError) throw tasksError;
+    const batch = data ?? [];
+    tasks.push(...batch);
+    if (batch.length < pageSize) break;
+  }
 
-  const { data: tasks, error: tasksError } = await supabase
-    .from("tasks")
-    .select("id, plan_id, title, priority, due_date, completed")
-    .eq("user_id", userId)
-    .in(
-      "plan_id",
-      plans.map((plan) => plan.id)
-    );
-
-  if (tasksError) throw tasksError;
+  const tasksByPlan = new Map<string, typeof tasks>();
+  for (const task of tasks) {
+    const grouped = tasksByPlan.get(task.plan_id);
+    if (grouped) grouped.push(task);
+    else tasksByPlan.set(task.plan_id, [task]);
+  }
 
   return plans.map((plan) => ({
     id: plan.id,
     name: plan.title,
     createdAt: plan.created_at,
-    tasks: (tasks ?? [])
-      .filter((task) => task.plan_id === plan.id)
+    tasks: (tasksByPlan.get(plan.id) ?? [])
       .map((task) => {
         if (!isPriority(task.priority)) {
           throw new Error("Um plano contém uma prioridade inválida.");
@@ -79,6 +97,9 @@ export async function saveCloudPlan(
   name: string,
   tasks: SavedTask[]
 ): Promise<SavedPlan> {
+  if (tasks.some((task) => !task.title.trim() || task.title.trim().length > 200 || !/[\p{L}\p{N}]/u.test(task.title) || !isPriority(task.priority))) {
+    throw new Error("Revise os títulos e prioridades das tarefas antes de salvar.");
+  }
   const { supabase, userId } = await getAuthenticatedUser();
 
   const { data: plan, error } = await supabase
@@ -97,7 +118,7 @@ export async function saveCloudPlan(
       tasks.map((task) => ({
         plan_id: plan.id,
         user_id: userId,
-        title: task.title,
+        title: task.title.trim(),
         priority: task.priority,
         due_date: task.dueDate || null,
         completed: task.completed,
@@ -126,21 +147,15 @@ export async function saveCloudPlan(
     id: plan.id,
     name: plan.title,
     createdAt: plan.created_at,
-    tasks: tasks.map((task) => ({ ...task })),
+    tasks: tasks.map((task) => ({ ...task, title: task.title.trim() })),
   };
 }
 
 export async function deleteCloudPlan(id: string): Promise<void> {
   const { supabase, userId } = await getAuthenticatedUser();
 
-  const { error: tasksError } = await supabase
-    .from("tasks")
-    .delete()
-    .eq("plan_id", id)
-    .eq("user_id", userId);
-
-  if (tasksError) throw tasksError;
-
+  // tasks.plan_id has ON DELETE CASCADE: one parent deletion keeps
+  // the plan and its tasks in the same database transaction.
   const { error } = await supabase
     .from("plans")
     .delete()

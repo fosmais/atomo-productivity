@@ -1,11 +1,15 @@
 "use client";
 
 export default function MykaPortrait({ className = "h-full w-full" }: { className?: string }) {
-  return <svg viewBox="0 0 440 420" className={className} role="img" aria-label="Ilustração da gata MYKA">
+  return <svg viewBox="0 0 440 420" className={className} role="img" aria-label="Ilustração da gata MYKA com aura laranja e medalha 1618">
       <defs>
         <linearGradient id="myka-fur" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#a18bff"/><stop offset=".55" stopColor="#7652f8"/><stop offset="1" stopColor="#4c2dc1"/></linearGradient>
         <linearGradient id="myka-tail" x1="0" x2="1" y1="0" y2="1"><stop stopColor="#8b69ff"/><stop offset="1" stopColor="#3e25a3"/></linearGradient>
       </defs>
+      {/* Orange aura sits behind MYKA; the original purple palette stays unchanged. */}
+      <circle cx="214" cy="209" r="194" fill="none" stroke="#ff8a00" strokeWidth="10" opacity=".18"/>
+      <circle cx="214" cy="209" r="194" fill="none" stroke="#ff9c12" strokeWidth="5" opacity=".55"/>
+      <circle cx="214" cy="209" r="194" fill="none" stroke="#ffd05a" strokeWidth="2"/>
       <ellipse cx="212" cy="392" rx="150" ry="18" fill="#9f7aff" opacity=".2"/>
       <path d="M300 320 C415 322 408 160 345 188 C322 201 335 228 354 223" fill="none" stroke="url(#myka-tail)" strokeWidth="39" strokeLinecap="round"/>
       <path d="M130 224 C111 264 102 322 126 365 C149 391 278 390 301 356 C319 321 301 259 273 225Z" fill="url(#myka-fur)" stroke="#3d279b" strokeWidth="5"/>
@@ -18,7 +22,7 @@ export default function MykaPortrait({ className = "h-full w-full" }: { classNam
       <path d="M157 310 Q145 348 151 376 M267 310 Q280 348 273 376" fill="none" stroke="#3d279b" strokeWidth="6" strokeLinecap="round"/>
       <ellipse cx="153" cy="370" rx="38" ry="18" fill="#7652f8"/><ellipse cx="271" cy="370" rx="38" ry="18" fill="#7652f8"/>
       <path d="M187 268 Q214 287 241 268" fill="none" stroke="#d7c6ff" strokeWidth="7" strokeLinecap="round"/>
-      <circle cx="214" cy="288" r="17" fill="#f5c65c" stroke="#a87725" strokeWidth="4"/><path d="M214 283 V293" stroke="#7b511e" strokeWidth="4" strokeLinecap="round"/>
+      <circle cx="214" cy="288" r="20" fill="#f5c65c" stroke="#a87725" strokeWidth="3"/><text x="214" y="293" fontSize="13" fontWeight="800" textAnchor="middle" fill="#28164f">1618</text>
       <circle cx="78" cy="172" r="4" fill="#c8b9ff"/><circle cx="369" cy="101" r="5" fill="#c8b9ff"/><path d="M65 87 v18 m-9 -9 h18 M366 290 v16 m-8 -8 h16" stroke="#c8b9ff" strokeWidth="3" strokeLinecap="round"/>
     </svg>;
 }

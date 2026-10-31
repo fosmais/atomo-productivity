@@ -9,6 +9,7 @@ import DailyCopilot from "./daily-copilot";
 import WhatNow from "./what-now";
 import FocusMode from "./focus-mode";
 import QuickCapture from "./quick-capture";
+import GlobalSearch from "./global-search";
 import DailyBriefing from "./daily-briefing";
 import MyDay from "./my-day";
 import SmartReplan from "./smart-replan";
@@ -31,8 +32,9 @@ import VyraNavigation from "./vyra-navigation";
 import VyraWorkspace from "./vyra-workspace";
 import VyraModule from "./vyra-module";
 import VyraHome from "./vyra-home";
+import PlannerQuickNav from "./planner-quick-nav";
 import VyraSection from "./vyra-section";
-import { FeatureAccordion, AccordionControls } from "./feature-accordion";
+import { FeatureAccordion } from "./feature-accordion";
 
 async function DashboardContent() {
   await connection();
@@ -61,45 +63,82 @@ async function DashboardContent() {
       <VyraWorkspace>
       <VyraHome />
       <FirstSteps userId={user.id} />
+      <GlobalSearch />
 
         <div className="min-w-0 space-y-6">
-          <AccordionControls />
+
 
 
 
       <VyraModule id="vyra-ai">
-<VyraSection
-        id="vyra-ai"
-        eyebrow="MYKA AI"
-        title="Sua inteligência pessoal."
-        description="Converse com a Myka para organizar prioridades, tomar decisões e planejar sua rotina."
-      >
-        <FeatureAccordion id="myka" title="Converse com a MYKA" description="Sua assistente inteligente" userId={user.id} defaultOpen><CopilotChat /></FeatureAccordion>
-      </VyraSection>
-</VyraModule>
+        <VyraSection
+          id="vyra-ai"
+          eyebrow="MYRYRA INTELLIGENCE"
+          title="Converse com a MYKA."
+          description="Sua assistente pessoal para transformar ideias em decisões e próximos passos."
+        >
+          <div className="min-w-0 space-y-5">
+            <div className="rounded-3xl border border-violet-400/20 bg-gradient-to-br from-violet-950/40 via-slate-900/75 to-slate-950/80 p-5 sm:p-7">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-violet-400/30 bg-violet-500/15 text-lg font-bold text-violet-200" aria-hidden="true">M</span>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">MYKA · Assistente pessoal</p>
+                  <h3 className="mt-1 text-xl font-semibold tracking-tight text-white">Sua próxima ideia começa aqui.</h3>
+                </div>
+              </div>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">Converse naturalmente sobre prioridades, compromissos e objetivos. A MYKA ajuda você a organizar o que importa.</p>
+            </div>
+            <section className="min-w-0 rounded-3xl border border-white/10 bg-slate-900/60 p-3 sm:p-5" aria-label="Conversa com a MYKA">
+              <CopilotChat />
+            </section>
+          </div>
+        </VyraSection>
+      </VyraModule>
       <VyraModule id="vyra-planner">
-<VyraSection
-        id="vyra-planner"
-        eyebrow="MYRYRA PLANNER"
-        title="Seu dia, sob controle."
-        description="Transforme suas prioridades em um planejamento claro e objetivo."
-      >
-        <FeatureAccordion id="day" title="Meu Dia" description="Prioridades e compromissos de hoje" userId={user.id} defaultOpen><MyDay /></FeatureAccordion>
-        <FeatureAccordion id="replan" title="Replanejamento" description="Atualize tarefas atrasadas com controle" userId={user.id}><SmartReplan /></FeatureAccordion>
-        <FeatureAccordion id="goals" title="Metas rápidas" description="Acompanhe suas pequenas conquistas" userId={user.id}><QuickGoals userId={user.id} /></FeatureAccordion>
-        <FeatureAccordion id="briefing" title="Daily Briefing" description="Resumo para começar o dia" userId={user.id}><DailyBriefing /></FeatureAccordion>
-        <FeatureAccordion id="what-now" title="What Now?" description="Sua próxima ação recomendada" userId={user.id}><WhatNow /></FeatureAccordion>
-        <FeatureAccordion id="focus" title="Focus Mode" description="Sessões para manter a concentração" userId={user.id}><FocusMode /></FeatureAccordion>
-        <FeatureAccordion id="daily-copilot" title="Copiloto diário" description="Planejamento com inteligência artificial" userId={user.id}><DailyCopilot /></FeatureAccordion>
-      </VyraSection>
-<section className="rounded-xl border border-slate-800 p-6">
-        <h2 className="text-xl font-semibold">
-          Meus planos
-        </h2>
-
-        <FeatureAccordion id="plans" title="Meus planos" description="Acompanhe seus planos e tarefas" userId={user.id}><CloudPlans /></FeatureAccordion>
-      </section>
-</VyraModule>
+        <VyraSection
+          id="vyra-planner"
+          eyebrow="MYRYRA PLANNER"
+          title="Planeje com clareza."
+          description="Seu planejamento organizado por contexto. Abra apenas a ferramenta de que precisa."
+        >
+          <div className="min-w-0 space-y-6">
+            <p className="inline-flex items-center rounded-full border border-violet-400/25 bg-violet-500/10 px-3 py-1 text-xs font-semibold tracking-wide text-violet-200" data-myryra-planner-version="2.0">Planner 2.0 · Nova experiência</p>
+            <PlannerQuickNav />
+            <div id="planner-today" className="min-w-0 scroll-mt-6 rounded-3xl border border-violet-400/20 bg-gradient-to-br from-violet-950/35 via-slate-900/70 to-slate-950/80 p-4 shadow-[0_18px_50px_rgba(49,20,100,0.14)] sm:p-6">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">Seu ponto de partida</p>
+                  <h3 className="mt-2 text-xl font-semibold tracking-tight text-white">Organize seu dia</h3>
+                  <p className="mt-1 text-sm text-slate-400">Comece pelas prioridades e compromissos que precisam de atenção.</p>
+                </div>
+                <span className="rounded-full border border-violet-400/25 bg-violet-500/10 px-3 py-1.5 text-xs font-medium text-violet-200">Planejamento diário</span>
+              </div>
+              <div className="min-w-0 rounded-2xl border border-violet-400/20 bg-slate-950/55 p-4 sm:p-6" aria-label="Prioridades e compromissos de hoje"><MyDay /></div>
+            </div>
+            <div className="grid min-w-0 gap-5 xl:grid-cols-2">
+              <section id="planner-focus" className="min-w-0 scroll-mt-6 space-y-3" aria-label="Foco e rotina">
+                <div className="px-1 pb-1">
+                  <h3 className="text-base font-semibold text-white">Foco e rotina</h3>
+                  <p className="mt-1 text-sm text-slate-400">Saiba o que fazer agora e mantenha o ritmo.</p>
+                </div>
+                <FeatureAccordion id="briefing" title="Daily Briefing" description="Resumo para começar o dia" userId={user.id}><DailyBriefing /></FeatureAccordion>
+                <FeatureAccordion id="what-now" title="What Now?" description="Sua próxima ação recomendada" userId={user.id}><WhatNow /></FeatureAccordion>
+                <FeatureAccordion id="focus" title="Focus Mode" description="Sessões para manter a concentração" userId={user.id}><FocusMode /></FeatureAccordion>
+              </section>
+              <section id="planner-intelligence" className="min-w-0 scroll-mt-6 space-y-3" aria-label="Inteligência e planejamento">
+                <div className="px-1 pb-1">
+                  <h3 className="text-base font-semibold text-white">Inteligência e planejamento</h3>
+                  <p className="mt-1 text-sm text-slate-400">Ajuste seus planos com o apoio da MYRYRA.</p>
+                </div>
+                <FeatureAccordion id="daily-copilot" title="Copiloto diário" description="Planejamento com inteligência artificial" userId={user.id}><DailyCopilot /></FeatureAccordion>
+                <FeatureAccordion id="replan" title="Replanejamento" description="Atualize tarefas atrasadas com controle" userId={user.id}><SmartReplan /></FeatureAccordion>
+                <FeatureAccordion id="goals" title="Metas rápidas" description="Acompanhe suas pequenas conquistas" userId={user.id}><QuickGoals userId={user.id} /></FeatureAccordion>
+                <FeatureAccordion id="plans" title="Meus planos" description="Acompanhe seus planos e tarefas" userId={user.id}><CloudPlans /></FeatureAccordion>
+              </section>
+            </div>
+          </div>
+        </VyraSection>
+      </VyraModule>
       <VyraModule id="vyra-tasks">
 <VyraSection
         id="vyra-tasks"
@@ -113,15 +152,36 @@ async function DashboardContent() {
       </VyraSection>
 </VyraModule>
       <VyraModule id="vyra-calendar">
-<VyraSection
-        id="vyra-calendar"
-        eyebrow="MYRYRA CALENDAR"
-        title="Sua agenda em sintonia."
-        description="Organize compromissos e períodos indisponíveis para planejar melhor seu tempo."
-      >
-        <FeatureAccordion id="calendar-events" title="Eventos da agenda" description="Crie e acompanhe compromissos" userId={user.id} defaultOpen><CalendarEvents /></FeatureAccordion>
-      </VyraSection>
-      <FeatureAccordion id="availability" title="Disponibilidade" description="Visualize os períodos livres e ocupados" userId={user.id}><AvailabilityPanel /></FeatureAccordion>
+        <VyraSection
+          id="vyra-calendar"
+          eyebrow="MYRYRA CALENDAR"
+          title="Sua agenda em sintonia."
+          description="Compromissos e disponibilidade em um só lugar para você decidir como usar seu tempo."
+        >
+          <div className="min-w-0 space-y-5">
+            <div className="rounded-3xl border border-violet-400/20 bg-gradient-to-br from-violet-950/30 via-slate-900/75 to-slate-950/80 p-4 sm:p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">Sua visão do tempo</p>
+              <h3 className="mt-2 text-xl font-semibold tracking-tight text-white">Compromissos e prioridades</h3>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-400">Crie, consulte e ajuste os eventos da sua agenda sem precisar abrir uma seção adicional.</p>
+            </div>
+            <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
+              <section className="min-w-0 rounded-3xl border border-white/10 bg-slate-900/60 p-4 sm:p-6" aria-label="Eventos da agenda">
+                <div className="mb-5">
+                  <h3 className="text-base font-semibold text-white">Eventos da agenda</h3>
+                  <p className="mt-1 text-sm text-slate-400">Seus compromissos, sempre à mão.</p>
+                </div>
+                <CalendarEvents />
+              </section>
+              <aside className="min-w-0 space-y-3" aria-label="Planejamento de disponibilidade">
+                <div className="px-1">
+                  <h3 className="text-base font-semibold text-white">Planeje os horários livres</h3>
+                  <p className="mt-1 text-sm text-slate-400">Consulte sua disponibilidade antes de assumir novos compromissos.</p>
+                </div>
+                <FeatureAccordion id="availability" title="Disponibilidade" description="Períodos livres e ocupados" userId={user.id} defaultOpen><AvailabilityPanel /></FeatureAccordion>
+              </aside>
+            </div>
+          </div>
+        </VyraSection>
       </VyraModule>
       <VyraModule id="vyra-scheduling">
 <VyraSection
