@@ -1,0 +1,55 @@
+-- MYRYRA MFA — roteiro de homologacao SQL (NAO RODAR NO BANCO ATUAL)
+-- Pre-requisitos: migration mvp1_mfa_rls_private_helper_PROPOSED aplicada
+-- em ambiente de homologacao, contas de teste com MFA e sem MFA,
+-- JWTs validos fornecidos exclusivamente ao executor. Nao salvar JWTs no repositorio.
+--
+-- As variaveis abaixo sao valores de exemplo; substituir apenas em sessao
+-- temporaria de homologacao. ROLLBACK nao reverte efeitos de Auth API.
+--
+-- Caso A: conta SEM MFA, AAL1
+-- BEGIN;
+-- SET LOCAL ROLE authenticated;
+-- SELECT set_config('request.jwt.claim.sub', '<UUID_CONTA_SEM_MFA>', true);
+-- SELECT set_config('request.jwt.claims',
+--   '{"sub":"<UUID_CONTA_SEM_MFA>","role":"authenticated","aal":"aal1"}', true);
+-- SELECT private.mfa_session_allowed(); -- esperado TRUE
+-- SELECT count(*) FROM public.tasks; -- sem permission denied
+-- ROLLBACK;
+--
+-- Caso B: conta COM MFA verificado, AAL1
+-- BEGIN;
+-- SET LOCAL ROLE authenticated;
+-- SELECT set_config('request.jwt.claim.sub', '<UUID_CONTA_COM_MFA>', true);
+-- SELECT set_config('request.jwt.claims',
+--   '{"sub":"<UUID_CONTA_COM_MFA>","role":"authenticated","aal":"aal1"}', true);
+-- SELECT private.mfa_session_allowed(); -- esperado FALSE
+-- SELECT count(*) FROM public.tasks; -- esperado 0, SEM permission denied
+-- ROLLBACK;
+--
+-- Caso C: mesma conta COM MFA verificado, AAL2
+-- BEGIN;
+-- SET LOCAL ROLE authenticated;
+-- SELECT set_config('request.jwt.claim.sub', '<UUID_CONTA_COM_MFA>', true);
+-- SELECT set_config('request.jwt.claims',
+--   '{"sub":"<UUID_CONTA_COM_MFA>","role":"authenticated","aal":"aal2"}', true);
+-- SELECT private.mfa_session_allowed(); -- esperado TRUE
+-- SELECT count(*) FROM public.tasks; -- somente registros da propria conta
+-- ROLLBACK;
+--
+-- Caso D: sem JWT / anonimo
+-- BEGIN;
+-- SET LOCAL ROLE anon;
+-- SELECT count(*) FROM public.tasks; -- esperado 0
+-- ROLLBACK;
+--
+-- IMPORTANTE: simulacao de claims via SQL NAO equivale a teste HTTP com JWT
+-- real e assinado. Executar testes HTTP reais de AAL1/AAL2 via Supabase
+-- Data API em homologacao antes de liberar a producao.
+--
+-- Testes obrigatorios adicionais:
+-- [ ] INSERT/UPDATE/DELETE em cada uma das seis tabelas.
+-- [ ] Verificar helper com SET LOCAL ROLE authenticated sem erro 42501.
+-- [ ] Verificar que role anon nao pode EXECUTE private.mfa_session_allowed().
+-- [ ] Verificar chamadas diretas as duas RPCs MYKA em AAL1 e AAL2.
+-- [ ] Verificar que usuario B nao enxerga dados do usuario A.
+-- [ ] Confirmar rollback documentado e monitoramento de erros 42501.
