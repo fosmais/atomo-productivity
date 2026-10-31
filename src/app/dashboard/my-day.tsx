@@ -19,7 +19,9 @@ export default function MyDay() {
   const [error, setError] = useState("");
   useEffect(() => {
     let active = true;
+    let latestRequest = 0;
     async function load() {
+      const requestId = ++latestRequest;
       try {
         const supabase = createClient();
         const { data: auth, error: authError } = await supabase.auth.getUser();
@@ -29,7 +31,7 @@ export default function MyDay() {
           getCloudEvents(),
         ]);
         if (taskResponse.error) throw taskResponse.error;
-        if (!active) return;
+        if (!active || requestId !== latestRequest) return;
         setTasks((taskResponse.data ?? []).map(task => ({
           id: task.id, title: task.title, priority: task.priority,
           dueDate: task.due_date, completed: task.completed,
@@ -37,9 +39,9 @@ export default function MyDay() {
         setEvents(calendar.map(event => ({ title: event.title, startsAt: event.startsAt })));
         setError("");
       } catch {
-        if (active) setError("Não foi possível carregar o resumo do dia.");
+        if (active && requestId === latestRequest) setError("Não foi possível carregar o resumo do dia.");
       } finally {
-        if (active) setLoading(false);
+        if (active && requestId === latestRequest) setLoading(false);
       }
     }
     void load();
