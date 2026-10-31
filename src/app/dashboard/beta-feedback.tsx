@@ -1,4 +1,5 @@
 "use client";
+import FeatureHint from "./feature-hint";
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -26,7 +27,7 @@ export default function BetaFeedback() {
     finally { setSending(false); }
   }
   return <section className="rounded-2xl border border-violet-500/30 bg-slate-900 p-5 text-white" aria-label="Feedback MYRYRA">
-    <p className="text-xs font-semibold uppercase tracking-widest text-violet-400">MYRYRA · BETA</p>
+    <FeatureHint label="MYRYRA · BETA" title="Sua opinião constrói a MYRYRA" description="Envie sugestões, relate problemas ou avalie a experiência diretamente na plataforma." tip="Não inclua informações sensíveis no relato." />
     <h3 className="mt-2 text-xl font-semibold">Ajude a construir a próxima versão.</h3>
     <p className="mt-1 text-sm text-slate-300">Compartilhe uma ideia, relate um problema ou avalie sua experiência.</p>
     <form onSubmit={submit} className="mt-4 space-y-3">
