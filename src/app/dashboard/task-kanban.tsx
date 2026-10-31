@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { saveCloudPlan } from "@/lib/plan-cloud";
 import { useVyraNavigation } from "./vyra-module-context";
@@ -30,6 +30,7 @@ const columns: { status: TaskStatus; label: string }[] = [
 export default function TaskKanban() {
   const { focusedTaskId } = useVyraNavigation();
   const [tasks, setTasks] = useState<KanbanTask[]>([]);
+  const latestLoadRef = useRef(0);
   const [expandedColumns, setExpandedColumns] = useState<TaskStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -41,6 +42,7 @@ export default function TaskKanban() {
   const [creating, setCreating] = useState(false);
 
   const loadTasks = useCallback(async () => {
+    const requestId = ++latestLoadRef.current;
     setLoading(true);
     setError("");
 
@@ -76,15 +78,15 @@ export default function TaskKanban() {
         if (focusedTask) loaded = [focusedTask as KanbanTask, ...loaded];
       }
 
-      setTasks(loaded);
+      if (requestId === latestLoadRef.current) setTasks(loaded);
     } catch (err) {
-      setError(
+      if (requestId === latestLoadRef.current) setError(
         err instanceof Error
           ? err.message
           : "Não foi possível carregar o Kanban."
       );
     } finally {
-      setLoading(false);
+      if (requestId === latestLoadRef.current) setLoading(false);
     }
   }, [focusedTaskId]);
 
@@ -92,7 +94,10 @@ export default function TaskKanban() {
     void loadTasks();
     const refresh = () => { void loadTasks(); };
     window.addEventListener("myryra:tasks-updated", refresh);
-    return () => window.removeEventListener("myryra:tasks-updated", refresh);
+    return () => {
+      ++latestLoadRef.current;
+      window.removeEventListener("myryra:tasks-updated", refresh);
+    };
   }, [loadTasks]);
 
   useEffect(() => {
