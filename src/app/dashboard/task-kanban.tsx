@@ -120,6 +120,28 @@ export default function TaskKanban() {
       setCreating(false);
     }
   }
+  async function rescheduleTask(id: string, dueDate: string) {
+    if (savingId) return;
+    const previous = tasks;
+    setSavingId(id);
+    setError("");
+    setTasks(current => current.map(task => task.id === id ? { ...task, due_date: dueDate } : task));
+    try {
+      const supabase = createClient();
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError || !auth.user) throw new Error("Usuário não autenticado.");
+      const { data, error: updateError } = await supabase.from("tasks")
+        .update({ due_date: dueDate }).eq("id", id).eq("user_id", auth.user.id)
+        .select("id").single();
+      if (updateError || !data) throw new Error(updateError?.message ?? "Não foi possível reagendar.");
+      window.dispatchEvent(new Event("myryra:tasks-updated"));
+    } catch (err) {
+      setTasks(previous);
+      setError(err instanceof Error ? err.message : "Erro ao reagendar tarefa.");
+    } finally {
+      setSavingId(null);
+    }
+  }
   async function moveTask(id: string, status: TaskStatus) {
     if (savingId) return;
 
@@ -301,6 +323,12 @@ export default function TaskKanban() {
                         </p>
                       )}
 
+                      {task.status !== "done" && task.due_date && task.due_date < new Date().toLocaleDateString("en-CA") && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <button type="button" disabled={savingId !== null} onClick={() => void rescheduleTask(task.id, new Date().toLocaleDateString("en-CA"))} className="rounded-md border border-violet-400/40 px-2 py-1 text-xs text-violet-200 hover:bg-violet-500/15 disabled:opacity-50">Reagendar para hoje</button>
+                          <button type="button" disabled={savingId !== null} onClick={() => { const date = new Date(); date.setDate(date.getDate() + 1); void rescheduleTask(task.id, date.toLocaleDateString("en-CA")); }} className="rounded-md border border-slate-500 px-2 py-1 text-xs text-slate-200 hover:bg-slate-700 disabled:opacity-50">Amanhã</button>
+                        </div>
+                      )}
                       <label className="mt-3 block text-xs text-slate-300">
                         Mover para
                         <select
