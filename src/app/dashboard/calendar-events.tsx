@@ -133,7 +133,16 @@ export default function CalendarEvents() {
   }, []);
 
   async function handleSave() {
-    if (!title.trim() || !startsAt || !endsAt) return;
+    if (!title.trim() || !startsAt || !endsAt) {
+      setError("Preencha o título, o início e o término do compromisso.");
+      return;
+    }
+    const startMs = new Date(startsAt).getTime();
+    const endMs = new Date(endsAt).getTime();
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
+      setError("O término deve ser posterior ao início do compromisso.");
+      return;
+    }
 
     setSaving(true);
     setError("");
