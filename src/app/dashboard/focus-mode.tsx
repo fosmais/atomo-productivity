@@ -1,4 +1,5 @@
 "use client";
+import FeatureHint from "./feature-hint";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -62,7 +63,7 @@ export default function FocusMode() {
     <section aria-label="Modo foco" className="rounded-2xl border border-violet-500/30 bg-slate-900 p-5 text-white">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-violet-400">MYRYRA · FOCUS MODE</p>
+          <FeatureHint label="MYRYRA · FOCUS MODE" title="Tempo para se concentrar" description="Oferece um temporizador para trabalhar com menos distrações." tip="Escolha uma tarefa e inicie uma sessão de foco." />
           <h3 className="mt-1 text-xl font-semibold">Uma coisa de cada vez.</h3>
         </div>
         <label className="text-sm text-slate-300">
