@@ -94,7 +94,7 @@ export default function TaskKanban() {
       block: "center",
       inline: "nearest",
     });
-  }, [focusedTaskId, loading]);
+  }, [focusedTaskId, loading, tasks]);
 
   async function createTask(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
