@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import MykaPortrait from "@/components/myka-portrait";
 import type { FormEvent } from "react";
 import TaskConfirmation from "./task-confirmation";
 import EventConfirmation from "./event-confirmation";
@@ -553,11 +554,7 @@ setConversationId(data.conversationId);
           <div key={index} className="space-y-3">
             <div className={message.role === "assistant" ? "flex items-start gap-3" : ""}>
               {message.role === "assistant" && (
-                <img
-                  src="/myka-avatar.png"
-                  alt=""
-                  className="h-9 w-9 shrink-0 rounded-full border border-violet-400/40 bg-slate-900 object-cover"
-                />
+                <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-violet-400/40 bg-violet-950/70"><MykaPortrait className="h-10 w-10" /></span>
               )}
               <div
                 className={
