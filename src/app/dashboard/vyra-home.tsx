@@ -144,8 +144,9 @@ export default function VyraHome() {
           Priorize o que importa. A MYRYRA ajuda você a decidir o próximo passo.
         </p>
       </div>
+      <WhatNowCard />
       {/* MYRYRA_GOOGLE_HOME_CARD */}
-      {googleStatus !== "connected" && (
+      {googleStatus === "disconnected" && (
         <section className="rounded-2xl border border-violet-500/25 bg-gradient-to-r from-violet-950/40 to-slate-900/70 p-5 md:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
@@ -177,8 +178,6 @@ export default function VyraHome() {
           </div>
         </section>
       )}
-      <WhatNowCard />
-
       <section className="rounded-2xl border border-white/10 bg-slate-900/60 p-4 sm:p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
