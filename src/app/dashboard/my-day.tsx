@@ -3,7 +3,6 @@ import FeatureHint from "./feature-hint";
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { getCloudEvents } from "@/lib/event-cloud";
 
 type Item = { id?: string; title: string; priority: string; dueDate: string | null; completed: boolean };
 type Appointment = { title: string; startsAt: string };
@@ -26,17 +25,23 @@ export default function MyDay() {
         const supabase = createClient();
         const { data: auth, error: authError } = await supabase.auth.getUser();
         if (authError || !auth.user) throw new Error("Faça login para visualizar seu dia.");
-        const [taskResponse, calendar] = await Promise.all([
+        const dayStart = new Date();
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(dayStart);
+        dayEnd.setDate(dayEnd.getDate() + 1);
+        const [taskResponse, calendarResponse] = await Promise.all([
           supabase.from("tasks").select("id,title,priority,due_date,completed").eq("user_id", auth.user.id).limit(1000),
-          getCloudEvents(),
+          supabase.from("events").select("title,starts_at").eq("user_id", auth.user.id)
+            .gte("starts_at", dayStart.toISOString()).lt("starts_at", dayEnd.toISOString())
+            .order("starts_at", { ascending: true }).limit(100),
         ]);
-        if (taskResponse.error) throw taskResponse.error;
+        if (taskResponse.error || calendarResponse.error) throw taskResponse.error ?? calendarResponse.error;
         if (!active || requestId !== latestRequest) return;
         setTasks((taskResponse.data ?? []).map(task => ({
           id: task.id, title: task.title, priority: task.priority,
           dueDate: task.due_date, completed: task.completed,
         })));
-        setEvents(calendar.map(event => ({ title: event.title, startsAt: event.startsAt })));
+        setEvents((calendarResponse.data ?? []).map(event => ({ title: event.title, startsAt: event.starts_at })));
         setError("");
       } catch {
         if (active && requestId === latestRequest) setError("Não foi possível carregar o resumo do dia.");
