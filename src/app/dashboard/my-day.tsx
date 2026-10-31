@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type Item = { id?: string; title: string; priority: string; dueDate: string | null; completed: boolean };
-type Appointment = { title: string; startsAt: string };
+type Appointment = { title: string; startsAt: string; endsAt: string };
 
 function localDateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -31,8 +31,8 @@ export default function MyDay() {
         dayEnd.setDate(dayEnd.getDate() + 1);
         const [taskResponse, calendarResponse] = await Promise.all([
           supabase.from("tasks").select("id,title,priority,due_date,completed").eq("user_id", auth.user.id).limit(1000),
-          supabase.from("events").select("title,starts_at").eq("user_id", auth.user.id)
-            .gte("starts_at", dayStart.toISOString()).lt("starts_at", dayEnd.toISOString())
+          supabase.from("events").select("title,starts_at,ends_at").eq("user_id", auth.user.id)
+            .lt("starts_at", dayEnd.toISOString()).gt("ends_at", dayStart.toISOString())
             .order("starts_at", { ascending: true }).limit(100),
         ]);
         if (taskResponse.error || calendarResponse.error) throw taskResponse.error ?? calendarResponse.error;
@@ -41,7 +41,7 @@ export default function MyDay() {
           id: task.id, title: task.title, priority: task.priority,
           dueDate: task.due_date, completed: task.completed,
         })));
-        setEvents((calendarResponse.data ?? []).map(event => ({ title: event.title, startsAt: event.starts_at })));
+        setEvents((calendarResponse.data ?? []).map(event => ({ title: event.title, startsAt: event.starts_at, endsAt: event.ends_at })));
         setError("");
       } catch {
         if (active && requestId === latestRequest) setError("Não foi possível carregar o resumo do dia.");
@@ -59,7 +59,7 @@ export default function MyDay() {
   const priorityRank: Record<string, number> = { Alta: 0, "Média": 1, Normal: 2 };
   const pending = tasks.filter(task => !task.completed && (!task.dueDate || task.dueDate <= today))
     .sort((a, b) => (a.dueDate && a.dueDate < today ? -1 : 0) - (b.dueDate && b.dueDate < today ? -1 : 0) || (priorityRank[a.priority] ?? 3) - (priorityRank[b.priority] ?? 3));
-  const appointments = events.filter(event => localDateKey(new Date(event.startsAt)) === today)
+  const appointments = events.filter(event => new Date(event.startsAt).getTime() < new Date(new Date().setHours(24, 0, 0, 0)).getTime() && new Date(event.endsAt).getTime() > new Date(new Date().setHours(0, 0, 0, 0)).getTime())
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
   const finished = todayTasks.filter(task => task.completed).length;
   const overdue = tasks.filter(task => !task.completed && task.dueDate && task.dueDate < today);
@@ -76,7 +76,7 @@ export default function MyDay() {
       <h4 className="mt-5 font-semibold text-violet-200">Suas 3 próximas prioridades</h4>
       {pending.length ? <ol className="mt-2 space-y-2">{pending.slice(0, 3).map(task => <li key={task.id ?? task.title} className="rounded-lg border border-slate-700 p-3 text-sm">{task.title} <span className="text-slate-400">· {task.priority}{task.dueDate && task.dueDate < today ? " · Atrasada" : ""}</span></li>)}</ol> : <p className="mt-2 text-sm text-slate-400">Nenhuma tarefa pendente ou atrasada. Aproveite para planejar o próximo passo.</p>}
       <h4 className="mt-5 font-semibold text-violet-200">Agenda de hoje</h4>
-      {appointments.length ? <ul className="mt-2 space-y-2">{appointments.slice(0, 5).map((event, index) => <li key={index} className="text-sm text-slate-300">{new Date(event.startsAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} · {event.title}</li>)}</ul> : <p className="mt-2 text-sm text-slate-400">Sem compromissos na agenda MYRYRA hoje.</p>}
+      {appointments.length ? <ul className="mt-2 space-y-2">{appointments.slice(0, 5).map((event, index) => <li key={index} className="text-sm text-slate-300">{localDateKey(new Date(event.startsAt)) < today ? "Em andamento" : new Date(event.startsAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} · {event.title}</li>)}</ul> : <p className="mt-2 text-sm text-slate-400">Sem compromissos na agenda MYRYRA hoje.</p>}
       <div className="mt-5 rounded-xl border border-violet-400/25 bg-violet-500/5 p-4" aria-label="Revisão do dia">
         <h4 className="font-semibold text-violet-200">Revisão do dia</h4>
         <p className="mt-2 text-sm text-slate-300">Você concluiu {finished} de {todayTasks.length} tarefas previstas para hoje. {overdue.length} tarefa(s) estão atrasadas.</p>
