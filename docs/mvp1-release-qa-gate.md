@@ -3,11 +3,15 @@
 Status: **NOT APPROVED FOR PRODUCTION** until every blocking check is evidenced.
 
 ## Automated / database checks already executed
-- Preview build of commit `5aa0259`: READY.
+- Preview build of commit `d0308fa`: READY (local-day rollover refresh). Previous event-title validation `d128e39`: READY.
 - Preview HTTP GET `/`, `/login`, `/dashboard`: 200. This is **not** an authenticated UI test.
 - Simulated RLS SQL checks: cross-user SELECT, UPDATE, DELETE for plans/tasks/events; cross-user INSERT for plans/tasks/events. All passed with transaction ROLLBACK.
 - Same-user SQL transaction: create plan + task, update task, delete plan and verify cascading task deletion; passed with ROLLBACK.
 - Runtime Preview error/fatal log query: none found during checked hour. This is **not** proof of absence of client errors.
+- Same-user event create/update/read/delete transaction: passed with ROLLBACK.
+- Overnight event overlap query (23:30–01:30 local): passed with ROLLBACK. UI display still untested.
+- SQL `ILIKE` literal `%`, literal `_`, wildcard nonmatch and case-insensitivity: passed. UI search still untested.
+- Simulated AAL1 versus AAL2 owner-plan reads: equal access. This is an observed policy behavior, not an MFA security sign-off.
 
 ## BLOCKING: authenticated end-to-end tests (not yet run)
 Use two dedicated nonproduction test accounts with separate sessions, and test **Preview** only:
