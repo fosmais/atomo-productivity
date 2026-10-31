@@ -21,6 +21,8 @@ export default function MyDay() {
     let latestRequest = 0;
     async function load() {
       const requestId = ++latestRequest;
+      setLoading(true);
+      setError("");
       try {
         const supabase = createClient();
         const { data: auth, error: authError } = await supabase.auth.getUser();
@@ -102,7 +104,7 @@ export default function MyDay() {
       <h4 className="mt-5 font-semibold text-violet-200">Suas 3 próximas prioridades</h4>
       {pending.length ? <ol className="mt-2 space-y-2">{pending.slice(0, 3).map(task => <li key={task.id ?? task.title} className="rounded-lg border border-slate-700 p-3 text-sm">{task.title} <span className="text-slate-400">· {task.priority}{task.dueDate && task.dueDate < today ? " · Atrasada" : ""}</span></li>)}</ol> : <p className="mt-2 text-sm text-slate-400">Nenhuma tarefa pendente ou atrasada. Aproveite para planejar o próximo passo.</p>}
       <h4 className="mt-5 font-semibold text-violet-200">Agenda de hoje</h4>
-      {appointments.length ? <ul className="mt-2 space-y-2">{appointments.slice(0, 5).map((event, index) => <li key={index} className="text-sm text-slate-300">{localDateKey(new Date(event.startsAt)) < today ? "Em andamento" : new Date(event.startsAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} · {event.title}</li>)}</ul> : <p className="mt-2 text-sm text-slate-400">Sem compromissos na agenda MYRYRA hoje.</p>}
+      {appointments.length ? <ul className="mt-2 space-y-2">{appointments.slice(0, 5).map((event, index) => <li key={index} className="text-sm text-slate-300">{localDateKey(new Date(event.startsAt)) < today ? "Iniciado anteriormente" : new Date(event.startsAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} · {event.title}</li>)}</ul> : <p className="mt-2 text-sm text-slate-400">Sem compromissos na agenda MYRYRA hoje.</p>}
       <div className="mt-5 rounded-xl border border-violet-400/25 bg-violet-500/5 p-4" aria-label="Revisão do dia">
         <h4 className="font-semibold text-violet-200">Revisão do dia</h4>
         <p className="mt-2 text-sm text-slate-300">Das {todayTasks.length} tarefas com prazo hoje, {finished} estão concluídas. {overdue.length} tarefa(s) estão atrasadas.</p>
