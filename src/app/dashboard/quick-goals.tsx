@@ -1,4 +1,5 @@
 "use client";
+import FeatureHint from "./feature-hint";
 
 import { useEffect, useState } from "react";
 
@@ -37,7 +38,7 @@ export default function QuickGoals({ userId }: { userId: string }) {
   }
 
   return <section className="rounded-2xl border border-violet-500/30 bg-slate-900 p-5 text-white" aria-label="Metas rápidas">
-    <p className="text-xs font-semibold uppercase tracking-widest text-violet-400">MYRYRA · METAS RÁPIDAS</p>
+    <FeatureHint label="MYRYRA · METAS RÁPIDAS" title="Acompanhe pequenas conquistas" description="Crie metas com objetivos numéricos e atualize o progresso manualmente." tip="Nesta versão, as metas ficam salvas neste navegador." />
     <h3 className="mt-2 text-xl font-semibold">Pequenas conquistas, grandes resultados.</h3>
     <p className="mt-1 text-sm text-slate-300">Defina uma meta mensurável e acompanhe seu progresso. Até {MAX_GOALS} metas por navegador.</p>
     <form onSubmit={add} className="mt-4 flex flex-wrap gap-2">
