@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUserEntitlements } from "@/lib/billing/entitlements";
 
 /** Read-only account billing status. Never trusts client-supplied plan IDs. */
 export async function GET() {
+  await connection();
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) {
