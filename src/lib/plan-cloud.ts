@@ -65,12 +65,18 @@ export async function getCloudPlans(): Promise<SavedPlan[]> {
     if (batch.length < pageSize) break;
   }
 
+  const tasksByPlan = new Map<string, typeof tasks>();
+  for (const task of tasks) {
+    const grouped = tasksByPlan.get(task.plan_id);
+    if (grouped) grouped.push(task);
+    else tasksByPlan.set(task.plan_id, [task]);
+  }
+
   return plans.map((plan) => ({
     id: plan.id,
     name: plan.title,
     createdAt: plan.created_at,
-    tasks: tasks
-      .filter((task) => task.plan_id === plan.id)
+    tasks: (tasksByPlan.get(plan.id) ?? [])
       .map((task) => {
         if (!isPriority(task.priority)) {
           throw new Error("Um plano contém uma prioridade inválida.");
