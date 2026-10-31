@@ -13,6 +13,7 @@ import DailyBriefing from "./daily-briefing";
 import MyDay from "./my-day";
 import SmartReplan from "./smart-replan";
 import QuickGoals from "./quick-goals";
+import BetaFeedback from "./beta-feedback";
 import FirstSteps from "./first-steps";
 import WeeklyIntelligence from "./weekly-intelligence";
 import AvailabilityPanel from "./availability-panel";
@@ -149,6 +150,7 @@ async function DashboardContent() {
         title="Uma experiência feita para você."
         description="Configure seus dias, horários e preferências de planejamento."
       >
+        <BetaFeedback />
         <MfaSettings />
         <PlanningSettings />
         <div className="mt-6">
