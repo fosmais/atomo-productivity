@@ -1,5 +1,6 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { getUserEntitlements } from "@/lib/billing/entitlements";
 
 const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
 const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -21,17 +22,23 @@ const minuteLimiter = redis
     })
   : null;
 
-const dailyLimiter = redis
-  ? new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(100, "1 d"),
-      prefix: "vyra:concierge:daily",
-      analytics: false,
-    })
+// One shared namespace prevents quota resets when a user changes plans.
+const dailyLimiters = redis
+  ? new Map(
+      ([10, 100, 250] as const).map((limit) => [
+        limit,
+        new Ratelimit({
+          redis,
+          limiter: Ratelimit.fixedWindow(limit, "1 d"),
+          prefix: "myryra:concierge:daily:v1",
+          analytics: false,
+        }),
+      ])
+    )
   : null;
 
 export async function checkConciergeRateLimit(userId: string) {
-  if (!minuteLimiter || !dailyLimiter) {
+  if (!minuteLimiter || !dailyLimiters) {
     const missing = [
       !redisUrl ? "UPSTASH_REDIS_REST_URL" : null,
       !redisToken ? "UPSTASH_REDIS_REST_TOKEN" : null,
@@ -40,6 +47,15 @@ export async function checkConciergeRateLimit(userId: string) {
     console.error("[MYKA] Rate limit indisponível: variáveis ausentes:", missing.join(", ") || "configuração inválida");
     throw new Error("Rate limiting não configurado.");
   }
+
+  // Rollout guard: preserve the existing rate-limit behavior until the
+  // billing migration and administrative credentials are verified.
+  const billingEnabled = process.env.BILLING_ENTITLEMENTS_ENABLED === "true";
+  const dailyLimit = billingEnabled
+    ? (await getUserEntitlements(userId)).aiMessagesPerDay
+    : 100;
+  const dailyLimiter = dailyLimiters.get(dailyLimit);
+  if (!dailyLimiter) throw new Error("Limite diário não configurado.");
 
   const minute = await minuteLimiter.limit(userId);
 
