@@ -26,14 +26,16 @@ export default function GlobalSearch() {
         const supabase = createClient();
         const { data: auth, error: authError } = await supabase.auth.getUser();
         if (authError || !auth.user) throw new Error("Faça login para pesquisar.");
+        const needle = query.trim().toLocaleLowerCase("pt-BR");
+        // Escape LIKE wildcards so user input is searched literally.
+        const pattern = `%${query.trim().replace(/[\\%_]/g, "\\        const [tasks, plans, events] = await Promise.all([")}%`;
         const [tasks, plans, events] = await Promise.all([
-          supabase.from("tasks").select("id,title,due_date").eq("user_id", auth.user.id).order("created_at", { ascending: false }).limit(500),
-          supabase.from("plans").select("id,title").eq("user_id", auth.user.id).order("created_at", { ascending: false }).limit(200),
+          supabase.from("tasks").select("id,title,due_date").eq("user_id", auth.user.id).ilike("title", pattern).order("created_at", { ascending: false }).limit(30),
+          supabase.from("plans").select("id,title").eq("user_id", auth.user.id).ilike("title", pattern).order("created_at", { ascending: false }).limit(30),
           getCloudEvents(),
         ]);
         if (controller.signal.aborted) return;
         if (tasks.error || plans.error) throw new Error(tasks.error?.message ?? plans.error?.message ?? "Erro ao buscar.");
-        const needle = query.trim().toLocaleLowerCase("pt-BR");
         const all: SearchResult[] = [
           ...(tasks.data ?? []).map(t => ({ id: t.id, title: t.title, kind: "Tarefa" as const, detail: t.due_date ? `Prazo: ${t.due_date}` : "Sem prazo" })),
           ...(plans.data ?? []).map(p => ({ id: p.id, title: p.title, kind: "Plano" as const, detail: "Plano salvo" })),
