@@ -140,37 +140,13 @@ export default function VyraHome() {
         </p>
       </div>
       <WhatNowCard />
-      {/* MYRYRA_GOOGLE_HOME_CARD */}
       {googleStatus === "disconnected" && (
-        <section className="rounded-2xl border border-violet-500/25 bg-gradient-to-r from-violet-950/40 to-slate-900/70 p-5 md:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-violet-400">
-                Integração Google Calendar
-              </p>
-              <h2 className="mt-2 text-lg font-semibold text-white">
-                {googleStatus === "error"
-                  ? "Verifique sua conexão com o Google Calendar"
-                  : "Sua agenda em sintonia com a MYRYRA"}
-              </h2>
-              <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-400">
-                {googleStatus === "error"
-                  ? "Não foi possível verificar sua integração. Você pode tentar novamente ou conectar sua agenda."
-                  : "Conecte seu Google Calendar para sincronizar compromissos e receber sugestões inteligentes da Myka."}
-              </p>
-            </div>
-
-            <a
-              href="/api/google/connect"
-              className="inline-flex shrink-0 items-center justify-center rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400"
-            >
-              {googleStatus === "loading"
-                ? "Conectar Google Calendar"
-                : googleStatus === "error"
-                  ? "Conectar ou reconectar"
-                  : "Conectar Google Calendar"}
-            </a>
+        <section className="flex flex-col gap-3 rounded-2xl border border-violet-500/20 bg-slate-900/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-white">Conecte sua agenda Google</h2>
+            <p className="mt-1 text-xs text-slate-400">Sincronize seus compromissos para receber sugestões mais completas.</p>
           </div>
+          <a href="/api/google/connect" className="shrink-0 rounded-xl bg-violet-600 px-4 py-2 text-center text-xs font-semibold text-white hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-violet-400">Conectar calendário</a>
         </section>
       )}
       <section className="grid gap-3 lg:grid-cols-2" aria-label="Resumo do dia">
