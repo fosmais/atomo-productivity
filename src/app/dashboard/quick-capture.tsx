@@ -1,4 +1,5 @@
 "use client";
+import FeatureHint from "./feature-hint";
 
 import { useRef, useState } from "react";
 import { saveCloudPlan } from "@/lib/plan-cloud";
@@ -92,7 +93,7 @@ export default function QuickCapture() {
 
   return (
     <section className="rounded-2xl border border-violet-500/30 bg-slate-900 p-5 text-white" aria-label="Captura rápida">
-      <p className="text-xs font-semibold uppercase tracking-widest text-violet-400">MYRYRA · CAPTURA RÁPIDA</p>
+      <FeatureHint label="MYRYRA · CAPTURA RÁPIDA" title="Tire as ideias da cabeça" description="Transforma anotações em tarefas, reconhecendo datas como hoje, amanhã ou 31/10/2026." tip="Revise os dados e confirme antes de salvar." />
       <h3 className="mt-2 text-xl font-semibold">Tire as ideias da cabeça.</h3>
       <p className="mt-1 text-sm text-slate-300">Uma tarefa por linha ou separadas por ponto e vírgula. Reconhece hoje, amanhã e datas DD/MM/AAAA. Revise antes de salvar.</p>
       <label htmlFor="quick-capture-input" className="sr-only">Tarefas para organizar</label>
