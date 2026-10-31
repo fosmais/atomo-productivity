@@ -11,11 +11,12 @@ export default function GlobalSearch() {
   const { navigateTo, navigateToTask } = useVyraNavigation();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [completedQuery, setCompletedQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (query.trim().length < 2) { setResults([]); setError(""); setLoading(false); return; }
+    if (query.trim().length < 2) { setResults([]); setCompletedQuery(""); setError(""); setLoading(false); return; }
     let active = true;
     const controller = new AbortController();
     const timeout = setTimeout(async () => {
@@ -38,7 +39,10 @@ export default function GlobalSearch() {
           ...(plans.data ?? []).map(p => ({ id: p.id, title: p.title, kind: "Plano" as const, detail: "Plano salvo" })),
           ...events.map(e => ({ id: e.id, title: e.title, kind: "Compromisso" as const, detail: new Date(e.startsAt).toLocaleDateString("pt-BR") })),
         ];
-        if (active) setResults(all.filter(item => item.title.toLocaleLowerCase("pt-BR").includes(needle)).slice(0, 30));
+        if (active) {
+          setResults(all.filter(item => item.title.toLocaleLowerCase("pt-BR").includes(needle)).slice(0, 30));
+          setCompletedQuery(query.trim());
+        }
       } catch (err) {
         if (active) setError(err instanceof Error ? err.message : "Falha na pesquisa.");
       } finally { if (active) setLoading(false); }
@@ -49,9 +53,9 @@ export default function GlobalSearch() {
   return <section className="rounded-2xl border border-violet-400/20 bg-slate-900/70 p-4 sm:p-5" aria-label="Busca global">
     <label htmlFor="myryra-global-search" className="text-sm font-semibold text-violet-100">Busca global</label>
     <input id="myryra-global-search" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Busque tarefas, planos e compromissos..." className="mt-3 w-full rounded-xl border border-slate-600 bg-slate-950 p-3 text-sm text-white placeholder:text-slate-500 focus:border-violet-400 focus:outline-none" />
-    {loading && <p role="status" className="mt-3 text-xs text-slate-400">Pesquisando...</p>}
+    {(loading || (query.trim().length >= 2 && completedQuery !== query.trim() && !error)) && <p role="status" className="mt-3 text-xs text-slate-400">Pesquisando...</p>}
     {error && <p role="alert" className="mt-3 text-sm text-rose-300">{error}</p>}
-    {!loading && query.trim().length >= 2 && !error && <div className="mt-3 space-y-2" aria-live="polite">
+    {!loading && completedQuery === query.trim() && query.trim().length >= 2 && !error && <div className="mt-3 space-y-2" aria-live="polite">
       <p className="text-xs text-slate-400">{results.length} resultado(s) encontrado(s){results.length === 30 ? " (exibindo os primeiros 30)" : ""}</p>
       {results.map(item => <button type="button" key={`${item.kind}-${item.id}`} onClick={() => { if (item.kind === "Tarefa" && navigateToTask) navigateToTask(item.id); else navigateTo(item.kind === "Compromisso" ? "vyra-calendar" : "vyra-planner"); }} className="block w-full rounded-lg border border-slate-700 bg-slate-950/60 p-3 text-left transition-colors hover:border-violet-400/50 hover:bg-violet-500/10 focus-visible:outline-2 focus-visible:outline-violet-400">
         <span className="text-xs font-semibold uppercase text-violet-300">{item.kind}</span>
