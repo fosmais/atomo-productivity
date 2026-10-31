@@ -1,4 +1,5 @@
 "use client";
+import FeatureHint from "./feature-hint";
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -52,7 +53,7 @@ export default function SmartReplan() {
     finally { setBusy(null); }
   }
   return <section className="rounded-2xl border border-violet-500/30 bg-slate-900 p-5 text-white" aria-label="Replanejamento inteligente">
-    <p className="text-xs font-semibold uppercase tracking-widest text-violet-400">MYRYRA · REPLANEJAMENTO</p>
+    <FeatureHint label="MYRYRA · REPLANEJAMENTO" title="Recupere o controle dos prazos" description="Identifica tarefas atrasadas e permite escolher novas datas." tip="Nenhum prazo é alterado sem sua confirmação." />
     <h3 className="mt-2 text-xl font-semibold">Reorganize o que ficou para trás.</h3>
     <p className="mt-1 text-sm text-slate-300">Revise tarefas atrasadas e escolha uma nova data. Nenhuma alteração acontece sem sua confirmação.</p>
     {items.length ? <ul className="mt-4 space-y-3">{items.map(item => <li key={item.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-700 p-3">
