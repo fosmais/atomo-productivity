@@ -51,7 +51,7 @@ export default function ResetPasswordPage() {
 
   async function verifyFactor(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy || !factorId || !/^\\d{6}$/.test(factorCode)) return;
+    if (busy || !factorId || !/^\d{6}$/.test(factorCode)) return;
     setBusy(true);
     setError("");
     try {
@@ -76,7 +76,7 @@ export default function ResetPasswordPage() {
     <section className="w-full max-w-md rounded-3xl border border-violet-500/30 bg-slate-950 p-7">
       <h1 className="text-2xl font-bold">MYRYRA · Nova senha</h1>
       <p className="mt-2 text-sm text-slate-300">Defina uma senha nova. Seu autenticador continuará necessário se o 2FA estiver ativo.</p>
-      {!message && <form onSubmit={submit} className="mt-6 space-y-4">
+      {!message.startsWith("Senha atualizada.") && <form onSubmit={submit} className="mt-6 space-y-4">
         <label className="block text-sm">Nova senha<input type="password" autoComplete="new-password" minLength={12} required value={password} onChange={e => setPassword(e.target.value)} className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 p-3" /></label>
         <label className="block text-sm">Confirmar nova senha<input type="password" autoComplete="new-password" minLength={12} required value={confirm} onChange={e => setConfirm(e.target.value)} className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 p-3" /></label>
         <button type="submit" disabled={busy} className="w-full rounded-lg bg-violet-600 p-3 font-semibold disabled:opacity-50">{busy ? "Atualizando..." : "Salvar nova senha"}</button>
