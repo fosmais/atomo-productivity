@@ -176,7 +176,7 @@ export default function LoginPage() {
       <div className="relative z-10 grid w-full max-w-6xl items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-12">
         <div className="hidden lg:block"><MykaLoginScene /></div>
         <div className="mx-auto w-full max-w-md">
-          <div className="mb-6 text-center lg:text-left"><p className="text-xs font-semibold uppercase tracking-[.3em] text-violet-300">MYRYRA · YOUR LIFE. IN SYNC.</p><h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Seu universo, em sintonia.</h2><p className="mt-3 text-sm text-slate-300">A MYKA está pronta para ajudar você a organizar o que realmente importa.</p></div>
+          <div className="mb-7 text-center lg:text-left"><div className="inline-flex flex-col items-center lg:items-start"><p className="text-3xl font-extrabold tracking-[.08em] text-white sm:text-4xl">MYRYRA</p><p className="mt-1 text-[10px] font-semibold uppercase tracking-[.27em] text-violet-300 sm:text-xs">YOUR LIFE. IN SYNC.</p><div aria-hidden="true" className="mt-4 h-px w-20 bg-gradient-to-r from-violet-500 via-fuchsia-400 to-transparent" /></div><h2 className="mt-5 text-2xl font-semibold tracking-tight text-white sm:text-3xl">Seu universo, em sintonia.</h2><p className="mt-3 text-sm leading-relaxed text-slate-300">Organize sua vida. Transforme planos em conquistas.</p></div>
           <div className="relative mx-auto mb-5 flex w-full max-w-[180px] items-center justify-center lg:hidden" aria-label="MYKA, sua companheira inteligente">
             <div aria-hidden="true" className="absolute inset-4 rounded-full bg-violet-500/25 blur-2xl" />
             <MykaPortrait className="relative h-auto w-full drop-shadow-[0_12px_28px_rgba(120,65,255,.4)]" />
