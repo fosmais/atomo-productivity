@@ -150,6 +150,7 @@ export default function CalendarEvents() {
 
       await loadEvents();
       window.dispatchEvent(new Event("myryra:events-updated"));
+      setSelectedDay(null);
 
       setTitle("");
       setStartsAt("");
@@ -157,6 +158,7 @@ export default function CalendarEvents() {
       setLocation("");
       setEventType("appointment");
       setBlocksTime(false);
+      setShowForm(false);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Erro ao salvar compromisso."
