@@ -41,6 +41,9 @@ export default function ResetPasswordPage() {
       await supabase.auth.signOut();
       setPassword("");
       setConfirm("");
+      setFactors([]);
+      setFactorId("");
+      setFactorCode("");
       setMessage("Senha atualizada. Faça login novamente e confirme seu segundo fator, se ativado.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível atualizar a senha.");
