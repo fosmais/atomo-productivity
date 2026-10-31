@@ -63,7 +63,20 @@ export default function TaskKanban() {
 
       if (tasksError) throw tasksError;
 
-      setTasks((data ?? []) as KanbanTask[]);
+      let loaded = (data ?? []) as KanbanTask[];
+      // A busca global pode encontrar tarefas fora das 200 mais recentes.
+      if (focusedTaskId && !loaded.some((task) => task.id === focusedTaskId)) {
+        const { data: focusedTask, error: focusedError } = await supabase
+          .from("tasks")
+          .select("id, title, priority, due_date, status, completed_at")
+          .eq("user_id", auth.user.id)
+          .eq("id", focusedTaskId)
+          .maybeSingle();
+        if (focusedError) throw focusedError;
+        if (focusedTask) loaded = [focusedTask as KanbanTask, ...loaded];
+      }
+
+      setTasks(loaded);
     } catch (err) {
       setError(
         err instanceof Error
@@ -73,7 +86,7 @@ export default function TaskKanban() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [focusedTaskId]);
 
   useEffect(() => {
     void loadTasks();
