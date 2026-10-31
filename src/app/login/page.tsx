@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import MykaLoginScene from "./myka-login-scene";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -167,9 +168,15 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#090716] px-4 py-10 text-white sm:px-6">
-      <div aria-hidden="true" className="pointer-events-none absolute -top-36 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-violet-700/20 blur-3xl" />
-      <div className="relative z-10 w-full max-w-md rounded-3xl border border-violet-400/20 bg-slate-950/90 p-6 shadow-2xl shadow-violet-950/40 backdrop-blur-xl sm:p-9">
+    <main className="relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-[#070716] px-4 py-10 text-white sm:px-6">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse at 26% 38%, rgba(124,58,237,.42), transparent 37%), radial-gradient(ellipse at 76% 70%, rgba(14,165,233,.25), transparent 39%), radial-gradient(ellipse at 70% 15%, rgba(168,85,247,.23), transparent 30%), #070716" }} />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-70" style={{ backgroundImage: "radial-gradient(1px 1px at 12% 16%, white 98%, transparent), radial-gradient(2px 2px at 36% 62%, #d8b4fe 98%, transparent), radial-gradient(1px 1px at 77% 22%, white 98%, transparent), radial-gradient(1px 1px at 86% 82%, #a5f3fc 98%, transparent), radial-gradient(1px 1px at 53% 39%, white 98%, transparent)", backgroundSize: "173px 197px, 263px 283px, 199px 241px, 307px 269px, 131px 163px" }} />
+      <div aria-hidden="true" className="pointer-events-none absolute left-1/4 top-1/4 h-[35rem] w-[35rem] rounded-full bg-violet-600/15 blur-[100px]" />
+      <div className="relative z-10 grid w-full max-w-6xl items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-12">
+        <div className="hidden lg:block"><MykaLoginScene /></div>
+        <div className="mx-auto w-full max-w-md">
+          <div className="mb-6 text-center lg:text-left"><p className="text-xs font-semibold uppercase tracking-[.3em] text-violet-300">MYRYRA · YOUR LIFE. IN SYNC.</p><h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Seu universo, em sintonia.</h2><p className="mt-3 text-sm text-slate-300">A MYKA está pronta para ajudar você a organizar o que realmente importa.</p></div>
+          <div className="rounded-3xl border border-violet-300/25 bg-slate-950/75 p-6 shadow-2xl shadow-violet-950/40 backdrop-blur-xl sm:p-9">
         <div className="mb-8 flex items-center gap-3"><span aria-hidden="true" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-600 text-2xl font-black shadow-lg shadow-violet-600/30">M</span><div><h1 className="text-2xl font-bold tracking-tight">MYRYRA</h1><p className="text-xs tracking-widest text-violet-300">YOUR LIFE. IN SYNC.</p></div></div><h2 className="text-2xl font-semibold">{mode === "login" ? "Bem-vindo de volta" : "Comece sua jornada"}</h2>
 
         <p className="mt-2 text-slate-400">
@@ -263,6 +270,8 @@ export default function LoginPage() {
             ? "Ainda não tem conta? Cadastre-se"
             : "Já tem conta? Faça login"}
         </button>}
+          </div>
+        </div>
       </div>
     </main>
   );
