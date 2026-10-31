@@ -8,7 +8,7 @@ import {
 } from "@/lib/what-now-service";
 
 export default function WhatNowCard() {
-  const { navigateToTask } = useVyraNavigation();
+  const { navigateTo, navigateToTask } = useVyraNavigation();
   const [data, setData] = useState<WhatNowResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -37,6 +37,13 @@ export default function WhatNowCard() {
   }, [load]);
 
   const recommendation = data?.recommendation;
+  const emptyState = data && !recommendation
+    ? data.readyTaskCount > 0
+      ? { title: "Sua agenda está cheia neste momento.", description: "Há tarefas prontas, mas nenhuma cabe nos horários disponíveis. Consulte a agenda para reorganizar seu dia.", action: "Ver minha agenda", module: "vyra-calendar" }
+      : data.missingDurationCount > 0
+        ? { title: "Vamos preparar suas próximas prioridades?", description: "Algumas tarefas precisam de uma duração estimada para receber recomendações.", action: "Organizar tarefas", module: "vyra-tasks" }
+        : { title: "Tudo tranquilo por enquanto.", description: "Não encontramos tarefas prontas para sugerir. Registre uma prioridade quando quiser.", action: "Adicionar prioridades", module: "vyra-tasks" }
+    : null;
 
   return (
     <section className="rounded-3xl border border-violet-400/25 bg-gradient-to-br from-violet-950/65 via-[#15112e] to-slate-950 p-5 shadow-[0_20px_70px_-35px_rgba(124,58,237,0.55)] sm:p-7">
@@ -124,13 +131,14 @@ export default function WhatNowCard() {
           </div>
         ) : (
           <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-5">
-            <p className="font-medium text-white">
-              Nenhuma tarefa disponível para começar agora.
-            </p>
-
-            <p className="mt-2 text-sm text-slate-400">
-              Verifique seus horários livres e a duração das tarefas.
-            </p>
+            <p className="font-medium text-white">{emptyState?.title ?? "Não encontramos uma próxima ação."}</p>
+            <p className="mt-2 text-sm text-slate-400">{emptyState?.description ?? "Atualize para tentar novamente."}</p>
+            {emptyState && (
+              <button type="button" onClick={() => navigateTo(emptyState.module)}
+                className="mt-4 rounded-xl border border-violet-400/30 px-4 py-2 text-sm font-medium text-violet-200 transition hover:bg-violet-500/10 focus-visible:outline-2 focus-visible:outline-violet-400">
+                {emptyState.action} →
+              </button>
+            )}
           </div>
         )}
       </div>
