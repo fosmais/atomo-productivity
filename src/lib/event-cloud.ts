@@ -77,7 +77,7 @@ export async function saveCloudEvent(
   const start = new Date(event.startsAt);
   const end = new Date(event.endsAt);
 
-  if (!title || title.length > 200) {
+  if (!title || title.length > 200 || !/[\p{L}\p{N}]/u.test(title)) {
     throw new Error("Informe um título de até 200 caracteres.");
   }
 
