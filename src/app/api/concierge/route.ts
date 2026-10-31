@@ -121,7 +121,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Segundo fator obrigatório.", code: "MFA_REQUIRED" }, { status: 403 });
     }
 
-const rateLimit = await checkConciergeRateLimit(user.id);
+let rateLimit;
+try {
+  rateLimit = await checkConciergeRateLimit(user.id);
+} catch {
+  console.error("[MYKA] Rate limiting temporariamente indisponível.");
+  return NextResponse.json(
+    { error: "Assistente temporariamente indisponível. Tente novamente em instantes." },
+    { status: 503, headers: { "Retry-After": "60" } }
+  );
+}
 
 if (!rateLimit.allowed) {
   return NextResponse.json(
