@@ -39,6 +39,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function isValidDateOnly(value: unknown): value is string {
+  if (typeof value !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return false;
+  const date = new Date(value + "T00:00:00Z");
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
 function isConciergeProposal(value: unknown): value is ConciergeProposal {
   return (
     isRecord(value) &&
@@ -48,7 +54,7 @@ function isConciergeProposal(value: unknown): value is ConciergeProposal {
     (value.priority === "Alta" ||
       value.priority === "Média" ||
       value.priority === "Normal") &&
-    (value.dueDate === null || (typeof value.dueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value.dueDate) && new Date(value.dueDate + "T00:00:00Z").toISOString().slice(0, 10) === value.dueDate))
+    (value.dueDate === null || isValidDateOnly(value.dueDate))
   );
 }
 
