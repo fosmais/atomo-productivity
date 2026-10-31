@@ -19,7 +19,7 @@ function extractDate(title: string): { title: string; dueDate: string | null } {
   if (relative) {
     return { title: title.replace(relative[0], "").replace(/\s+/g, " ").trim().replace(/[,.]$/, ""), dueDate: localDate(/^hoje$/i.test(relative[0]) ? 0 : 1) };
   }
-  const explicit = /\b(\d{2})\\/(\d{2})\\/(\d{4})\b/.exec(title);
+  const explicit = /\b(\d{2})\/(\d{2})\/(\d{4})\b/.exec(title);
   if (explicit) {
     const candidate = `${explicit[3]}-${explicit[2]}-${explicit[1]}`;
     const date = new Date(candidate + "T00:00:00Z");
