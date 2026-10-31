@@ -82,7 +82,15 @@ export default function MyDay() {
     window.addEventListener("myryra:events-updated", load);
     return () => { active = false; window.removeEventListener("myryra:tasks-updated", load); window.removeEventListener("myryra:events-updated", load); };
   }, []);
-  const today = localDateKey(new Date());
+  // Re-evaluate the local day at midnight, even if the dashboard stays open.
+  const [currentDay, setCurrentDay] = useState(() => localDateKey(new Date()));
+  useEffect(() => {
+    const refreshDay = () => setCurrentDay(localDateKey(new Date()));
+    const interval = window.setInterval(refreshDay, 30_000);
+    document.addEventListener("visibilitychange", refreshDay);
+    return () => { window.clearInterval(interval); document.removeEventListener("visibilitychange", refreshDay); };
+  }, []);
+  const today = currentDay;
   const todayTasks = tasks.filter(task => task.dueDate === today);
   const priorityRank: Record<string, number> = { Alta: 0, "Média": 1, Normal: 2 };
   const pending = tasks.filter(task => !task.completed && (!task.dueDate || task.dueDate <= today))
