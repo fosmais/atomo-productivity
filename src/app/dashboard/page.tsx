@@ -11,6 +11,7 @@ import FocusMode from "./focus-mode";
 import QuickCapture from "./quick-capture";
 import DailyBriefing from "./daily-briefing";
 import MyDay from "./my-day";
+import FirstSteps from "./first-steps";
 import WeeklyIntelligence from "./weekly-intelligence";
 import AvailabilityPanel from "./availability-panel";
 import { LogoutButton } from "./logout-button";
@@ -55,6 +56,7 @@ async function DashboardContent() {
     >
       <VyraWorkspace>
       <VyraHome />
+      <FirstSteps userId={user.id} />
 
         <div className="min-w-0 space-y-6">
 
