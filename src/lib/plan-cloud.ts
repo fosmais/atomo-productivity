@@ -97,6 +97,9 @@ export async function saveCloudPlan(
   name: string,
   tasks: SavedTask[]
 ): Promise<SavedPlan> {
+  if (tasks.some((task) => !task.title.trim() || task.title.trim().length > 200 || !/[\p{L}\p{N}]/u.test(task.title) || !isPriority(task.priority))) {
+    throw new Error("Revise os títulos e prioridades das tarefas antes de salvar.");
+  }
   const { supabase, userId } = await getAuthenticatedUser();
 
   const { data: plan, error } = await supabase
