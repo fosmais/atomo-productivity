@@ -1,4 +1,5 @@
 "use client";
+import FeatureHint from "./feature-hint";
 
 import { useState } from "react";
 import { getCloudEvents } from "@/lib/event-cloud";
@@ -168,7 +169,7 @@ export default function AutoPilot() {
 
   return (
     <section className="rounded-2xl border border-violet-500/30 bg-slate-900 p-5 text-white">
-      <p className="text-xs font-semibold uppercase tracking-widest text-violet-400">MYRYRA · AUTOPILOT</p>
+      <FeatureHint label="MYRYRA · AUTOPILOT" title="Piloto automático da sua rotina" description="Sugere encaixes para tarefas na agenda, considerando disponibilidade e prioridades." tip="Revise a prévia e confirme antes de reservar um horário." />
       <h3 className="mt-2 text-xl font-bold">Seu planejamento em piloto automático</h3>
       <p className="mt-2 text-sm text-slate-300">
         Simule a distribuição de tarefas pelos próximos sete dias, considerando prioridades,
