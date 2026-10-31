@@ -65,6 +65,9 @@ export default function LoginPage() {
       const supabase = createClient();
 
       if (mode === "signup") {
+        if (password.length < 12) {
+          throw new Error("Para criar sua conta, use uma senha com pelo menos 12 caracteres.");
+        }
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -205,7 +208,7 @@ export default function LoginPage() {
               id="password"
               type="password"
               required
-              minLength={6}
+              minLength={mode === "signup" ? 12 : undefined}
               autoComplete={
                 mode === "login" ? "current-password" : "new-password"
               }
@@ -216,6 +219,7 @@ export default function LoginPage() {
             />
           </div>
 
+          {mode === "signup" && <p className="text-xs text-slate-400">Use pelo menos 12 caracteres na senha.</p>}
           <button
             type="submit"
             disabled={loading}
