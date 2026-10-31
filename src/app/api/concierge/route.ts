@@ -48,7 +48,7 @@ function isConciergeProposal(value: unknown): value is ConciergeProposal {
     (value.priority === "Alta" ||
       value.priority === "Média" ||
       value.priority === "Normal") &&
-    (value.dueDate === null || (typeof value.dueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value.dueDate) && !Number.isNaN(Date.parse(value.dueDate + "T00:00:00Z"))))
+    (value.dueDate === null || (typeof value.dueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value.dueDate) && new Date(value.dueDate + "T00:00:00Z").toISOString().slice(0, 10) === value.dueDate))
   );
 }
 
