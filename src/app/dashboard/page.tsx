@@ -31,6 +31,7 @@ import VyraNavigation from "./vyra-navigation";
 import VyraWorkspace from "./vyra-workspace";
 import VyraModule from "./vyra-module";
 import VyraHome from "./vyra-home";
+import PlannerQuickNav from "./planner-quick-nav";
 import VyraSection from "./vyra-section";
 import { FeatureAccordion } from "./feature-accordion";
 
@@ -86,11 +87,7 @@ async function DashboardContent() {
         >
           <div className="min-w-0 space-y-6">
             <p className="inline-flex items-center rounded-full border border-violet-400/25 bg-violet-500/10 px-3 py-1 text-xs font-semibold tracking-wide text-violet-200" data-myryra-planner-version="2.0">Planner 2.0 · Nova experiência</p>
-            <nav aria-label="Acesso rápido ao Planner" className="flex flex-wrap gap-2">
-              <a href="#planner-today" className="rounded-full border border-violet-400/40 bg-violet-500/15 px-4 py-2 text-sm font-medium text-violet-100 transition hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">Meu dia</a>
-              <a href="#planner-focus" className="rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-violet-400/40 hover:text-white focus-visible:outline-2 focus-visible:outline-violet-400">Foco e rotina</a>
-              <a href="#planner-intelligence" className="rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-violet-400/40 hover:text-white focus-visible:outline-2 focus-visible:outline-violet-400">Planejamento inteligente</a>
-            </nav>
+            <PlannerQuickNav />
             <div id="planner-today" className="min-w-0 scroll-mt-6 rounded-3xl border border-violet-400/20 bg-gradient-to-br from-violet-950/35 via-slate-900/70 to-slate-950/80 p-4 shadow-[0_18px_50px_rgba(49,20,100,0.14)] sm:p-6">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div>
