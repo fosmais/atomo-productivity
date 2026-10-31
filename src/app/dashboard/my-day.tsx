@@ -7,6 +7,10 @@ import { getCloudEvents } from "@/lib/event-cloud";
 type Item = { id?: string; title: string; priority: string; dueDate: string | null; completed: boolean };
 type Appointment = { title: string; startsAt: string };
 
+function localDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 export default function MyDay() {
   const [tasks, setTasks] = useState<Item[]>([]);
   const [events, setEvents] = useState<Appointment[]>([]);
@@ -32,12 +36,12 @@ export default function MyDay() {
     window.addEventListener("myryra:events-updated", load);
     return () => { active = false; window.removeEventListener("myryra:tasks-updated", load); window.removeEventListener("myryra:events-updated", load); };
   }, []);
-  const today = new Date().toLocaleDateString("en-CA");
+  const today = localDateKey(new Date());
   const todayTasks = tasks.filter(task => task.dueDate === today);
   const priorityRank: Record<string, number> = { Alta: 0, "Média": 1, Normal: 2 };
   const pending = tasks.filter(task => !task.completed && (!task.dueDate || task.dueDate <= today))
     .sort((a, b) => (a.dueDate && a.dueDate < today ? -1 : 0) - (b.dueDate && b.dueDate < today ? -1 : 0) || (priorityRank[a.priority] ?? 3) - (priorityRank[b.priority] ?? 3));
-  const appointments = events.filter(event => new Date(event.startsAt).toLocaleDateString("en-CA") === today)
+  const appointments = events.filter(event => localDateKey(new Date(event.startsAt)) === today)
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
   const finished = todayTasks.filter(task => task.completed).length;
   return <section className="rounded-2xl border border-violet-500/30 bg-slate-900 p-5 text-white" aria-label="Meu Dia">
