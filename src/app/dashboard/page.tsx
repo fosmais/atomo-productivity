@@ -85,6 +85,7 @@ async function DashboardContent() {
           description="Seu planejamento organizado por contexto. Abra apenas a ferramenta de que precisa."
         >
           <div className="min-w-0 space-y-6">
+            <p className="inline-flex items-center rounded-full border border-violet-400/25 bg-violet-500/10 px-3 py-1 text-xs font-semibold tracking-wide text-violet-200" data-myryra-planner-version="2.0">Planner 2.0 · Nova experiência</p>
             <nav aria-label="Acesso rápido ao Planner" className="flex flex-wrap gap-2">
               <a href="#planner-today" className="rounded-full border border-violet-400/40 bg-violet-500/15 px-4 py-2 text-sm font-medium text-violet-100 transition hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">Meu dia</a>
               <a href="#planner-focus" className="rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-violet-400/40 hover:text-white focus-visible:outline-2 focus-visible:outline-violet-400">Foco e rotina</a>
