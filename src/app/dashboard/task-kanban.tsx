@@ -223,7 +223,7 @@ export default function TaskKanban() {
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase text-violet-400">
-            VYRA
+            MYRYRA
           </p>
           <h2 className="text-2xl font-bold">Pipeline de tarefas</h2>
         </div>
