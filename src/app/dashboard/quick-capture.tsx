@@ -34,7 +34,7 @@ function extractDate(title: string): { title: string; dueDate: string | null } {
 
 function parseDrafts(text: string): Draft[] {
   const seen = new Set<string>();
-  return text.split(/[\n;]+/).map((part) => part.trim().replace(/^[\s\-•*\d.)]+/, "").trim())
+  return text.split(/[\n;]+/).map((part) => part.trim().replace(/^(?:[-•*]\s+|\d+[.)]\s+)/, "").trim())
     .filter((title) => {
       if (!title || title.length > 200) return false;
       const key = title.toLocaleLowerCase("pt-BR");
