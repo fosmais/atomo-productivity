@@ -78,28 +78,30 @@ async function DashboardContent() {
       </VyraSection>
 </VyraModule>
       <VyraModule id="vyra-planner">
-<VyraSection
-        id="vyra-planner"
-        eyebrow="MYRYRA PLANNER"
-        title="Seu dia, sob controle."
-        description="Transforme suas prioridades em um planejamento claro e objetivo."
-      >
-        <FeatureAccordion id="day" title="Meu Dia" description="Prioridades e compromissos de hoje" userId={user.id} defaultOpen><MyDay /></FeatureAccordion>
-        <FeatureAccordion id="replan" title="Replanejamento" description="Atualize tarefas atrasadas com controle" userId={user.id}><SmartReplan /></FeatureAccordion>
-        <FeatureAccordion id="goals" title="Metas rápidas" description="Acompanhe suas pequenas conquistas" userId={user.id}><QuickGoals userId={user.id} /></FeatureAccordion>
-        <FeatureAccordion id="briefing" title="Daily Briefing" description="Resumo para começar o dia" userId={user.id}><DailyBriefing /></FeatureAccordion>
-        <FeatureAccordion id="what-now" title="What Now?" description="Sua próxima ação recomendada" userId={user.id}><WhatNow /></FeatureAccordion>
-        <FeatureAccordion id="focus" title="Focus Mode" description="Sessões para manter a concentração" userId={user.id}><FocusMode /></FeatureAccordion>
-        <FeatureAccordion id="daily-copilot" title="Copiloto diário" description="Planejamento com inteligência artificial" userId={user.id}><DailyCopilot /></FeatureAccordion>
-      </VyraSection>
-<section className="rounded-xl border border-slate-800 p-6">
-        <h2 className="text-xl font-semibold">
-          Meus planos
-        </h2>
-
-        <FeatureAccordion id="plans" title="Meus planos" description="Acompanhe seus planos e tarefas" userId={user.id}><CloudPlans /></FeatureAccordion>
-      </section>
-</VyraModule>
+        <VyraSection
+          id="vyra-planner"
+          eyebrow="MYRYRA PLANNER"
+          title="Planeje com clareza."
+          description="Seu planejamento organizado por contexto. Abra apenas a ferramenta de que precisa."
+        >
+          <div className="grid min-w-0 gap-4 xl:grid-cols-2">
+            <div className="min-w-0 space-y-4">
+              <p className="px-1 text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">Seu dia</p>
+              <FeatureAccordion id="day" title="Meu Dia" description="Prioridades e compromissos de hoje" userId={user.id} defaultOpen><MyDay /></FeatureAccordion>
+              <FeatureAccordion id="briefing" title="Daily Briefing" description="Resumo para começar o dia" userId={user.id}><DailyBriefing /></FeatureAccordion>
+              <FeatureAccordion id="what-now" title="What Now?" description="Sua próxima ação recomendada" userId={user.id}><WhatNow /></FeatureAccordion>
+              <FeatureAccordion id="focus" title="Focus Mode" description="Sessões para manter a concentração" userId={user.id}><FocusMode /></FeatureAccordion>
+            </div>
+            <div className="min-w-0 space-y-4">
+              <p className="px-1 text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">Planejamento inteligente</p>
+              <FeatureAccordion id="daily-copilot" title="Copiloto diário" description="Planejamento com inteligência artificial" userId={user.id}><DailyCopilot /></FeatureAccordion>
+              <FeatureAccordion id="replan" title="Replanejamento" description="Atualize tarefas atrasadas com controle" userId={user.id}><SmartReplan /></FeatureAccordion>
+              <FeatureAccordion id="goals" title="Metas rápidas" description="Acompanhe suas pequenas conquistas" userId={user.id}><QuickGoals userId={user.id} /></FeatureAccordion>
+              <FeatureAccordion id="plans" title="Meus planos" description="Acompanhe seus planos e tarefas" userId={user.id}><CloudPlans /></FeatureAccordion>
+            </div>
+          </div>
+        </VyraSection>
+      </VyraModule>
       <VyraModule id="vyra-tasks">
 <VyraSection
         id="vyra-tasks"
