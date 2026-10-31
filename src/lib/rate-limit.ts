@@ -23,6 +23,15 @@ const minuteLimiter = redis
   : null;
 
 // One shared namespace prevents quota resets when a user changes plans.
+const legacyDailyLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(100, "1 d"),
+      prefix: "vyra:concierge:daily",
+      analytics: false,
+    })
+  : null;
+
 const dailyLimiters = redis
   ? new Map(
       ([10, 100, 250] as const).map((limit) => [
@@ -38,7 +47,7 @@ const dailyLimiters = redis
   : null;
 
 export async function checkConciergeRateLimit(userId: string) {
-  if (!minuteLimiter || !dailyLimiters) {
+  if (!minuteLimiter || !dailyLimiters || !legacyDailyLimiter) {
     const missing = [
       !redisUrl ? "UPSTASH_REDIS_REST_URL" : null,
       !redisToken ? "UPSTASH_REDIS_REST_TOKEN" : null,
@@ -54,7 +63,7 @@ export async function checkConciergeRateLimit(userId: string) {
   const dailyLimit = billingEnabled
     ? (await getUserEntitlements(userId)).aiMessagesPerDay
     : 100;
-  const dailyLimiter = dailyLimiters.get(dailyLimit);
+  const dailyLimiter = billingEnabled ? dailyLimiters.get(dailyLimit) : legacyDailyLimiter;
   if (!dailyLimiter) throw new Error("Limite diário não configurado.");
 
   const minute = await minuteLimiter.limit(userId);
