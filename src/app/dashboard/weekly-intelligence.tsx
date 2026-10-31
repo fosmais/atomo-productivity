@@ -1,4 +1,5 @@
 "use client";
+import FeatureHint from "./feature-hint";
 
 import { useCallback, useEffect, useState } from "react";
 import { loadVyraCompletionHistory } from "./vyra-metrics-service";
@@ -38,7 +39,7 @@ export default function WeeklyIntelligence() {
     <section className="rounded-2xl border border-violet-500/30 bg-slate-900 p-5 text-white" aria-label="Inteligência semanal">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-violet-400">MYRYRA · WEEKLY INTELLIGENCE</p>
+          <FeatureHint label="MYRYRA · WEEKLY INTELLIGENCE" title="Sua semana em perspectiva" description="Ajuda a acompanhar a evolução das tarefas e identificar padrões de produtividade." tip="Use os indicadores para ajustar seu planejamento." />
           <h3 className="mt-1 text-xl font-semibold">Sua semana em perspectiva.</h3>
         </div>
         <button type="button" onClick={() => void load()} disabled={loading}
