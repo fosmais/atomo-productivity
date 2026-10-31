@@ -45,19 +45,29 @@ export default function MyDay() {
             if (batch.length < pageSize) return allTasks;
           }
         };
-        const [allTasks, calendarResponse] = await Promise.all([
-          loadAllTasks(),
-          supabase.from("events").select("title,starts_at,ends_at").eq("user_id", auth.user.id)
-            .lt("starts_at", dayEnd.toISOString()).gt("ends_at", dayStart.toISOString())
-            .order("starts_at", { ascending: true }).limit(100),
-        ]);
-        if (calendarResponse.error) throw calendarResponse.error;
+        const loadTodayEvents = async () => {
+          const pageSize = 100;
+          const allEvents: { title: string; starts_at: string; ends_at: string }[] = [];
+          for (let offset = 0; ; offset += pageSize) {
+            if (!active || requestId !== latestRequest) return allEvents;
+            const page = await supabase.from("events")
+              .select("title,starts_at,ends_at").eq("user_id", auth.user.id)
+              .lt("starts_at", dayEnd.toISOString()).gt("ends_at", dayStart.toISOString())
+              .order("starts_at", { ascending: true }).order("id", { ascending: true })
+              .range(offset, offset + pageSize - 1);
+            if (page.error) throw page.error;
+            const batch = page.data ?? [];
+            allEvents.push(...batch);
+            if (batch.length < pageSize) return allEvents;
+          }
+        };
+        const [allTasks, allEvents] = await Promise.all([loadAllTasks(), loadTodayEvents()]);
         if (!active || requestId !== latestRequest) return;
         setTasks(allTasks.map(task => ({
           id: task.id, title: task.title, priority: task.priority,
           dueDate: task.due_date, completed: task.completed,
         })));
-        setEvents((calendarResponse.data ?? []).map(event => ({ title: event.title, startsAt: event.starts_at, endsAt: event.ends_at })));
+        setEvents(allEvents.map(event => ({ title: event.title, startsAt: event.starts_at, endsAt: event.ends_at })));
         setError("");
       } catch {
         if (active && requestId === latestRequest) setError("Não foi possível carregar o resumo do dia.");
