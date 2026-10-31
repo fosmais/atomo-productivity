@@ -23,6 +23,11 @@ export default function ResetPasswordPage() {
       const supabase = createClient();
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) throw new Error("Link inválido ou expirado. Solicite outro e-mail de recuperação.");
+      const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (assurance.error) throw new Error("Não foi possível verificar a segurança da sessão.");
+      if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
+        throw new Error("Confirme seu segundo fator antes de alterar a senha. Acesse o login e conclua a verificação.");
+      }
       const result = await supabase.auth.updateUser({ password });
       if (result.error) throw result.error;
       await supabase.auth.signOut();
