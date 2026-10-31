@@ -26,6 +26,8 @@ export default function CalendarEvents() {
   const [showAllLocal, setShowAllLocal] = useState(false);
   const [periodFilter, setPeriodFilter] = useState<"today" | "week" | "all">("week");
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [calendarView, setCalendarView] = useState<"day" | "week" | "month">("week");
+  const [calendarOffset, setCalendarOffset] = useState(0);
   // VYRA_GOOGLE_CALENDAR_INTEGRATION
   const [googleEvents, setGoogleEvents] = useState<GoogleCalendarEvent[]>([]);
   const [googleConnected, setGoogleConnected] = useState(false);
@@ -198,6 +200,21 @@ export default function CalendarEvents() {
       googleEvents.filter((event) => dateKey(event.start) === key).length;
     return { key, count, weekday: day.toLocaleDateString("pt-BR", { weekday: "short" }), day: day.getDate() };
   });
+  const anchor = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (calendarView === "day") anchor.setDate(anchor.getDate() + calendarOffset);
+  if (calendarView === "week") anchor.setDate(anchor.getDate() - ((anchor.getDay() + 6) % 7) + calendarOffset * 7);
+  if (calendarView === "month") anchor.setMonth(anchor.getMonth() + calendarOffset, 1);
+  const daysCount = calendarView === "day" ? 1 : calendarView === "week" ? 7 : new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0).getDate();
+  const calendarDays = Array.from({ length: daysCount }, (_, i) => {
+    const date = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() + i);
+    const key = date.toLocaleDateString("en-CA");
+    const items = [
+      ...events.filter((e) => dateKey(e.startsAt) === key).map((e) => ({ key: `local-${e.id}`, title: e.title, at: timeLabel(e.startsAt) })),
+      ...googleEvents.filter((e) => dateKey(e.start) === key).map((e, j) => ({ key: `google-${e.id ?? j}`, title: e.title, at: timeLabel(e.start) })),
+    ].sort((a, b) => a.at.localeCompare(b.at));
+    return { key, date, items };
+  });
+  const calendarPeriod = anchor.toLocaleDateString("pt-BR", calendarView === "month" ? { month: "long", year: "numeric" } : { day: "numeric", month: "long", year: "numeric" });
   const filteredGoogle = googleEvents.filter((event) => inPeriod(event.start))
     .sort((a, b) => (a.start ?? "").localeCompare(b.start ?? ""));
   const filteredLocal = events.filter((event) => inPeriod(event.startsAt))
@@ -214,6 +231,29 @@ export default function CalendarEvents() {
       <p className="mt-2 text-sm text-slate-400">
         Cadastre seus eventos e organize seus horários.
       </p>
+
+      <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/60 p-3 sm:p-4" aria-label="Smart Calendar">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div><p className="text-xs font-semibold uppercase tracking-widest text-violet-300">Smart Calendar · Beta</p><h3 className="mt-1 text-lg font-semibold capitalize">{calendarPeriod}</h3></div>
+          <div className="flex flex-wrap gap-2">
+            {(["day", "week", "month"] as const).map((view) => <button key={view} type="button" aria-pressed={calendarView === view} onClick={() => { setCalendarView(view); setCalendarOffset(0); setSelectedDay(null); }} className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${calendarView === view ? "bg-violet-500 text-white" : "border border-white/10 text-slate-300 hover:bg-white/10"}`}>{view === "day" ? "Dia" : view === "week" ? "Semana" : "Mês"}</button>)}
+          </div>
+        </div>
+        <div className="mt-3 flex items-center gap-2">
+          <button type="button" onClick={() => setCalendarOffset((n) => n - 1)} aria-label="Período anterior" className="rounded-lg border border-white/10 px-3 py-1.5 hover:bg-white/10">‹</button>
+          <button type="button" onClick={() => { setCalendarOffset(0); setSelectedDay(null); }} className="rounded-lg border border-white/10 px-3 py-1.5 text-xs hover:bg-white/10">Hoje</button>
+          <button type="button" onClick={() => setCalendarOffset((n) => n + 1)} aria-label="Próximo período" className="rounded-lg border border-white/10 px-3 py-1.5 hover:bg-white/10">›</button>
+          <span className="ml-auto text-xs text-slate-400">Eventos MYRYRA + Google</span>
+        </div>
+        <div className={`mt-4 grid gap-2 ${calendarView === "day" ? "grid-cols-1" : calendarView === "week" ? "grid-cols-2 md:grid-cols-7" : "grid-cols-3 sm:grid-cols-5 lg:grid-cols-7"}`}>
+          {calendarDays.map(({ key, date, items }) => <button key={key} type="button" onClick={() => { setSelectedDay(key); setPeriodFilter("all"); }} aria-label={`Ver eventos de ${date.toLocaleDateString("pt-BR")}`} aria-pressed={selectedDay === key} className={`min-h-24 min-w-0 rounded-xl border p-2 text-left transition hover:border-violet-400/60 ${selectedDay === key ? "border-violet-400 bg-violet-500/15" : key === todayKey ? "border-violet-500/40 bg-violet-500/10" : "border-white/10 bg-slate-900/70"}`}>
+            <span className="block text-xs font-semibold capitalize text-slate-300">{date.toLocaleDateString("pt-BR", { weekday: "short" })} {date.getDate()}</span>
+            <span className="mt-2 block space-y-1">{items.slice(0, calendarView === "month" ? 2 : 3).map((item) => <span key={item.key} className="block truncate rounded bg-violet-500/15 px-1.5 py-1 text-xs text-violet-100" title={item.title}>{item.at !== "Dia inteiro" ? `${item.at} · ` : ""}{item.title}</span>)}</span>
+            {items.length > (calendarView === "month" ? 2 : 3) && <span className="mt-1 block text-xs text-slate-400">+{items.length - (calendarView === "month" ? 2 : 3)} eventos</span>}
+          </button>)}
+        </div>
+        {selectedDay && <button type="button" onClick={() => setSelectedDay(null)} className="mt-3 text-xs font-medium text-violet-300 underline">Limpar filtro do dia selecionado</button>}
+      </div>
 
       <button type="button" onClick={() => setShowForm((value) => !value)}
         aria-expanded={showForm}
