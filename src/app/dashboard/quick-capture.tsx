@@ -40,7 +40,7 @@ function parseDrafts(text: string): Draft[] {
     if (!rawTitle) continue;
     const extracted = extractDate(rawTitle);
     const title = extracted.title.trim();
-    if (!title || title.length > 200) continue;
+    if (!title || title.length > 200 || !/[\p{L}\p{N}]/u.test(title)) continue;
     const key = `${title.toLocaleLowerCase("pt-BR")}|${extracted.dueDate ?? ""}`;
     if (seen.has(key)) continue;
     seen.add(key);
