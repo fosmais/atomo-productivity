@@ -84,7 +84,7 @@ export default function ResetPasswordPage() {
       {factors.length > 0 && <form onSubmit={verifyFactor} className="mt-5 space-y-3 rounded-xl border border-violet-500/30 p-4">
         <p className="text-sm text-slate-200">Confirme o segundo fator para continuar a recuperação.</p>
         {factors.length > 1 && <select aria-label="Selecionar autenticador" value={factorId} onChange={e => setFactorId(e.target.value)} className="w-full rounded-lg bg-slate-900 p-3">{factors.map(factor => <option key={factor.id} value={factor.id}>{factor.name}</option>)}</select>}
-        <input aria-label="Código do autenticador" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={factorCode} onChange={e => setFactorCode(e.target.value.replace(/\\D/g, "").slice(0, 6))} className="w-full rounded-lg border border-slate-700 bg-slate-900 p-3" />
+        <input aria-label="Código do autenticador" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={factorCode} onChange={e => setFactorCode(e.target.value.replace(/\D/g, "").slice(0, 6))} className="w-full rounded-lg border border-slate-700 bg-slate-900 p-3" />
         <button type="submit" disabled={busy || factorCode.length !== 6} className="w-full rounded-lg bg-violet-600 p-3 disabled:opacity-50">Confirmar autenticador</button>
       </form>}
       {error && <p role="alert" className="mt-4 text-sm text-rose-300">{error}</p>}
