@@ -1,4 +1,5 @@
 "use client";
+import FeatureHint from "./feature-hint";
 
 import { useEffect, useState } from "react";
 import { getCloudPlans } from "@/lib/plan-cloud";
@@ -45,7 +46,7 @@ export default function MyDay() {
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
   const finished = todayTasks.filter(task => task.completed).length;
   return <section className="rounded-2xl border border-violet-500/30 bg-slate-900 p-5 text-white" aria-label="Meu Dia">
-    <p className="text-xs font-semibold uppercase tracking-widest text-violet-400">MYRYRA · MEU DIA</p>
+    <FeatureHint label="MYRYRA · MEU DIA" title="Tudo o que importa hoje" description="Mostra tarefas prioritárias, progresso e compromissos cadastrados na MYRYRA." tip="Eventos externos do Google ainda não fazem parte deste resumo." />
     <h3 className="mt-2 text-xl font-semibold">O que merece sua atenção hoje?</h3>
     {loading ? <p className="mt-3 text-sm text-slate-300">Carregando suas prioridades...</p> : error ? <p role="alert" className="mt-3 text-rose-300">{error}</p> : <>
       <p className="mt-3 text-sm text-slate-300">{finished} de {todayTasks.length} tarefas com prazo hoje concluídas · {appointments.length} compromisso(s) hoje</p>
