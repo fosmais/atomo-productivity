@@ -69,15 +69,29 @@ async function DashboardContent() {
 
 
       <VyraModule id="vyra-ai">
-<VyraSection
-        id="vyra-ai"
-        eyebrow="MYKA AI"
-        title="Sua inteligência pessoal."
-        description="Converse com a Myka para organizar prioridades, tomar decisões e planejar sua rotina."
-      >
-        <FeatureAccordion id="myka" title="Converse com a MYKA" description="Sua assistente inteligente" userId={user.id} defaultOpen><CopilotChat /></FeatureAccordion>
-      </VyraSection>
-</VyraModule>
+        <VyraSection
+          id="vyra-ai"
+          eyebrow="MYRYRA INTELLIGENCE"
+          title="Converse com a MYKA."
+          description="Sua assistente pessoal para transformar ideias em decisões e próximos passos."
+        >
+          <div className="min-w-0 space-y-5">
+            <div className="rounded-3xl border border-violet-400/20 bg-gradient-to-br from-violet-950/40 via-slate-900/75 to-slate-950/80 p-5 sm:p-7">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-violet-400/30 bg-violet-500/15 text-lg font-bold text-violet-200" aria-hidden="true">M</span>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">MYKA · Assistente pessoal</p>
+                  <h3 className="mt-1 text-xl font-semibold tracking-tight text-white">Sua próxima ideia começa aqui.</h3>
+                </div>
+              </div>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">Converse naturalmente sobre prioridades, compromissos e objetivos. A MYKA ajuda você a organizar o que importa.</p>
+            </div>
+            <section className="min-w-0 rounded-3xl border border-white/10 bg-slate-900/60 p-3 sm:p-5" aria-label="Conversa com a MYKA">
+              <CopilotChat />
+            </section>
+          </div>
+        </VyraSection>
+      </VyraModule>
       <VyraModule id="vyra-planner">
         <VyraSection
           id="vyra-planner"
