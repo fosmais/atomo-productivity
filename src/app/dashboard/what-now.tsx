@@ -1,4 +1,5 @@
 "use client";
+import FeatureHint from "./feature-hint";
 
 import { useState } from "react";
 import { getCloudPlans } from "@/lib/plan-cloud";
@@ -65,7 +66,7 @@ export default function WhatNow() {
 
   return (
     <section className="rounded-xl border border-violet-500/30 bg-slate-900 p-5 text-white">
-      <p className="text-xs font-semibold uppercase tracking-widest text-violet-400">MYRYRA · WHAT NOW? 2.0</p>
+      <FeatureHint label="MYRYRA · WHAT NOW? 2.0" title="Seu próximo passo" description="Ajuda a escolher qual tarefa merece atenção agora com base no seu planejamento." tip="Use a recomendação como orientação, não como obrigação." />
       <h3 className="mt-2 text-xl font-semibold">Qual é o próximo passo?</h3>
       <p className="mt-2 text-sm text-slate-300">Recomendação por prioridade, prazo, duração e disponibilidade MYRYRA. Nenhuma tarefa é iniciada automaticamente.</p>
       <button type="button" onClick={() => void recommend()} disabled={loading}
