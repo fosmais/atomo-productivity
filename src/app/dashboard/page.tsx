@@ -84,20 +84,38 @@ async function DashboardContent() {
           title="Planeje com clareza."
           description="Seu planejamento organizado por contexto. Abra apenas a ferramenta de que precisa."
         >
-          <div className="grid min-w-0 gap-4 xl:grid-cols-2">
-            <div className="min-w-0 space-y-4">
-              <p className="px-1 text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">Seu dia</p>
+          <div className="min-w-0 space-y-6">
+            <div className="min-w-0 rounded-3xl border border-violet-400/20 bg-gradient-to-br from-violet-950/35 via-slate-900/70 to-slate-950/80 p-4 shadow-[0_18px_50px_rgba(49,20,100,0.14)] sm:p-6">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">Seu ponto de partida</p>
+                  <h3 className="mt-2 text-xl font-semibold tracking-tight text-white">Organize seu dia</h3>
+                  <p className="mt-1 text-sm text-slate-400">Comece pelas prioridades e compromissos que precisam de atenção.</p>
+                </div>
+                <span className="rounded-full border border-violet-400/25 bg-violet-500/10 px-3 py-1.5 text-xs font-medium text-violet-200">Planejamento diário</span>
+              </div>
               <FeatureAccordion id="day" title="Meu Dia" description="Prioridades e compromissos de hoje" userId={user.id} defaultOpen><MyDay /></FeatureAccordion>
-              <FeatureAccordion id="briefing" title="Daily Briefing" description="Resumo para começar o dia" userId={user.id}><DailyBriefing /></FeatureAccordion>
-              <FeatureAccordion id="what-now" title="What Now?" description="Sua próxima ação recomendada" userId={user.id}><WhatNow /></FeatureAccordion>
-              <FeatureAccordion id="focus" title="Focus Mode" description="Sessões para manter a concentração" userId={user.id}><FocusMode /></FeatureAccordion>
             </div>
-            <div className="min-w-0 space-y-4">
-              <p className="px-1 text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">Planejamento inteligente</p>
-              <FeatureAccordion id="daily-copilot" title="Copiloto diário" description="Planejamento com inteligência artificial" userId={user.id}><DailyCopilot /></FeatureAccordion>
-              <FeatureAccordion id="replan" title="Replanejamento" description="Atualize tarefas atrasadas com controle" userId={user.id}><SmartReplan /></FeatureAccordion>
-              <FeatureAccordion id="goals" title="Metas rápidas" description="Acompanhe suas pequenas conquistas" userId={user.id}><QuickGoals userId={user.id} /></FeatureAccordion>
-              <FeatureAccordion id="plans" title="Meus planos" description="Acompanhe seus planos e tarefas" userId={user.id}><CloudPlans /></FeatureAccordion>
+            <div className="grid min-w-0 gap-5 xl:grid-cols-2">
+              <section className="min-w-0 space-y-3" aria-label="Foco e rotina">
+                <div className="px-1 pb-1">
+                  <h3 className="text-base font-semibold text-white">Foco e rotina</h3>
+                  <p className="mt-1 text-sm text-slate-400">Saiba o que fazer agora e mantenha o ritmo.</p>
+                </div>
+                <FeatureAccordion id="briefing" title="Daily Briefing" description="Resumo para começar o dia" userId={user.id}><DailyBriefing /></FeatureAccordion>
+                <FeatureAccordion id="what-now" title="What Now?" description="Sua próxima ação recomendada" userId={user.id}><WhatNow /></FeatureAccordion>
+                <FeatureAccordion id="focus" title="Focus Mode" description="Sessões para manter a concentração" userId={user.id}><FocusMode /></FeatureAccordion>
+              </section>
+              <section className="min-w-0 space-y-3" aria-label="Inteligência e planejamento">
+                <div className="px-1 pb-1">
+                  <h3 className="text-base font-semibold text-white">Inteligência e planejamento</h3>
+                  <p className="mt-1 text-sm text-slate-400">Ajuste seus planos com o apoio da MYRYRA.</p>
+                </div>
+                <FeatureAccordion id="daily-copilot" title="Copiloto diário" description="Planejamento com inteligência artificial" userId={user.id}><DailyCopilot /></FeatureAccordion>
+                <FeatureAccordion id="replan" title="Replanejamento" description="Atualize tarefas atrasadas com controle" userId={user.id}><SmartReplan /></FeatureAccordion>
+                <FeatureAccordion id="goals" title="Metas rápidas" description="Acompanhe suas pequenas conquistas" userId={user.id}><QuickGoals userId={user.id} /></FeatureAccordion>
+                <FeatureAccordion id="plans" title="Meus planos" description="Acompanhe seus planos e tarefas" userId={user.id}><CloudPlans /></FeatureAccordion>
+              </section>
             </div>
           </div>
         </VyraSection>
