@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getCloudEvents } from "@/lib/event-cloud";
+import { useVyraNavigation } from "./vyra-module-context";
 
 type SearchResult = { id: string; title: string; kind: "Tarefa" | "Plano" | "Compromisso"; detail: string };
 
 export default function GlobalSearch() {
+  const { navigateTo, navigateToTask } = useVyraNavigation();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -51,11 +53,11 @@ export default function GlobalSearch() {
     {error && <p role="alert" className="mt-3 text-sm text-rose-300">{error}</p>}
     {!loading && query.trim().length >= 2 && !error && <div className="mt-3 space-y-2" aria-live="polite">
       <p className="text-xs text-slate-400">{results.length} resultado(s) encontrado(s){results.length === 30 ? " (exibindo os primeiros 30)" : ""}</p>
-      {results.map(item => <div key={`${item.kind}-${item.id}`} className="rounded-lg border border-slate-700 bg-slate-950/60 p-3">
+      {results.map(item => <button type="button" key={`${item.kind}-${item.id}`} onClick={() => { if (item.kind === "Tarefa" && navigateToTask) navigateToTask(item.id); else navigateTo(item.kind === "Compromisso" ? "vyra-calendar" : "vyra-planner"); }} className="block w-full rounded-lg border border-slate-700 bg-slate-950/60 p-3 text-left transition-colors hover:border-violet-400/50 hover:bg-violet-500/10 focus-visible:outline-2 focus-visible:outline-violet-400">
         <span className="text-xs font-semibold uppercase text-violet-300">{item.kind}</span>
         <p className="mt-1 text-sm font-medium text-white">{item.title}</p>
         <p className="mt-1 text-xs text-slate-400">{item.detail}</p>
-      </div>)}
+      </button>)}
     </div>}
   </section>;
 }
