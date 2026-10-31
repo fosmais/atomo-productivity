@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import FeatureHint from "./feature-hint";
 
 type VyraSectionProps = {
   id?: string;
@@ -22,9 +23,7 @@ export default function VyraSection({
     >
       <div className="flex flex-col gap-2">
         {eyebrow && (
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-400">
-            {eyebrow}
-          </p>
+          <FeatureHint label={eyebrow} title={title} description={description || "Explore esta área da MYRYRA."} tip="Selecione o módulo para começar." />
         )}
 
         <h2 className="text-2xl font-bold tracking-tight text-white md:text-3xl">
