@@ -39,19 +39,19 @@ export default function WhatNowCard() {
   const recommendation = data?.recommendation;
 
   return (
-    <section className="rounded-3xl border border-violet-500/30 bg-gradient-to-br from-violet-950/50 via-slate-900 to-slate-950 p-6 md:p-8">
+    <section className="rounded-3xl border border-violet-400/25 bg-gradient-to-br from-violet-950/65 via-[#15112e] to-slate-950 p-5 shadow-[0_20px_70px_-35px_rgba(124,58,237,0.55)] sm:p-7">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-400">
-            MYRYRA WHAT NOW?
+            ✦ MYKA · WHAT NOW?
           </p>
 
           <h2 className="mt-2 text-2xl font-semibold text-white">
-            Sua próxima melhor ação.
+            O que vale a pena fazer agora?
           </h2>
 
           <p className="mt-2 text-sm text-slate-400">
-            Prioridades e tempo disponível em sintonia.
+            Uma sugestão prática com base nas suas tarefas e na sua disponibilidade.
           </p>
         </div>
 
@@ -84,9 +84,9 @@ export default function WhatNowCard() {
             <p className="text-xs text-slate-400">{error}</p>
           </div>
         ) : recommendation ? (
-          <div className="rounded-2xl border border-violet-400/20 bg-slate-950/50 p-5">
+          <div className="rounded-2xl border border-violet-400/15 bg-white/[0.045] p-5">
             <p className="text-xs font-semibold uppercase tracking-wider text-violet-300">
-              Recomendado para agora
+              SUA PRÓXIMA AÇÃO
             </p>
 
             <h3 className="mt-3 text-xl font-semibold text-white">
@@ -118,7 +118,7 @@ export default function WhatNowCard() {
                 disabled={!navigateToTask}
                 className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Começar agora
+                Ir para esta tarefa →
               </button>
             </div>
           </div>
