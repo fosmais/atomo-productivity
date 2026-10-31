@@ -48,7 +48,7 @@ function isConciergeProposal(value: unknown): value is ConciergeProposal {
     (value.priority === "Alta" ||
       value.priority === "Média" ||
       value.priority === "Normal") &&
-    (value.dueDate === null || typeof value.dueDate === "string")
+    (value.dueDate === null || (typeof value.dueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value.dueDate) && !Number.isNaN(Date.parse(value.dueDate + "T00:00:00Z"))))
   );
 }
 
@@ -63,7 +63,7 @@ function isConciergeEventProposal(
     value.title.length > 200 ||
     typeof value.startsAt !== "string" ||
     typeof value.endsAt !== "string" ||
-    !(value.location === null || typeof value.location === "string") ||
+    !(value.location === null || (typeof value.location === "string" && value.location.length <= 500)) ||
     !(
       value.eventType === "appointment" ||
       value.eventType === "unavailable"
@@ -86,7 +86,7 @@ function isConciergeEventProposal(
 function isConciergeResponse(value: unknown): value is ConciergeResponse {
   return (
     isRecord(value) &&
-    typeof value.reply === "string" && Array.isArray(value.proposedTasks) && value.proposedTasks.length <= 10 && value.proposedTasks.every(isConciergeProposal) &&
+    typeof value.reply === "string" && value.reply.trim().length > 0 && value.reply.length <= 12000 && Array.isArray(value.proposedTasks) && value.proposedTasks.length <= 10 && value.proposedTasks.every(isConciergeProposal) &&
     (
       value.proposedTask === null ||
       isConciergeProposal(value.proposedTask)
