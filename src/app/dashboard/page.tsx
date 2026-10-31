@@ -94,7 +94,7 @@ async function DashboardContent() {
                 </div>
                 <span className="rounded-full border border-violet-400/25 bg-violet-500/10 px-3 py-1.5 text-xs font-medium text-violet-200">Planejamento diário</span>
               </div>
-              <FeatureAccordion id="day" title="Meu Dia" description="Prioridades e compromissos de hoje" userId={user.id} defaultOpen><MyDay /></FeatureAccordion>
+              <div className="min-w-0 rounded-2xl border border-violet-400/20 bg-slate-950/55 p-4 sm:p-6" aria-label="Prioridades e compromissos de hoje"><MyDay /></div>
             </div>
             <div className="grid min-w-0 gap-5 xl:grid-cols-2">
               <section className="min-w-0 space-y-3" aria-label="Foco e rotina">
