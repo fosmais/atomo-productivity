@@ -177,7 +177,7 @@ export default function LoginPage() {
         <div className="mx-auto w-full max-w-md">
           <div className="mb-6 text-center lg:text-left"><p className="text-xs font-semibold uppercase tracking-[.3em] text-violet-300">MYRYRA · YOUR LIFE. IN SYNC.</p><h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Seu universo, em sintonia.</h2><p className="mt-3 text-sm text-slate-300">A MYKA está pronta para ajudar você a organizar o que realmente importa.</p></div>
           <div className="rounded-3xl border border-violet-300/25 bg-slate-950/75 p-6 shadow-2xl shadow-violet-950/40 backdrop-blur-xl sm:p-9">
-        <div className="mb-8 flex items-center gap-3"><span aria-hidden="true" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-600 text-2xl font-black shadow-lg shadow-violet-600/30">M</span><div><h1 className="text-2xl font-bold tracking-tight">MYRYRA</h1><p className="text-xs tracking-widest text-violet-300">YOUR LIFE. IN SYNC.</p></div></div><h2 className="text-2xl font-semibold">{mode === "login" ? "Bem-vindo de volta" : "Comece sua jornada"}</h2>
+        <div className="mb-8 flex items-center gap-3"><span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl"><img src="/myryra-logo.png" alt="Logotipo MYRYRA" className="h-full w-full object-cover" /></span><div><h1 className="text-2xl font-bold tracking-tight">MYRYRA</h1><p className="text-xs tracking-widest text-violet-300">YOUR LIFE. IN SYNC.</p></div></div><h2 className="text-2xl font-semibold">{mode === "login" ? "Bem-vindo de volta" : "Comece sua jornada"}</h2>
 
         <p className="mt-2 text-slate-400">
           {mode === "login"
