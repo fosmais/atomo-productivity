@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { getCloudEvents } from "@/lib/event-cloud";
 import { useVyraNavigation } from "./vyra-module-context";
 
 type SearchResult = { id: string; title: string; kind: "Tarefa" | "Plano" | "Compromisso"; detail: string };
@@ -32,14 +31,14 @@ export default function GlobalSearch() {
         const [tasks, plans, events] = await Promise.all([
           supabase.from("tasks").select("id,title,due_date").eq("user_id", auth.user.id).ilike("title", pattern).order("created_at", { ascending: false }).limit(30),
           supabase.from("plans").select("id,title").eq("user_id", auth.user.id).ilike("title", pattern).order("created_at", { ascending: false }).limit(30),
-          getCloudEvents(),
+          supabase.from("events").select("id,title,starts_at").eq("user_id", auth.user.id).ilike("title", pattern).order("starts_at", { ascending: false }).limit(30),
         ]);
         if (controller.signal.aborted) return;
-        if (tasks.error || plans.error) throw new Error(tasks.error?.message ?? plans.error?.message ?? "Erro ao buscar.");
+        if (tasks.error || plans.error || events.error) throw new Error(tasks.error?.message ?? plans.error?.message ?? events.error?.message ?? "Erro ao buscar.");
         const all: SearchResult[] = [
           ...(tasks.data ?? []).map(t => ({ id: t.id, title: t.title, kind: "Tarefa" as const, detail: t.due_date ? `Prazo: ${t.due_date}` : "Sem prazo" })),
           ...(plans.data ?? []).map(p => ({ id: p.id, title: p.title, kind: "Plano" as const, detail: "Plano salvo" })),
-          ...events.map(e => ({ id: e.id, title: e.title, kind: "Compromisso" as const, detail: new Date(e.startsAt).toLocaleDateString("pt-BR") })),
+          ...(events.data ?? []).map(e => ({ id: e.id, title: e.title, kind: "Compromisso" as const, detail: new Date(e.starts_at).toLocaleDateString("pt-BR") })),
         ];
         if (active) {
           setResults(all.filter(item => item.title.toLocaleLowerCase("pt-BR").includes(needle)).slice(0, 30));
