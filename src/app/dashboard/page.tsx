@@ -32,6 +32,7 @@ import VyraWorkspace from "./vyra-workspace";
 import VyraModule from "./vyra-module";
 import VyraHome from "./vyra-home";
 import VyraSection from "./vyra-section";
+import { FeatureAccordion, AccordionControls } from "./feature-accordion";
 
 async function DashboardContent() {
   await connection();
@@ -61,7 +62,7 @@ async function DashboardContent() {
       <VyraHome />
       <FirstSteps userId={user.id} />
 
-        <div className="min-w-0 space-y-6">
+        <div className="min-w-0 space-y-6">\n          <AccordionControls />
 
 
 
@@ -72,7 +73,7 @@ async function DashboardContent() {
         title="Sua inteligência pessoal."
         description="Converse com a Myka para organizar prioridades, tomar decisões e planejar sua rotina."
       >
-        <CopilotChat />
+        <FeatureAccordion id="myka" title="Converse com a MYKA" description="Sua assistente inteligente" userId={user.id} defaultOpen><CopilotChat /></FeatureAccordion>
       </VyraSection>
 </VyraModule>
       <VyraModule id="vyra-planner">
@@ -82,20 +83,20 @@ async function DashboardContent() {
         title="Seu dia, sob controle."
         description="Transforme suas prioridades em um planejamento claro e objetivo."
       >
-        <MyDay />
-        <SmartReplan />
-        <QuickGoals userId={user.id} />
-        <DailyBriefing />
-        <WhatNow />
-        <FocusMode />
-        <DailyCopilot />
+        <FeatureAccordion id="day" title="Meu Dia" description="Prioridades e compromissos de hoje" userId={user.id} defaultOpen><MyDay /></FeatureAccordion>
+        <FeatureAccordion id="replan" title="Replanejamento" description="Atualize tarefas atrasadas com controle" userId={user.id}><SmartReplan /></FeatureAccordion>
+        <FeatureAccordion id="goals" title="Metas rápidas" description="Acompanhe suas pequenas conquistas" userId={user.id}><QuickGoals userId={user.id} /></FeatureAccordion>
+        <FeatureAccordion id="briefing" title="Daily Briefing" description="Resumo para começar o dia" userId={user.id}><DailyBriefing /></FeatureAccordion>
+        <FeatureAccordion id="what-now" title="What Now?" description="Sua próxima ação recomendada" userId={user.id}><WhatNow /></FeatureAccordion>
+        <FeatureAccordion id="focus" title="Focus Mode" description="Sessões para manter a concentração" userId={user.id}><FocusMode /></FeatureAccordion>
+        <FeatureAccordion id="daily-copilot" title="Copiloto diário" description="Planejamento com inteligência artificial" userId={user.id}><DailyCopilot /></FeatureAccordion>
       </VyraSection>
 <section className="rounded-xl border border-slate-800 p-6">
         <h2 className="text-xl font-semibold">
           Meus planos
         </h2>
 
-        <CloudPlans />
+        <FeatureAccordion id="plans" title="Meus planos" description="Acompanhe seus planos e tarefas" userId={user.id}><CloudPlans /></FeatureAccordion>
       </section>
 </VyraModule>
       <VyraModule id="vyra-tasks">
@@ -105,9 +106,9 @@ async function DashboardContent() {
         title="Transforme planos em conquistas."
         description="Acompanhe suas tarefas, prioridades e progresso em um único lugar."
       >
-        <FavoritesPanel />
-        <QuickCapture />
-        <TaskKanban />
+        <FeatureAccordion id="favorites" title="Favoritos" description="Acesse rapidamente o que importa" userId={user.id}><FavoritesPanel /></FeatureAccordion>
+        <FeatureAccordion id="capture" title="Captura Inteligente" description="Transforme ideias em tarefas" userId={user.id}><QuickCapture /></FeatureAccordion>
+        <FeatureAccordion id="kanban" title="Quadro de tarefas" description="Organize suas tarefas por andamento" userId={user.id} defaultOpen><TaskKanban /></FeatureAccordion>
       </VyraSection>
 </VyraModule>
       <VyraModule id="vyra-calendar">
@@ -117,9 +118,9 @@ async function DashboardContent() {
         title="Sua agenda em sintonia."
         description="Organize compromissos e períodos indisponíveis para planejar melhor seu tempo."
       >
-        <CalendarEvents />
+        <FeatureAccordion id="calendar-events" title="Eventos da agenda" description="Crie e acompanhe compromissos" userId={user.id} defaultOpen><CalendarEvents /></FeatureAccordion>
       </VyraSection>
-      <AvailabilityPanel />
+      <FeatureAccordion id="availability" title="Disponibilidade" description="Visualize os períodos livres e ocupados" userId={user.id}><AvailabilityPanel /></FeatureAccordion>
       </VyraModule>
       <VyraModule id="vyra-scheduling">
 <VyraSection
@@ -128,8 +129,8 @@ async function DashboardContent() {
         title="Seu tempo, melhor aproveitado."
         description="Descubra os melhores horários para suas tarefas com base nas prioridades, durações e compromissos da sua agenda."
       >
-        <AutoPilot />
-        <SmartSchedulingPanel />
+        <FeatureAccordion id="autopilot" title="AutoPilot" description="Encontre horários para executar tarefas" userId={user.id}><AutoPilot /></FeatureAccordion>
+        <FeatureAccordion id="scheduling" title="Smart Scheduling" description="Sugestões inteligentes para sua agenda" userId={user.id}><SmartSchedulingPanel /></FeatureAccordion>
       </VyraSection>
 </VyraModule>
       <VyraModule id="vyra-performance">
@@ -139,8 +140,8 @@ async function DashboardContent() {
         title="Sua evolução em números."
         description="Acompanhe suas conquistas, identifique oportunidades de melhoria e tome decisões com base em dados reais."
       >
-        <WeeklyIntelligence />
-        <PerformanceInsights />
+        <FeatureAccordion id="weekly" title="Weekly Intelligence" description="Indicadores de sua semana" userId={user.id} defaultOpen><WeeklyIntelligence /></FeatureAccordion>
+        <FeatureAccordion id="performance" title="Performance & Insights" description="Explore seus indicadores de produtividade" userId={user.id}><PerformanceInsights /></FeatureAccordion>
       </VyraSection>
 </VyraModule>
       <VyraModule id="vyra-settings">
@@ -150,11 +151,11 @@ async function DashboardContent() {
         title="Uma experiência feita para você."
         description="Configure seus dias, horários e preferências de planejamento."
       >
-        <BetaFeedback />
-        <MfaSettings />
-        <PlanningSettings />
+        <FeatureAccordion id="feedback" title="Feedback" description="Envie sugestões e relatos sobre o beta" userId={user.id}><BetaFeedback /></FeatureAccordion>
+        <FeatureAccordion id="mfa" title="Segurança da conta" description="Configure a autenticação em dois fatores" userId={user.id}><MfaSettings /></FeatureAccordion>
+        <FeatureAccordion id="planning-settings" title="Preferências de planejamento" description="Personalize sua rotina" userId={user.id}><PlanningSettings /></FeatureAccordion>
         <div className="mt-6">
-          <GoogleCalendarSettings />
+          <FeatureAccordion id="google-settings" title="Integração Google Calendar" description="Gerencie a conexão com sua agenda Google" userId={user.id}><GoogleCalendarSettings /></FeatureAccordion>
         </div>
       </VyraSection>
 
