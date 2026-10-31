@@ -33,14 +33,22 @@ function isPriority(value: string): value is Priority {
 export async function getCloudPlans(): Promise<SavedPlan[]> {
   const { supabase, userId } = await getAuthenticatedUser();
 
-  const { data: plans, error: plansError } = await supabase
-    .from("plans")
-    .select("id, title, created_at")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
-
-  if (plansError) throw plansError;
-  if (!plans?.length) return [];
+  const plans: { id: string; title: string; created_at: string }[] = [];
+  const planPageSize = 500;
+  for (let offset = 0; ; offset += planPageSize) {
+    const { data, error: plansError } = await supabase
+      .from("plans")
+      .select("id, title, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true })
+      .range(offset, offset + planPageSize - 1);
+    if (plansError) throw plansError;
+    const batch = data ?? [];
+    plans.push(...batch);
+    if (batch.length < planPageSize) break;
+  }
+  if (!plans.length) return [];
 
   const tasks: { id: string; plan_id: string; title: string; priority: string; due_date: string | null; completed: boolean }[] = [];
   const pageSize = 500;
