@@ -14,7 +14,7 @@ type SubscriptionRow = {
  * Paid access requires an active/trialing status and a valid future period end.
  */
 export async function getUserEntitlements(userId: string) {
-  if (!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(userId)) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)) {
     throw new Error("Identificador de usuário inválido.");
   }
   const admin = createSupabaseAdmin();
