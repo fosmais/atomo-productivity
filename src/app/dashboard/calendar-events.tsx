@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import {
   getCloudEvents,
   saveCloudEvent,
@@ -8,6 +9,8 @@ import {
   type CalendarEvent,
   type EventType,
 } from "@/lib/event-cloud";
+
+type CalendarTask = { id: string; title: string; due_date: string | null; completed: boolean; priority: string };
 
 type GoogleCalendarEvent = {
   id: string | null;
@@ -21,6 +24,31 @@ type GoogleCalendarEvent = {
 };
 export default function CalendarEvents() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [tasks, setTasks] = useState<CalendarTask[]>([]);
+  const [tasksError, setTasksError] = useState("");
+  useEffect(() => {
+    let active = true;
+    async function loadCalendarTasks() {
+      try {
+        const supabase = createClient();
+        const { data: auth, error: authError } = await supabase.auth.getUser();
+        if (authError || !auth.user) throw new Error("Faça login para visualizar tarefas.");
+        const { data, error } = await supabase.from("tasks")
+          .select("id, title, due_date, completed, priority")
+          .eq("user_id", auth.user.id)
+          .not("due_date", "is", null)
+          .order("due_date", { ascending: true })
+          .limit(500);
+        if (error) throw error;
+        if (active) { setTasks((data ?? []) as CalendarTask[]); setTasksError(""); }
+      } catch {
+        if (active) setTasksError("Não foi possível carregar as tarefas no calendário.");
+      }
+    }
+    void loadCalendarTasks();
+    window.addEventListener("myryra:tasks-updated", loadCalendarTasks);
+    return () => { active = false; window.removeEventListener("myryra:tasks-updated", loadCalendarTasks); };
+  }, []);
   const [showForm, setShowForm] = useState(false);
   const [showAllGoogle, setShowAllGoogle] = useState(false);
   const [showAllLocal, setShowAllLocal] = useState(false);
@@ -214,6 +242,7 @@ export default function CalendarEvents() {
     const items = [
       ...events.filter((e) => dateKey(e.startsAt) === key).map((e) => ({ key: `local-${e.id}`, title: e.title, at: timeLabel(e.startsAt) })),
       ...googleEvents.filter((e) => dateKey(e.start) === key).map((e, j) => ({ key: `google-${e.id ?? j}`, title: e.title, at: timeLabel(e.start) })),
+      ...tasks.filter((t) => dateKey(t.due_date) === key).map((t) => ({ key: `task-${t.id}`, title: `${t.completed ? "✓ " : "□ "}${t.title}`, at: "Tarefa" })),
     ].sort((a, b) => a.at.localeCompare(b.at));
     return { key, date, items };
   });
@@ -235,6 +264,7 @@ export default function CalendarEvents() {
         Cadastre seus eventos e organize seus horários.
       </p>
 
+      {tasksError && <p role="status" className="mt-3 text-xs text-amber-300">{tasksError}</p>}
       <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/60 p-3 sm:p-4" aria-label="Smart Calendar">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div><p className="text-xs font-semibold uppercase tracking-widest text-violet-300">Smart Calendar · Beta</p><h3 className="mt-1 text-lg font-semibold capitalize">{calendarPeriod}</h3></div>
@@ -246,7 +276,7 @@ export default function CalendarEvents() {
           <button type="button" onClick={() => setCalendarOffset((n) => n - 1)} aria-label="Período anterior" className="rounded-lg border border-white/10 px-3 py-1.5 hover:bg-white/10">‹</button>
           <button type="button" onClick={() => { setCalendarOffset(0); setSelectedDay(null); }} className="rounded-lg border border-white/10 px-3 py-1.5 text-xs hover:bg-white/10">Hoje</button>
           <button type="button" onClick={() => setCalendarOffset((n) => n + 1)} aria-label="Próximo período" className="rounded-lg border border-white/10 px-3 py-1.5 hover:bg-white/10">›</button>
-          <span className="ml-auto text-xs text-slate-400">Eventos MYRYRA + Google</span>
+          <span className="ml-auto text-xs text-slate-400">Eventos + tarefas MYRYRA + Google</span>
         </div>
         <div className={`mt-4 grid gap-2 ${calendarView === "day" ? "grid-cols-1" : calendarView === "week" ? "grid-cols-2 md:grid-cols-7" : "grid-cols-3 sm:grid-cols-5 lg:grid-cols-7"}`}>
           {calendarDays.map(({ key, date, items }) => <button key={key} type="button" onClick={() => { setSelectedDay(key); setPeriodFilter("all"); }} aria-label={`Ver eventos de ${date.toLocaleDateString("pt-BR")}`} aria-pressed={selectedDay === key} className={`min-h-24 min-w-0 rounded-xl border p-2 text-left transition hover:border-violet-400/60 ${selectedDay === key ? "border-violet-400 bg-violet-500/15" : key === todayKey ? "border-violet-500/40 bg-violet-500/10" : "border-white/10 bg-slate-900/70"}`}>
