@@ -2,7 +2,7 @@
 import FeatureHint from "./feature-hint";
 
 import { useEffect, useState } from "react";
-import { getCloudPlans } from "@/lib/plan-cloud";
+import { createClient } from "@/lib/supabase/client";
 import { getCloudEvents } from "@/lib/event-cloud";
 
 type Item = { id?: string; title: string; priority: string; dueDate: string | null; completed: boolean };
@@ -21,9 +21,19 @@ export default function MyDay() {
     let active = true;
     async function load() {
       try {
-        const [plans, calendar] = await Promise.all([getCloudPlans(), getCloudEvents()]);
+        const supabase = createClient();
+        const { data: auth, error: authError } = await supabase.auth.getUser();
+        if (authError || !auth.user) throw new Error("Faça login para visualizar seu dia.");
+        const [taskResponse, calendar] = await Promise.all([
+          supabase.from("tasks").select("id,title,priority,due_date,completed").eq("user_id", auth.user.id).limit(1000),
+          getCloudEvents(),
+        ]);
+        if (taskResponse.error) throw taskResponse.error;
         if (!active) return;
-        setTasks(plans.flatMap(plan => plan.tasks));
+        setTasks((taskResponse.data ?? []).map(task => ({
+          id: task.id, title: task.title, priority: task.priority,
+          dueDate: task.due_date, completed: task.completed,
+        })));
         setEvents(calendar.map(event => ({ title: event.title, startsAt: event.startsAt })));
         setError("");
       } catch {
