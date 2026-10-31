@@ -118,7 +118,7 @@ export async function saveCloudPlan(
       tasks.map((task) => ({
         plan_id: plan.id,
         user_id: userId,
-        title: task.title,
+        title: task.title.trim(),
         priority: task.priority,
         due_date: task.dueDate || null,
         completed: task.completed,
@@ -147,7 +147,7 @@ export async function saveCloudPlan(
     id: plan.id,
     name: plan.title,
     createdAt: plan.created_at,
-    tasks: tasks.map((task) => ({ ...task })),
+    tasks: tasks.map((task) => ({ ...task, title: task.title.trim() })),
   };
 }
 
