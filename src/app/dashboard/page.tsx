@@ -62,7 +62,8 @@ async function DashboardContent() {
       <VyraHome />
       <FirstSteps userId={user.id} />
 
-        <div className="min-w-0 space-y-6">\n          <AccordionControls />
+        <div className="min-w-0 space-y-6">
+          <AccordionControls />
 
 
 
