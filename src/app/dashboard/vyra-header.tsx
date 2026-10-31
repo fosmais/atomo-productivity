@@ -1,5 +1,6 @@
 "use client";
 import { useVyraNavigation } from "./vyra-module-context";
+import MykaPortrait from "@/components/myka-portrait";
 
 export default function VyraHeader() {
   const { navigateTo } = useVyraNavigation();
@@ -32,11 +33,7 @@ export default function VyraHeader() {
         title="Conversar com Myka AI"
         className="h-12 w-12 shrink-0 overflow-hidden rounded-full border border-violet-400/40 bg-slate-950 shadow-lg shadow-violet-500/20 transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 motion-reduce:transition-none"
       >
-        <img
-          src="/myka-avatar.png"
-          alt=""
-          className="h-full w-full object-cover"
-        />
+        <MykaPortrait className="h-full w-full" />
       </button>
     </header>
   );
