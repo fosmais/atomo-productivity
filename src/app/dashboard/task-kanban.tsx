@@ -16,6 +16,10 @@ type KanbanTask = {
   completed_at: string | null;
 };
 
+function localDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 const columns: { status: TaskStatus; label: string }[] = [
   { status: "todo", label: "A fazer" },
   { status: "in_progress", label: "Em andamento" },
@@ -323,10 +327,10 @@ export default function TaskKanban() {
                         </p>
                       )}
 
-                      {task.status !== "done" && task.due_date && task.due_date < new Date().toLocaleDateString("en-CA") && (
+                      {task.status !== "done" && task.due_date && task.due_date < localDateKey(new Date()) && (
                         <div className="mt-2 flex flex-wrap gap-2">
-                          <button type="button" disabled={savingId !== null} onClick={() => void rescheduleTask(task.id, new Date().toLocaleDateString("en-CA"))} className="rounded-md border border-violet-400/40 px-2 py-1 text-xs text-violet-200 hover:bg-violet-500/15 disabled:opacity-50">Reagendar para hoje</button>
-                          <button type="button" disabled={savingId !== null} onClick={() => { const date = new Date(); date.setDate(date.getDate() + 1); void rescheduleTask(task.id, date.toLocaleDateString("en-CA")); }} className="rounded-md border border-slate-500 px-2 py-1 text-xs text-slate-200 hover:bg-slate-700 disabled:opacity-50">Amanhã</button>
+                          <button type="button" disabled={savingId !== null} onClick={() => void rescheduleTask(task.id, localDateKey(new Date()))} className="rounded-md border border-violet-400/40 px-2 py-1 text-xs text-violet-200 hover:bg-violet-500/15 disabled:opacity-50">Reagendar para hoje</button>
+                          <button type="button" disabled={savingId !== null} onClick={() => { const date = new Date(); date.setDate(date.getDate() + 1); void rescheduleTask(task.id, localDateKey(date)); }} className="rounded-md border border-slate-500 px-2 py-1 text-xs text-slate-200 hover:bg-slate-700 disabled:opacity-50">Amanhã</button>
                         </div>
                       )}
                       <label className="mt-3 block text-xs text-slate-300">
