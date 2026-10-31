@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [isError, setIsError] = useState(false);
   const [mfaFactorId, setMfaFactorId] = useState("");
   const [mfaCode, setMfaCode] = useState("");
+  const [mfaFactors, setMfaFactors] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -42,7 +43,7 @@ export default function LoginPage() {
           const factors = await supabase.auth.mfa.listFactors();
           if (factors.error || !active) return;
           const factor = factors.data.totp.find(item => item.status === "verified");
-          if (factor) setMfaFactorId(factor.id);
+          if (factor) { setMfaFactors(factors.data.totp.filter(item => item.status === "verified").map(item => ({ id: item.id, name: item.friendly_name || "Autenticador" }))); setMfaFactorId(factor.id); }
         }
       } catch {
         // The regular sign-in form remains available when session restoration fails.
@@ -96,6 +97,7 @@ export default function LoginPage() {
           if (factors.error) throw factors.error;
           const factor = factors.data.totp.find((item) => item.status === "verified");
           if (!factor) throw new Error("Segundo fator não disponível. Entre em contato com o suporte.");
+          setMfaFactors(factors.data.totp.filter(item => item.status === "verified").map(item => ({ id: item.id, name: item.friendly_name || "Autenticador" })));
           setMfaFactorId(factor.id);
           setPassword("");
           return;
@@ -178,10 +180,11 @@ export default function LoginPage() {
 
         {mfaFactorId ? (
           <form onSubmit={verifyMfa} className="mt-8 space-y-4">
+            {mfaFactors.length > 1 && <label className="block text-sm">Escolha o autenticador<select value={mfaFactorId} disabled={loading} onChange={e => { setMfaFactorId(e.target.value); setMfaCode(""); }} className="mt-2 w-full rounded-xl bg-slate-900 p-3">{mfaFactors.map((factor, index) => <option key={factor.id} value={factor.id}>{factor.name} ({index + 1})</option>)}</select></label>}
             <label htmlFor="mfa-code" className="block text-sm">Código do aplicativo autenticador</label>
             <input id="mfa-code" type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" required value={mfaCode} onChange={(event) => setMfaCode(event.target.value.replace(/\D/g, "").slice(0, 6))} className="w-full rounded-xl border border-violet-400/30 bg-slate-900 p-3 text-white" />
             <button type="submit" disabled={loading || mfaCode.length !== 6} className="w-full rounded-xl bg-violet-600 p-3 font-semibold disabled:opacity-50">{loading ? "Verificando..." : "Verificar e entrar"}</button>
-            <button type="button" onClick={async () => { await createClient().auth.signOut(); setMfaFactorId(""); setMfaCode(""); setMessage(""); }} className="text-sm text-violet-300">Voltar ao login</button>
+            <button type="button" onClick={async () => { await createClient().auth.signOut(); setMfaFactorId(""); setMfaFactors([]); setMfaCode(""); setMessage(""); }} className="text-sm text-violet-300">Voltar ao login</button>
           </form>
         ) : <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <div>
