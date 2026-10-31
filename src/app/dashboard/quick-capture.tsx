@@ -15,16 +15,16 @@ function localDate(offsetDays: number): string {
 }
 
 function extractDate(title: string): { title: string; dueDate: string | null } {
-  const relative = /\\b(hoje|amanhã|amanha)\\b/i.exec(title);
+  const relative = /\b(hoje|amanhã|amanha)\b/i.exec(title);
   if (relative) {
-    return { title: title.replace(relative[0], "").replace(/\\s+/g, " ").trim().replace(/[,.]$/, ""), dueDate: localDate(/^hoje$/i.test(relative[0]) ? 0 : 1) };
+    return { title: title.replace(relative[0], "").replace(/\s+/g, " ").trim().replace(/[,.]$/, ""), dueDate: localDate(/^hoje$/i.test(relative[0]) ? 0 : 1) };
   }
-  const explicit = /\\b(\\d{2})\\/(\\d{2})\\/(\\d{4})\\b/.exec(title);
+  const explicit = /\b(\d{2})\\/(\d{2})\\/(\d{4})\b/.exec(title);
   if (explicit) {
     const candidate = `${explicit[3]}-${explicit[2]}-${explicit[1]}`;
     const date = new Date(candidate + "T00:00:00Z");
     if (Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === candidate) {
-      return { title: title.replace(explicit[0], "").replace(/\\s+/g, " ").trim().replace(/[,.]$/, ""), dueDate: candidate };
+      return { title: title.replace(explicit[0], "").replace(/\s+/g, " ").trim().replace(/[,.]$/, ""), dueDate: candidate };
     }
   }
   return { title, dueDate: null };
