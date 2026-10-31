@@ -29,15 +29,31 @@ export default function MyDay() {
         dayStart.setHours(0, 0, 0, 0);
         const dayEnd = new Date(dayStart);
         dayEnd.setDate(dayEnd.getDate() + 1);
-        const [taskResponse, calendarResponse] = await Promise.all([
-          supabase.from("tasks").select("id,title,priority,due_date,completed").eq("user_id", auth.user.id).limit(1000),
+        const loadAllTasks = async () => {
+          const pageSize = 500;
+          const allTasks: { id: string; title: string; priority: string; due_date: string | null; completed: boolean }[] = [];
+          for (let offset = 0; ; offset += pageSize) {
+            if (!active || requestId !== latestRequest) return allTasks;
+            const page = await supabase.from("tasks")
+              .select("id,title,priority,due_date,completed")
+              .eq("user_id", auth.user.id)
+              .order("id", { ascending: true })
+              .range(offset, offset + pageSize - 1);
+            if (page.error) throw page.error;
+            const batch = page.data ?? [];
+            allTasks.push(...batch);
+            if (batch.length < pageSize) return allTasks;
+          }
+        };
+        const [allTasks, calendarResponse] = await Promise.all([
+          loadAllTasks(),
           supabase.from("events").select("title,starts_at,ends_at").eq("user_id", auth.user.id)
             .lt("starts_at", dayEnd.toISOString()).gt("ends_at", dayStart.toISOString())
             .order("starts_at", { ascending: true }).limit(100),
         ]);
-        if (taskResponse.error || calendarResponse.error) throw taskResponse.error ?? calendarResponse.error;
+        if (calendarResponse.error) throw calendarResponse.error;
         if (!active || requestId !== latestRequest) return;
-        setTasks((taskResponse.data ?? []).map(task => ({
+        setTasks(allTasks.map(task => ({
           id: task.id, title: task.title, priority: task.priority,
           dueDate: task.due_date, completed: task.completed,
         })));
