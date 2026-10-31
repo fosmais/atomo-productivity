@@ -91,7 +91,7 @@ export async function POST(request: Request) {
   let body: unknown;
 
   try {
-    const rawBody = await request.text();
+    const rawBody = await new Response(request.body).text();
     if (new TextEncoder().encode(rawBody).length > 32768) {
       return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
     }
