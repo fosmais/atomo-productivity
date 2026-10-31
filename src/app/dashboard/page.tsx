@@ -11,6 +11,7 @@ import FocusMode from "./focus-mode";
 import QuickCapture from "./quick-capture";
 import DailyBriefing from "./daily-briefing";
 import MyDay from "./my-day";
+import SmartReplan from "./smart-replan";
 import FirstSteps from "./first-steps";
 import WeeklyIntelligence from "./weekly-intelligence";
 import AvailabilityPanel from "./availability-panel";
@@ -80,6 +81,7 @@ async function DashboardContent() {
         description="Transforme suas prioridades em um planejamento claro e objetivo."
       >
         <MyDay />
+        <SmartReplan />
         <DailyBriefing />
         <WhatNow />
         <FocusMode />
