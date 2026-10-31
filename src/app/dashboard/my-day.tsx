@@ -34,8 +34,9 @@ export default function MyDay() {
   }, []);
   const today = new Date().toLocaleDateString("en-CA");
   const todayTasks = tasks.filter(task => task.dueDate === today);
+  const priorityRank: Record<string, number> = { Alta: 0, "Média": 1, Normal: 2 };
   const pending = tasks.filter(task => !task.completed && (!task.dueDate || task.dueDate <= today))
-    .sort((a, b) => (a.dueDate && a.dueDate < today ? -1 : 0) - (b.dueDate && b.dueDate < today ? -1 : 0) || ({ Alta: 0, "Média": 1, Normal: 2 }[a.priority] ?? 3) - ({ Alta: 0, "Média": 1, Normal: 2 }[b.priority] ?? 3));
+    .sort((a, b) => (a.dueDate && a.dueDate < today ? -1 : 0) - (b.dueDate && b.dueDate < today ? -1 : 0) || (priorityRank[a.priority] ?? 3) - (priorityRank[b.priority] ?? 3));
   const appointments = events.filter(event => new Date(event.startsAt).toLocaleDateString("en-CA") === today)
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
   const finished = todayTasks.filter(task => task.completed).length;
