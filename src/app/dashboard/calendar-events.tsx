@@ -203,7 +203,10 @@ export default function CalendarEvents() {
   const anchor = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   if (calendarView === "day") anchor.setDate(anchor.getDate() + calendarOffset);
   if (calendarView === "week") anchor.setDate(anchor.getDate() - ((anchor.getDay() + 6) % 7) + calendarOffset * 7);
-  if (calendarView === "month") anchor.setMonth(anchor.getMonth() + calendarOffset, 1);
+  if (calendarView === "month") {
+    anchor.setDate(1);
+    anchor.setMonth(anchor.getMonth() + calendarOffset);
+  }
   const daysCount = calendarView === "day" ? 1 : calendarView === "week" ? 7 : new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0).getDate();
   const calendarDays = Array.from({ length: daysCount }, (_, i) => {
     const date = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() + i);
