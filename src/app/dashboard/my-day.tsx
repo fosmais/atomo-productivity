@@ -45,6 +45,11 @@ export default function MyDay() {
   const appointments = events.filter(event => localDateKey(new Date(event.startsAt)) === today)
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
   const finished = todayTasks.filter(task => task.completed).length;
+  const overdue = tasks.filter(task => !task.completed && task.dueDate && task.dueDate < today);
+  const tomorrowDate = new Date();
+  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+  const tomorrow = localDateKey(tomorrowDate);
+  const tomorrowTasks = tasks.filter(task => !task.completed && task.dueDate === tomorrow);
   return <section className="rounded-2xl border border-violet-500/30 bg-slate-900 p-5 text-white" aria-label="Meu Dia">
     <FeatureHint label="MYRYRA · MEU DIA" title="Tudo o que importa hoje" description="Mostra tarefas prioritárias, progresso e compromissos cadastrados na MYRYRA." tip="Eventos externos do Google ainda não fazem parte deste resumo." />
     <h3 className="mt-2 text-xl font-semibold">O que merece sua atenção hoje?</h3>
@@ -55,6 +60,12 @@ export default function MyDay() {
       {pending.length ? <ol className="mt-2 space-y-2">{pending.slice(0, 3).map(task => <li key={task.id ?? task.title} className="rounded-lg border border-slate-700 p-3 text-sm">{task.title} <span className="text-slate-400">· {task.priority}{task.dueDate && task.dueDate < today ? " · Atrasada" : ""}</span></li>)}</ol> : <p className="mt-2 text-sm text-slate-400">Nenhuma tarefa pendente ou atrasada. Aproveite para planejar o próximo passo.</p>}
       <h4 className="mt-5 font-semibold text-violet-200">Agenda de hoje</h4>
       {appointments.length ? <ul className="mt-2 space-y-2">{appointments.slice(0, 5).map((event, index) => <li key={index} className="text-sm text-slate-300">{new Date(event.startsAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} · {event.title}</li>)}</ul> : <p className="mt-2 text-sm text-slate-400">Sem compromissos na agenda MYRYRA hoje.</p>}
+      <div className="mt-5 rounded-xl border border-violet-400/25 bg-violet-500/5 p-4" aria-label="Revisão do dia">
+        <h4 className="font-semibold text-violet-200">Revisão do dia</h4>
+        <p className="mt-2 text-sm text-slate-300">Você concluiu {finished} de {todayTasks.length} tarefas previstas para hoje. {overdue.length} tarefa(s) estão atrasadas.</p>
+        <h5 className="mt-3 text-sm font-medium text-violet-100">Prepare amanhã</h5>
+        {tomorrowTasks.length ? <ul className="mt-2 space-y-1 text-sm text-slate-300">{tomorrowTasks.slice(0, 3).map(task => <li key={task.id ?? task.title}>• {task.title}</li>)}</ul> : <p className="mt-2 text-sm text-slate-400">Nenhuma tarefa com prazo amanhã. Aproveite para definir suas prioridades.</p>}
+      </div>
       <p className="mt-3 text-xs text-slate-400">Resumo baseado nas tarefas e eventos MYRYRA. Eventos externos do Google ainda não estão incluídos.</p>
     </>}
   </section>;
