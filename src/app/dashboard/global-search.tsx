@@ -28,7 +28,7 @@ export default function GlobalSearch() {
         if (authError || !auth.user) throw new Error("Faça login para pesquisar.");
         const needle = query.trim().toLocaleLowerCase("pt-BR");
         // Escape LIKE wildcards so user input is searched literally.
-        const pattern = `%${query.trim().replace(/[\\%_]/g, "\\        const [tasks, plans, events] = await Promise.all([")}%`;
+        const pattern = `%${query.trim().replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
         const [tasks, plans, events] = await Promise.all([
           supabase.from("tasks").select("id,title,due_date").eq("user_id", auth.user.id).ilike("title", pattern).order("created_at", { ascending: false }).limit(30),
           supabase.from("plans").select("id,title").eq("user_id", auth.user.id).ilike("title", pattern).order("created_at", { ascending: false }).limit(30),
