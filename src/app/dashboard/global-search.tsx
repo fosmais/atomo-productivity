@@ -41,7 +41,15 @@ export default function GlobalSearch() {
           ...(events.data ?? []).map(e => ({ id: e.id, title: e.title, kind: "Compromisso" as const, detail: new Date(e.starts_at).toLocaleDateString("pt-BR") })),
         ];
         if (active) {
-          setResults(all.filter(item => item.title.toLocaleLowerCase("pt-BR").includes(needle)).slice(0, 30));
+          const matching = all.filter(item => item.title.toLocaleLowerCase("pt-BR").includes(needle));
+          const groups = (["Tarefa", "Plano", "Compromisso"] as const).map(kind => matching.filter(item => item.kind === kind));
+          const balanced: SearchResult[] = [];
+          for (let index = 0; balanced.length < 30 && groups.some(group => index < group.length); index++) {
+            for (const group of groups) {
+              if (group[index] && balanced.length < 30) balanced.push(group[index]);
+            }
+          }
+          setResults(balanced);
           setCompletedQuery(query.trim());
         }
       } catch (err) {
