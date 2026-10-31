@@ -136,15 +136,36 @@ async function DashboardContent() {
       </VyraSection>
 </VyraModule>
       <VyraModule id="vyra-calendar">
-<VyraSection
-        id="vyra-calendar"
-        eyebrow="MYRYRA CALENDAR"
-        title="Sua agenda em sintonia."
-        description="Organize compromissos e períodos indisponíveis para planejar melhor seu tempo."
-      >
-        <FeatureAccordion id="calendar-events" title="Eventos da agenda" description="Crie e acompanhe compromissos" userId={user.id} defaultOpen><CalendarEvents /></FeatureAccordion>
-      </VyraSection>
-      <FeatureAccordion id="availability" title="Disponibilidade" description="Visualize os períodos livres e ocupados" userId={user.id}><AvailabilityPanel /></FeatureAccordion>
+        <VyraSection
+          id="vyra-calendar"
+          eyebrow="MYRYRA CALENDAR"
+          title="Sua agenda em sintonia."
+          description="Compromissos e disponibilidade em um só lugar para você decidir como usar seu tempo."
+        >
+          <div className="min-w-0 space-y-5">
+            <div className="rounded-3xl border border-violet-400/20 bg-gradient-to-br from-violet-950/30 via-slate-900/75 to-slate-950/80 p-4 sm:p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">Sua visão do tempo</p>
+              <h3 className="mt-2 text-xl font-semibold tracking-tight text-white">Compromissos e prioridades</h3>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-400">Crie, consulte e ajuste os eventos da sua agenda sem precisar abrir uma seção adicional.</p>
+            </div>
+            <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
+              <section className="min-w-0 rounded-3xl border border-white/10 bg-slate-900/60 p-4 sm:p-6" aria-label="Eventos da agenda">
+                <div className="mb-5">
+                  <h3 className="text-base font-semibold text-white">Eventos da agenda</h3>
+                  <p className="mt-1 text-sm text-slate-400">Seus compromissos, sempre à mão.</p>
+                </div>
+                <CalendarEvents />
+              </section>
+              <aside className="min-w-0 space-y-3" aria-label="Planejamento de disponibilidade">
+                <div className="px-1">
+                  <h3 className="text-base font-semibold text-white">Planeje os horários livres</h3>
+                  <p className="mt-1 text-sm text-slate-400">Consulte sua disponibilidade antes de assumir novos compromissos.</p>
+                </div>
+                <FeatureAccordion id="availability" title="Disponibilidade" description="Períodos livres e ocupados" userId={user.id} defaultOpen><AvailabilityPanel /></FeatureAccordion>
+              </aside>
+            </div>
+          </div>
+        </VyraSection>
       </VyraModule>
       <VyraModule id="vyra-scheduling">
 <VyraSection
