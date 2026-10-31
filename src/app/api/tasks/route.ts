@@ -86,7 +86,11 @@ export async function POST(request: Request) {
   let body: unknown;
 
   try {
-    body = await request.json();
+    const rawBody = await request.text();
+    if (new TextEncoder().encode(rawBody).length > 32768) {
+      return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+    }
+    body = JSON.parse(rawBody);
   } catch {
     return NextResponse.json(
       { error: "Envie um JSON válido." },
