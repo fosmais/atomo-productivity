@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, connection } from "next/server";
 import { randomBytes } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -7,6 +7,7 @@ import {
 } from "@/lib/google-calendar";
 
 export async function GET(request: Request) {
+  await connection();
   const supabase = await createClient();
 
   const {
