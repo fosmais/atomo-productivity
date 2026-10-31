@@ -151,14 +151,8 @@ export async function saveCloudPlan(
 export async function deleteCloudPlan(id: string): Promise<void> {
   const { supabase, userId } = await getAuthenticatedUser();
 
-  const { error: tasksError } = await supabase
-    .from("tasks")
-    .delete()
-    .eq("plan_id", id)
-    .eq("user_id", userId);
-
-  if (tasksError) throw tasksError;
-
+  // tasks.plan_id has ON DELETE CASCADE: one parent deletion keeps
+  // the plan and its tasks in the same database transaction.
   const { error } = await supabase
     .from("plans")
     .delete()
