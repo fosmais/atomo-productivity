@@ -42,22 +42,26 @@ export async function getCloudPlans(): Promise<SavedPlan[]> {
   if (plansError) throw plansError;
   if (!plans?.length) return [];
 
-  const { data: tasks, error: tasksError } = await supabase
-    .from("tasks")
-    .select("id, plan_id, title, priority, due_date, completed")
-    .eq("user_id", userId)
-    .in(
-      "plan_id",
-      plans.map((plan) => plan.id)
-    );
-
-  if (tasksError) throw tasksError;
+  const tasks: { id: string; plan_id: string; title: string; priority: string; due_date: string | null; completed: boolean }[] = [];
+  const pageSize = 500;
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error: tasksError } = await supabase
+      .from("tasks")
+      .select("id, plan_id, title, priority, due_date, completed")
+      .eq("user_id", userId)
+      .order("id", { ascending: true })
+      .range(offset, offset + pageSize - 1);
+    if (tasksError) throw tasksError;
+    const batch = data ?? [];
+    tasks.push(...batch);
+    if (batch.length < pageSize) break;
+  }
 
   return plans.map((plan) => ({
     id: plan.id,
     name: plan.title,
     createdAt: plan.created_at,
-    tasks: (tasks ?? [])
+    tasks: tasks
       .filter((task) => task.plan_id === plan.id)
       .map((task) => {
         if (!isPriority(task.priority)) {
