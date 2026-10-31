@@ -16,6 +16,7 @@ export default function MyDay() {
   const [events, setEvents] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [currentDay, setCurrentDay] = useState(() => localDateKey(new Date()));
   useEffect(() => {
     let active = true;
     let latestRequest = 0;
@@ -81,9 +82,8 @@ export default function MyDay() {
     window.addEventListener("myryra:tasks-updated", load);
     window.addEventListener("myryra:events-updated", load);
     return () => { active = false; window.removeEventListener("myryra:tasks-updated", load); window.removeEventListener("myryra:events-updated", load); };
-  }, []);
+  }, [currentDay]);
   // Re-evaluate the local day at midnight, even if the dashboard stays open.
-  const [currentDay, setCurrentDay] = useState(() => localDateKey(new Date()));
   useEffect(() => {
     const refreshDay = () => setCurrentDay(localDateKey(new Date()));
     const interval = window.setInterval(refreshDay, 30_000);
