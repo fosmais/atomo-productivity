@@ -250,8 +250,15 @@ export async function GET() {
       count: events.length,
     });
   } catch (error) {
+    // Diagnóstico sem registrar tokens, mensagens ou payloads do Google.
+    const failure = error as { code?: unknown; status?: unknown; response?: { status?: unknown } } | null;
+    const httpStatus = failure?.response?.status ?? failure?.status;
+    const status = typeof httpStatus === "number" && Number.isInteger(httpStatus) ? httpStatus : null;
+    const code = typeof failure?.code === "string" && /^[A-Z_]{2,32}$/.test(failure.code) ? failure.code : null;
     console.error("VYRA Google Events: falha na consulta.", {
       type: error instanceof Error ? error.name : "unknown",
+      status,
+      code,
     });
 
     return NextResponse.json(
