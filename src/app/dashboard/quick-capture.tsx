@@ -35,8 +35,8 @@ function extractDate(title: string): { title: string; dueDate: string | null } {
 function parseDrafts(text: string): Draft[] {
   const seen = new Set<string>();
   const drafts: Draft[] = [];
-  for (const part of text.split(/[\\n;]+/)) {
-    const rawTitle = part.trim().replace(/^(?:[-•*]\\s+|\\d+[.)]\\s+)/, "").trim();
+  for (const part of text.split(/[\n;]+/)) {
+    const rawTitle = part.trim().replace(/^(?:[-•*]\s+|\d+[.)]\s+)/, "").trim();
     if (!rawTitle) continue;
     const extracted = extractDate(rawTitle);
     const title = extracted.title.trim();
