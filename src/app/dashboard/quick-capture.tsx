@@ -34,16 +34,20 @@ function extractDate(title: string): { title: string; dueDate: string | null } {
 
 function parseDrafts(text: string): Draft[] {
   const seen = new Set<string>();
-  return text.split(/[\n;]+/).map((part) => part.trim().replace(/^(?:[-•*]\s+|\d+[.)]\s+)/, "").trim())
-    .filter((title) => {
-      if (!title || title.length > 200) return false;
-      const key = title.toLocaleLowerCase("pt-BR");
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    }).slice(0, 10).map((title) => ({
-      id: crypto.randomUUID(), ...extractDate(title), priority: "Normal" as const, selected: true,
-    }));
+  const drafts: Draft[] = [];
+  for (const part of text.split(/[\\n;]+/)) {
+    const rawTitle = part.trim().replace(/^(?:[-•*]\\s+|\\d+[.)]\\s+)/, "").trim();
+    if (!rawTitle) continue;
+    const extracted = extractDate(rawTitle);
+    const title = extracted.title.trim();
+    if (!title || title.length > 200) continue;
+    const key = `${title.toLocaleLowerCase("pt-BR")}|${extracted.dueDate ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    drafts.push({ id: crypto.randomUUID(), title, dueDate: extracted.dueDate, priority: "Normal", selected: true });
+    if (drafts.length === 10) break;
+  }
+  return drafts;
 }
 
 export default function QuickCapture() {
