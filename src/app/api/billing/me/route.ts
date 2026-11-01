@@ -9,14 +9,14 @@ export async function GET() {
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) {
-    return NextResponse.json({ error: "Usuário não autenticado." }, { status: 401 });
+    return NextResponse.json({ error: "Usuário não autenticado." }, { status: 401, headers: { "Cache-Control": "no-store" } });
   }
   const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (assurance.error) {
-    return NextResponse.json({ error: "Verificação de sessão indisponível." }, { status: 503 });
+    return NextResponse.json({ error: "Verificação de sessão indisponível." }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
   if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
-    return NextResponse.json({ error: "Segundo fator obrigatório.", code: "MFA_REQUIRED" }, { status: 403 });
+    return NextResponse.json({ error: "Segundo fator obrigatório.", code: "MFA_REQUIRED" }, { status: 403, headers: { "Cache-Control": "no-store" } });
   }
   if (process.env.BILLING_ENTITLEMENTS_ENABLED !== "true") {
     return NextResponse.json(
