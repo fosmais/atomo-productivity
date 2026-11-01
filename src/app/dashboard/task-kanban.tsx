@@ -224,7 +224,7 @@ export default function TaskKanban() {
   }
 
   return (
-    <section className="rounded-xl border border-slate-700 bg-slate-900 p-6 text-white">
+    <section className="min-w-0 rounded-2xl border border-violet-400/20 bg-slate-900/70 p-4 text-white sm:p-6">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase text-violet-400">
@@ -304,7 +304,7 @@ export default function TaskKanban() {
       {loading ? (
         <p className="text-sm text-slate-400">Carregando tarefas...</p>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid min-w-0 gap-4 md:grid-cols-2 2xl:grid-cols-4">
           {columns.map((column) => {
             const columnTasks = tasks.filter(
               (task) => task.status === column.status
@@ -315,11 +315,11 @@ export default function TaskKanban() {
             return (
               <div
                 key={column.status}
-                className="min-h-56 rounded-xl bg-slate-800 p-3"
+                className="min-w-0 min-h-56 rounded-xl border border-white/10 bg-slate-800/65 p-3 sm:p-4"
               >
-                <h3 className="mb-4 flex justify-between text-sm font-semibold">
+                <h3 className="mb-4 flex items-center justify-between gap-2 text-sm font-semibold">
                   {column.label}
-                  <span className="text-slate-400">{columnTasks.length}</span>
+                  <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2 py-0.5 text-xs tabular-nums text-violet-200">{columnTasks.length}</span>
                 </h3>
 
                 <div className="space-y-3">
@@ -327,15 +327,15 @@ export default function TaskKanban() {
                     <article
                       key={task.id}
                       id={`vyra-task-${task.id}`}
-                      className={`rounded-lg border p-3 transition-all duration-300 ${
+                      className={`min-w-0 rounded-xl border p-3.5 transition-all duration-300 ${
                         focusedTaskId === task.id
                           ? "border-violet-400 bg-violet-500/15 ring-2 ring-violet-400/50 shadow-lg shadow-violet-500/20"
                           : "border-slate-600 bg-slate-900"
                       }`}
                     >
-                      <p className="text-sm font-semibold">{task.title}</p>
+                      <p className="break-words text-sm font-semibold leading-snug">{task.title}</p>
 
-                      <p className="mt-2 text-xs text-slate-400">
+                      <p className="mt-2 text-xs text-slate-300">
                         Prioridade: {task.priority}
                       </p>
 
