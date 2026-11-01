@@ -88,7 +88,7 @@ export default function WhatNow() {
               "Nenhuma janela livre de planejamento neste momento."}
           </p>
           {!suggestion.fits && <p className="mt-2 text-xs text-amber-200">Não foi possível confirmar uma tarefa que caiba agora. Ajuste a duração ou consulte o Smart Scheduling.</p>}
-          <p className="mt-2 text-xs text-slate-400">Considera apenas eventos bloqueantes MYRYRA; Google Calendar não é consultado nesta recomendação.</p>
+          <p className="mt-2 text-xs text-slate-400">A recomendação considera eventos bloqueantes salvos na MYRYRA. Compromissos externos do Google Calendar ainda não entram neste cálculo; confira ambos antes de assumir um horário livre.</p>
         </div>
       )}
     </section>

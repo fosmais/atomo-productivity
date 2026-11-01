@@ -110,6 +110,12 @@ export default function CalendarEvents() {
   }
 
   useEffect(() => {
+    const refresh = () => { void loadEvents().catch(() => setError("Não foi possível atualizar os compromissos.")); };
+    window.addEventListener("myryra:events-updated", refresh);
+    return () => window.removeEventListener("myryra:events-updated", refresh);
+  }, []);
+
+  useEffect(() => {
     let active = true;
 
     getCloudEvents()
