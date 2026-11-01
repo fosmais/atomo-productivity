@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { saveCloudPlan } from "@/lib/plan-cloud";
+import { getCloudPlans, saveCloudPlan } from "@/lib/plan-cloud";
 import type { SavedTask } from "@/lib/plan-storage";
 
 function parseCsv(input: string): string[][] {
@@ -79,8 +79,15 @@ export default function ManualTaskImport() {
     if (busy || !tasks.length) return;
     setBusy(true); setError(""); setMessage("");
     try {
-      await saveCloudPlan("Importação manual · " + filename.slice(0, 100), tasks);
-      setMessage(tasks.length + " tarefa(s) importada(s) para a MYRYRA.");
+      const existingPlans = await getCloudPlans();
+      const existingKeys = new Set(existingPlans.flatMap(plan => plan.tasks.map(task => task.title.trim().toLocaleLowerCase("pt-BR") + "|" + (task.dueDate ?? ""))));
+      const newTasks = tasks.filter(task => !existingKeys.has(task.title.trim().toLocaleLowerCase("pt-BR") + "|" + (task.dueDate ?? "")));
+      if (!newTasks.length) {
+        setMessage("Todas as tarefas deste arquivo já existem na MYRYRA. Nenhuma duplicata foi criada.");
+        setTasks([]); setFilename(""); return;
+      }
+      await saveCloudPlan("Importação manual · " + filename.slice(0, 100), newTasks);
+      setMessage(newTasks.length + " tarefa(s) importada(s) para a MYRYRA." + (tasks.length > newTasks.length ? " " + (tasks.length - newTasks.length) + " duplicata(s) ignorada(s)." : ""));
       setTasks([]); setFilename("");
       window.dispatchEvent(new Event("myryra:tasks-updated"));
     } catch (err) { setError(err instanceof Error ? err.message : "Falha ao importar."); }
