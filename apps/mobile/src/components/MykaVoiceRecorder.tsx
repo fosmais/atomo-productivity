@@ -44,6 +44,10 @@ export function MykaVoiceRecorder({ onRecorded }: Props) {
         setRecording(true);
       }
     } catch {
+      if (recorder.isRecording) {
+        await recorder.stop().catch(() => undefined);
+      }
+      await AudioModule.setAudioModeAsync({ allowsRecording: false }).catch(() => undefined);
       setError("Falha na gravação. Tente novamente.");
       setRecording(false);
     } finally {
@@ -60,6 +64,7 @@ export function MykaVoiceRecorder({ onRecorded }: Props) {
       setRecording(false);
       setError(null);
     } catch {
+      await AudioModule.setAudioModeAsync({ allowsRecording: false }).catch(() => undefined);
       setError("Não foi possível descartar a gravação.");
     } finally {
       setBusy(false);
