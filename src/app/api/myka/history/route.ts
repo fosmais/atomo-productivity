@@ -28,6 +28,17 @@ export async function GET() {
       return NextResponse.json({ error: "Nao autenticado." }, { status: 401 });
     }
 
+    const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assurance.error) {
+      return NextResponse.json({ error: "Verificação de sessão indisponível." }, { status: 503 });
+    }
+    if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
+      return NextResponse.json(
+        { error: "Segundo fator obrigatório.", code: "MFA_REQUIRED" },
+        { status: 403 }
+      );
+    }
+
     const userId = auth.user.id;
 
     const { data: conversation, error: conversationError } = await supabase
@@ -165,6 +176,17 @@ export async function POST(request: Request) {
 
     if (authError || !auth.user) {
       return NextResponse.json({ error: "Nao autenticado." }, { status: 401 });
+    }
+
+    const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assurance.error) {
+      return NextResponse.json({ error: "Verificação de sessão indisponível." }, { status: 503 });
+    }
+    if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
+      return NextResponse.json(
+        { error: "Segundo fator obrigatório.", code: "MFA_REQUIRED" },
+        { status: 403 }
+      );
     }
 
     const userId = auth.user.id;
