@@ -514,8 +514,8 @@ setConversationId(data.conversationId);
 
   return (
     <section className="min-w-0 rounded-2xl border border-violet-400/20 bg-gradient-to-b from-slate-900 to-slate-950 p-3 text-white shadow-xl shadow-violet-950/20 sm:p-7">
-      <div className="mb-4">
-        <p className="text-sm font-semibold text-violet-400">
+      <div className="mb-5">
+        <p className="text-xs font-semibold uppercase tracking-[.2em] text-violet-300">
           Myka AI
         </p>
 
@@ -523,14 +523,14 @@ setConversationId(data.conversationId);
           Converse com seu assistente
         </h2>
 
-        <p className="mt-2 text-sm text-slate-400">
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-300">
           Organize tarefas, defina prioridades e planeje seu dia conversando
           com a inteligência artificial.
         </p>
       </div>
 
       <div
-        className="mb-4 min-h-[260px] max-h-[min(58dvh,580px)] space-y-4 overflow-x-hidden overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/80 p-2 sm:min-h-[320px] sm:p-5"
+        className="mb-4 min-h-[320px] max-h-[min(66dvh,700px)] space-y-4 overflow-x-hidden overflow-y-auto rounded-2xl border border-violet-400/15 bg-slate-950/65 p-3 shadow-inner shadow-black/20 sm:min-h-[420px] sm:p-5"
         aria-live="polite"
       >
         {historyLoading && (
@@ -559,8 +559,8 @@ setConversationId(data.conversationId);
               <div
                 className={
                   message.role === "user"
-                  ? "ml-auto min-w-0 max-w-[94%] rounded-2xl rounded-br-md border border-violet-400/20 bg-violet-700/80 p-3 shadow-md sm:max-w-[78%] sm:p-4"
-                  : "mr-auto min-w-0 max-w-[calc(100%-2.5rem)] rounded-2xl rounded-bl-md border border-white/10 bg-slate-800/90 p-3 shadow-md sm:max-w-[78%] sm:p-4"
+                  ? "ml-auto min-w-0 max-w-[94%] rounded-2xl rounded-br-md border border-violet-300/20 bg-gradient-to-br from-violet-700 to-purple-800 p-3 shadow-md sm:max-w-[78%] sm:p-4"
+                  : "mr-auto min-w-0 max-w-[calc(100%-2.5rem)] rounded-2xl rounded-bl-md border border-white/10 bg-slate-800/85 p-3 shadow-md sm:max-w-[78%] sm:p-4"
               }
             >
               <p className="mb-1 text-xs font-semibold">
