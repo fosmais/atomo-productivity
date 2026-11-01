@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, Alert, View } from "react-native";
 import { supabase } from "../lib/supabase";
 
 type EventRow = { id: string; title: string; starts_at: string; ends_at: string; location: string | null };
@@ -8,6 +8,36 @@ export function AgendaScreen({ userId }: { userId: string }) {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [title, setTitle] = useState("");
+  const [day, setDay] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [saving, setSaving] = useState(false);
+  async function createEvent() {
+    if (!title.trim() || title.trim().length > 200) { Alert.alert("Informe um título de até 200 caracteres."); return; }
+    const parse = (date: string, time: string) => {
+      if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date) || !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)) return null;
+      const [year, month, dayOfMonth] = date.split("-").map(Number);
+      const [hours, minutes] = time.split(":").map(Number);
+      const value = new Date(year, month - 1, dayOfMonth, hours, minutes);
+      if (value.getFullYear() !== year || value.getMonth() !== month - 1 || value.getDate() !== dayOfMonth || value.getHours() !== hours || value.getMinutes() !== minutes) return null;
+      return value;
+    };
+    const start = parse(day, startTime); const end = parse(day, endTime);
+    if (!start || !end || end <= start) { Alert.alert("Confira a data e os horários. O término deve ser posterior ao início."); return; }
+    setSaving(true);
+    try {
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError || auth.user?.id !== userId) throw new Error("Sessão inválida.");
+      const { error: insertError } = await supabase.from("events").insert({ user_id: userId, title: title.trim(), starts_at: start.toISOString(), ends_at: end.toISOString(), event_type: "appointment", blocks_time: true });
+      if (insertError) throw insertError;
+      setTitle(""); setDay(""); setStartTime(""); setEndTime(""); setShowForm(false);
+      await load();
+      Alert.alert("Compromisso criado", "Evento salvo na agenda.");
+    } catch { Alert.alert("Não foi possível salvar", "Confira sua conexão e as permissões da agenda."); }
+    finally { setSaving(false); }
+  }
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     const now = new Date();
@@ -28,6 +58,14 @@ export function AgendaScreen({ userId }: { userId: string }) {
   useEffect(() => { void load(); }, [load]);
   return <View style={styles.box}>
     <Text style={styles.heading}>Próximos 30 dias</Text>
+    <Pressable accessibilityRole="button" onPress={() => setShowForm(value => !value)}><Text style={styles.refresh}>{showForm ? "Fechar formulário" : "+ Novo compromisso"}</Text></Pressable>
+    {showForm ? <View style={styles.form}>
+      <TextInput accessibilityLabel="Título do compromisso" placeholder="Título" placeholderTextColor="#B0A4C7" style={styles.input} value={title} onChangeText={setTitle} maxLength={200} />
+      <TextInput accessibilityLabel="Data do compromisso" placeholder="Data: AAAA-MM-DD" placeholderTextColor="#B0A4C7" style={styles.input} value={day} onChangeText={setDay} autoCapitalize="none" />
+      <TextInput accessibilityLabel="Horário de início" placeholder="Início: HH:mm" placeholderTextColor="#B0A4C7" style={styles.input} value={startTime} onChangeText={setStartTime} />
+      <TextInput accessibilityLabel="Horário de término" placeholder="Término: HH:mm" placeholderTextColor="#B0A4C7" style={styles.input} value={endTime} onChangeText={setEndTime} />
+      <Pressable accessibilityRole="button" disabled={saving} style={styles.save} onPress={() => void createEvent()}><Text style={styles.name}>{saving ? "Salvando..." : "Salvar compromisso"}</Text></Pressable>
+    </View> : null}
     <Pressable accessibilityRole="button" onPress={() => void load()}><Text style={styles.refresh}>Atualizar agenda</Text></Pressable>
     {loading ? <ActivityIndicator color="#B98AFF" /> : error ? <Text style={styles.muted}>{error}</Text> : events.length === 0 ? <Text style={styles.muted}>Nenhum compromisso encontrado.</Text> : events.map(event =>
       <View key={event.id} style={styles.item}>
@@ -38,4 +76,4 @@ export function AgendaScreen({ userId }: { userId: string }) {
     )}
   </View>;
 }
-const styles = StyleSheet.create({ box: { width: "100%", gap: 12, marginTop: 16 }, heading: { color: "#fff", fontSize: 19, fontWeight: "700" }, refresh: { color: "#B98AFF", fontWeight: "700" }, item: { backgroundColor: "#261B3E", padding: 14, borderRadius: 12, gap: 6 }, name: { color: "#fff", fontWeight: "700" }, muted: { color: "#D5C3FF", fontSize: 13 } });
+const styles = StyleSheet.create({ form: { gap: 10 }, input: { color: "#fff", backgroundColor: "#261B3E", padding: 13, borderRadius: 10 }, save: { backgroundColor: "#793DE5", padding: 14, alignItems: "center", borderRadius: 10 }, box: { width: "100%", gap: 12, marginTop: 16 }, heading: { color: "#fff", fontSize: 19, fontWeight: "700" }, refresh: { color: "#B98AFF", fontWeight: "700" }, item: { backgroundColor: "#261B3E", padding: 14, borderRadius: 12, gap: 6 }, name: { color: "#fff", fontWeight: "700" }, muted: { color: "#D5C3FF", fontSize: 13 } });
