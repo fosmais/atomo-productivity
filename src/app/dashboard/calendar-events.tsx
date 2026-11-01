@@ -484,14 +484,18 @@ export default function CalendarEvents() {
         </label>
       </div>
 
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+      <button type="button" onClick={() => setShowForm(false)} disabled={saving}
+        className="rounded-xl border border-slate-600 px-4 py-3 text-sm text-slate-200 hover:bg-slate-800 disabled:opacity-50">Cancelar</button>
       <button
         type="button"
         onClick={handleSave}
         disabled={saving || !title.trim() || !startsAt || !endsAt}
-        className="mt-4 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-3 font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-3 font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {saving ? "Salvando..." : "Adicionar compromisso"}
       </button>
+      </div>
 
       </div>}
       {error && (

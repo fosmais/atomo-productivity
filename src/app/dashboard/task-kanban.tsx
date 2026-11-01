@@ -37,6 +37,7 @@ export default function TaskKanban() {
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [newTitle, setNewTitle] = useState("");
+  const [favoriteOnCreate, setFavoriteOnCreate] = useState(false);
   const [newPriority, setNewPriority] = useState<"Alta" | "Média" | "Normal">("Normal");
   const [newDueDate, setNewDueDate] = useState("");
   const [creating, setCreating] = useState(false);
@@ -132,7 +133,7 @@ export default function TaskKanban() {
     setError("");
 
     try {
-      await saveCloudPlan("Tarefas manuais", [{
+      const savedPlan = await saveCloudPlan("Tarefas manuais", [{
         id: crypto.randomUUID(),
         title: newTitle.trim(),
         priority: newPriority,
@@ -140,6 +141,18 @@ export default function TaskKanban() {
         completed: false,
       }]);
 
+      if (favoriteOnCreate) {
+        const createdTaskId = savedPlan.tasks[0]?.id;
+        if (createdTaskId) {
+          const supabase = createClient();
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { error: favoriteError } = await supabase.from("favorites").insert({ user_id: user.id, task_id: createdTaskId, event_id: null });
+            if (favoriteError) setError("Tarefa criada, mas não foi possível favoritar. Use a estrela no quadro.");
+          }
+        }
+      }
+      setFavoriteOnCreate(false);
       setNewTitle("");
       setNewPriority("Normal");
       setNewDueDate("");
@@ -297,9 +310,10 @@ export default function TaskKanban() {
           type="button"
           onClick={() => setShowCreate((value) => !value)}
           disabled={creating}
+          aria-expanded={showCreate}
           className="rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >
-          + Nova tarefa
+          {showCreate ? "Fechar formulário" : "+ Nova tarefa"}
         </button>
 
         <button
@@ -361,6 +375,7 @@ export default function TaskKanban() {
               className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-800 p-3 text-white"
             />
           </label>
+          <label className="flex items-center gap-2 text-sm text-slate-300 sm:col-span-2"><input type="checkbox" checked={favoriteOnCreate} onChange={(event) => setFavoriteOnCreate(event.target.checked)} className="accent-violet-500" />★ Adicionar aos favoritos</label>
           <div className="flex flex-wrap gap-2 sm:col-span-2">
             <button type="submit" disabled={creating || !newTitle.trim()} className="rounded-lg bg-violet-600 px-5 py-2 font-semibold disabled:opacity-50">
               {creating ? "Salvando..." : "Criar tarefa"}
