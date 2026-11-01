@@ -13,9 +13,6 @@
     "ios": {
       "supportsTablet": true
     },
-    "extra": {
-      "apiBaseUrl": "https://myryra.com"
-    },
     "plugins": [
       [
         "expo-audio",
