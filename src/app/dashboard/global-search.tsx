@@ -10,8 +10,8 @@ export default function GlobalSearch() {
   const { navigateTo, navigateToTask } = useVyraNavigation();
   const activeModule = useVyraActiveModule();
   const [expanded, setExpanded] = useState(false);
-  const isOpen = activeModule === "home" || expanded || query.trim().length > 0;
   const [query, setQuery] = useState("");
+  const isOpen = activeModule === "home" || expanded || query.trim().length > 0;
   const [results, setResults] = useState<SearchResult[]>([]);
   const [completedQuery, setCompletedQuery] = useState("");
   const [loading, setLoading] = useState(false);
