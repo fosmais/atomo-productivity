@@ -42,6 +42,7 @@ export default function TaskKanban() {
   const [creating, setCreating] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [taskSearch, setTaskSearch] = useState("");
   const [favoriteSavingId, setFavoriteSavingId] = useState<string | null>(null);
 
   const loadTasks = useCallback(async () => {
@@ -311,11 +312,20 @@ export default function TaskKanban() {
         </button>
       </div>
 
-      <label className="mb-4 inline-flex cursor-pointer items-center gap-2 text-sm text-slate-300">
-        <input type="checkbox" checked={favoritesOnly} onChange={(event) => setFavoritesOnly(event.target.checked)}
-          className="accent-violet-500" />
-        ★ Somente favoritos
-      </label>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <label className="min-w-[12rem] flex-1">
+          <span className="sr-only">Buscar tarefas por nome</span>
+          <input type="search" value={taskSearch} onChange={(event) => setTaskSearch(event.target.value)}
+            placeholder="Buscar tarefas..." className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-violet-400" />
+        </label>
+        <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-300">
+          <input type="checkbox" checked={favoritesOnly} onChange={(event) => setFavoritesOnly(event.target.checked)}
+            className="accent-violet-500" />
+          ★ Somente favoritos
+        </label>
+        {(taskSearch || favoritesOnly) && <button type="button" onClick={() => { setTaskSearch(""); setFavoritesOnly(false); }}
+          className="rounded-lg border border-slate-600 px-3 py-2 text-xs text-slate-300 hover:bg-white/10">Limpar filtros</button>}
+      </div>
 
       {showCreate && (
         <form onSubmit={createTask} className="mb-5 grid gap-3 rounded-xl border border-violet-500/40 bg-slate-950 p-4 sm:grid-cols-2">
@@ -373,7 +383,7 @@ export default function TaskKanban() {
         <div className="grid min-w-0 gap-4 md:grid-cols-2 2xl:grid-cols-4">
           {columns.map((column) => {
             const columnTasks = tasks.filter(
-              (task) => task.status === column.status && (!favoritesOnly || favoriteIds.includes(task.id))
+              (task) => task.status === column.status && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))
             );
             const expanded = expandedColumns.includes(column.status);
             const visibleTasks = expanded ? columnTasks : columnTasks.filter((task) => task.id === focusedTaskId).concat(columnTasks.filter((task) => task.id !== focusedTaskId).slice(0, focusedTaskId && columnTasks.some((task) => task.id === focusedTaskId) ? 3 : 4));
