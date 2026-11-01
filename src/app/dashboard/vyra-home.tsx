@@ -5,6 +5,7 @@ import { useVyraActiveModule, useVyraNavigation } from "./vyra-module-context";
 import { loadVyraMetrics } from "./vyra-metrics-service";
 import { getCloudEvents } from "@/lib/event-cloud";
 import WhatNowCard from "./what-now-card";
+import MyryraScore from "./myryra-score";
 import { getCompletionRate, type VyraMetrics } from "./vyra-metrics";
 
 type HomeEvent = { id: string; title: string; start: string; source: "MYRYRA" | "Google" };
@@ -139,6 +140,7 @@ export default function VyraHome() {
           Priorize o que importa. A MYRYRA ajuda você a decidir o próximo passo.
         </p>
       </div>
+      <MyryraScore metrics={metrics} loading={loading} />
       <WhatNowCard />
       {googleStatus === "disconnected" && (
         <section className="flex flex-col gap-3 rounded-2xl border border-violet-500/20 bg-slate-900/50 p-4 sm:flex-row sm:items-center sm:justify-between">
