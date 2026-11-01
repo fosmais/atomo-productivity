@@ -122,8 +122,8 @@ export function MykaHistory({ userId }: { userId: string }) {
     <Pressable accessibilityRole="button" disabled={sending || (!draft.trim() && !attachment)} onPress={() => void send()}><Text style={styles.action}>{sending ? "Enviando..." : "Enviar para MYKA"}</Text></Pressable>
     {reply ? <View style={styles.message}><Text style={styles.role}>MYKA · resposta recente</Text><Text style={styles.content}>{reply}</Text></View> : null}
     <Pressable accessibilityRole="button" onPress={() => void load()}><Text style={styles.action}>Atualizar mensagens</Text></Pressable>
-    {loading ? <ActivityIndicator color="#B98AFF" /> : error ? <Text style={styles.caption}>{error}</Text>
-      : messages.length === 0 ? <Text style={styles.caption}>Nenhuma mensagem encontrada.</Text>
+    {error ? <Text style={styles.caption}>{error}</Text> : null}
+    {loading ? <ActivityIndicator color="#B98AFF" /> : messages.length === 0 ? <Text style={styles.caption}>Nenhuma mensagem encontrada.</Text>
       : messages.map(message => <View key={message.id} style={styles.message}>
           <Text style={styles.role}>{message.role === "assistant" ? "MYKA" : "Você"}</Text>
           <Text style={styles.content}>{message.content}</Text>
