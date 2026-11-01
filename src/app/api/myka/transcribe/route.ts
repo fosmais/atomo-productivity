@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { createRequestClient } from "@/lib/supabase/request-client";
+import { authenticateRequest } from "@/lib/supabase/request-client";
 import { checkConciergeRateLimit } from "@/lib/rate-limit";
 
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
@@ -8,14 +8,11 @@ const ALLOWED_TYPES = new Set(["audio/mp4", "audio/m4a", "audio/mpeg", "audio/mp
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createRequestClient(request);
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error || !user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
-    const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (assurance.error) return NextResponse.json({ error: "Verificação de sessão indisponível." }, { status: 503 });
-    if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
-      return NextResponse.json({ error: "Segundo fator obrigatório.", code: "MFA_REQUIRED" }, { status: 403 });
-    }
+    const { supabase, user, mfaRequired, assuranceUnavailable } = await authenticateRequest(request);
+    if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+    if (assuranceUnavailable) return NextResponse.json({ error: "Verificação de sessão indisponível." }, { status: 503 });
+    if (mfaRequired) return NextResponse.json({ error: "Segundo fator obrigatório.", code: "MFA_REQUIRED" }, { status: 403 });
+
     if (!request.headers.get("content-type")?.toLowerCase().startsWith("multipart/form-data")) {
       return NextResponse.json({ error: "Envie áudio em formulário multipart." }, { status: 415 });
     }
