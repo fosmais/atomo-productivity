@@ -127,33 +127,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Segundo fator obrigatório.", code: "MFA_REQUIRED" }, { status: 403 });
     }
 
-let rateLimit;
-try {
-  rateLimit = await checkConciergeRateLimit(user.id);
-} catch {
-  console.error("[MYKA] Rate limiting temporariamente indisponível.");
-  return NextResponse.json(
-    { error: "Assistente temporariamente indisponível. Tente novamente em instantes." },
-    { status: 503, headers: { "Retry-After": "60" } }
-  );
-}
-
-if (!rateLimit.allowed) {
-  return NextResponse.json(
-    {
-      error: "Limite de mensagens atingido. Aguarde para tentar novamente.",
-    },
-    {
-      status: 429,
-      headers: {
-        "Retry-After": String(
-          Math.max(1, Math.ceil((rateLimit.reset - Date.now()) / 1000))
-        ),
-      },
-    }
-  );
-}
-
     const mediaType = (request.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
     if (mediaType !== "application/json") {
       return NextResponse.json({ error: "Envie JSON." }, { status: 415 });
@@ -267,6 +240,34 @@ if (!rateLimit.allowed) {
         .filter((item) => (item.role === "user" || item.role === "assistant") && typeof item.content === "string")
         .map((item) => ({ role: item.role, content: item.content.slice(0, 1500) }));
     }
+
+let rateLimit;
+try {
+  rateLimit = await checkConciergeRateLimit(user.id);
+} catch {
+  console.error("[MYKA] Rate limiting temporariamente indisponível.");
+  return NextResponse.json(
+    { error: "Assistente temporariamente indisponível. Tente novamente em instantes." },
+    { status: 503, headers: { "Retry-After": "60" } }
+  );
+}
+
+if (!rateLimit.allowed) {
+  return NextResponse.json(
+    {
+      error: "Limite de mensagens atingido. Aguarde para tentar novamente.",
+    },
+    {
+      status: 429,
+      headers: {
+        "Retry-After": String(
+          Math.max(1, Math.ceil((rateLimit.reset - Date.now()) / 1000))
+        ),
+      },
+    }
+  );
+}
+
 
     const apiKey = process.env.OPENAI_API_KEY;
 
