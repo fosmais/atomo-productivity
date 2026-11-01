@@ -5,6 +5,37 @@ import { useState } from "react";
 import { getCloudPlans } from "@/lib/plan-cloud";
 import { getCloudAvailability } from "@/lib/cloud-availability";
 import { getCloudTasksForScheduling } from "@/lib/cloud-task-scheduling";
+import { calculateAvailability, type TimeInterval } from "@/lib/availability-engine";
+
+type GoogleBusyEvent = {
+  start: string | null;
+  end: string | null;
+  transparency?: string | null;
+  status?: string | null;
+  selfResponseStatus?: string | null;
+};
+type GoogleEventsResponse = { connected: boolean; events?: GoogleBusyEvent[] };
+
+function parseGoogleTime(value: string | null): Date | null {
+  if (!value) return null;
+  // Date-only Google events are all-day and have an exclusive end date.
+  const parsed = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? value + "T00:00:00" : value);
+  return Number.isFinite(parsed.getTime()) ? parsed : null;
+}
+
+async function getGoogleBusyIntervals(): Promise<TimeInterval[]> {
+  const response = await fetch("/api/google/events", { cache: "no-store" });
+  if (!response.ok) throw new Error("Não foi possível verificar o Google Calendar. A disponibilidade não pode ser confirmada.");
+  const data: GoogleEventsResponse = await response.json();
+  if (!data.connected) return [];
+  if (!Array.isArray(data.events)) throw new Error("A lista de eventos Google está indisponível.");
+  return data.events.flatMap((event) => {
+    if (event.status === "cancelled" || event.transparency === "transparent" || event.selfResponseStatus === "declined") return [];
+    const start = parseGoogleTime(event.start);
+    const end = parseGoogleTime(event.end);
+    return start && end && end.getTime() > start.getTime() ? [{ start, end }] : [];
+  });
+}
 
 type Candidate = { id: string | null; title: string; priority: string; dueDate: string | null; duration: number | null; score: number };
 type Suggestion = { task: Candidate; freeMinutes: number; availableUntil: Date | null; fits: boolean };
@@ -30,8 +61,8 @@ export default function WhatNow() {
     setError("");
     setSuggestion(null);
     try {
-      const [plans, availability, scheduling] = await Promise.all([
-        getCloudPlans(), getCloudAvailability(new Date(), 1), getCloudTasksForScheduling(),
+      const [plans, availability, scheduling, googleBusy] = await Promise.all([
+        getCloudPlans(), getCloudAvailability(new Date(), 1), getCloudTasksForScheduling(), getGoogleBusyIntervals(),
       ]);
       const durationById = new Map(scheduling.ready.map((task) => [task.id, task.durationMinutes]));
       const pending: Candidate[] = plans.flatMap((plan) => plan.tasks)
@@ -46,7 +77,9 @@ export default function WhatNow() {
         return;
       }
       const now = new Date();
-      const slots = availability.flatMap((day) => day.available)
+      const slots = availability.flatMap((day) => day.available.flatMap(
+        (interval) => calculateAvailability(interval, googleBusy).available
+      ))
         .map((interval) => ({ start: new Date(Math.max(interval.start.getTime(), now.getTime())), end: interval.end }))
         .filter((interval) => interval.end.getTime() > interval.start.getTime())
         .sort((a, b) => a.start.getTime() - b.start.getTime());
@@ -88,7 +121,7 @@ export default function WhatNow() {
               "Nenhuma janela livre de planejamento neste momento."}
           </p>
           {!suggestion.fits && <p className="mt-2 text-xs text-amber-200">Não foi possível confirmar uma tarefa que caiba agora. Ajuste a duração ou consulte o Smart Scheduling.</p>}
-          <p className="mt-2 text-xs text-slate-400">A recomendação considera eventos bloqueantes salvos na MYRYRA. Compromissos externos do Google Calendar ainda não entram neste cálculo; confira ambos antes de assumir um horário livre.</p>
+          <p className="mt-2 text-xs text-slate-400">Considera compromissos bloqueantes da MYRYRA e dos calendários Google selecionados, quando conectados. Eventos Google são consultados somente para leitura.</p>
         </div>
       )}
     </section>
