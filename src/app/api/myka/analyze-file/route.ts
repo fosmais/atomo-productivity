@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createClient } from "@/lib/supabase/server";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
+import { checkConciergeRateLimit } from "@/lib/rate-limit";
 
 
 
@@ -24,6 +25,17 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Não autenticado." },
         { status: 401 }
+      );
+    }
+
+    const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assurance.error) {
+      return NextResponse.json({ error: "Verificação de sessão indisponível." }, { status: 503 });
+    }
+    if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
+      return NextResponse.json(
+        { error: "Segundo fator obrigatório.", code: "MFA_REQUIRED" },
+        { status: 403 }
       );
     }
 
@@ -63,6 +75,26 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Arquivo inválido ou maior que 5 MB." },
         { status: 400 }
+      );
+    }
+
+    // File analysis consumes the same daily AI allowance as MYKA chat.
+    let rateLimit: Awaited<ReturnType<typeof checkConciergeRateLimit>>;
+    try {
+      rateLimit = await checkConciergeRateLimit(data.user.id);
+    } catch {
+      return NextResponse.json(
+        { error: "Limite de IA temporariamente indisponível." },
+        { status: 503, headers: { "Retry-After": "60" } }
+      );
+    }
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: "Limite de mensagens atingido. Aguarde para tentar novamente." },
+        {
+          status: 429,
+          headers: { "Retry-After": String(Math.max(1, Math.ceil((rateLimit.reset - Date.now()) / 1000))) },
+        }
       );
     }
 
