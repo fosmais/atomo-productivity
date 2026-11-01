@@ -1,7 +1,7 @@
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { createClient } from "@/lib/supabase/server";
+import { createRequestClient } from "@/lib/supabase/request-client";
 import { getServerAvailability } from "@/lib/server-availability";
 import { checkConciergeRateLimit } from "@/lib/rate-limit";
 
@@ -107,7 +107,7 @@ function isConciergeResponse(value: unknown): value is ConciergeResponse {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
+    const supabase = await createRequestClient(request);
 
     const {
       data: { user },
