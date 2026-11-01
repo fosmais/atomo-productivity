@@ -51,3 +51,19 @@ end;
 $$;
 revoke all on function public.myka_confirm_event(uuid) from public, anon;
 grant execute on function public.myka_confirm_event(uuid) to authenticated;
+
+create or replace function public.myka_cancel_event(p_message_id uuid)
+returns jsonb language plpgsql security definer set search_path = ''
+as $$
+declare v_user uuid := auth.uid(); v_message public.myka_messages%rowtype;
+begin
+ if v_user is null then raise exception 'Authentication required'; end if;
+ select * into v_message from public.myka_messages where id=p_message_id and user_id=v_user and role='assistant' for update;
+ if not found then raise exception 'Proposal not found'; end if;
+ if v_message.event_status='cancelled' then return jsonb_build_object('status','cancelled'); end if;
+ if v_message.event_status <> 'pending' then return jsonb_build_object('status',v_message.event_status); end if;
+ update public.myka_messages set event_status='cancelled' where id=p_message_id and user_id=v_user;
+ return jsonb_build_object('status','cancelled');
+end; $$;
+revoke all on function public.myka_cancel_event(uuid) from public, anon;
+grant execute on function public.myka_cancel_event(uuid) to authenticated;

@@ -96,28 +96,20 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const admin = createSupabaseAdmin();
-    const column = kind === "task" ? "task_status" : "event_status";
-
-    const { data: updated, error: updateError } = await admin
-      .from("myka_messages")
-      .update({ [column]: "cancelled" })
-      .eq("id", messageId)
-      .eq("user_id", auth.user.id)
-      .eq("role", "assistant")
-      .eq(column, "pending")
-      .select("id")
-      .maybeSingle();
-
-    if (updateError) {
-      throw updateError;
-    }
-
-    if (!updated) {
-      return NextResponse.json(
-        { error: "Proposta nao esta pendente ou nao foi encontrada." },
-        { status: 409 }
-      );
+    if (kind === "event") {
+      const { data: result, error: cancelError } = await supabase.rpc("myka_cancel_event", { p_message_id: messageId });
+      if (cancelError) throw cancelError;
+      if (!result || typeof result !== "object" || Array.isArray(result) || result.status !== "cancelled") {
+        return NextResponse.json({ error: "Proposta não está pendente." }, { status: 409 });
+      }
+    } else {
+      const admin = createSupabaseAdmin();
+      const { data: updated, error: updateError } = await admin.from("myka_messages")
+        .update({ task_status: "cancelled" }).eq("id", messageId)
+        .eq("user_id", auth.user.id).eq("role", "assistant")
+        .eq("task_status", "pending").select("id").maybeSingle();
+      if (updateError) throw updateError;
+      if (!updated) return NextResponse.json({ error: "Proposta não está pendente." }, { status: 409 });
     }
 
     return NextResponse.json(
