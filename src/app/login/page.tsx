@@ -170,10 +170,13 @@ export default function LoginPage() {
 
   return (
     <main className="relative isolate flex min-h-dvh items-center justify-center overflow-x-hidden bg-[#070716] px-4 py-6 text-white sm:px-6">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse at 26% 38%, rgba(124,58,237,.42), transparent 37%), radial-gradient(ellipse at 76% 70%, rgba(14,165,233,.25), transparent 39%), radial-gradient(ellipse at 70% 15%, rgba(168,85,247,.23), transparent 30%), #070716" }} />
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-70" style={{ backgroundImage: "radial-gradient(1px 1px at 12% 16%, white 98%, transparent), radial-gradient(2px 2px at 36% 62%, #d8b4fe 98%, transparent), radial-gradient(1px 1px at 77% 22%, white 98%, transparent), radial-gradient(1px 1px at 86% 82%, #a5f3fc 98%, transparent), radial-gradient(1px 1px at 53% 39%, white 98%, transparent)", backgroundSize: "173px 197px, 263px 283px, 199px 241px, 307px 269px, 131px 163px" }} />
-      <div aria-hidden="true" className="pointer-events-none absolute left-1/4 top-1/4 h-[35rem] w-[35rem] rounded-full bg-violet-600/15 blur-[100px]" />
-      <div className="relative z-10 grid w-full max-w-6xl items-center justify-center gap-8 lg:grid-cols-[minmax(0,390px)_minmax(0,460px)] lg:gap-16">
+      {/* Subtle Milky Way, star field and planetary horizon: decorative only. */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{background:"radial-gradient(ellipse at 22% 25%, rgba(132,66,200,.38), transparent 40%), radial-gradient(ellipse at 57% 65%, rgba(103,46,157,.35), transparent 53%), linear-gradient(155deg,#09071a 0%,#1d123d 48%,#291748 75%,#0b1028 100%)"}} />
+      <div aria-hidden="true" className="pointer-events-none absolute -left-[18%] -top-[33%] h-[68%] w-[90%] rotate-[-22deg] opacity-65 blur-[22px]" style={{background:"radial-gradient(ellipse at center,rgba(245,177,242,.52) 0%,rgba(159,85,217,.48) 12%,rgba(91,67,172,.3) 29%,transparent 63%)"}} />
+      <div aria-hidden="true" className="pointer-events-none absolute -left-[14%] -top-[27%] h-[58%] w-[80%] rotate-[-22deg] opacity-70" style={{background:"radial-gradient(ellipse at center,rgba(250,198,239,.4) 0%,rgba(178,103,234,.18) 15%,transparent 55%)"}} />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-75" style={{backgroundImage:"radial-gradient(1px 1px at 12% 16%, white 98%, transparent),radial-gradient(2px 2px at 36% 62%, #d8b4fe 98%, transparent),radial-gradient(1px 1px at 77% 22%, white 98%, transparent),radial-gradient(1px 1px at 86% 82%, #a5f3fc 98%, transparent),radial-gradient(1px 1px at 53% 39%, white 98%, transparent)",backgroundSize:"173px 197px,263px 283px,199px 241px,307px 269px,131px 163px"}} />
+      <div aria-hidden="true" className="pointer-events-none absolute -bottom-[30%] left-[-15%] h-[43%] w-[130%] rounded-[50%] border-t border-violet-200/40 bg-gradient-to-b from-indigo-400/20 via-violet-500/10 to-transparent shadow-[0_-12px_45px_rgba(177,119,248,.24)]" />
+      <div className="relative z-10 grid w-full max-w-6xl items-center justify-center gap-8 lg:grid-cols-[minmax(0,390px)_minmax(0,460px)] lg:gap-14">
         <div className="hidden lg:block"><MykaLoginScene /></div>
         <div className="mx-auto w-full max-w-[460px]">
           <div className="mb-4 text-center lg:text-left">
@@ -184,7 +187,7 @@ export default function LoginPage() {
             <div aria-hidden="true" className="absolute inset-4 rounded-full bg-violet-500/25 blur-2xl" />
             <img src="/myka-transparente.png" alt="MYKA, sua companheira inteligente" className="relative h-auto w-full drop-shadow-[0_12px_28px_rgba(120,65,255,.4)]" />
           </div>
-          <div className="rounded-3xl border border-violet-300/30 bg-slate-950/85 p-5 shadow-2xl shadow-violet-950/40 backdrop-blur-xl sm:p-7">
+          <div className="rounded-3xl border border-violet-300/45 bg-slate-950/90 p-5 shadow-2xl shadow-violet-950/40 backdrop-blur-xl sm:p-7">
         <div className="mb-4 flex items-center gap-3"><span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl"><img src="/myryra-logo.png" alt="Logotipo MYRYRA" className="h-full w-full object-cover" /></span><div><h1 className="text-2xl font-bold tracking-tight">MYRYRA</h1><p className="text-xs tracking-widest text-violet-300">YOUR LIFE. IN SYNC.</p></div></div><h2 className="text-2xl font-semibold">{mode === "login" ? "Bem-vindo de volta" : "Comece sua jornada"}</h2>
 
         <p className="mt-2 text-slate-400">
