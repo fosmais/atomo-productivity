@@ -159,13 +159,15 @@ export async function GET() {
       calendarPreference?.selected_calendar_ids ?? []
     );
 
+    // A saved preference is authoritative, including an intentionally empty list.
+    // Before the first save, use Google's selected calendars as the default.
+    const hasSavedPreference = calendarPreference !== null;
     const selectedCalendars = calendarEntries.filter(
       (entry) =>
         Boolean(entry.id) &&
-        (
-          entry.selected !== false ||
-          explicitlySelected.has(entry.id!)
-        )
+        (hasSavedPreference
+          ? explicitlySelected.has(entry.id!)
+          : entry.selected !== false)
     );
 
     const allEvents: Array<{
