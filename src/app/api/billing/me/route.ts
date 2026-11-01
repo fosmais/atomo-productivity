@@ -32,6 +32,7 @@ export async function GET() {
         name: entitlements.name,
         aiMessagesPerDay: entitlements.aiMessagesPerDay,
         features: entitlements.features,
+        billingEnabled: true,
       },
       { headers: { "Cache-Control": "private, no-store" } }
     );
