@@ -30,17 +30,29 @@ export default function MyryraScore({metrics,loading}:{metrics:VyraMetrics|null;
    }
   }catch(e){if(!(e instanceof Error && e.name==="AbortError"))setNotice("Não foi possível gerar ou compartilhar o card.");}
  }
- return <section aria-label="MYRYRA Score" className="rounded-3xl border border-violet-400/30 bg-gradient-to-br from-violet-950 via-slate-950 to-slate-900 p-6 text-white">
-  <p className="text-xs font-bold uppercase tracking-widest text-violet-300">MYRYRA SCORE · BETA</p>
-  <h2 className="mt-2 text-xl font-semibold">Sua evolução, em números.</h2>
-  <div className="mt-5 flex flex-wrap items-center justify-between gap-5">
-   <div className="flex items-center gap-4">
-    <div className="grid h-28 w-28 place-items-center rounded-full border-8 border-violet-500 bg-slate-950 text-center"><div><strong className="block text-4xl">{loading?"…":score??"—"}</strong><span className="text-xs text-violet-200">de 100</span></div></div>
-    <div><p className="text-sm font-semibold text-violet-200">Conclusão de tarefas</p><p className="mt-1 text-sm text-slate-300">{metrics?metrics.completed+" de "+metrics.total+" concluídas":"Sem dados suficientes"}</p></div>
+ const level=score===null?"Aguardando dados":score>=85?"Excelente consistência":score>=60?"Boa evolução":"Continue evoluindo";
+ return <section aria-label="MYRYRA Score" className="rounded-[24px] bg-[#100d22] p-4 text-white sm:p-6">
+  <header className="flex items-start justify-between gap-3">
+   <div><p className="text-xs font-bold uppercase text-violet-300">MYRYRA SCORE</p><h2 className="mt-2 text-lg font-semibold">Sua evolução, em números.</h2></div>
+   <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-300">Versão beta</span>
+  </header>
+  <div className="mt-6 grid items-center gap-7 md:grid-cols-[minmax(190px,1fr)_minmax(0,1.4fr)]">
+   <div className="flex flex-col items-center gap-3">
+    <div className="relative grid h-40 w-40 place-items-center rounded-full" style={{background:score===null?"#302a48":`conic-gradient(#9d72ff 0 ${score}%, #302a48 ${score}% 100%)`}}>
+     <div className="grid h-[136px] w-[136px] place-content-center rounded-full bg-[#100d22] text-center"><strong className="text-5xl font-bold tabular-nums">{loading?"…":score??"—"}</strong><span className="text-xs text-violet-200">de 100 pontos</span></div>
+    </div>
+    <p className="text-sm text-violet-100">{level}</p>
    </div>
-   <button type="button" onClick={()=>void share()} disabled={score===null||loading} className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold hover:bg-violet-500 disabled:opacity-40">Compartilhar card ↗</button>
+   <div className="space-y-5">
+    <div><div className="flex justify-between text-xs"><span>Tarefas</span><strong>{score===null?"—":score+"%"}</strong></div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#302a48]"><div className="h-full rounded-full bg-[#9d72ff]" style={{width:(score??0)+"%"}} /></div><p className="mt-1 text-[11px] text-slate-400">{metrics?metrics.completed+" de "+metrics.total+" tarefas concluídas":"Aguardando dados"}</p></div>
+    {["Planejamento","Foco","Equilíbrio"].map(label=><div key={label}><div className="flex justify-between text-xs"><span>{label}</span><span className="text-slate-400">Em breve</span></div><div className="mt-3 h-1.5 rounded-full bg-[#302a48]" /></div>)}
+   </div>
   </div>
+  <footer className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5">
+   <p className="text-xs text-violet-100">Sua melhor versão começa hoje.</p>
+   <button type="button" onClick={()=>void share()} disabled={score===null||loading} className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-[#100d22] hover:bg-violet-100 disabled:opacity-40">Compartilhar ↗</button>
+  </footer>
   {notice&&<p role="status" className="mt-3 text-xs text-violet-200">{notice}</p>}
-  <p className="mt-4 border-t border-white/10 pt-3 text-xs text-slate-400">Versão inicial: percentual de tarefas concluídas, não um indicador geral de bem-estar. O card não inclui tarefas nem dados pessoais.</p>
+  <p className="mt-3 text-[11px] text-slate-400">Score beta baseado em tarefas. Outros indicadores ainda não calculados; nenhuma informação pessoal é compartilhada.</p>
  </section>;
 }
