@@ -34,7 +34,20 @@ export default function MyryraScore({metrics,loading}:{metrics:VyraMetrics|null;
    ctx.fillStyle="#c4b5fd";ctx.font="44px Arial";ctx.fillText("MYRYRA SCORE",540,810);
    ctx.fillStyle="#ffffff";ctx.font="38px Arial";ctx.fillText("Minha evolução em tarefas",540,1010);
    ctx.fillStyle="#c4b5fd";ctx.font="30px Arial";ctx.fillText(String(metrics?.completed??0)+" de "+String(metrics?.total??0)+" tarefas concluídas",540,1070);
-   ctx.fillStyle="#a5a0b8";ctx.font="27px Arial";ctx.fillText("Compartilhado voluntariamente",540,1240);
+   // Reuse the existing MYKA artwork; crop to the upper portrait area and mask as a face cameo.
+   const portrait=new Image();
+   portrait.src="/myka-transparente.png";
+   try {
+    await new Promise<void>((resolve,reject)=>{portrait.onload=()=>resolve();portrait.onerror=()=>reject(new Error("Retrato indisponível"));if(portrait.complete&&portrait.naturalWidth>0)resolve();});
+    const radius=82, x=540, y=1188;
+    ctx.save();ctx.beginPath();ctx.arc(x,y,radius,0,2*Math.PI);ctx.clip();
+    ctx.fillStyle="#24123d";ctx.fillRect(x-radius,y-radius,radius*2,radius*2);
+    const side=Math.min(portrait.naturalWidth,portrait.naturalHeight);
+    ctx.drawImage(portrait,(portrait.naturalWidth-side)/2,(portrait.naturalHeight-side)*0.2,side,side*0.62,x-radius,y-radius,radius*2,radius*2);
+    ctx.restore();
+    ctx.strokeStyle="#a78bfa";ctx.lineWidth=5;ctx.beginPath();ctx.arc(x,y,radius,0,2*Math.PI);ctx.stroke();
+   }catch{ /* Keep the card usable if the mascot asset cannot load. */ }
+   ctx.fillStyle="#a5a0b8";ctx.font="24px Arial";ctx.fillText("Compartilhado voluntariamente",540,1320);
    const blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,"image/png"));
    if(!blob)throw new Error("Imagem indisponível");
    const file=new File([blob],"myryra-score.png",{type:"image/png"});
