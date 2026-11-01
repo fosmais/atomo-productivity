@@ -1,20 +1,20 @@
-# MYRYRA — Conciliação e transições (Sandbox)
+# Asaas Sandbox — mandatory reconciliation scenarios
 
-Pure function: `decidePaidAccess` in `src/lib/billing/reconciliation-policy.ts`.
-It does not update the database, process webhooks, or activate a plan.
-
-| Provider evidence | Expected result |
+| Scenario | Expected decision |
 | --- | --- |
-| ACTIVE subscription, matching verified payment CONFIRMED, correct amount, valid period | eligible |
-| ACTIVE subscription, matching verified payment RECEIVED, correct amount, valid period | eligible |
-| PENDING or OVERDUE payment | Free, PAYMENT_UNCONFIRMED |
-| REFUNDED payment or chargeback | Free, REVERSED_PAYMENT |
-| CANCELED or INACTIVE subscription | Free, SUBSCRIPTION_INACTIVE |
-| Different subscription ID | Free, SUBSCRIPTION_MISMATCH |
-| Wrong price/currency | Free, AMOUNT_MISMATCH |
-| Expired, malformed or implausibly distant period | Free, INVALID_PERIOD |
+| Confirmed payment, active subscription, matching plan and valid period | verified candidate |
+| Pending payment | retry with backoff |
+| Provider temporarily unavailable | retry with backoff |
+| Eight failed attempts | rejected |
+| Payment for a different subscription | rejected |
+| Expired job lease | rejected without provider call |
+| Invalid payment reference | rejected without provider call |
+| Refunded or disputed payment | rejected |
+| Expired billing period | rejected |
+| Duplicate webhook delivery | one audit receipt / one queued job |
+| Two workers claiming simultaneously | at most one lease |
+| Worker crashes before finalization | lease recovery with idempotency |
+| Delayed old event after renewal | no regression of newer entitlement |
 
-Before enabling automatic reconciliation, implement verified customer ownership,
-payment-to-subscription matching, period determination, atomic persistence, replay
-protection, and test fixtures for every row above. Never derive a paid period
-solely from a webhook's `paymentDate` or the browser.
+**Not yet executed:** the last four cases require database integration and
+Sandbox credentials. Do not enable payment or paid access until all pass.
