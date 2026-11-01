@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { AudioModule, RecordingPresets, useAudioRecorder } from "expo-audio";
 
@@ -9,6 +9,13 @@ export function MykaVoiceRecorder({ onRecorded }: Props) {
   const [recording, setRecording] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      // Release the microphone if the MYKA screen unmounts mid-recording.
+      if (recorder.isRecording) void recorder.stop().catch(() => undefined);
+    };
+  }, [recorder]);
 
   async function toggleRecording() {
     if (busy) return;
