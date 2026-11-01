@@ -12,15 +12,17 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [requiresMfa, setRequiresMfa] = useState(false);
-  const [assuranceLoading, setAssuranceLoading] = useState(false);
+  const [verifiedToken, setVerifiedToken] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
-    if (!session) { setRequiresMfa(false); return; }
-    setAssuranceLoading(true);
+    if (!session) { setRequiresMfa(false); setVerifiedToken(null); return; }
+    const token = session.access_token;
     supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data, error }) => {
-      if (!cancelled) setRequiresMfa(Boolean(error || (data?.nextLevel === "aal2" && data.currentLevel !== "aal2")));
-    }).catch(() => { if (!cancelled) setRequiresMfa(true); })
-      .finally(() => { if (!cancelled) setAssuranceLoading(false); });
+      if (!cancelled) {
+        setRequiresMfa(Boolean(error || (data?.nextLevel === "aal2" && data.currentLevel !== "aal2")));
+        setVerifiedToken(token);
+      }
+    }).catch(() => { if (!cancelled) { setRequiresMfa(true); setVerifiedToken(token); } });
     return () => { cancelled = true; };
   }, [session?.access_token]);
   useEffect(() => {
@@ -35,7 +37,7 @@ export default function App() {
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={styles.brand}>M</Text><Text style={styles.title}>MYRYRA</Text>
       <Text style={styles.subtitle}>Your life. In sync.</Text>
-      {loading || assuranceLoading ? <ActivityIndicator style={{ marginTop: 36 }} color="#B98AFF" /> : session && requiresMfa ? <MfaChallenge onVerified={() => { setRequiresMfa(false); }} /> : session ?
+      {loading || (session && verifiedToken !== session.access_token) ? <ActivityIndicator style={{ marginTop: 36 }} color="#B98AFF" /> : session && requiresMfa ? <MfaChallenge onVerified={() => { setRequiresMfa(false); setVerifiedToken(session.access_token); }} /> : session ?
         <View style={styles.welcome}><Text style={styles.message}>Olá, {session.user.email}</Text><AgendaScreen userId={session.user.id} /><MykaHistory userId={session.user.id} /><Pressable onPress={() => void supabase.auth.signOut()} accessibilityRole="button"><Text style={styles.signout}>Sair</Text></Pressable></View>
         : <AuthScreen />}
     </ScrollView>
