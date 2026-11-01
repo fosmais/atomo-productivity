@@ -1,17 +1,23 @@
-# Reconciliation worker contract (not deployed)
+# MYRYRA Asaas — Consolidated queue contract
 
-The migration `20261101_billing_queue_atomic_claim.sql` adds a service-role-only
-atomic queue claim, using `FOR UPDATE SKIP LOCKED`. It depends on
-`20261101_billing_reconciliation_queue.sql` and has **not** been applied.
+Three staged migrations, **not applied**:
+1. `20261101_billing_reconciliation_queue.sql` — service-role-only queue.
+2. `20261101_billing_queue_atomic_claim.sql` — atomic claim with SKIP LOCKED.
+3. `20261101_billing_queue_finalize.sql` — idempotent enqueue and lease-fenced completion.
 
-Before activating a worker:
-- Only the backend service role may call the claim function.
-- Claim returns at most one due event, with a lease between 30–600 seconds.
-- Never trust a webhook payload as payment confirmation.
-- Reconcile by fetching authoritative payment and subscription details.
-- Validate customer ownership, plan amount, currency and billing period.
-- Persist the outcome idempotently in a transaction; avoid stale event overwrites.
-- Add explicit expired-lease recovery, bounded retry and audit trails.
-- Test parallel workers and failures between claim, provider read and commit.
+All functions reject calls that are not service_role. Completing a job requires
+the exact lease expiry returned by claim and a still-valid processing lease.
+A stale worker cannot overwrite the outcome of a newer worker.
 
-No cron or queue processor has been activated. No live DB migration applied.
+These functions are deliberately NOT connected to live webhook processing.
+No cron, job worker, checkout, or entitlement activation has been enabled.
+
+## Before enabling
+- Apply migrations in a separate approved Sandbox environment.
+- Verify provider event IDs are idempotent, with duplicate and concurrent delivery tests.
+- Confirm customer-to-user ownership and provider subscription identity.
+- Reconcile payment and subscription via Asaas API, not webhook payload.
+- Determine valid billing period from authoritative records.
+- Test expiration, retry, failed workers, stale leases and recovery.
+- Persist paid entitlement and audit transactionally; ensure refunds downgrade safely.
+- Verify all tests and only then enable sandbox worker, never production charges.
