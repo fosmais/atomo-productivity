@@ -760,6 +760,8 @@ if (!rateLimit.allowed) {
           content: lastUserMessage.content,
           proposed_task: null,
           proposed_event: null,
+          task_status: "legacy",
+          event_status: "legacy",
         },
         {
           conversation_id: conversationId,
@@ -768,12 +770,10 @@ if (!rateLimit.allowed) {
           content: parsed.reply,
           proposed_task: parsed.proposedTasks.length > 0 ? parsed.proposedTasks : parsed.proposedTask,
           proposed_event: parsed.proposedEvent ?? null,
-          ...(process.env.MYRYRA_PROPOSAL_STATUS_ENABLED === "true"
-            ? {
-                task_status: (parsed.proposedTask || parsed.proposedTasks.length > 0) ? "pending" : "legacy",
-                event_status: parsed.proposedEvent ? "pending" : "legacy",
-              }
-            : {}),
+          // Both columns are NOT NULL in Supabase; always provide valid statuses.
+          // Feature flag controls downstream proposal actions, not persistence.
+          task_status: (parsed.proposedTask || parsed.proposedTasks.length > 0) ? "pending" : "legacy",
+          event_status: parsed.proposedEvent ? "pending" : "legacy",
         },
       ])
       .select("id, role");
