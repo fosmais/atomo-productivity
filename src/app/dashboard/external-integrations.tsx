@@ -1,6 +1,7 @@
 "use client";
 
 import ManualTaskImport from "./manual-task-import";
+import ManualCalendarImport from "./manual-calendar-import";
 
 const integrations = [
   {
@@ -47,6 +48,7 @@ export default function ExternalIntegrations() {
         ))}
       </div>
       <ManualTaskImport />
+      <ManualCalendarImport />
       <p className="text-xs leading-5 text-slate-400">
         Antes de ativar a sincronização, configuraremos OAuth com permissões mínimas,
         armazenamento seguro de credenciais e prevenção de tarefas duplicadas.
