@@ -62,6 +62,12 @@ async function DashboardContent() {
     >
       <VyraWorkspace>
       <VyraHome />
+      <VyraModule id="home">
+        <section className="grid min-w-0 gap-4 md:grid-cols-2" aria-label="Sua rotina de hoje">
+          <FeatureAccordion id="briefing" title="Daily Briefing" description="Resumo para começar o dia" userId={user.id}><DailyBriefing /></FeatureAccordion>
+          <FeatureAccordion id="focus" title="Focus Mode" description="Inicie uma sessão de concentração" userId={user.id}><FocusMode /></FeatureAccordion>
+        </section>
+      </VyraModule>
       <FirstSteps userId={user.id} />
 
         <div className="min-w-0 space-y-6">
@@ -116,15 +122,7 @@ async function DashboardContent() {
               <div className="min-w-0 rounded-2xl border border-violet-400/20 bg-slate-950/55 p-4 sm:p-6" aria-label="Prioridades e compromissos de hoje"><MyDay /></div>
             </div>
             <div className="grid min-w-0 gap-5 xl:grid-cols-2">
-              <section id="planner-focus" className="min-w-0 scroll-mt-6 space-y-3" aria-label="Foco e rotina">
-                <div className="px-1 pb-1">
-                  <h3 className="text-base font-semibold text-white">Foco e rotina</h3>
-                  <p className="mt-1 text-sm text-slate-400">Saiba o que fazer agora e mantenha o ritmo.</p>
-                </div>
-                <FeatureAccordion id="briefing" title="Daily Briefing" description="Resumo para começar o dia" userId={user.id}><DailyBriefing /></FeatureAccordion>
-                <FeatureAccordion id="what-now" title="What Now?" description="Sua próxima ação recomendada" userId={user.id}><WhatNow /></FeatureAccordion>
-                <FeatureAccordion id="focus" title="Focus Mode" description="Sessões para manter a concentração" userId={user.id}><FocusMode /></FeatureAccordion>
-              </section>
+
               <section id="planner-intelligence" className="min-w-0 scroll-mt-6 space-y-3" aria-label="Inteligência e planejamento">
                 <div className="px-1 pb-1">
                   <h3 className="text-base font-semibold text-white">Inteligência e planejamento</h3>
@@ -132,8 +130,6 @@ async function DashboardContent() {
                 </div>
                 <FeatureAccordion id="daily-copilot" title="Copiloto diário" description="Planejamento com inteligência artificial" userId={user.id}><DailyCopilot /></FeatureAccordion>
                 <FeatureAccordion id="replan" title="Replanejamento" description="Atualize tarefas atrasadas com controle" userId={user.id}><SmartReplan /></FeatureAccordion>
-                <FeatureAccordion id="goals" title="Metas rápidas" description="Acompanhe suas pequenas conquistas" userId={user.id}><QuickGoals userId={user.id} /></FeatureAccordion>
-                <FeatureAccordion id="plans" title="Meus planos" description="Acompanhe seus planos e tarefas" userId={user.id}><CloudPlans /></FeatureAccordion>
               </section>
             </div>
           </div>
@@ -146,6 +142,8 @@ async function DashboardContent() {
         title="Transforme planos em conquistas."
         description="Acompanhe suas tarefas, prioridades e progresso em um único lugar."
       >
+        <FeatureAccordion id="goals" title="Metas rápidas" description="Acompanhe suas pequenas conquistas" userId={user.id}><QuickGoals userId={user.id} /></FeatureAccordion>
+        <FeatureAccordion id="plans" title="Meus planos" description="Acompanhe seus planos e tarefas" userId={user.id}><CloudPlans /></FeatureAccordion>
         <FeatureAccordion id="favorites" title="Favoritos" description="Acesse rapidamente o que importa" userId={user.id}><FavoritesPanel /></FeatureAccordion>
         <FeatureAccordion id="capture" title="Captura Inteligente" description="Transforme ideias em tarefas" userId={user.id}><QuickCapture /></FeatureAccordion>
         <FeatureAccordion id="kanban" title="Quadro de tarefas" description="Organize suas tarefas por andamento" userId={user.id} defaultOpen><TaskKanban /></FeatureAccordion>
