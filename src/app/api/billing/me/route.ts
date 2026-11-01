@@ -1,6 +1,7 @@
 import { NextResponse, connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUserEntitlements } from "@/lib/billing/entitlements";
+import { BILLING_PLANS } from "@/lib/billing/plans";
 
 /** Read-only account billing status. Never trusts client-supplied plan IDs. */
 export async function GET() {
@@ -19,8 +20,8 @@ export async function GET() {
   }
   if (process.env.BILLING_ENTITLEMENTS_ENABLED !== "true") {
     return NextResponse.json(
-      { error: "Assinaturas ainda não habilitadas." },
-      { status: 503, headers: { "Cache-Control": "no-store" } }
+      { planId: "free", name: BILLING_PLANS.free.name, aiMessagesPerDay: BILLING_PLANS.free.aiMessagesPerDay, features: BILLING_PLANS.free.features, billingEnabled: false },
+      { headers: { "Cache-Control": "private, no-store" } }
     );
   }
   try {

@@ -87,6 +87,21 @@ export async function POST(request: Request) {
       );
     }
 
+    // Verify ownership before incurring an AI request or consuming quota.
+    if (typeof conversationIdInput === "string") {
+      const admin = createSupabaseAdmin();
+      const { data: existing, error: lookupError } = await admin
+        .from("myka_conversations")
+        .select("id")
+        .eq("id", conversationIdInput)
+        .eq("user_id", data.user.id)
+        .maybeSingle();
+      if (lookupError) throw lookupError;
+      if (!existing) {
+        return NextResponse.json({ error: "Conversa nao encontrada." }, { status: 404 });
+      }
+    }
+
     // File analysis consumes the same daily AI allowance as MYKA chat.
     let rateLimit: Awaited<ReturnType<typeof checkConciergeRateLimit>>;
     try {
