@@ -20,8 +20,8 @@ export async function createRequestClient(request: Request) {
     global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
-  const { data, error } = await client.auth.getUser(token);
-  if (error || !data.user) throw new Error("Invalid bearer token");
+  // Authentication failures are handled by authenticateRequest as HTTP 401.
+  // Do not throw here: an expired native token must not become HTTP 500.
   return client;
 }
 
