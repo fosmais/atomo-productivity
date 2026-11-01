@@ -14,7 +14,7 @@ function formatPrice(cents: number) {
 export default function PlanosPage() {
   const salesEnabled = process.env.BILLING_CHECKOUT_ENABLED === "true";
   return (
-    <main className="mx-auto w-full max-w-6xl px-5 py-12 text-white">
+    <main className="mx-auto min-h-dvh w-full max-w-6xl bg-[#070716] px-5 py-12 text-white">
       <Link href="/dashboard" className="text-sm text-violet-300 hover:text-white">← Voltar ao painel</Link>
       <div className="mt-10 text-center">
         <p className="text-sm font-semibold tracking-[0.2em] text-violet-300">MYRYRA</p>
@@ -23,7 +23,7 @@ export default function PlanosPage() {
       </div>
       <div className="mt-10 grid gap-5 md:grid-cols-3">
         {Object.values(BILLING_PLANS).map((plan) => (
-          <section key={plan.id} className={`rounded-3xl border p-7 ${plan.id === "pro" ? "border-violet-500 bg-violet-950/40" : "border-white/15 bg-white/5"}`}>
+          <section key={plan.id} className={`rounded-3xl border p-7 ${plan.id === "pro" ? "border-violet-500 bg-violet-950/40" : "border-white/15 bg-slate-900/90"}`}>
             <h2 className="text-2xl font-semibold">{plan.name}</h2>
             <p className="mt-2 min-h-12 text-sm text-zinc-300">{details[plan.id].description}</p>
             <p className="mt-5 text-3xl font-semibold">{formatPrice(plan.monthlyPriceCents)}<span className="text-sm font-normal text-zinc-300"> / mês</span></p>
