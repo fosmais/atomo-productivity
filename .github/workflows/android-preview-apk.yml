@@ -48,6 +48,12 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Validate TypeScript
         run: npm run typecheck
+      - name: Validate Android bundle before cloud build
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.MYRYRA_HOMOLOG_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.MYRYRA_HOMOLOG_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_MYRYRA_API_URL: ${{ vars.MYRYRA_HOMOLOG_API_URL }}
+        run: npx expo export --platform android --output-dir dist-android
       - name: Setup EAS CLI
         run: npm install --global eas-cli
       - name: Confirm EAS project linkage
