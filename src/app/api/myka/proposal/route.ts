@@ -170,7 +170,7 @@ export async function POST(request: Request) {
     const title = typeof event.title === "string" ? event.title.trim() : "";
     const startsAt = typeof event.startsAt === "string" ? new Date(event.startsAt) : new Date(NaN);
     const endsAt = typeof event.endsAt === "string" ? new Date(event.endsAt) : new Date(NaN);
-    if (!title || title.length > 200 || !/[\\p{L}\\p{N}]/u.test(title) ||
+    if (!title || title.length > 200 || !title.match(/[a-zA-Z0-9À-ÿ]/u) ||
         Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime()) || endsAt <= startsAt) {
       return NextResponse.json({ error: "Dados do compromisso inválidos." }, { status: 422 });
     }
@@ -179,7 +179,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Tipo inválido." }, { status: 422 });
     }
     // A single database transaction serializes confirmation and cancellation.
-    const { data: result, error: confirmError } = await admin.rpc("myka_confirm_event", {
+    const { data: result, error: confirmError } = await supabase.rpc("myka_confirm_event", {
       p_message_id: messageId,
     });
     if (confirmError) throw confirmError;
