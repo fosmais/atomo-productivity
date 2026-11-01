@@ -1,6 +1,7 @@
 "use client";
 import { useVyraNavigation } from "./vyra-module-context";
 import MykaPortrait from "@/components/myka-portrait";
+import GlobalSearch from "./global-search";
 
 export default function VyraHeader() {
   const { navigateTo } = useVyraNavigation();
@@ -26,6 +27,8 @@ export default function VyraHeader() {
       </div>
 
 
+      <div className="flex items-center gap-2 sm:gap-3">
+      <GlobalSearch />
       <button
         type="button"
         onClick={() => navigateTo("vyra-ai")}
@@ -35,6 +38,7 @@ export default function VyraHeader() {
       >
         <MykaPortrait className="h-full w-full" />
       </button>
+      </div>
     </header>
   );
 }
