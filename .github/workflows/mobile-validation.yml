@@ -32,3 +32,9 @@ jobs:
         run: npx expo install --check
       - name: Typecheck native application
         run: npm run typecheck
+      - name: Validate Android JavaScript bundle
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+          EXPO_PUBLIC_MYRYRA_API_URL: https://preview.example.com
+        run: npx expo export --platform android --output-dir /tmp/myryra-android-export
