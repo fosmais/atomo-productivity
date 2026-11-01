@@ -1,27 +1,32 @@
-import React from "react";
-import { SafeAreaView, StatusBar, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, View, Pressable } from "react-native";
+import type { Session } from "@supabase/supabase-js";
+import { supabase } from "./src/lib/supabase";
+import { AuthScreen } from "./src/components/AuthScreen";
 
 export default function App() {
-  return (
-    <SafeAreaView style={styles.page}>
-      <StatusBar barStyle="light-content" />
-      <View style={styles.content}>
-        <Text style={styles.brand}>M</Text>
-        <Text style={styles.title}>MYRYRA</Text>
-        <Text style={styles.subtitle}>Your life. In sync.</Text>
-        <Text style={styles.message}>
-          O aplicativo Android está em construção. Login, agenda e MYKA serão integrados em etapas seguras.
-        </Text>
-      </View>
-    </SafeAreaView>
-  );
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => { if (mounted) { setSession(data.session); setLoading(false); } }).catch(() => { if (mounted) setLoading(false); });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, next) => { if (mounted) setSession(next); });
+    return () => { mounted = false; subscription.unsubscribe(); };
+  }, []);
+  return <SafeAreaView style={styles.page}>
+    <StatusBar barStyle="light-content" />
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <Text style={styles.brand}>M</Text><Text style={styles.title}>MYRYRA</Text>
+      <Text style={styles.subtitle}>Your life. In sync.</Text>
+      {loading ? <ActivityIndicator style={{ marginTop: 36 }} color="#B98AFF" /> : session ?
+        <View style={styles.welcome}><Text style={styles.message}>Olá, {session.user.email}</Text><Text style={styles.message}>Sua sessão está conectada. Agenda e MYKA serão integradas nos próximos blocos.</Text><Pressable onPress={() => void supabase.auth.signOut()} accessibilityRole="button"><Text style={styles.signout}>Sair</Text></Pressable></View>
+        : <AuthScreen />}
+    </ScrollView>
+  </SafeAreaView>;
 }
-
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#110B22" },
-  content: { flex: 1, justifyContent: "center", alignItems: "center", padding: 28 },
-  brand: { color: "#B98AFF", fontSize: 68, fontWeight: "800" },
-  title: { color: "#FFFFFF", fontSize: 30, fontWeight: "800", letterSpacing: 3 },
-  subtitle: { color: "#D5C3FF", fontSize: 16, marginTop: 8 },
-  message: { color: "#BEB4D0", fontSize: 14, lineHeight: 22, textAlign: "center", marginTop: 36 },
+  page: { flex: 1, backgroundColor: "#110B22" }, content: { flexGrow: 1, justifyContent: "center", alignItems: "center", padding: 28 },
+  brand: { color: "#B98AFF", fontSize: 68, fontWeight: "800" }, title: { color: "#FFFFFF", fontSize: 30, fontWeight: "800", letterSpacing: 3 },
+  subtitle: { color: "#D5C3FF", fontSize: 16, marginTop: 8 }, welcome: { marginTop: 36, gap: 18, alignItems: "center" },
+  message: { color: "#D5C3FF", textAlign: "center", lineHeight: 22 }, signout: { color: "#B98AFF", fontWeight: "700" },
 });
