@@ -39,7 +39,36 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const body: unknown = await request.json();
+    const mediaType = (request.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+    if (mediaType !== "application/json") {
+      return NextResponse.json({ error: "Envie JSON." }, { status: 415 });
+    }
+    const length = Number(request.headers.get("content-length"));
+    if (Number.isFinite(length) && length > 4096) {
+      return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+    }
+    let body: unknown;
+    try {
+      const reader = request.body?.getReader();
+      if (!reader) return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
+      const decoder = new TextDecoder();
+      const chunks: string[] = [];
+      let bytes = 0;
+      while (true) {
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        bytes += chunk.value.byteLength;
+        if (bytes > 4096) {
+          await reader.cancel();
+          return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+        }
+        chunks.push(decoder.decode(chunk.value, { stream: true }));
+      }
+      chunks.push(decoder.decode());
+      body = JSON.parse(chunks.join(""));
+    } catch {
+      return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
+    }
 
     if (
       typeof body !== "object" ||
@@ -91,11 +120,10 @@ export async function PATCH(request: Request) {
       );
     }
 
-    return NextResponse.json({
-      messageId,
-      kind,
-      status: "cancelled",
-    });
+    return NextResponse.json(
+      { messageId, kind, status: "cancelled" },
+      { headers: { "Cache-Control": "private, no-store" } }
+    );
   } catch (error) {
     console.error("Erro ao cancelar proposta Myka:", error);
 
