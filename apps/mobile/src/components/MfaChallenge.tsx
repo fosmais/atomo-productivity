@@ -16,7 +16,7 @@ export function MfaChallenge({ onVerified }: { onVerified: () => void }) {
     return () => { active = false; };
   }, []);
   async function verify() {
-    if (!factorId || !/^\\d{6}$/.test(code)) { Alert.alert("Informe os 6 dígitos do autenticador."); return; }
+    if (!factorId || !/^[0-9]{6}$/.test(code)) { Alert.alert("Informe os 6 dígitos do autenticador."); return; }
     setBusy(true);
     try {
       const challenge = await supabase.auth.mfa.challenge({ factorId });
