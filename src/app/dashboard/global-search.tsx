@@ -2,16 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useVyraActiveModule, useVyraNavigation } from "./vyra-module-context";
+import { useVyraNavigation } from "./vyra-module-context";
 
 type SearchResult = { id: string; title: string; kind: "Tarefa" | "Plano" | "Compromisso"; detail: string };
 
 export default function GlobalSearch() {
   const { navigateTo, navigateToTask } = useVyraNavigation();
-  const activeModule = useVyraActiveModule();
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState("");
-  const isOpen = activeModule === "home" || expanded || query.trim().length > 0;
+  const isOpen = expanded;
   const [results, setResults] = useState<SearchResult[]>([]);
   const [completedQuery, setCompletedQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -62,18 +61,24 @@ export default function GlobalSearch() {
     return () => { active = false; controller.abort(); clearTimeout(timeout); };
   }, [query]);
 
-  return <section className="rounded-2xl border border-violet-400/20 bg-slate-900/70 p-4 sm:p-5" aria-label="Busca global">
-    <div className="flex items-center justify-between gap-3"><label htmlFor="myryra-global-search" className="text-sm font-semibold text-violet-100">Busca global</label>{activeModule !== "home" && <button type="button" aria-expanded={isOpen} onClick={() => { setExpanded(!expanded); if (expanded) setQuery(""); }} className="rounded-lg border border-violet-400/30 px-3 py-1.5 text-xs font-medium text-violet-200 hover:bg-violet-500/10">{isOpen ? "Recolher" : "Pesquisar"}</button>}</div>
-    {isOpen && <input id="myryra-global-search" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Busque tarefas, planos e compromissos..." className="mt-3 w-full rounded-xl border border-slate-600 bg-slate-950 p-3 text-sm text-white placeholder:text-slate-500 focus:border-violet-400 focus:outline-none" />}
+  return <div className="relative" aria-label="Busca global">
+    <button type="button" aria-expanded={isOpen} aria-controls="myryra-global-search-panel" aria-label={isOpen ? "Fechar busca global" : "Abrir busca global"} onClick={() => { setExpanded(!expanded); if (expanded) setQuery(""); }} className="inline-flex h-11 items-center gap-2 rounded-xl border border-violet-400/25 bg-violet-500/10 px-3 text-sm font-medium text-violet-100 transition hover:bg-violet-500/20 focus-visible:outline-2 focus-visible:outline-violet-400">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
+      <span className="hidden sm:inline">Buscar</span>
+    </button>
+    {isOpen && <div id="myryra-global-search-panel" className="absolute right-0 top-full z-50 mt-3 w-[min(88vw,420px)] max-h-[70dvh] overflow-y-auto rounded-2xl border border-violet-400/30 bg-slate-950 p-4 shadow-2xl shadow-black/60">
+      <div className="mb-3 flex items-center justify-between gap-3"><label htmlFor="myryra-global-search" className="text-sm font-semibold text-violet-100">Busca global</label><button type="button" onClick={() => { setExpanded(false); setQuery(""); }} className="rounded-lg px-2 py-1 text-xs text-slate-300 hover:bg-white/10" aria-label="Fechar busca">Fechar</button></div>
+    <input id="myryra-global-search" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Busque tarefas, planos e compromissos..." className="mt-3 w-full rounded-xl border border-slate-600 bg-slate-950 p-3 text-sm text-white placeholder:text-slate-500 focus:border-violet-400 focus:outline-none" />
     {(loading || (query.trim().length >= 2 && completedQuery !== query.trim() && !error)) && <p role="status" className="mt-3 text-xs text-slate-400">Pesquisando...</p>}
     {error && <p role="alert" className="mt-3 text-sm text-rose-300">{error}</p>}
     {!loading && completedQuery === query.trim() && query.trim().length >= 2 && !error && <div className="mt-3 space-y-2" aria-live="polite">
       <p className="text-xs text-slate-400">{results.length} resultado(s) encontrado(s){results.length === 30 ? " (exibindo os primeiros 30)" : ""}</p>
-      {results.map(item => <button type="button" key={`${item.kind}-${item.id}`} onClick={() => { if (item.kind === "Tarefa" && navigateToTask) navigateToTask(item.id); else navigateTo(item.kind === "Compromisso" ? "vyra-calendar" : "vyra-planner"); }} className="block w-full rounded-lg border border-slate-700 bg-slate-950/60 p-3 text-left transition-colors hover:border-violet-400/50 hover:bg-violet-500/10 focus-visible:outline-2 focus-visible:outline-violet-400">
+      {results.map(item => <button type="button" key={`${item.kind}-${item.id}`} onClick={() => { setExpanded(false); setQuery(""); if (item.kind === "Tarefa" && navigateToTask) navigateToTask(item.id); else navigateTo(item.kind === "Compromisso" ? "vyra-calendar" : "vyra-planner"); }} className="block w-full rounded-lg border border-slate-700 bg-slate-950/60 p-3 text-left transition-colors hover:border-violet-400/50 hover:bg-violet-500/10 focus-visible:outline-2 focus-visible:outline-violet-400">
         <span className="text-xs font-semibold uppercase text-violet-300">{item.kind}</span>
         <p className="mt-1 text-sm font-medium text-white">{item.title}</p>
         <p className="mt-1 text-xs text-slate-400">{item.detail}</p>
       </button>)}
     </div>}
-  </section>;
+    </div>}
+  </div>;
 }
