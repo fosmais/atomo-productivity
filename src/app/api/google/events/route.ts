@@ -27,6 +27,7 @@ export async function GET() {
     return NextResponse.json({ error: "Segundo fator obrigatório.", code: "MFA_REQUIRED" }, { status: 403 });
   }
 
+  let phase = "connection_lookup";
   try {
     const admin = createSupabaseAdmin();
 
@@ -52,9 +53,11 @@ export async function GET() {
       );
     }
 
+    phase = "oauth_client";
     let tokenSave: Promise<void> = Promise.resolve();
     const oauth = createGoogleOAuthClient();
 
+    phase = "token_decryption";
     oauth.setCredentials({
       access_token: decryptGoogleToken(
         connection.encrypted_access_token
@@ -67,6 +70,7 @@ export async function GET() {
         : undefined,
     });
 
+    phase = "calendar_api";
     // Persistir os tokens renovados antes de continuar.
     // Nunca registrar os valores dos tokens nos logs.
     oauth.on("tokens", (tokens) => {
@@ -139,6 +143,7 @@ export async function GET() {
       calendarPageToken = nextToken;
     } while (calendarPageToken);
 
+    phase = "calendar_preferences";
     const { data: calendarPreference, error: preferenceError } =
       await supabase
         .from("google_calendar_preferences")
@@ -170,6 +175,7 @@ export async function GET() {
       event: import("googleapis").calendar_v3.Schema$Event;
     }> = [];
 
+    phase = "calendar_events";
     for (const entry of selectedCalendars) {
       const calendarId = entry.id!;
       const calendarName = entry.summary ?? "Google Calendar";
@@ -212,6 +218,7 @@ export async function GET() {
       } while (pageToken);
     }
 
+    phase = "token_persistence";
     await tokenSave;
 
     const events = allEvents.map(({ calendarId, calendarName, calendarTimeZone, event }) => ({
@@ -257,12 +264,13 @@ export async function GET() {
     const code = typeof failure?.code === "string" && /^[A-Z_]{2,32}$/.test(failure.code) ? failure.code : null;
     console.error("VYRA Google Events: falha na consulta.", {
       type: error instanceof Error ? error.name : "unknown",
+      phase,
       status,
       code,
     });
 
     return NextResponse.json(
-      { error: "Não foi possível consultar o Google Calendar." },
+      { error: "Não foi possível consultar o Google Calendar.", code: "CALENDAR_QUERY_FAILED" },
       { status: 502 }
     );
   }
