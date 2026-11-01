@@ -4,15 +4,18 @@ import { supabase } from "../lib/supabase";
 
 export function MfaChallenge({ onVerified }: { onVerified: () => void }) {
   const [factorId, setFactorId] = useState<string | null>(null);
+  const [factorLoading, setFactorLoading] = useState(true);
+  const [factorError, setFactorError] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     let active = true;
     supabase.auth.mfa.listFactors().then(({ data, error }) => {
       if (!active) return;
-      if (error) { Alert.alert("Verificação indisponível", error.message); return; }
+      if (error) { setFactorError("Não foi possível consultar o autenticador. Tente entrar novamente."); setFactorLoading(false); return; }
       setFactorId(data?.totp.find(factor => factor.status === "verified")?.id ?? null);
-    }).catch(() => { if (active) Alert.alert("Não foi possível carregar o autenticador."); });
+      setFactorLoading(false);
+    }).catch(() => { if (active) { setFactorError("Não foi possível carregar o autenticador."); setFactorLoading(false); } });
     return () => { active = false; };
   }, []);
   async function verify() {
@@ -31,9 +34,9 @@ export function MfaChallenge({ onVerified }: { onVerified: () => void }) {
   }
   return <View style={styles.box}>
     <Text style={styles.title}>Verificação em duas etapas</Text>
-    <Text style={styles.hint}>{factorId ? "Digite o código do aplicativo autenticador." : "Nenhum autenticador disponível. Entre em contato com o suporte."}</Text>
+    <Text style={styles.hint}>{factorLoading ? "Consultando seu autenticador..." : factorError ?? (factorId ? "Digite o código do aplicativo autenticador." : "Nenhum autenticador TOTP verificado nesta conta. Configure o segundo fator na versão web antes de continuar.")}</Text>
     <TextInput accessibilityLabel="Código de seis dígitos" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} placeholder="000000" placeholderTextColor="#B0A4C7" style={styles.input} />
-    <Pressable disabled={busy || !factorId} accessibilityRole="button" onPress={verify} style={styles.button}>{busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.action}>Verificar</Text>}</Pressable>
+    <Pressable disabled={busy || factorLoading || !factorId} accessibilityRole="button" onPress={verify} style={styles.button}>{busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.action}>Verificar</Text>}</Pressable>
     <Pressable accessibilityRole="button" onPress={() => void supabase.auth.signOut()}><Text style={styles.hint}>Sair</Text></Pressable>
   </View>;
 }
