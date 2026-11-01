@@ -169,14 +169,14 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative isolate flex min-h-dvh items-center justify-center overflow-x-hidden bg-[#070716] px-4 py-6 text-white sm:px-6">
+    <main className="relative isolate flex min-h-dvh items-start justify-center overflow-x-hidden bg-[#070716] px-4 py-5 lg:items-center lg:py-4 text-white sm:px-6">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse at 26% 38%, rgba(124,58,237,.42), transparent 37%), radial-gradient(ellipse at 76% 70%, rgba(14,165,233,.25), transparent 39%), radial-gradient(ellipse at 70% 15%, rgba(168,85,247,.23), transparent 30%), #070716" }} />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-70" style={{ backgroundImage: "radial-gradient(1px 1px at 12% 16%, white 98%, transparent), radial-gradient(2px 2px at 36% 62%, #d8b4fe 98%, transparent), radial-gradient(1px 1px at 77% 22%, white 98%, transparent), radial-gradient(1px 1px at 86% 82%, #a5f3fc 98%, transparent), radial-gradient(1px 1px at 53% 39%, white 98%, transparent)", backgroundSize: "173px 197px, 263px 283px, 199px 241px, 307px 269px, 131px 163px" }} />
       <div aria-hidden="true" className="pointer-events-none absolute left-1/4 top-1/4 h-[35rem] w-[35rem] rounded-full bg-violet-600/15 blur-[100px]" />
       <div className="relative z-10 grid w-full max-w-6xl items-center justify-center gap-8 lg:grid-cols-[minmax(0,390px)_minmax(0,460px)] lg:gap-14">
         <div className="hidden lg:block"><MykaLoginScene /></div>
         <div className="mx-auto w-full max-w-[460px]">
-          <div className="mb-4 text-center lg:text-left">
+          <div className="mb-3 text-center lg:text-left">
             <h2 className="text-[clamp(1.5rem,2.2vw,2rem)] font-bold leading-tight tracking-tight text-white">Seu universo, <span className="text-violet-300">em sintonia.</span></h2>
             <p className="mt-2 text-sm leading-relaxed text-slate-300">Organize sua vida. Transforme planos em conquistas.</p>
           </div>
@@ -184,8 +184,8 @@ export default function LoginPage() {
             <div aria-hidden="true" className="absolute inset-4 rounded-full bg-violet-500/25 blur-2xl" />
             <img src="/myka-transparente.png" alt="MYKA, sua companheira inteligente" className="relative h-auto w-full drop-shadow-[0_12px_28px_rgba(120,65,255,.4)]" />
           </div>
-          <div className="rounded-3xl border border-violet-300/45 bg-slate-950/90 p-5 shadow-2xl shadow-violet-950/40 backdrop-blur-xl sm:p-7">
-        <div className="mb-4 flex items-center gap-3"><span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl"><img src="/myryra-logo.png" alt="Logotipo MYRYRA" className="h-full w-full object-cover" /></span><div><h1 className="text-2xl font-bold tracking-tight">MYRYRA</h1><p className="text-xs tracking-widest text-violet-300">YOUR LIFE. IN SYNC.</p></div></div><h2 className="text-2xl font-semibold">{mode === "login" ? "Bem-vindo de volta" : "Comece sua jornada"}</h2>
+          <div className="rounded-3xl border border-violet-300/45 bg-slate-950/90 p-4 shadow-2xl shadow-violet-950/40 backdrop-blur-xl sm:p-5">
+        <div className="mb-3 flex items-center gap-3"><span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl"><img src="/myryra-logo.png" alt="Logotipo MYRYRA" className="h-full w-full object-cover" /></span><div><h1 className="text-2xl font-bold tracking-tight">MYRYRA</h1><p className="text-xs tracking-widest text-violet-300">YOUR LIFE. IN SYNC.</p></div></div><h2 className="text-2xl font-semibold">{mode === "login" ? "Bem-vindo de volta" : "Comece sua jornada"}</h2>
 
         <p className="mt-2 text-slate-400">
           {mode === "login"
@@ -194,7 +194,7 @@ export default function LoginPage() {
         </p>
 
         {mfaFactorId ? (
-          <form onSubmit={verifyMfa} className="mt-5 space-y-3">
+          <form onSubmit={verifyMfa} className="mt-4 space-y-3">
             {mfaFactors.length > 1 && <label className="block text-sm">Escolha o autenticador<select value={mfaFactorId} disabled={loading} onChange={e => { setMfaFactorId(e.target.value); setMfaCode(""); }} className="mt-2 w-full rounded-xl bg-slate-900 p-3">{mfaFactors.map((factor, index) => <option key={factor.id} value={factor.id}>{factor.name} ({index + 1})</option>)}</select></label>}
             <label htmlFor="mfa-code" className="block text-sm">Código do aplicativo autenticador</label>
             <input id="mfa-code" type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" required value={mfaCode} onChange={(event) => setMfaCode(event.target.value.replace(/\D/g, "").slice(0, 6))} className="w-full rounded-xl border border-violet-400/30 bg-slate-900 p-3 text-white" />
