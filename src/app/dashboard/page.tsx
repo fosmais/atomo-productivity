@@ -211,12 +211,12 @@ async function DashboardContent() {
         title="Uma experiência feita para você."
         description="Configure seus dias, horários e preferências de planejamento."
       >
-        <FeatureAccordion id="feedback" title="Feedback" description="Envie sugestões e relatos sobre o beta" userId={user.id}><BetaFeedback /></FeatureAccordion>
         <FeatureAccordion id="mfa" title="Segurança da conta" description="Configure a autenticação em dois fatores" userId={user.id}><MfaSettings /></FeatureAccordion>
         <FeatureAccordion id="planning-settings" title="Preferências de planejamento" description="Personalize sua rotina" userId={user.id}><PlanningSettings /></FeatureAccordion>
         <div className="mt-6">
           <FeatureAccordion id="google-settings" title="Integração Google Calendar" description="Gerencie a conexão com sua agenda Google" userId={user.id}><GoogleCalendarSettings /></FeatureAccordion>
           <FeatureAccordion id="external-integrations" title="Integrações de produtividade" description="Todoist, Google Tasks e Outlook" userId={user.id}><ExternalIntegrations /></FeatureAccordion>
+        <FeatureAccordion id="feedback" title="Feedback" description="Envie sugestões e relatos sobre o beta" userId={user.id}><BetaFeedback /></FeatureAccordion>
         </div>
       </VyraSection>
 
