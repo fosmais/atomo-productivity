@@ -191,7 +191,36 @@ export async function POST(request: Request) {
 
     const userId = auth.user.id;
     const mykaAdmin = createSupabaseAdmin();
-    const body: unknown = await request.json();
+    const mediaType = (request.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+    if (mediaType !== "application/json") {
+      return NextResponse.json({ error: "Envie JSON." }, { status: 415 });
+    }
+    const declaredLength = Number(request.headers.get("content-length"));
+    if (Number.isFinite(declaredLength) && declaredLength > 32768) {
+      return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+    }
+    let body: unknown;
+    try {
+      const reader = request.body?.getReader();
+      if (!reader) return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
+      const decoder = new TextDecoder();
+      const chunks: string[] = [];
+      let size = 0;
+      while (true) {
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        size += chunk.value.byteLength;
+        if (size > 32768) {
+          await reader.cancel();
+          return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+        }
+        chunks.push(decoder.decode(chunk.value, { stream: true }));
+      }
+      chunks.push(decoder.decode());
+      body = JSON.parse(chunks.join(""));
+    } catch {
+      return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
+    }
 
     if (!isRecord(body)) {
       return NextResponse.json({ error: "Dados invalidos." }, { status: 400 });
@@ -280,10 +309,10 @@ export async function POST(request: Request) {
 
     if (updateError) throw updateError;
 
-    return NextResponse.json({
-      conversationId,
-      messageId: saved.id,
-    });
+    return NextResponse.json(
+      { conversationId, messageId: saved.id },
+      { headers: { "Cache-Control": "private, no-store" } }
+    );
   } catch (error) {
     console.error("Erro ao salvar historico Myka:", error);
 
