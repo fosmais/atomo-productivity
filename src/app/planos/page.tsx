@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SubscriptionPanel from "./subscription-panel";
 import { BILLING_PLANS } from "@/lib/billing/plans";
 
 const details = {
@@ -12,7 +13,7 @@ function formatPrice(cents: number) {
 }
 
 export default function PlanosPage() {
-  const salesEnabled = process.env.BILLING_CHECKOUT_ENABLED === "true";
+  const salesEnabled = false;
   return (
     <main className="mx-auto min-h-dvh w-full max-w-6xl bg-[#070716] px-5 py-12 text-white">
       <Link href="/dashboard" className="text-sm text-violet-300 hover:text-white">← Voltar ao painel</Link>
@@ -37,6 +38,7 @@ export default function PlanosPage() {
           </section>
         ))}
       </div>
+      <SubscriptionPanel />
       <p className="mt-8 text-center text-xs text-zinc-400">Valores indicativos. Nenhuma contratação ou cobrança está disponível nesta página.</p>
     </main>
   );
