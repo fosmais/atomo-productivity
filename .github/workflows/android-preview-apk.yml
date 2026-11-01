@@ -61,7 +61,11 @@ jobs:
       - name: Confirm EAS project linkage
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: eas project:info --non-interactive
+          EXPO_PROJECT_ID: ${{ vars.MYRYRA_EXPO_PROJECT_ID }}
+        run: |
+          test -n "$EXPO_PROJECT_ID" || { echo "::error::Configure MYRYRA_EXPO_PROJECT_ID com o ID do projeto EAS"; exit 1; }
+          node -e 'const id=process.env.EXPO_PROJECT_ID;if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))process.exit(1)' || { echo "::error::ID do projeto EAS inválido"; exit 1; }
+          eas project:info --non-interactive
       - name: Request internal APK build
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
