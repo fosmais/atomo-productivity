@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { asaasSandboxReady } from "@/lib/billing/asaas";
+import { isReconciliationEvent, readAsaasPaymentReference } from "@/lib/billing/asaas-events";
 
 const headers = { "Cache-Control": "no-store" };
 export async function POST(request: Request) {
@@ -39,10 +40,28 @@ export async function POST(request: Request) {
       typeof event.event !== "string" || !/^[A-Z_]{1,100}$/.test(event.event)) {
     return NextResponse.json({ error: "Evento inválido." }, { status: 400, headers });
   }
-  const { error } = await createSupabaseAdmin().from("billing_webhook_events").upsert({
+  const admin = createSupabaseAdmin();
+  const { error } = await admin.from("billing_webhook_events").upsert({
     provider: "asaas", provider_event_id: event.id, event_type: event.event,
   }, { onConflict: "provider,provider_event_id", ignoreDuplicates: true });
   if (error) return NextResponse.json({ error: "Falha ao persistir evento." }, { status: 503, headers });
-  // Recording a notification does not verify payment or grant a paid plan.
+  // Queue ingestion is separately gated until the reviewed SQL migrations exist.
+  // Missing payment references must not silently acknowledge eligible events.
+  if (process.env.ASAAS_RECONCILIATION_QUEUE_ENABLED === "true" && isReconciliationEvent(event.event)) {
+    const paymentId = readAsaasPaymentReference(event);
+    if (!paymentId) {
+      return NextResponse.json({ error: "Referência de pagamento ausente." }, { status: 422, headers });
+    }
+    const { data: jobId, error: queueError } = await admin.rpc("enqueue_asaas_reconciliation_event", {
+      p_event_id: event.id,
+      p_event_type: event.event,
+      p_payment_id: paymentId,
+    });
+    if (queueError || typeof jobId !== "number") {
+      // 503 requests a provider retry; the audit receipt is already idempotent.
+      return NextResponse.json({ error: "Fila indisponível." }, { status: 503, headers });
+    }
+  }
+  // Acknowledgement is never payment confirmation or an entitlement grant.
   return NextResponse.json({ received: true, entitlementGranted: false }, { headers });
 }
