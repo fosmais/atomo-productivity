@@ -22,6 +22,7 @@ export default function GoogleCalendarSettings() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [connecting, setConnecting] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -83,6 +84,12 @@ export default function GoogleCalendarSettings() {
     };
   }, []);
 
+  function connectCalendar() {
+    if (connecting) return;
+    setConnecting(true);
+    window.location.assign("/api/google/connect");
+  }
+
   function toggleCalendar(id: string) {
     setMessage("");
 
@@ -132,9 +139,20 @@ export default function GoogleCalendarSettings() {
           Carregando calendários...
         </p>
       ) : !connected ? (
-        <p className="mt-5 text-sm text-slate-400">
-          Conecte o Google Calendar para configurar seus calendários.
-        </p>
+        <div className="mt-5 space-y-3">
+          <p className="text-sm text-slate-400">
+            Autorize separadamente o acesso de leitura aos seus calendários Google.
+            Entrar com Google não concede essa permissão automaticamente.
+          </p>
+          <button
+            type="button"
+            onClick={connectCalendar}
+            disabled={connecting}
+            className="rounded-lg bg-violet-600 px-5 py-3 font-semibold text-white transition hover:bg-violet-500 disabled:opacity-50"
+          >
+            {connecting ? "Conectando..." : "Conectar Google Calendar"}
+          </button>
+        </div>
       ) : (
         <div className="mt-5 space-y-4">
           {calendars.map((calendar) => (
