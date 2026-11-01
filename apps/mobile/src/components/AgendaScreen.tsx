@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, Alert, View } from "react-native";
 import { supabase } from "../lib/supabase";
+import { EditEventTitle } from "./EditEventTitle";
 
 type EventRow = { id: string; title: string; starts_at: string; ends_at: string; location: string | null };
 
@@ -14,6 +15,7 @@ export function AgendaScreen({ userId }: { userId: string }) {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   async function createEvent() {
     if (!title.trim() || title.trim().length > 200) { Alert.alert("Informe um título de até 200 caracteres."); return; }
     const parse = (date: string, time: string) => {
@@ -72,6 +74,8 @@ export function AgendaScreen({ userId }: { userId: string }) {
         <Text style={styles.name}>{event.title}</Text>
         <Text style={styles.muted}>{new Date(event.starts_at).toLocaleString("pt-BR")} – {new Date(event.ends_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</Text>
         {event.location ? <Text style={styles.muted}>{event.location}</Text> : null}
+        <Pressable accessibilityRole="button" onPress={() => setEditingId(editingId === event.id ? null : event.id)}><Text style={styles.refresh}>{editingId === event.id ? "Fechar edição" : "Editar título"}</Text></Pressable>
+        {editingId === event.id ? <EditEventTitle eventId={event.id} userId={userId} initialTitle={event.title} onSaved={() => { setEditingId(null); void load(); }} /> : null}
       </View>
     )}
   </View>;
