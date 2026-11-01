@@ -9,7 +9,8 @@ export const GOOGLE_CALENDAR_SCOPES = [
 export function createGoogleOAuthClient() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+  // Dedicated callback avoids legacy GOOGLE_REDIRECT_URI collisions across Preview scopes.
+  const redirectUri = process.env.GOOGLE_CALENDAR_OAUTH_REDIRECT_URI || process.env.GOOGLE_REDIRECT_URI;
 
   if (!clientId || !clientSecret || !redirectUri) {
     throw new Error("Credenciais OAuth do Google não configuradas.");
