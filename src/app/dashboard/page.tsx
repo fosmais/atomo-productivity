@@ -22,6 +22,7 @@ import PlanningSettings from "./planning-settings";
 import MfaSettings from "./mfa-settings";
 import FavoritesPanel from "./favorites-panel";
 import GoogleCalendarSettings from "./google-calendar-settings";
+import ExternalIntegrations from "./external-integrations";
 import SmartSchedulingPanel from "./smart-scheduling-panel";
 import AutoPilot from "./auto-pilot";
 import TaskKanban from "./task-kanban";
@@ -215,6 +216,7 @@ async function DashboardContent() {
         <FeatureAccordion id="planning-settings" title="Preferências de planejamento" description="Personalize sua rotina" userId={user.id}><PlanningSettings /></FeatureAccordion>
         <div className="mt-6">
           <FeatureAccordion id="google-settings" title="Integração Google Calendar" description="Gerencie a conexão com sua agenda Google" userId={user.id}><GoogleCalendarSettings /></FeatureAccordion>
+          <FeatureAccordion id="external-integrations" title="Integrações de produtividade" description="Todoist, Google Tasks e Outlook" userId={user.id}><ExternalIntegrations /></FeatureAccordion>
         </div>
       </VyraSection>
 
