@@ -22,15 +22,21 @@ export default function MykaPlanHelp({onStartFree}:{onStartFree:()=>void}) {
  const logEndRef = useRef<HTMLDivElement>(null);
  useEffect(()=>{ if(open) logEndRef.current?.scrollIntoView({block:"end",behavior:"smooth"}); },[messages,open]);
  const [selectedPlan,setSelectedPlan] = useState<"free"|"pro"|"premium"|null>(null);
+ const lastDiscussedPlan = useRef<"free"|"pro"|"premium"|null>(null);
+ const busyRef = useRef(false);
  async function ask(question: string) {
-  if(loading) return;
+  if(busyRef.current) return;
+  busyRef.current = true;
   setLoading(true);
   setMessages(previous=>[...previous.slice(-18),{role:"user",text:question}]);
   let reply = answer(question);
   try { const response = await fetch("/api/public/myka",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question})}); if(response.ok){const data: unknown=await response.json();if(typeof data==="object"&&data!==null&&"reply" in data&&typeof data.reply==="string") reply=data.reply;} } catch { /* Commercial FAQ remains available without AI. */ }
   const q = question.toLocaleLowerCase("pt-BR");
-  const wantsToProceed = /quero|seguir|come[cç]ar|cadastr|contrat|assinar|aderir|escolh|ativar|usar|fechar|comprar|migrar|trocar/.test(q);
-  const plan = /premium/.test(q) ? "premium" : /\bpro\b/.test(q) ? "pro" : /\bfree\b|gr[aá]tis|gratuito/.test(q) ? "free" : null;
+  const wantsToProceed = /quero|seguir|come[cç]ar|continuar|cadastr|contrat|assinar|aderir|escolh|ativar|usar|fechar|comprar|migrar|trocar|pode ser|esse mesmo/.test(q);
+  const explicitPlan = /premium/.test(q) ? "premium" : /\bpro\b/.test(q) ? "pro" : /\bfree\b|gr[aá]tis|gratuito/.test(q) ? "free" : null;
+  const contextFollowup = /\b(esse|este|isso|nele|nesse|continuar|seguir|contratar|assinar)\b/.test(q);
+  const plan = explicitPlan ?? (wantsToProceed && contextFollowup ? lastDiscussedPlan.current : null);
+  if(explicitPlan) lastDiscussedPlan.current = explicitPlan;
   setSelectedPlan(null);
   if(wantsToProceed && plan) {
     setSelectedPlan(plan);
@@ -44,6 +50,7 @@ export default function MykaPlanHelp({onStartFree}:{onStartFree:()=>void}) {
   }
   setMessages(previous=>[...previous.slice(-19),{role:"assistant",text:reply}]);
   setLoading(false);
+  busyRef.current = false;
  }
  function send(event: FormEvent<HTMLFormElement>) {
   event.preventDefault();
