@@ -42,7 +42,7 @@ jobs:
             *) echo "::error::API deve usar HTTPS"; exit 1 ;;
           esac
           case "$EXPO_PUBLIC_MYRYRA_API_URL" in
-            *myryra.com*|*atomo-productivity.com*) echo "::error::API de produção não permitida"; exit 1 ;;
+            *myryra.com*|*atomo-productivity.com*|*vercel.app*) echo "::error::Utilize uma API de homologação isolada, sem alias público de produção/preview"; exit 1 ;;
           esac
       - name: Install dependencies
         run: npm install --no-audit --no-fund
@@ -50,6 +50,10 @@ jobs:
         run: npm run typecheck
       - name: Setup EAS CLI
         run: npm install --global eas-cli
+      - name: Confirm EAS project linkage
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas project:info --non-interactive
       - name: Request internal APK build
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
