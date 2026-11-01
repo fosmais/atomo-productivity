@@ -71,7 +71,7 @@ export default function LoginPage() {
         if (password.length < 12) {
           throw new Error("Para criar sua conta, use uma senha com pelo menos 12 caracteres.");
         }
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -81,8 +81,16 @@ export default function LoginPage() {
 
         if (error) throw error;
 
+        if (data.session) {
+          // When email confirmation is disabled, Supabase signs the user in immediately.
+          router.replace("/dashboard");
+          router.refresh();
+          return;
+        }
+
+        setPassword("");
         setMessage(
-          "Cadastro realizado. Verifique seu e-mail para confirmar a conta."
+          "Se o endereço estiver apto para cadastro, você receberá um e-mail de confirmação. Verifique também a caixa de spam."
         );
       } else {
         const { error } = await supabase.auth.signInWithPassword({
