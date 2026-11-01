@@ -96,9 +96,9 @@ export function AgendaScreen({ userId }: { userId: string }) {
         <Text style={styles.name}>{event.title}</Text>
         <Text style={styles.muted}>{new Date(event.starts_at).toLocaleString("pt-BR")} – {new Date(event.ends_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</Text>
         {event.location ? <Text style={styles.muted}>{event.location}</Text> : null}
-        <Pressable accessibilityRole="button" onPress={() => setEditingId(editingId === event.id ? null : event.id)}><Text style={styles.refresh}>{editingId === event.id ? "Fechar edição" : "Editar título"}</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={() => setEditingId(editingId === event.id ? null : event.id)}><Text style={styles.refresh}>{editingId === event.id ? "Fechar edição" : "Editar compromisso"}</Text></Pressable>
         <Pressable accessibilityRole="button" disabled={cancelingId === event.id} onPress={() => confirmCancel(event.id)}><Text style={styles.refresh}>{cancelingId === event.id ? "Cancelando..." : "Cancelar compromisso"}</Text></Pressable>
-        {editingId === event.id ? <EditEventTitle eventId={event.id} userId={userId} initialTitle={event.title} onSaved={() => { setEditingId(null); void load(); }} /> : null}
+        {editingId === event.id ? <EditEventTitle eventId={event.id} userId={userId} initialTitle={event.title} initialStart={event.starts_at} initialEnd={event.ends_at} onSaved={() => { setEditingId(null); void load(); }} /> : null}
       </View>
     )}
   </View>;
