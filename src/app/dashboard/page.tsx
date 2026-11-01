@@ -101,6 +101,7 @@ async function DashboardContent() {
           description="Seu planejamento organizado por contexto. Abra apenas a ferramenta de que precisa."
         >
           <div className="min-w-0 space-y-6">
+            <FeatureAccordion id="planning-settings" title="Preferências de planejamento" description="Personalize horários, rotina e regras do Planner" userId={user.id}><PlanningSettings /></FeatureAccordion>
             <p className="inline-flex items-center rounded-full border border-violet-400/25 bg-violet-500/10 px-3 py-1 text-xs font-semibold tracking-wide text-violet-200" data-myryra-planner-version="2.0">Planner 2.0 · Nova experiência</p>
             <PlannerQuickNav />
             <div id="planner-today" className="min-w-0 scroll-mt-6 rounded-3xl border border-violet-400/20 bg-gradient-to-br from-violet-950/35 via-slate-900/70 to-slate-950/80 p-4 shadow-[0_18px_50px_rgba(49,20,100,0.14)] sm:p-6">
@@ -135,7 +136,6 @@ async function DashboardContent() {
                 <FeatureAccordion id="plans" title="Meus planos" description="Acompanhe seus planos e tarefas" userId={user.id}><CloudPlans /></FeatureAccordion>
               </section>
             </div>
-            <FeatureAccordion id="planning-settings" title="Preferências de planejamento" description="Personalize horários, rotina e regras do Planner" userId={user.id}><PlanningSettings /></FeatureAccordion>
           </div>
         </VyraSection>
       </VyraModule>
