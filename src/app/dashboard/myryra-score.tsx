@@ -3,12 +3,32 @@ import { useEffect, useState } from "react";
 import { useVyraActiveModule } from "./vyra-module-context";
 import { loadVyraCompletionHistory } from "./vyra-metrics-service";
 import { getCompletionRate, type VyraMetrics } from "./vyra-metrics";
+import { createClient } from "@/lib/supabase/client";
 export default function MyryraScore({metrics,loading}:{metrics:VyraMetrics|null;loading:boolean}) {
  const [notice,setNotice]=useState("");
  const [showExplanation,setShowExplanation]=useState(false);
  const [showShareMenu,setShowShareMenu]=useState(false);
  const activeModule=useVyraActiveModule();
  const [weekCount,setWeekCount]=useState<number|null>(null);
+ const [focusMinutes,setFocusMinutes]=useState<number|null>(null);
+ const [focusRevision,setFocusRevision]=useState(0);
+ useEffect(()=>{const refresh=()=>setFocusRevision(v=>v+1);window.addEventListener("myryra:focus-updated",refresh);return ()=>window.removeEventListener("myryra:focus-updated",refresh);},[]);
+ useEffect(()=>{
+  if(activeModule!=="home")return;
+  let cancelled=false;
+  async function loadFocus(){
+   try {
+    const supabase=createClient();
+    const {data:{user},error:authError}=await supabase.auth.getUser();
+    if(authError||!user)throw new Error("Not authenticated");
+    const since=new Date();since.setHours(0,0,0,0);since.setDate(since.getDate()-6);
+    const {data,error}=await supabase.from("focus_sessions").select("duration_minutes").eq("user_id",user.id).gte("completed_at",since.toISOString()).limit(1000);
+    if(error)throw error;
+    if(!cancelled)setFocusMinutes((data??[]).reduce((sum,row)=>sum+Number(row.duration_minutes||0),0));
+   }catch{if(!cancelled)setFocusMinutes(null);}
+  }
+  void loadFocus();return ()=>{cancelled=true;};
+ },[activeModule,focusRevision]);
  useEffect(()=>{
   if(activeModule!=="home")return;
   let cancelled=false;
@@ -68,7 +88,7 @@ export default function MyryraScore({metrics,loading}:{metrics:VyraMetrics|null;
    <div><div className="flex flex-wrap items-center gap-2"><p className="text-xs font-bold uppercase text-violet-300">MYRYRA SCORE</p><button type="button" aria-expanded={showExplanation} aria-controls="myryra-score-explanation" onClick={()=>setShowExplanation(value=>!value)} className="rounded-full border border-violet-400/40 px-2 py-1 text-[11px] text-violet-200 hover:bg-violet-400/10 focus-visible:outline-2 focus-visible:outline-violet-300">ⓘ Como funciona?</button></div><h2 className="mt-2 text-lg font-semibold">Sua evolução, em números.</h2></div>
    <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-300">{weekCount===null?"Versão beta":weekCount+" concluída(s) em 7 dias"}</span>
   </header>
-  {showExplanation&&<div id="myryra-score-explanation" className="mt-4 rounded-xl border border-violet-400/20 bg-violet-400/10 p-4 text-xs leading-6 text-slate-200"><p className="font-semibold text-violet-200">Como o MYRYRA Score funciona?</p><p className="mt-1">Nesta versão beta, a nota de 0 a 100 corresponde à porcentagem de tarefas concluídas entre todas as tarefas registradas. Exemplo: 8 de 10 tarefas = 80 pontos. Sem tarefas, não há nota. O resultado é arredondado para um número inteiro.</p><p className="mt-2">Planejamento: futuramente medirá a regularidade dos planejamentos realizados. Foco: sessões concluídas em relação à meta escolhida. Equilíbrio: pausas e carga de compromissos em relação às preferências configuradas. Esses três indicadores ainda não influenciam a nota.</p><p className="mt-2 text-slate-300">O selo semanal mostra quantas tarefas foram concluídas nos últimos sete dias; não representa aumento da nota. O Score é uma ferramenta de acompanhamento, não uma avaliação pessoal. Descansos planejados não devem ser penalizados. Compartilhar é opcional: o card inclui apenas pontuação e contagem agregada, sem nomes de tarefas, compromissos ou outros dados pessoais.</p></div>}
+  {showExplanation&&<div id="myryra-score-explanation" className="mt-4 rounded-xl border border-violet-400/20 bg-violet-400/10 p-4 text-xs leading-6 text-slate-200"><p className="font-semibold text-violet-200">Como o MYRYRA Score funciona?</p><p className="mt-1">Nesta versão beta, a nota de 0 a 100 corresponde à porcentagem de tarefas concluídas entre todas as tarefas registradas. Exemplo: 8 de 10 tarefas = 80 pontos. Sem tarefas, não há nota. O resultado é arredondado para um número inteiro.</p><p className="mt-2">Planejamento: futuramente medirá a regularidade dos planejamentos realizados. Foco: já apresenta os minutos concluídos nos últimos sete dias quando há registros; o percentual dependerá de uma meta configurada. Equilíbrio: pausas e carga de compromissos em relação às preferências configuradas. Esses três indicadores ainda não influenciam a nota.</p><p className="mt-2 text-slate-300">O selo semanal mostra quantas tarefas foram concluídas nos últimos sete dias; não representa aumento da nota. O Score é uma ferramenta de acompanhamento, não uma avaliação pessoal. Descansos planejados não devem ser penalizados. Compartilhar é opcional: o card inclui apenas pontuação e contagem agregada, sem nomes de tarefas, compromissos ou outros dados pessoais.</p></div>}
   <div className="mt-6 grid items-center gap-7 md:grid-cols-[minmax(190px,1fr)_minmax(0,1.4fr)]">
    <div className="flex flex-col items-center gap-3">
     <div className="relative grid h-40 w-40 place-items-center rounded-full" style={{background:score===null?"#302a48":`conic-gradient(#9d72ff 0 ${score}%, #302a48 ${score}% 100%)`}}>
@@ -78,7 +98,7 @@ export default function MyryraScore({metrics,loading}:{metrics:VyraMetrics|null;
    </div>
    <div className="space-y-5">
     <div><div className="flex justify-between text-xs"><span>Tarefas</span><strong>{score===null?"—":score+"%"}</strong></div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#302a48]"><div className="h-full rounded-full bg-[#9d72ff]" style={{width:(score??0)+"%"}} /></div><p className="mt-1 text-[11px] text-slate-400">{metrics?metrics.completed+" de "+metrics.total+" tarefas concluídas":"Aguardando dados"}</p></div>
-    {["Planejamento","Foco","Equilíbrio"].map(label=><div key={label}><div className="flex justify-between text-xs"><span>{label}</span><span className="text-slate-400">Em breve</span></div><div className="mt-3 h-1.5 rounded-full bg-[#302a48]" /></div>)}
+    {["Planejamento","Foco","Equilíbrio"].map(label=><div key={label}><div className="flex justify-between text-xs"><span>{label}</span><span className="text-slate-400">{label==="Foco"&&focusMinutes!==null?focusMinutes+" min / 7 dias":"Em breve"}</span></div><div className="mt-3 h-1.5 rounded-full bg-[#302a48]" /></div>)}
    </div>
   </div>
   <footer className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5">
