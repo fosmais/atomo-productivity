@@ -4,6 +4,27 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 const prefix = "myryra:expanded:v1:";
 const eventName = "myryra:accordion-all";
+const helpExamples: Record<string, string> = {
+  briefing: "Exemplo: confira seus compromissos e as tarefas prioritárias antes de começar o dia.",
+  focus: "Exemplo: escolha uma tarefa, ajuste o temporizador para 25 minutos e inicie uma sessão sem distrações.",
+  "planning-settings": "Exemplo: defina seus horários de trabalho para receber sugestões compatíveis com sua rotina.",
+  "daily-copilot": "Exemplo: peça um plano para o dia com base nas tarefas que precisam de atenção.",
+  replan: "Exemplo: revise tarefas atrasadas e escolha como reorganizá-las antes de confirmar mudanças.",
+  goals: "Exemplo: acompanhe uma pequena meta pessoal e registre sua evolução.",
+  plans: "Exemplo: reúna tarefas relacionadas em um plano e acompanhe o progresso.",
+  favorites: "Exemplo: salve os recursos que você mais usa para acessá-los rapidamente.",
+  capture: "Exemplo: registre uma ideia rapidamente e transforme-a em tarefa para organizar depois.",
+  kanban: "Exemplo: mova uma tarefa de A fazer para Em andamento e depois para Concluído.",
+  availability: "Exemplo: reserve períodos de trabalho e veja os intervalos disponíveis para tarefas.",
+  autopilot: "Exemplo: deixe a MYRYRA sugerir a ordem das atividades, revisando as propostas antes de aplicá-las.",
+  scheduling: "Exemplo: encontre um horário adequado para uma tarefa sem ocupar compromissos existentes.",
+  weekly: "Exemplo: analise a semana para identificar prioridades e pontos de atenção.",
+  performance: "Exemplo: acompanhe a evolução das tarefas concluídas e dos seus indicadores.",
+  mfa: "Exemplo: ative uma segunda etapa de verificação para proteger sua conta.",
+  "external-integrations": "Exemplo: confira quais serviços estão disponíveis e quais conexões ainda estão em desenvolvimento.",
+  feedback: "Exemplo: relate uma dificuldade ou sugira uma melhoria para a plataforma.",
+};
+
 function storedOpen(userId: string, id: string, initial: boolean): boolean {
   try {
     const value = localStorage.getItem(prefix + userId + ":" + id);
@@ -53,6 +74,7 @@ export function FeatureAccordion({ id, title, description, userId, defaultOpen =
         className="absolute right-0 top-full z-30 mt-2 w-[min(19rem,calc(100vw-3rem))] rounded-xl border border-violet-400/50 bg-slate-950 p-4 text-left shadow-2xl">
         <strong className="block text-sm font-semibold text-violet-200">{title}</strong>
         <p className="mt-2 text-sm leading-relaxed text-slate-200">{description}</p>
+        <p className="mt-2 text-xs leading-relaxed text-violet-200">{helpExamples[id] ?? "Abra a ferramenta para explorar seus recursos."}</p>
         <p className="mt-2 text-xs text-slate-400">Toque no cartão para abrir a ferramenta.</p>
       </div>}
     </div>
