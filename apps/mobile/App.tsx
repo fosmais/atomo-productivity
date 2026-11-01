@@ -3,15 +3,17 @@ import { ActivityIndicator, SafeAreaView, ScrollView, StatusBar, StyleSheet, Tex
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./src/lib/supabase";
 import { AuthScreen } from "./src/components/AuthScreen";
+import { registerAuthLifecycle } from "./src/lib/auth-lifecycle";
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
+    const unregisterLifecycle = registerAuthLifecycle();
     let mounted = true;
     supabase.auth.getSession().then(({ data }) => { if (mounted) { setSession(data.session); setLoading(false); } }).catch(() => { if (mounted) setLoading(false); });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, next) => { if (mounted) setSession(next); });
-    return () => { mounted = false; subscription.unsubscribe(); };
+    return () => { mounted = false; subscription.unsubscribe(); unregisterLifecycle(); };
   }, []);
   return <SafeAreaView style={styles.page}>
     <StatusBar barStyle="light-content" />
