@@ -21,6 +21,12 @@
           "recordAudioAndroid": true
         }
       ]
-    ]
+    ],
+    "owner": "myryras-team",
+    "extra": {
+      "eas": {
+        "projectId": "773a79f8-9f30-4d54-9c44-9dced203b6d8"
+      }
+    }
   }
 }
