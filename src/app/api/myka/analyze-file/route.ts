@@ -48,6 +48,15 @@ export async function POST(request: Request) {
       );
     }
 
+    const contentType = request.headers.get("content-type") ?? "";
+    if (!contentType.toLowerCase().startsWith("multipart/form-data")) {
+      return NextResponse.json({ error: "Envie um formulário com arquivo." }, { status: 415 });
+    }
+    const contentLength = Number(request.headers.get("content-length"));
+    if (Number.isFinite(contentLength) && contentLength > MAX_SIZE + 128 * 1024) {
+      return NextResponse.json({ error: "Arquivo ou requisição muito grande." }, { status: 413 });
+    }
+
     const form = await request.formData();
     const file = form.get("file");
     const question = form.get("question");
@@ -214,11 +223,10 @@ export async function POST(request: Request) {
     if (updateError) throw updateError;
 
 
-    return NextResponse.json({
-      filename: file.name,
-      analysis,
-      conversationId,
-    });
+    return NextResponse.json(
+      { filename: file.name, analysis, conversationId },
+      { headers: { "Cache-Control": "private, no-store" } }
+    );
   } catch (error) {
     console.error("Erro na análise de arquivo:", error);
 
