@@ -739,23 +739,27 @@ setConversationId(data.conversationId);
                 }}
               />
             )}
-            {message.role === "assistant" && message.proposedEvent && (
+            {message.role === "assistant" && message.proposedEvent && message.eventStatus === "saved" && (
+              <p role="status" className="mt-2 text-sm text-emerald-300">Compromisso salvo.</p>
+            )}
+            {message.role === "assistant" && message.proposedEvent && message.eventStatus === "cancelled" && (
+              <p role="status" className="mt-2 text-sm text-slate-400">Sugestão descartada.</p>
+            )}
+            {message.role === "assistant" && message.proposedEvent && message.eventStatus !== "saved" && message.eventStatus !== "cancelled" && (
               <EventConfirmation
                 event={message.proposedEvent}
-               onSaved={() => {
-  window.dispatchEvent(new Event("vyra:events-updated"));
-  router.refresh();
-}}
-
-                onCancel={() =>
-                  setMessages((previous) =>
-                    previous.map((item, itemIndex) =>
-                      itemIndex === index
-                        ? { ...item, proposedEvent: null }
-                        : item
-                    )
-                  )
-                }
+                onSaved={() => {
+                  setMessages((previous) => previous.map((item, itemIndex) =>
+                    itemIndex === index ? { ...item, eventStatus: "saved" as const } : item
+                  ));
+                  window.dispatchEvent(new Event("myryra:events-updated"));
+                  router.refresh();
+                }}
+                onCancel={() => {
+                  setMessages((previous) => previous.map((item, itemIndex) =>
+                    itemIndex === index ? { ...item, eventStatus: "cancelled" as const } : item
+                  ));
+                }}
               />
             )}
           </div>
