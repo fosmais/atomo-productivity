@@ -40,7 +40,7 @@ export function AgendaScreen({ userId }: { userId: string }) {
   async function createEvent() {
     if (!title.trim() || title.trim().length > 200) { Alert.alert("Informe um título de até 200 caracteres."); return; }
     const parse = (date: string, time: string) => {
-      if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date) || !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)) return null;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return null;
       const [year, month, dayOfMonth] = date.split("-").map(Number);
       const [hours, minutes] = time.split(":").map(Number);
       const value = new Date(year, month - 1, dayOfMonth, hours, minutes);
