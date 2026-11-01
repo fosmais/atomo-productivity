@@ -178,23 +178,21 @@ export async function POST(request: Request) {
     if (eventType !== "appointment" && eventType !== "unavailable") {
       return NextResponse.json({ error: "Tipo inválido." }, { status: 422 });
     }
-    const { data: existing, error: existingError } = await admin.from("events")
-      .select("id").eq("id", messageId).eq("user_id", auth.user.id).maybeSingle();
-    if (existingError) throw existingError;
-    if (!existing) {
-      const { error: insertError } = await admin.from("events").insert({
-        id: messageId, user_id: auth.user.id, title,
-        starts_at: startsAt.toISOString(), ends_at: endsAt.toISOString(),
-        location: typeof event.location === "string" ? event.location.trim() || null : null,
-        notes: typeof event.notes === "string" ? event.notes.trim() || null : null,
-        event_type: eventType, blocks_time: event.blocksTime === true,
-      });
-      if (insertError && insertError.code !== "23505") throw insertError;
+    // A single database transaction serializes confirmation and cancellation.
+    const { data: result, error: confirmError } = await admin.rpc("myka_confirm_event", {
+      p_message_id: messageId,
+    });
+    if (confirmError) throw confirmError;
+    if (!result || typeof result !== "object" || Array.isArray(result)) {
+      throw new Error("Resposta inválida da confirmação.");
     }
-    const { error: updateError } = await admin.from("myka_messages")
-      .update({ event_status: "saved" }).eq("id", messageId)
-      .eq("user_id", auth.user.id).neq("event_status", "cancelled");
-    if (updateError) throw updateError;
+    const outcome = result as Record<string, unknown>;
+    if (outcome.status === "cancelled") {
+      return NextResponse.json({ error: "Proposta descartada." }, { status: 409 });
+    }
+    if (outcome.status !== "saved") {
+      return NextResponse.json({ error: "Proposta indisponível." }, { status: 409 });
+    }
     return NextResponse.json({ messageId, status: "saved" }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("Erro ao confirmar evento Myka:", error);
