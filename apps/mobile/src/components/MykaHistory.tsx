@@ -49,7 +49,7 @@ export function MykaHistory({ userId }: { userId: string }) {
   }
   async function send() {
     const content = draft.trim();
-    if (!content || content.length > 1500 || sending) return;
+    if ((!content && !attachment) || content.length > 1500 || sending) return;
     setSending(true); setError(null); setReply(null);
     try {
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -57,10 +57,20 @@ export function MykaHistory({ userId }: { userId: string }) {
       if (sessionError || !token || sessionData.session?.user.id !== userId) throw new Error("Sessão inválida");
       const base = process.env.EXPO_PUBLIC_MYRYRA_API_URL;
       if (!base || !/^https:\/\//.test(base)) throw new Error("Configure a URL HTTPS do backend MYRYRA.");
-      const response = await fetch(`${base.replace(/\/$/, "")}/api/concierge`, {
-        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ messages: [{ role: "user", content }], ...(conversationId ? { conversationId } : {}) }),
-      });
+      const endpoint = attachment ? "/api/myka/analyze-file" : "/api/concierge";
+      let body: FormData | string;
+      const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+      if (attachment) {
+        const form = new FormData();
+        form.append("file", { uri: attachment.uri, name: attachment.name, type: attachment.mimeType || "application/octet-stream" } as unknown as Blob);
+        form.append("question", content || "Analise este arquivo e apresente um resumo objetivo.");
+        if (conversationId) form.append("conversationId", conversationId);
+        body = form;
+      } else {
+        headers["Content-Type"] = "application/json";
+        body = JSON.stringify({ messages: [{ role: "user", content }], ...(conversationId ? { conversationId } : {}) });
+      }
+      const response = await fetch(`${base.replace(/\/$/, "")}${endpoint}`, { method: "POST", headers, body });
       const result: unknown = await response.json().catch(() => null);
       if (!response.ok) {
         const serverMessage = result && typeof result === "object" && "error" in result && typeof result.error === "string" ? result.error : null;
@@ -70,9 +80,11 @@ export function MykaHistory({ userId }: { userId: string }) {
         if (response.status === 503) throw new Error("MYKA temporariamente indisponível. Tente mais tarde.");
         throw new Error(serverMessage || "Não foi possível enviar a mensagem.");
       }
-      if (!result || typeof result !== "object" || !("reply" in result) || typeof result.reply !== "string") throw new Error("Resposta inesperada.");
+      if (!result || typeof result !== "object") throw new Error("Resposta inesperada.");
+      const answer = "reply" in result && typeof result.reply === "string" ? result.reply : "analysis" in result && typeof result.analysis === "string" ? result.analysis : null;
+      if (!answer) throw new Error("Resposta inesperada.");
       if ("conversationId" in result && typeof result.conversationId === "string") setConversationId(result.conversationId);
-      setReply(result.reply); setDraft("");
+      setReply(answer); setDraft(""); setAttachment(null);
       await load();
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Falha ao enviar mensagem."); }
     finally { setSending(false); }
@@ -83,7 +95,7 @@ export function MykaHistory({ userId }: { userId: string }) {
     <TextInput accessibilityLabel="Mensagem para MYKA" multiline maxLength={1500} value={draft} onChangeText={setDraft} placeholder="Como posso ajudar?" placeholderTextColor="#B0A4C7" style={{ color: "#fff", backgroundColor: "#382A52", padding: 12, borderRadius: 10, minHeight: 70 }} />
     <Pressable accessibilityRole="button" onPress={() => void chooseAttachment()}><Text style={styles.action}>Selecionar anexo (PDF, imagem ou TXT)</Text></Pressable>
     {attachment ? <View style={styles.message}><Text style={styles.content}>{attachment.name} · {Math.ceil((attachment.size ?? 0) / 1024)} KB</Text><Pressable accessibilityRole="button" onPress={() => setAttachment(null)}><Text style={styles.action}>Remover anexo</Text></Pressable></View> : null}
-    <Pressable accessibilityRole="button" disabled={sending || !draft.trim()} onPress={() => void send()}><Text style={styles.action}>{sending ? "Enviando..." : "Enviar para MYKA"}</Text></Pressable>
+    <Pressable accessibilityRole="button" disabled={sending || (!draft.trim() && !attachment)} onPress={() => void send()}><Text style={styles.action}>{sending ? "Enviando..." : "Enviar para MYKA"}</Text></Pressable>
     {reply ? <View style={styles.message}><Text style={styles.role}>MYKA · resposta recente</Text><Text style={styles.content}>{reply}</Text></View> : null}
     <Pressable accessibilityRole="button" onPress={() => void load()}><Text style={styles.action}>Atualizar mensagens</Text></Pressable>
     {loading ? <ActivityIndicator color="#B98AFF" /> : error ? <Text style={styles.caption}>{error}</Text>
