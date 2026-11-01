@@ -39,13 +39,32 @@ export function MykaVoiceRecorder({ onRecorded }: Props) {
     }
   }
 
+  async function discardRecording() {
+    if (!recording || busy) return;
+    setBusy(true);
+    try {
+      await recorder.stop();
+      setRecording(false);
+      setError(null);
+    } catch {
+      setError("Não foi possível descartar a gravação.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return <View style={{ gap: 8 }}>
     <Pressable accessibilityRole="button" disabled={busy} onPress={() => void toggleRecording()}>
       <Text style={{ color: "#B98AFF", fontWeight: "700" }}>
         {busy ? "Aguarde..." : recording ? "Encerrar gravação" : "Gravar mensagem de voz"}
       </Text>
     </Pressable>
-    {recording ? <Text style={{ color: "#CDBDE8" }}>Microfone ativo. Toque para finalizar.</Text> : null}
+    {recording ? <>
+      <Text accessibilityRole="text" style={{ color: "#CDBDE8" }}>Microfone ativo. Toque para finalizar.</Text>
+      <Pressable accessibilityRole="button" disabled={busy} onPress={() => void discardRecording()}>
+        <Text style={{ color: "#FCA5A5", fontWeight: "700" }}>Cancelar gravação</Text>
+      </Pressable>
+    </> : null}
     {error ? <Text style={{ color: "#FCA5A5" }}>{error}</Text> : null}
   </View>;
 }
