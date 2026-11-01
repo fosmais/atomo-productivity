@@ -13,7 +13,11 @@ export function MykaVoiceRecorder({ onRecorded }: Props) {
   useEffect(() => {
     return () => {
       // Release the microphone if the MYKA screen unmounts mid-recording.
-      if (recorder.isRecording) void recorder.stop().catch(() => undefined);
+      if (recorder.isRecording) {
+        void recorder.stop().catch(() => undefined).finally(() => {
+          void AudioModule.setAudioModeAsync({ allowsRecording: false }).catch(() => undefined);
+        });
+      }
     };
   }, [recorder]);
 
@@ -24,6 +28,7 @@ export function MykaVoiceRecorder({ onRecorded }: Props) {
     try {
       if (recording) {
         await recorder.stop();
+        await AudioModule.setAudioModeAsync({ allowsRecording: false });
         setRecording(false);
         if (recorder.uri) onRecorded(recorder.uri);
         else setError("Não foi possível acessar o áudio gravado.");
@@ -51,6 +56,7 @@ export function MykaVoiceRecorder({ onRecorded }: Props) {
     setBusy(true);
     try {
       await recorder.stop();
+      await AudioModule.setAudioModeAsync({ allowsRecording: false });
       setRecording(false);
       setError(null);
     } catch {
