@@ -44,6 +44,12 @@ jobs:
           case "$EXPO_PUBLIC_MYRYRA_API_URL" in
             *myryra.com*|*atomo-productivity.com*|*vercel.app*) echo "::error::Utilize uma API de homologação isolada, sem alias público de produção/preview"; exit 1 ;;
           esac
+      - name: Link configured EAS project for this CI run
+        env:
+          EXPO_PROJECT_ID: ${{ vars.MYRYRA_EXPO_PROJECT_ID }}
+        run: |
+          test -n "$EXPO_PROJECT_ID" || { echo "::error::Configure MYRYRA_EXPO_PROJECT_ID"; exit 1; }
+          node -e 'const fs=require("fs");const id=process.env.EXPO_PROJECT_ID;if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)){process.exit(1)}const path="app.json";const config=JSON.parse(fs.readFileSync(path,"utf8"));config.expo.extra={...(config.expo.extra||{}),eas:{projectId:id}};fs.writeFileSync(path,JSON.stringify(config,null,2)+"\\n");'
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Verify Expo SDK dependency compatibility
