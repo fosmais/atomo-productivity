@@ -1,28 +1,32 @@
 # MYRYRA — Asaas Sandbox (MVP1)
 
-Provider selected: Asaas. The Mercado Pago implementation remains in
-`src/app/api/billing/mercadopago/webhook/route.ts` as dormant reference.
-The active checkout endpoint is intentionally non-operational (HTTP 501 in
-sandbox; HTTP 503 otherwise) until the complete payment lifecycle is tested.
+The payment provider is Asaas. The legacy Mercado Pago webhook remains dormant.
+No real charges are enabled. The checkout route responds 503 without sandbox
+configuration and 501 even with sandbox credentials: no payment is created.
 
-## Required server-side configuration
-- `ASAAS_ENVIRONMENT=sandbox` (never production for MVP1 testing)
-- `ASAAS_API_KEY` (Sandbox credential; never NEXT_PUBLIC_)
-- `ASAAS_WEBHOOK_TOKEN` (separate webhook authentication token)
-- `BILLING_ENTITLEMENTS_ENABLED=true` only in isolated test environment
-- Keep `BILLING_CHECKOUT_ENABLED=false` until payment workflow is complete.
+## Server-only variables (configure later)
+- ASAAS_ENVIRONMENT=sandbox
+- ASAAS_API_KEY (sandbox secret; never NEXT_PUBLIC_)
+- ASAAS_WEBHOOK_TOKEN (separate random webhook secret)
+- BILLING_ENTITLEMENTS_ENABLED (keep false until reconciliation verified)
+- BILLING_CHECKOUT_ENABLED (keep false until end-to-end sandbox approval)
 
-## Acceptance tests before enabling checkout
-1. Authenticate a user and validate MFA; reject cross-account access.
-2. Create/reuse an Asaas customer with durable user-to-customer mapping.
-3. Create monthly subscription in Sandbox and persist provider ID atomically.
-4. Validate webhook authentication, duplicates and retry delivery.
-5. Independently fetch provider subscription AND payment status; never trust
-   the webhook body to grant paid entitlements.
-6. Handle renewal, cancellation, overdue payments, refunds and chargebacks.
-7. Validate RLS, quotas, failure handling and safe downgrade.
-8. Test all journeys with Sandbox credentials; only then review production rollout.
+## Available read-only APIs
+- GET /api/billing/plans — public catalogue, checkoutEnabled false
+- GET /api/billing/me — authenticated effective entitlements
+- GET /api/billing/subscription — authenticated lifecycle metadata, never exposes provider credentials or other users
+- POST /api/billing/checkout — intentionally disabled
+- POST /api/billing/asaas/webhook — sandbox-only authenticated audit receipt; no entitlement granting
 
-References:
-https://docs.asaas.com/docs/creating-a-subscription
-https://docs.asaas.com/docs/about-webhooks
+## Acceptance gates
+1. Build and typecheck all endpoints.
+2. Verify 401 unauthenticated and 403 for unmet MFA on user-specific APIs.
+3. Test plan prices, quotas and Free fallback.
+4. Provision Asaas sandbox credentials; create/reuse customer and recurring subscription.
+5. Persist provider subscription IDs and payment identifiers idempotently.
+6. Independently reconcile verified payment and subscription status with Asaas API.
+7. Test duplicates, retries, renewals, cancellations, late payments, refunds, chargebacks.
+8. Verify RLS, user isolation, quotas, downgrade and failure handling.
+9. Enable checkout only after all tests pass in isolated preview.
+
+Official documentation: https://docs.asaas.com/docs/creating-a-subscription
