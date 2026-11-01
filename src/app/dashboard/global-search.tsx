@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useVyraNavigation } from "./vyra-module-context";
+import { useVyraActiveModule, useVyraNavigation } from "./vyra-module-context";
 
 type SearchResult = { id: string; title: string; kind: "Tarefa" | "Plano" | "Compromisso"; detail: string };
 
 export default function GlobalSearch() {
   const { navigateTo, navigateToTask } = useVyraNavigation();
+  const activeModule = useVyraActiveModule();
+  const [expanded, setExpanded] = useState(false);
+  const isOpen = activeModule === "home" || expanded || query.trim().length > 0;
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [completedQuery, setCompletedQuery] = useState("");
@@ -60,8 +63,8 @@ export default function GlobalSearch() {
   }, [query]);
 
   return <section className="rounded-2xl border border-violet-400/20 bg-slate-900/70 p-4 sm:p-5" aria-label="Busca global">
-    <label htmlFor="myryra-global-search" className="text-sm font-semibold text-violet-100">Busca global</label>
-    <input id="myryra-global-search" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Busque tarefas, planos e compromissos..." className="mt-3 w-full rounded-xl border border-slate-600 bg-slate-950 p-3 text-sm text-white placeholder:text-slate-500 focus:border-violet-400 focus:outline-none" />
+    <div className="flex items-center justify-between gap-3"><label htmlFor="myryra-global-search" className="text-sm font-semibold text-violet-100">Busca global</label>{activeModule !== "home" && <button type="button" aria-expanded={isOpen} onClick={() => { setExpanded(!expanded); if (expanded) setQuery(""); }} className="rounded-lg border border-violet-400/30 px-3 py-1.5 text-xs font-medium text-violet-200 hover:bg-violet-500/10">{isOpen ? "Recolher" : "Pesquisar"}</button>}</div>
+    {isOpen && <input id="myryra-global-search" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Busque tarefas, planos e compromissos..." className="mt-3 w-full rounded-xl border border-slate-600 bg-slate-950 p-3 text-sm text-white placeholder:text-slate-500 focus:border-violet-400 focus:outline-none" />}
     {(loading || (query.trim().length >= 2 && completedQuery !== query.trim() && !error)) && <p role="status" className="mt-3 text-xs text-slate-400">Pesquisando...</p>}
     {error && <p role="alert" className="mt-3 text-sm text-rose-300">{error}</p>}
     {!loading && completedQuery === query.trim() && query.trim().length >= 2 && !error && <div className="mt-3 space-y-2" aria-live="polite">
