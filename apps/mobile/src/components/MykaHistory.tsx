@@ -10,6 +10,7 @@ export function MykaHistory({ userId }: { userId: string }) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [reply, setReply] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -17,7 +18,8 @@ export function MykaHistory({ userId }: { userId: string }) {
       const { data: conversation, error: conversationError } = await supabase.from("myka_conversations")
         .select("id").eq("user_id", userId).order("updated_at", { ascending: false }).limit(1).maybeSingle();
       if (conversationError) throw conversationError;
-      if (!conversation) { setMessages([]); return; }
+      if (!conversation) { setConversationId(null); setMessages([]); return; }
+      setConversationId(conversation.id);
       const { data, error: queryError } = await supabase.from("myka_messages")
         .select("id,role,content,created_at").eq("user_id", userId).eq("conversation_id", conversation.id)
         .order("created_at", { ascending: false }).limit(30);
@@ -40,11 +42,12 @@ export function MykaHistory({ userId }: { userId: string }) {
       if (!base || !/^https:\/\//.test(base)) throw new Error("Configure a URL HTTPS do backend MYRYRA.");
       const response = await fetch(`${base.replace(/\/$/, "")}/api/concierge`, {
         method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ messages: [{ role: "user", content }] }),
+        body: JSON.stringify({ messages: [{ role: "user", content }], ...(conversationId ? { conversationId } : {}) }),
       });
       const result: unknown = await response.json();
       if (!response.ok) throw new Error("MYKA indisponível no momento.");
       if (!result || typeof result !== "object" || !("reply" in result) || typeof result.reply !== "string") throw new Error("Resposta inesperada.");
+      if ("conversationId" in result && typeof result.conversationId === "string") setConversationId(result.conversationId);
       setReply(result.reply); setDraft("");
       await load();
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Falha ao enviar mensagem."); }
