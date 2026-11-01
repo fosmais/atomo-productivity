@@ -173,7 +173,7 @@ export default function LoginPage() {
       <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse at 26% 38%, rgba(124,58,237,.42), transparent 37%), radial-gradient(ellipse at 76% 70%, rgba(14,165,233,.25), transparent 39%), radial-gradient(ellipse at 70% 15%, rgba(168,85,247,.23), transparent 30%), #070716" }} />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-70" style={{ backgroundImage: "radial-gradient(1px 1px at 12% 16%, white 98%, transparent), radial-gradient(2px 2px at 36% 62%, #d8b4fe 98%, transparent), radial-gradient(1px 1px at 77% 22%, white 98%, transparent), radial-gradient(1px 1px at 86% 82%, #a5f3fc 98%, transparent), radial-gradient(1px 1px at 53% 39%, white 98%, transparent)", backgroundSize: "173px 197px, 263px 283px, 199px 241px, 307px 269px, 131px 163px" }} />
       <div aria-hidden="true" className="pointer-events-none absolute left-1/4 top-1/4 h-[35rem] w-[35rem] rounded-full bg-violet-600/15 blur-[100px]" />
-      <div className="relative z-10 grid w-full max-w-6xl items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-14">
+      <div className="relative z-10 grid w-full max-w-6xl items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16">
         <div className="hidden lg:block"><MykaLoginScene /></div>
         <div className="mx-auto w-full max-w-md">
           <div className="mb-5 text-center lg:text-left">
@@ -184,7 +184,7 @@ export default function LoginPage() {
             <div aria-hidden="true" className="absolute inset-4 rounded-full bg-violet-500/25 blur-2xl" />
             <img src="/myka-transparente.png" alt="MYKA, sua companheira inteligente" className="relative h-auto w-full drop-shadow-[0_12px_28px_rgba(120,65,255,.4)]" />
           </div>
-          <div className="rounded-3xl border border-violet-300/30 bg-slate-950/80 p-6 shadow-2xl shadow-violet-950/40 backdrop-blur-xl sm:p-9">
+          <div className="rounded-3xl border border-violet-300/30 bg-slate-950/85 p-6 shadow-2xl shadow-violet-950/40 backdrop-blur-xl sm:p-9">
         <div className="mb-8 flex items-center gap-3"><span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl"><img src="/myryra-logo.png" alt="Logotipo MYRYRA" className="h-full w-full object-cover" /></span><div><h1 className="text-2xl font-bold tracking-tight">MYRYRA</h1><p className="text-xs tracking-widest text-violet-300">YOUR LIFE. IN SYNC.</p></div></div><h2 className="text-2xl font-semibold">{mode === "login" ? "Bem-vindo de volta" : "Comece sua jornada"}</h2>
 
         <p className="mt-2 text-slate-400">
@@ -214,7 +214,7 @@ export default function LoginPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               disabled={loading}
-              className="w-full rounded-xl border border-slate-700 bg-slate-900 p-3 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-500/30 disabled:opacity-50"
+              className="w-full rounded-xl border border-slate-600/70 bg-slate-900/90 p-3 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-500/30 disabled:opacity-50"
             />
           </div>
 
