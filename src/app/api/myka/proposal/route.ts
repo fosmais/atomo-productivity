@@ -133,3 +133,71 @@ export async function PATCH(request: Request) {
     );
   }
 }
+export async function POST(request: Request) {
+  try {
+    if (process.env.MYRYRA_PROPOSAL_STATUS_ENABLED !== "true") {
+      return NextResponse.json({ error: "Confirmação persistente indisponível." }, { status: 503 });
+    }
+    const supabase = await createClient();
+    const { data: auth, error: authError } = await supabase.auth.getUser();
+    if (authError || !auth.user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+    const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assurance.error) return NextResponse.json({ error: "Sessão indisponível." }, { status: 503 });
+    if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
+      return NextResponse.json({ error: "Segundo fator obrigatório.", code: "MFA_REQUIRED" }, { status: 403 });
+    }
+    if ((request.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase() !== "application/json") {
+      return NextResponse.json({ error: "Envie JSON." }, { status: 415 });
+    }
+    const raw = await request.text();
+    if (new TextEncoder().encode(raw).length > 4096) return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+    let input: unknown;
+    try { input = JSON.parse(raw); } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
+    if (!input || typeof input !== "object" || Array.isArray(input)) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
+    const messageId = (input as Record<string, unknown>).messageId;
+    if (typeof messageId !== "string" || !isUuid(messageId)) return NextResponse.json({ error: "Mensagem inválida." }, { status: 400 });
+
+    const admin = createSupabaseAdmin();
+    const { data: message, error: messageError } = await admin.from("myka_messages")
+      .select("id, proposed_event, event_status").eq("id", messageId)
+      .eq("user_id", auth.user.id).eq("role", "assistant").maybeSingle();
+    if (messageError) throw messageError;
+    if (!message || !message.proposed_event || typeof message.proposed_event !== "object" || Array.isArray(message.proposed_event)) {
+      return NextResponse.json({ error: "Proposta não encontrada." }, { status: 404 });
+    }
+    if (message.event_status === "cancelled") return NextResponse.json({ error: "Proposta descartada." }, { status: 409 });
+    const event = message.proposed_event as Record<string, unknown>;
+    const title = typeof event.title === "string" ? event.title.trim() : "";
+    const startsAt = typeof event.startsAt === "string" ? new Date(event.startsAt) : new Date(NaN);
+    const endsAt = typeof event.endsAt === "string" ? new Date(event.endsAt) : new Date(NaN);
+    if (!title || title.length > 200 || !/[\\p{L}\\p{N}]/u.test(title) ||
+        Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime()) || endsAt <= startsAt) {
+      return NextResponse.json({ error: "Dados do compromisso inválidos." }, { status: 422 });
+    }
+    const eventType = event.eventType ?? "appointment";
+    if (eventType !== "appointment" && eventType !== "unavailable") {
+      return NextResponse.json({ error: "Tipo inválido." }, { status: 422 });
+    }
+    const { data: existing, error: existingError } = await admin.from("events")
+      .select("id").eq("id", messageId).eq("user_id", auth.user.id).maybeSingle();
+    if (existingError) throw existingError;
+    if (!existing) {
+      const { error: insertError } = await admin.from("events").insert({
+        id: messageId, user_id: auth.user.id, title,
+        starts_at: startsAt.toISOString(), ends_at: endsAt.toISOString(),
+        location: typeof event.location === "string" ? event.location.trim() || null : null,
+        notes: typeof event.notes === "string" ? event.notes.trim() || null : null,
+        event_type: eventType, blocks_time: event.blocksTime === true,
+      });
+      if (insertError && insertError.code !== "23505") throw insertError;
+    }
+    const { error: updateError } = await admin.from("myka_messages")
+      .update({ event_status: "saved" }).eq("id", messageId)
+      .eq("user_id", auth.user.id).neq("event_status", "cancelled");
+    if (updateError) throw updateError;
+    return NextResponse.json({ messageId, status: "saved" }, { headers: { "Cache-Control": "private, no-store" } });
+  } catch (error) {
+    console.error("Erro ao confirmar evento Myka:", error);
+    return NextResponse.json({ error: "Falha ao confirmar compromisso." }, { status: 500 });
+  }
+}

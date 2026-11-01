@@ -748,6 +748,7 @@ setConversationId(data.conversationId);
             {message.role === "assistant" && message.proposedEvent && message.eventStatus !== "saved" && message.eventStatus !== "cancelled" && (
               <EventConfirmation
                 event={message.proposedEvent}
+                messageId={message.id}
                 onSaved={() => {
                   setMessages((previous) => previous.map((item, itemIndex) =>
                     itemIndex === index ? { ...item, eventStatus: "saved" as const } : item

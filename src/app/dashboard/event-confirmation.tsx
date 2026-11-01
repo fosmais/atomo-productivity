@@ -8,12 +8,14 @@ import {
 
 type EventConfirmationProps = {
   event: NewCalendarEvent;
+  messageId?: string;
   onSaved?: () => void;
   onCancel?: () => void | Promise<void>;
 };
 
 export default function EventConfirmation({
   event,
+  messageId,
   onSaved,
   onCancel,
 }: EventConfirmationProps) {
@@ -31,7 +33,12 @@ export default function EventConfirmation({
     setError("");
 
     try {
-      await saveCloudEvent(event);
+      if (messageId) {
+        const response = await fetch("/api/myka/proposal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messageId }) });
+        if (!response.ok) { const data = await response.json().catch(() => null); throw new Error(data?.error || "Falha ao confirmar compromisso."); }
+      } else {
+        await saveCloudEvent(event);
+      }
       setSaved(true);
       window.dispatchEvent(new Event("myryra:events-updated"));
       onSaved?.();
