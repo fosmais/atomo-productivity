@@ -37,7 +37,7 @@ export default function App() {
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={styles.brand}>M</Text><Text style={styles.title}>MYRYRA</Text>
       <Text style={styles.subtitle}>Your life. In sync.</Text>
-      {loading || (session && verifiedToken !== session.access_token) ? <ActivityIndicator style={{ marginTop: 36 }} color="#B98AFF" /> : session && requiresMfa ? <MfaChallenge onVerified={() => { setRequiresMfa(false); setVerifiedToken(session.access_token); }} /> : session ?
+      {loading || (session && verifiedToken !== session.access_token) ? <ActivityIndicator style={{ marginTop: 36 }} color="#B98AFF" /> : session && requiresMfa ? <MfaChallenge onVerified={() => { setVerifiedToken(null); void supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data, error }) => { setRequiresMfa(Boolean(error || (data?.nextLevel === "aal2" && data.currentLevel !== "aal2"))); setVerifiedToken(session.access_token); }).catch(() => { setRequiresMfa(true); setVerifiedToken(session.access_token); }); }} /> : session ?
         <View style={styles.welcome}><Text style={styles.message}>Olá, {session.user.email}</Text><AgendaScreen userId={session.user.id} /><MykaHistory userId={session.user.id} /><Pressable onPress={() => void supabase.auth.signOut()} accessibilityRole="button"><Text style={styles.signout}>Sair</Text></Pressable></View>
         : <AuthScreen />}
     </ScrollView>
