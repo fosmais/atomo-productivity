@@ -110,9 +110,25 @@ export default function CalendarEvents() {
   }
 
   useEffect(() => {
-    const refresh = () => { void loadEvents().catch(() => setError("Não foi possível atualizar os compromissos.")); };
+    // MYKA and other dashboard modules can save an event independently.
+    // Refresh when they notify us or when the user returns to this tab.
+    let lastRefresh = 0;
+    const refresh = () => {
+      if (document.visibilityState !== "visible") return;
+      const now = Date.now();
+      if (now - lastRefresh < 2000) return;
+      lastRefresh = now;
+      void loadEvents().then(() => setError("")).catch(() =>
+        setError("Não foi possível atualizar os compromissos.")
+      );
+      void loadGoogleEvents();
+    };
     window.addEventListener("myryra:events-updated", refresh);
-    return () => window.removeEventListener("myryra:events-updated", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener("myryra:events-updated", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
   }, []);
 
   useEffect(() => {
