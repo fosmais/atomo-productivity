@@ -135,6 +135,7 @@ async function DashboardContent() {
                 <FeatureAccordion id="plans" title="Meus planos" description="Acompanhe seus planos e tarefas" userId={user.id}><CloudPlans /></FeatureAccordion>
               </section>
             </div>
+            <FeatureAccordion id="planning-settings" title="Preferências de planejamento" description="Personalize horários, rotina e regras do Planner" userId={user.id}><PlanningSettings /></FeatureAccordion>
           </div>
         </VyraSection>
       </VyraModule>
@@ -209,14 +210,17 @@ async function DashboardContent() {
         id="vyra-settings"
         eyebrow="MYRYRA SETTINGS"
         title="Uma experiência feita para você."
-        description="Configure seus dias, horários e preferências de planejamento."
+        description="Gerencie sua conta, conecte aplicativos e compartilhe sugestões."
       >
-        <FeatureAccordion id="mfa" title="Segurança da conta" description="Configure a autenticação em dois fatores" userId={user.id}><MfaSettings /></FeatureAccordion>
-        <FeatureAccordion id="planning-settings" title="Preferências de planejamento" description="Personalize sua rotina" userId={user.id}><PlanningSettings /></FeatureAccordion>
-        <div className="mt-6">
-          <FeatureAccordion id="google-settings" title="Integração Google Calendar" description="Gerencie a conexão com sua agenda Google" userId={user.id}><GoogleCalendarSettings /></FeatureAccordion>
-          <FeatureAccordion id="external-integrations" title="Integrações de produtividade" description="Todoist, Google Tasks e Outlook" userId={user.id}><ExternalIntegrations /></FeatureAccordion>
-        <FeatureAccordion id="feedback" title="Feedback" description="Envie sugestões e relatos sobre o beta" userId={user.id}><BetaFeedback /></FeatureAccordion>
+        <div className="space-y-4">
+          <FeatureAccordion id="mfa" title="Segurança da conta" description="Configure a autenticação em dois fatores" userId={user.id}><MfaSettings /></FeatureAccordion>
+          <FeatureAccordion id="external-integrations" title="Integrações de produtividade" description="Google Calendar, Google Tasks, Todoist e Outlook" userId={user.id}>
+            <div className="space-y-5">
+              <GoogleCalendarSettings />
+              <ExternalIntegrations />
+            </div>
+          </FeatureAccordion>
+          <FeatureAccordion id="feedback" title="Feedback" description="Envie sugestões e relatos sobre o beta" userId={user.id}><BetaFeedback /></FeatureAccordion>
         </div>
       </VyraSection>
 
