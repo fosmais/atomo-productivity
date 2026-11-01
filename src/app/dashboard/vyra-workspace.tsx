@@ -3,6 +3,7 @@
 import { Children, isValidElement, ReactNode, useEffect, useState } from "react";
 import VyraNavigation from "./vyra-navigation";
 import VyraHeader from "./vyra-header";
+import MykaSupport from "./myka-support";
 import { VyraModuleContext, VyraNavigationContext } from "./vyra-module-context";
 
 type VyraWorkspaceProps = {
@@ -80,6 +81,7 @@ export default function VyraWorkspace({
 
         <div className="min-w-0">{children}</div>
       </div>
+      <MykaSupport />
     </div>
     </VyraModuleContext.Provider>
     </VyraNavigationContext.Provider>

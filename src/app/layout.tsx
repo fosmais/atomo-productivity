@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "MYRYRA | Your life. In sync.",
   description: "MYRYRA: produtividade inteligente, metas pessoais e planejamento com inteligência artificial.",
+  icons: { icon: [{ url: "/icon.svg", type: "image/svg+xml" }], shortcut: "/icon.svg" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

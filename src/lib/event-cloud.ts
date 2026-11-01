@@ -41,27 +41,31 @@ async function getAuthenticatedUser() {
 export async function getCloudEvents(): Promise<CalendarEvent[]> {
   const { supabase, userId } = await getAuthenticatedUser();
 
-  const { data, error } = await supabase
-    .from("events")
-    .select(
-      "id, title, starts_at, ends_at, location, notes, event_type, blocks_time"
-    )
-    .eq("user_id", userId)
-    .order("starts_at", { ascending: true })
-    .limit(200);
+  const pageSize = 500;
+  const allEvents: CalendarEvent[] = [];
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await supabase
+      .from("events")
+      .select("id, title, starts_at, ends_at, location, notes, event_type, blocks_time")
+      .eq("user_id", userId)
+      .order("starts_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(offset, offset + pageSize - 1);
 
-  if (error) throw new Error(error.message);
-
-  return (data ?? []).map((event) => ({
-    id: event.id,
-    title: event.title,
-    startsAt: event.starts_at,
-    endsAt: event.ends_at,
-    location: event.location,
-    notes: event.notes,
-    eventType: event.event_type as EventType,
-    blocksTime: event.blocks_time,
-  }));
+    if (error) throw new Error(error.message);
+    const batch = data ?? [];
+    allEvents.push(...batch.map((event) => ({
+      id: event.id,
+      title: event.title,
+      startsAt: event.starts_at,
+      endsAt: event.ends_at,
+      location: event.location,
+      notes: event.notes,
+      eventType: event.event_type as EventType,
+      blocksTime: event.blocks_time,
+    })));
+    if (batch.length < pageSize) return allEvents;
+  }
 }
 
 export async function saveCloudEvent(
@@ -73,7 +77,7 @@ export async function saveCloudEvent(
   const start = new Date(event.startsAt);
   const end = new Date(event.endsAt);
 
-  if (!title || title.length > 200) {
+  if (!title || title.length > 200 || !/[\p{L}\p{N}]/u.test(title)) {
     throw new Error("Informe um título de até 200 caracteres.");
   }
 

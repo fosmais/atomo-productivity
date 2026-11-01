@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { saveCloudPlan } from "@/lib/plan-cloud";
 import { useVyraNavigation } from "./vyra-module-context";
@@ -16,6 +16,10 @@ type KanbanTask = {
   completed_at: string | null;
 };
 
+function localDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 const columns: { status: TaskStatus; label: string }[] = [
   { status: "todo", label: "A fazer" },
   { status: "in_progress", label: "Em andamento" },
@@ -26,6 +30,7 @@ const columns: { status: TaskStatus; label: string }[] = [
 export default function TaskKanban() {
   const { focusedTaskId } = useVyraNavigation();
   const [tasks, setTasks] = useState<KanbanTask[]>([]);
+  const latestLoadRef = useRef(0);
   const [expandedColumns, setExpandedColumns] = useState<TaskStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -37,6 +42,7 @@ export default function TaskKanban() {
   const [creating, setCreating] = useState(false);
 
   const loadTasks = useCallback(async () => {
+    const requestId = ++latestLoadRef.current;
     setLoading(true);
     setError("");
 
@@ -59,23 +65,39 @@ export default function TaskKanban() {
 
       if (tasksError) throw tasksError;
 
-      setTasks((data ?? []) as KanbanTask[]);
+      let loaded = (data ?? []) as KanbanTask[];
+      // A busca global pode encontrar tarefas fora das 200 mais recentes.
+      if (focusedTaskId && !loaded.some((task) => task.id === focusedTaskId)) {
+        const { data: focusedTask, error: focusedError } = await supabase
+          .from("tasks")
+          .select("id, title, priority, due_date, status, completed_at")
+          .eq("user_id", auth.user.id)
+          .eq("id", focusedTaskId)
+          .maybeSingle();
+        if (focusedError) throw focusedError;
+        if (focusedTask) loaded = [focusedTask as KanbanTask, ...loaded];
+      }
+
+      if (requestId === latestLoadRef.current) setTasks(loaded);
     } catch (err) {
-      setError(
+      if (requestId === latestLoadRef.current) setError(
         err instanceof Error
           ? err.message
           : "Não foi possível carregar o Kanban."
       );
     } finally {
-      setLoading(false);
+      if (requestId === latestLoadRef.current) setLoading(false);
     }
-  }, []);
+  }, [focusedTaskId]);
 
   useEffect(() => {
     void loadTasks();
     const refresh = () => { void loadTasks(); };
     window.addEventListener("myryra:tasks-updated", refresh);
-    return () => window.removeEventListener("myryra:tasks-updated", refresh);
+    return () => {
+      ++latestLoadRef.current;
+      window.removeEventListener("myryra:tasks-updated", refresh);
+    };
   }, [loadTasks]);
 
   useEffect(() => {
@@ -90,7 +112,7 @@ export default function TaskKanban() {
       block: "center",
       inline: "nearest",
     });
-  }, [focusedTaskId, loading]);
+  }, [focusedTaskId, loading, tasks]);
 
   async function createTask(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -118,6 +140,28 @@ export default function TaskKanban() {
       setError(err instanceof Error ? err.message : "Erro ao criar tarefa.");
     } finally {
       setCreating(false);
+    }
+  }
+  async function rescheduleTask(id: string, dueDate: string) {
+    if (savingId) return;
+    const previous = tasks;
+    setSavingId(id);
+    setError("");
+    setTasks(current => current.map(task => task.id === id ? { ...task, due_date: dueDate } : task));
+    try {
+      const supabase = createClient();
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError || !auth.user) throw new Error("Usuário não autenticado.");
+      const { data, error: updateError } = await supabase.from("tasks")
+        .update({ due_date: dueDate }).eq("id", id).eq("user_id", auth.user.id)
+        .select("id").single();
+      if (updateError || !data) throw new Error(updateError?.message ?? "Não foi possível reagendar.");
+      window.dispatchEvent(new Event("myryra:tasks-updated"));
+    } catch (err) {
+      setTasks(previous);
+      setError(err instanceof Error ? err.message : "Erro ao reagendar tarefa.");
+    } finally {
+      setSavingId(null);
     }
   }
   async function moveTask(id: string, status: TaskStatus) {
@@ -180,11 +224,11 @@ export default function TaskKanban() {
   }
 
   return (
-    <section className="rounded-xl border border-slate-700 bg-slate-900 p-6 text-white">
+    <section className="min-w-0 rounded-2xl border border-violet-400/20 bg-slate-900/70 p-4 text-white sm:p-6">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase text-violet-400">
-            VYRA
+            MYRYRA
           </p>
           <h2 className="text-2xl font-bold">Pipeline de tarefas</h2>
         </div>
@@ -260,7 +304,7 @@ export default function TaskKanban() {
       {loading ? (
         <p className="text-sm text-slate-400">Carregando tarefas...</p>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid min-w-0 gap-4 md:grid-cols-2 2xl:grid-cols-4">
           {columns.map((column) => {
             const columnTasks = tasks.filter(
               (task) => task.status === column.status
@@ -271,11 +315,11 @@ export default function TaskKanban() {
             return (
               <div
                 key={column.status}
-                className="min-h-56 rounded-xl bg-slate-800 p-3"
+                className="min-w-0 min-h-56 rounded-xl border border-white/10 bg-slate-800/65 p-3 sm:p-4"
               >
-                <h3 className="mb-4 flex justify-between text-sm font-semibold">
+                <h3 className="mb-4 flex items-center justify-between gap-2 text-sm font-semibold">
                   {column.label}
-                  <span className="text-slate-400">{columnTasks.length}</span>
+                  <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2 py-0.5 text-xs tabular-nums text-violet-200">{columnTasks.length}</span>
                 </h3>
 
                 <div className="space-y-3">
@@ -283,15 +327,15 @@ export default function TaskKanban() {
                     <article
                       key={task.id}
                       id={`vyra-task-${task.id}`}
-                      className={`rounded-lg border p-3 transition-all duration-300 ${
+                      className={`min-w-0 rounded-xl border p-3.5 transition-all duration-300 ${
                         focusedTaskId === task.id
                           ? "border-violet-400 bg-violet-500/15 ring-2 ring-violet-400/50 shadow-lg shadow-violet-500/20"
                           : "border-slate-600 bg-slate-900"
                       }`}
                     >
-                      <p className="text-sm font-semibold">{task.title}</p>
+                      <p className="break-words text-sm font-semibold leading-snug">{task.title}</p>
 
-                      <p className="mt-2 text-xs text-slate-400">
+                      <p className="mt-2 text-xs text-slate-300">
                         Prioridade: {task.priority}
                       </p>
 
@@ -301,6 +345,12 @@ export default function TaskKanban() {
                         </p>
                       )}
 
+                      {task.status !== "done" && task.due_date && task.due_date < localDateKey(new Date()) && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <button type="button" disabled={savingId !== null} onClick={() => void rescheduleTask(task.id, localDateKey(new Date()))} className="rounded-md border border-violet-400/40 px-2 py-1 text-xs text-violet-200 hover:bg-violet-500/15 disabled:opacity-50">Reagendar para hoje</button>
+                          <button type="button" disabled={savingId !== null} onClick={() => { const date = new Date(); date.setDate(date.getDate() + 1); void rescheduleTask(task.id, localDateKey(date)); }} className="rounded-md border border-slate-500 px-2 py-1 text-xs text-slate-200 hover:bg-slate-700 disabled:opacity-50">Amanhã</button>
+                        </div>
+                      )}
                       <label className="mt-3 block text-xs text-slate-300">
                         Mover para
                         <select

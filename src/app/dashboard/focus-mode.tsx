@@ -1,5 +1,6 @@
 "use client";
 import FeatureHint from "./feature-hint";
+import { createClient } from "@/lib/supabase/client";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -16,6 +17,25 @@ export default function FocusMode() {
   const [task, setTask] = useState("");
   const [finished, setFinished] = useState(false);
   const deadlineRef = useRef<number | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState("");
+  const savedRef = useRef(false);
+
+  async function saveCompletedSession() {
+    if (savedRef.current) return;
+    savedRef.current = true;
+    setSaving(true); setSaveStatus("");
+    try {
+      const supabase = createClient();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error("Sessão concluída, mas não foi possível confirmar o login.");
+      const { error } = await supabase.from("focus_sessions").insert({ user_id: user.id, duration_minutes: minutes });
+      if (error) throw new Error("Sessão concluída, mas o registro no Score ainda não está habilitado neste ambiente.");
+      setSaveStatus("Sessão registrada para o indicador Foco.");
+      window.dispatchEvent(new Event("myryra:focus-updated"));
+    } catch (error) { savedRef.current = false; setSaveStatus(error instanceof Error ? error.message : "Não foi possível registrar a sessão."); }
+    finally { setSaving(false); }
+  }
 
   useEffect(() => {
     if (!running || deadlineRef.current === null) return;
@@ -27,6 +47,7 @@ export default function FocusMode() {
         deadlineRef.current = null;
         setRunning(false);
         setFinished(true);
+        void saveCompletedSession();
       }
     };
     tick();
@@ -56,6 +77,8 @@ export default function FocusMode() {
     deadlineRef.current = null;
     setRunning(false);
     setFinished(false);
+    savedRef.current = false;
+    setSaveStatus("");
     setRemaining(nextMinutes * 60);
   }
 
@@ -93,7 +116,9 @@ export default function FocusMode() {
         <button type="button" onClick={() => reset()} className="rounded-xl border border-slate-700 px-5 py-3 text-slate-200 hover:bg-slate-800">Reiniciar</button>
       </div>
       {finished && <p role="status" className="mt-4 text-center text-emerald-300">Sessão concluída! Faça uma pausa antes da próxima.</p>}
-      <p className="mt-4 text-xs text-slate-400">Temporizador local com correção de tempo ao retornar à aba. Sessões não são gravadas no banco e a contagem é reiniciada ao recarregar a página.</p>
+      {saveStatus && <p role="status" className="mt-2 text-center text-xs text-violet-200">{saveStatus}</p>}
+      {finished && !saving && saveStatus.includes("não foi possível") && <button type="button" onClick={() => void saveCompletedSession()} className="mt-2 rounded-lg border border-violet-400/40 px-3 py-2 text-xs text-violet-200">Tentar registrar novamente</button>}
+      <p className="mt-4 text-xs text-slate-400">Temporizador local com correção de tempo ao retornar à aba. Ao concluir, tentamos registrar a duração no banco para o Score. A contagem em andamento é reiniciada ao recarregar a página.</p>
     </section>
   );
 }

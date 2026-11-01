@@ -175,9 +175,16 @@ export default function LoginPage() {
       <div className="relative z-10 grid w-full max-w-6xl items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-12">
         <div className="hidden lg:block"><MykaLoginScene /></div>
         <div className="mx-auto w-full max-w-md">
-          <div className="mb-6 text-center lg:text-left"><p className="text-xs font-semibold uppercase tracking-[.3em] text-violet-300">MYRYRA · YOUR LIFE. IN SYNC.</p><h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Seu universo, em sintonia.</h2><p className="mt-3 text-sm text-slate-300">A MYKA está pronta para ajudar você a organizar o que realmente importa.</p></div>
-          <div className="rounded-3xl border border-violet-300/25 bg-slate-950/75 p-6 shadow-2xl shadow-violet-950/40 backdrop-blur-xl sm:p-9">
-        <div className="mb-8 flex items-center gap-3"><span aria-hidden="true" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-600 text-2xl font-black shadow-lg shadow-violet-600/30">M</span><div><h1 className="text-2xl font-bold tracking-tight">MYRYRA</h1><p className="text-xs tracking-widest text-violet-300">YOUR LIFE. IN SYNC.</p></div></div><h2 className="text-2xl font-semibold">{mode === "login" ? "Bem-vindo de volta" : "Comece sua jornada"}</h2>
+          <div className="mb-5 text-center lg:text-left">
+            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Seu universo, <span className="text-violet-300">em sintonia.</span></h2>
+            <p className="mt-3 text-sm leading-relaxed text-slate-300">Organize sua vida. Transforme planos em conquistas.</p>
+          </div>
+          <div className="relative mx-auto mb-5 flex w-full max-w-[210px] items-center justify-center lg:hidden" aria-label="MYKA, sua companheira inteligente">
+            <div aria-hidden="true" className="absolute inset-4 rounded-full bg-violet-500/25 blur-2xl" />
+            <img src="/myka-transparente.png" alt="MYKA, sua companheira inteligente" className="relative h-auto w-full drop-shadow-[0_12px_28px_rgba(120,65,255,.4)]" />
+          </div>
+          <div className="rounded-3xl border border-violet-300/30 bg-slate-950/80 p-6 shadow-2xl shadow-violet-950/40 backdrop-blur-xl sm:p-9">
+        <div className="mb-8 flex items-center gap-3"><span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl"><img src="/myryra-logo.png" alt="Logotipo MYRYRA" className="h-full w-full object-cover" /></span><div><h1 className="text-2xl font-bold tracking-tight">MYRYRA</h1><p className="text-xs tracking-widest text-violet-300">YOUR LIFE. IN SYNC.</p></div></div><h2 className="text-2xl font-semibold">{mode === "login" ? "Bem-vindo de volta" : "Comece sua jornada"}</h2>
 
         <p className="mt-2 text-slate-400">
           {mode === "login"
@@ -225,7 +232,7 @@ export default function LoginPage() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               disabled={loading}
-              className="w-full rounded-lg bg-slate-800 p-3 disabled:opacity-50"
+              className="w-full rounded-xl border border-slate-700 bg-slate-900 p-3 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-500/30 disabled:opacity-50"
             />
           </div>
 
@@ -233,7 +240,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-violet-600 p-3 font-semibold shadow-lg shadow-violet-900/30 transition hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 disabled:opacity-50"
+            className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 p-3 font-semibold shadow-lg shadow-violet-900/30 transition hover:from-violet-500 hover:to-fuchsia-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 disabled:opacity-50"
           >
             {loading
               ? "Aguarde..."

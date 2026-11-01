@@ -1,11 +1,22 @@
 "use client";
-import MykaPortrait from "@/components/myka-portrait";
+import Image from "next/image";
+import MykaPlanHelp from "./myka-plan-help";
 
 export default function MykaLoginScene() {
-  return <div aria-hidden="true" className="pointer-events-none relative mx-auto flex w-full max-w-[520px] flex-col items-center justify-center">
-    <div className="absolute inset-0 rounded-full bg-violet-600/15 blur-[90px]" />
-    <MykaPortrait className="relative w-full max-w-[390px] drop-shadow-[0_30px_75px_rgba(120,65,255,.4)]" />
-    <p className="relative mt-3 text-center text-sm font-medium tracking-[.25em] text-violet-200/80">CONHEÇA A MYKA</p>
-    <p className="relative mt-2 max-w-sm text-center text-sm leading-relaxed text-slate-300">Sua companheira inteligente para transformar planos em conquistas.</p>
-  </div>;
+  return (
+    <div aria-label="Conheça a MYKA, sua companheira inteligente" className="relative mx-auto flex w-full max-w-[560px] flex-col items-center justify-center">
+      <div className="pointer-events-none w-full"><Image
+        src="/myka-transparente.png"
+        alt="MYKA, gata roxa com círculo laranja e medalha 1618"
+        width={1240}
+        height={1240}
+        priority
+        sizes="(max-width: 1024px) 90vw, 480px"
+        className="relative h-auto w-full max-w-[480px]"
+      /></div>
+      <p className="relative mt-3 text-center text-sm font-medium tracking-[.25em] text-violet-200/80">CONHEÇA A MYKA</p>
+      <p className="relative mt-2 max-w-sm text-center text-sm leading-relaxed text-slate-300">Sua companheira inteligente para transformar planos em conquistas.</p>
+      <MykaPlanHelp />
+    </div>
+  );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import {
   getCloudEvents,
   saveCloudEvent,
@@ -8,6 +9,8 @@ import {
   type CalendarEvent,
   type EventType,
 } from "@/lib/event-cloud";
+
+type CalendarTask = { id: string; title: string; due_date: string | null; completed: boolean; priority: string };
 
 type GoogleCalendarEvent = {
   id: string | null;
@@ -21,11 +24,38 @@ type GoogleCalendarEvent = {
 };
 export default function CalendarEvents() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [tasks, setTasks] = useState<CalendarTask[]>([]);
+  const [tasksError, setTasksError] = useState("");
+  useEffect(() => {
+    let active = true;
+    async function loadCalendarTasks() {
+      try {
+        const supabase = createClient();
+        const { data: auth, error: authError } = await supabase.auth.getUser();
+        if (authError || !auth.user) throw new Error("Faça login para visualizar tarefas.");
+        const { data, error } = await supabase.from("tasks")
+          .select("id, title, due_date, completed, priority")
+          .eq("user_id", auth.user.id)
+          .not("due_date", "is", null)
+          .order("due_date", { ascending: true })
+          .limit(500);
+        if (error) throw error;
+        if (active) { setTasks((data ?? []) as CalendarTask[]); setTasksError(""); }
+      } catch {
+        if (active) setTasksError("Não foi possível carregar as tarefas no calendário.");
+      }
+    }
+    void loadCalendarTasks();
+    window.addEventListener("myryra:tasks-updated", loadCalendarTasks);
+    return () => { active = false; window.removeEventListener("myryra:tasks-updated", loadCalendarTasks); };
+  }, []);
   const [showForm, setShowForm] = useState(false);
   const [showAllGoogle, setShowAllGoogle] = useState(false);
   const [showAllLocal, setShowAllLocal] = useState(false);
   const [periodFilter, setPeriodFilter] = useState<"today" | "week" | "all">("week");
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [calendarView, setCalendarView] = useState<"day" | "week" | "month">("week");
+  const [calendarOffset, setCalendarOffset] = useState(0);
   // VYRA_GOOGLE_CALENDAR_INTEGRATION
   const [googleEvents, setGoogleEvents] = useState<GoogleCalendarEvent[]>([]);
   const [googleConnected, setGoogleConnected] = useState(false);
@@ -103,7 +133,16 @@ export default function CalendarEvents() {
   }, []);
 
   async function handleSave() {
-    if (!title.trim() || !startsAt || !endsAt) return;
+    if (!title.trim() || !startsAt || !endsAt) {
+      setError("Preencha o título, o início e o término do compromisso.");
+      return;
+    }
+    const startMs = new Date(startsAt).getTime();
+    const endMs = new Date(endsAt).getTime();
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
+      setError("O término deve ser posterior ao início do compromisso.");
+      return;
+    }
 
     setSaving(true);
     setError("");
@@ -120,6 +159,7 @@ export default function CalendarEvents() {
 
       await loadEvents();
       window.dispatchEvent(new Event("myryra:events-updated"));
+      setSelectedDay(null);
 
       setTitle("");
       setStartsAt("");
@@ -127,6 +167,7 @@ export default function CalendarEvents() {
       setLocation("");
       setEventType("appointment");
       setBlocksTime(false);
+      setShowForm(false);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Erro ao salvar compromisso."
@@ -198,6 +239,62 @@ export default function CalendarEvents() {
       googleEvents.filter((event) => dateKey(event.start) === key).length;
     return { key, count, weekday: day.toLocaleDateString("pt-BR", { weekday: "short" }), day: day.getDate() };
   });
+  const anchor = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (calendarView === "day") anchor.setDate(anchor.getDate() + calendarOffset);
+  if (calendarView === "week") anchor.setDate(anchor.getDate() - ((anchor.getDay() + 6) % 7) + calendarOffset * 7);
+  if (calendarView === "month") {
+    anchor.setDate(1);
+    anchor.setMonth(anchor.getMonth() + calendarOffset);
+  }
+  const daysCount = calendarView === "day" ? 1 : calendarView === "week" ? 7 : new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0).getDate();
+  const calendarDays = Array.from({ length: daysCount }, (_, i) => {
+    const date = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() + i);
+    const key = date.toLocaleDateString("en-CA");
+    const items = [
+      ...events.filter((e) => dateKey(e.startsAt) === key).map((e) => ({ key: `local-${e.id}`, title: e.title, at: timeLabel(e.startsAt) })),
+      ...googleEvents.filter((e) => dateKey(e.start) === key).map((e, j) => ({ key: `google-${e.id ?? j}`, title: e.title, at: timeLabel(e.start) })),
+      ...tasks.filter((t) => dateKey(t.due_date) === key).map((t) => ({ key: `task-${t.id}`, title: `${t.completed ? "✓ " : "□ "}${t.title}`, at: "Tarefa" })),
+    ].sort((a, b) => a.at.localeCompare(b.at));
+    return { key, date, items };
+  });
+  const calendarPeriod = anchor.toLocaleDateString("pt-BR", calendarView === "month" ? { month: "long", year: "numeric" } : { day: "numeric", month: "long", year: "numeric" });
+  function suggestFreeHours(key: string): number[] {
+    const busy = [
+      ...events.filter((event) => event.blocksTime && dateKey(event.startsAt) === key).map((event) => ({ start: event.startsAt, end: event.endsAt })),
+      ...googleEvents.filter((event) => dateKey(event.start) === key).map((event) => ({ start: event.start, end: event.end })),
+    ].filter((event) => event.start && event.end);
+    return [9, 10, 11, 13, 14, 15, 16, 17].filter((hour) => {
+      const slotStart = new Date(`${key}T${String(hour).padStart(2, "0")}:00:00`).getTime();
+      const slotEnd = slotStart + 60 * 60 * 1000;
+      return busy.every((event) => {
+        const start = new Date(event.start!).getTime();
+        const end = new Date(event.end!).getTime();
+        return !Number.isFinite(start) || !Number.isFinite(end) || slotEnd <= start || slotStart >= end;
+      });
+    });
+  }
+  function startEventAtHour(key: string, hour: number) {
+    const localValue = (value: Date) => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}T${String(value.getHours()).padStart(2, "0")}:${String(value.getMinutes()).padStart(2, "0")}`;
+    const start = new Date(`${key}T${String(hour).padStart(2, "0")}:00:00`);
+    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    setStartsAt(localValue(start));
+    setEndsAt(localValue(end));
+    setSelectedDay(key);
+    setShowForm(true);
+    window.requestAnimationFrame(() => document.getElementById("myryra-calendar-event-form")?.scrollIntoView({ behavior: "smooth", block: "center" }));
+  }
+  function startEventOnDay(key: string) {
+    const day = new Date(`${key}T09:00:00`);
+    if (Number.isNaN(day.getTime())) return;
+    const end = new Date(day.getTime() + 60 * 60 * 1000);
+    const localValue = (value: Date) => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}T${String(value.getHours()).padStart(2, "0")}:${String(value.getMinutes()).padStart(2, "0")}`;
+    setStartsAt(localValue(day));
+    setEndsAt(localValue(end));
+    setShowForm(true);
+    setSelectedDay(key);
+    window.requestAnimationFrame(() => document.getElementById("myryra-calendar-event-form")?.scrollIntoView({ behavior: "smooth", block: "center" }));
+  }
+
   const filteredGoogle = googleEvents.filter((event) => inPeriod(event.start))
     .sort((a, b) => (a.start ?? "").localeCompare(b.start ?? ""));
   const filteredLocal = events.filter((event) => inPeriod(event.startsAt))
@@ -215,12 +312,46 @@ export default function CalendarEvents() {
         Cadastre seus eventos e organize seus horários.
       </p>
 
+      {tasksError && <p role="status" className="mt-3 text-xs text-amber-300">{tasksError}</p>}
+      <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/60 p-3 sm:p-4" aria-label="Smart Calendar">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div><p className="text-xs font-semibold uppercase tracking-widest text-violet-300">Smart Calendar · Beta</p><h3 className="mt-1 text-lg font-semibold capitalize">{calendarPeriod}</h3></div>
+          <div className="flex flex-wrap gap-2">
+            {(["day", "week", "month"] as const).map((view) => <button key={view} type="button" aria-pressed={calendarView === view} onClick={() => { setCalendarView(view); setCalendarOffset(0); setSelectedDay(null); }} className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${calendarView === view ? "bg-violet-500 text-white" : "border border-white/10 text-slate-300 hover:bg-white/10"}`}>{view === "day" ? "Dia" : view === "week" ? "Semana" : "Mês"}</button>)}
+          </div>
+        </div>
+        <div className="mt-3 flex items-center gap-2">
+          <button type="button" onClick={() => setCalendarOffset((n) => n - 1)} aria-label="Período anterior" className="rounded-lg border border-white/10 px-3 py-1.5 hover:bg-white/10">‹</button>
+          <button type="button" onClick={() => { setCalendarOffset(0); setSelectedDay(null); }} className="rounded-lg border border-white/10 px-3 py-1.5 text-xs hover:bg-white/10">Hoje</button>
+          <button type="button" onClick={() => setCalendarOffset((n) => n + 1)} aria-label="Próximo período" className="rounded-lg border border-white/10 px-3 py-1.5 hover:bg-white/10">›</button>
+          <span className="ml-auto text-xs text-slate-400">Eventos + tarefas MYRYRA + Google</span>
+        </div>
+        <div className={`mt-4 grid gap-2 ${calendarView === "day" ? "grid-cols-1" : calendarView === "week" ? "grid-cols-2 md:grid-cols-7" : "grid-cols-3 sm:grid-cols-5 lg:grid-cols-7"}`}>
+          {calendarDays.map(({ key, date, items }) => <button key={key} type="button" onClick={() => { setSelectedDay(key); setPeriodFilter("all"); }} aria-label={`Ver eventos de ${date.toLocaleDateString("pt-BR")}`} aria-pressed={selectedDay === key} className={`min-h-24 min-w-0 rounded-xl border p-2 text-left transition hover:border-violet-400/60 ${selectedDay === key ? "border-violet-400 bg-violet-500/15" : key === todayKey ? "border-violet-500/40 bg-violet-500/10" : "border-white/10 bg-slate-900/70"}`}>
+            <span className="block text-xs font-semibold capitalize text-slate-300">{date.toLocaleDateString("pt-BR", { weekday: "short" })} {date.getDate()}</span>
+            <span className="mt-2 block space-y-1">{items.slice(0, calendarView === "month" ? 2 : 3).map((item) => <span key={item.key} className="block truncate rounded bg-violet-500/15 px-1.5 py-1 text-xs text-violet-100" title={item.title}>{item.at !== "Dia inteiro" ? `${item.at} · ` : ""}{item.title}</span>)}</span>
+            {items.length > (calendarView === "month" ? 2 : 3) && <span className="mt-1 block text-xs text-slate-400">+{items.length - (calendarView === "month" ? 2 : 3)} eventos</span>}
+          </button>)}
+        </div>
+        {selectedDay && <div className="mt-4 rounded-xl border border-violet-400/20 bg-violet-500/5 p-3">
+          <p className="text-sm font-semibold text-violet-100">Horários potencialmente livres · 1 hora</p>
+          <p className="mt-1 text-xs text-slate-400">Sugestões locais com base nos compromissos carregados. Não garantem disponibilidade e ainda não utilizam IA.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {suggestFreeHours(selectedDay).length ? suggestFreeHours(selectedDay).map((hour) => <button key={hour} type="button" onClick={() => startEventAtHour(selectedDay, hour)} className="rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-100 hover:bg-violet-500/25">{String(hour).padStart(2, "0")}:00</button>) : <span className="text-xs text-slate-400">Nenhum horário sugerido neste período.</span>}
+          </div>
+        </div>}
+        {selectedDay && <div className="mt-3 flex flex-wrap items-center gap-3">
+          <button type="button" onClick={() => startEventOnDay(selectedDay)} className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500">+ Criar evento neste dia</button>
+          <button type="button" onClick={() => setSelectedDay(null)} className="text-xs font-medium text-violet-300 underline">Limpar filtro do dia selecionado</button>
+        </div>}
+      </div>
+
       <button type="button" onClick={() => setShowForm((value) => !value)}
         aria-expanded={showForm}
         className="mt-4 rounded-xl border border-violet-500/40 px-4 py-2 text-sm font-semibold text-violet-200 hover:bg-violet-500/10">
         {showForm ? "Fechar formulário" : "+ Novo compromisso"}
       </button>
-      {showForm && <div className="mt-4 rounded-xl border border-slate-700 p-4">
+      {showForm && <div id="myryra-calendar-event-form" className="mt-4 scroll-mt-8 rounded-xl border border-slate-700 p-4">
       <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
         <input
           type="text"
