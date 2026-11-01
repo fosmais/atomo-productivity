@@ -44,8 +44,15 @@ export function MykaHistory({ userId }: { userId: string }) {
         method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ messages: [{ role: "user", content }], ...(conversationId ? { conversationId } : {}) }),
       });
-      const result: unknown = await response.json();
-      if (!response.ok) throw new Error("MYKA indisponível no momento.");
+      const result: unknown = await response.json().catch(() => null);
+      if (!response.ok) {
+        const serverMessage = result && typeof result === "object" && "error" in result && typeof result.error === "string" ? result.error : null;
+        if (response.status === 401) throw new Error("Sua sessão expirou. Entre novamente.");
+        if (response.status === 403) throw new Error("Confirme a autenticação de dois fatores para continuar.");
+        if (response.status === 429) throw new Error("Limite de mensagens atingido. Aguarde e tente novamente.");
+        if (response.status === 503) throw new Error("MYKA temporariamente indisponível. Tente mais tarde.");
+        throw new Error(serverMessage || "Não foi possível enviar a mensagem.");
+      }
       if (!result || typeof result !== "object" || !("reply" in result) || typeof result.reply !== "string") throw new Error("Resposta inesperada.");
       if ("conversationId" in result && typeof result.conversationId === "string") setConversationId(result.conversationId);
       setReply(result.reply); setDraft("");
