@@ -131,7 +131,7 @@ export default function LoginPage() {
   }
 
   async function signInWithGoogle() {
-    if (loading) return;
+    if (loading || process.env.NEXT_PUBLIC_MYRYRA_GOOGLE_LOGIN_ENABLED !== "true") return;
     setLoading(true);
     setMessage("");
     setIsError(false);
@@ -280,7 +280,7 @@ export default function LoginPage() {
           </button>
         </form>}
 
-        {!mfaFactorId && (
+        {!mfaFactorId && process.env.NEXT_PUBLIC_MYRYRA_GOOGLE_LOGIN_ENABLED === "true" && (
           <div className="mt-4">
             <div className="mb-3 flex items-center gap-3 text-xs text-slate-400"><span className="h-px flex-1 bg-white/15" />ou continue com<span className="h-px flex-1 bg-white/15" /></div>
             <button type="button" disabled={loading} onClick={() => void signInWithGoogle()} className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-slate-900/90 px-4 py-3 text-sm font-semibold text-white transition hover:border-violet-400/70 disabled:opacity-50">
