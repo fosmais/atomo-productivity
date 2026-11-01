@@ -164,6 +164,31 @@ export default function TaskKanban() {
       setSavingId(null);
     }
   }
+  async function deleteTask(task: KanbanTask) {
+    if (savingId || !window.confirm(`Excluir a tarefa "${task.title}"? Esta ação não pode ser desfeita.`)) return;
+    setSavingId(task.id);
+    setError("");
+    try {
+      const supabase = createClient();
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError || !auth.user) throw new Error("Usuário não autenticado.");
+      const { data, error: deleteError } = await supabase
+        .from("tasks")
+        .delete()
+        .eq("id", task.id)
+        .eq("user_id", auth.user.id)
+        .select("id")
+        .single();
+      if (deleteError || !data) throw new Error(deleteError?.message ?? "Não foi possível excluir a tarefa.");
+      setTasks((current) => current.filter((item) => item.id !== task.id));
+      window.dispatchEvent(new Event("myryra:tasks-updated"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível excluir a tarefa.");
+    } finally {
+      setSavingId(null);
+    }
+  }
+
   async function moveTask(id: string, status: TaskStatus) {
     if (savingId) return;
 
@@ -374,6 +399,9 @@ export default function TaskKanban() {
                           ))}
                         </select>
                       </label>
+                      <div className="mt-3 flex justify-end">
+                        <button type="button" disabled={savingId !== null} onClick={() => void deleteTask(task)} aria-label={`Excluir tarefa: ${task.title}`} className="rounded-lg border border-rose-400/35 px-3 py-1.5 text-xs font-medium text-rose-200 transition hover:bg-rose-500/10 disabled:opacity-50">Excluir tarefa</button>
+                      </div>
                     </article>
                   ))}
 

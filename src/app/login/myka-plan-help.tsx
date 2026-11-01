@@ -21,6 +21,7 @@ export default function MykaPlanHelp({onStartFree}:{onStartFree:()=>void}) {
  const [loading,setLoading] = useState(false);
  const logEndRef = useRef<HTMLDivElement>(null);
  useEffect(()=>{ if(open) logEndRef.current?.scrollIntoView({block:"end",behavior:"smooth"}); },[messages,open]);
+ useEffect(()=>{ if(!open) return; const onKey=(event:KeyboardEvent)=>{if(event.key==="Escape")setOpen(false);};window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);},[open]);
  const [selectedPlan,setSelectedPlan] = useState<"free"|"pro"|"premium"|null>(null);
  const lastDiscussedPlan = useRef<"free"|"pro"|"premium"|null>(null);
  const busyRef = useRef(false);
@@ -62,7 +63,7 @@ export default function MykaPlanHelp({onStartFree}:{onStartFree:()=>void}) {
  return <div className="fixed bottom-4 right-4 z-50 sm:bottom-6 sm:right-6">
   {open && <div aria-hidden="true" className="fixed inset-0 bg-[#070716]/95 backdrop-blur-lg" /> }
   {open && <section id="myka-floating-chat" aria-label="Converse com a MYKA" className="fixed inset-x-4 top-1/2 flex h-[min(560px,calc(100dvh-120px))] -translate-y-1/2 flex-col overflow-hidden rounded-2xl sm:left-1/2 sm:right-auto sm:w-[min(440px,calc(100vw-2rem))] sm:-translate-x-1/2 border border-violet-400/35 bg-[#100d22] p-4 text-left text-sm text-slate-100 shadow-2xl shadow-violet-950/60">
-  <div className="mb-3 flex items-center justify-between gap-2"><div><p className="font-semibold text-violet-200">MYKA 💜</p><p className="text-xs text-slate-400">Assistente de planos • disponível para perguntas</p></div><span className="rounded-full bg-violet-500/20 px-2 py-1 text-xs text-violet-200">Aberto</span></div>
+  <div className="mb-3 flex items-center justify-between gap-2"><div><p className="font-semibold text-violet-200">MYKA 💜</p><p className="text-xs text-slate-400">Assistente de planos • disponível para perguntas</p></div><button type="button" onClick={()=>setOpen(false)} aria-label="Fechar ajuda MYKA" title="Fechar ajuda MYKA" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-violet-400/40 bg-violet-500/15 text-xl text-violet-100 transition hover:bg-violet-500/30 focus-visible:outline-2 focus-visible:outline-violet-400">×</button></div>
   <div role="log" aria-live="polite" aria-relevant="additions text" className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl bg-slate-950/60 p-3">
    {messages.map((message,index)=><p key={index} className={message.role==="user" ? "ml-6 rounded-xl bg-violet-700/50 p-3 text-white" : "mr-4 rounded-xl bg-white/5 p-3 text-slate-100"}>{message.text}</p>)}
    <div ref={logEndRef} aria-hidden="true" />
