@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { saveCloudPlan } from "@/lib/plan-cloud";
 import { createBrowserClient } from "@supabase/ssr";
 import type { SavedTask } from "@/lib/plan-storage";
@@ -20,6 +20,7 @@ export default function TaskConfirmation({
   onSaved,
   onCancel,
 }: TaskConfirmationProps) {
+  const inFlight = useRef(false);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
   const [decision, setDecision] = useState<"saved" | "cancelled" | null>(null);
@@ -36,7 +37,8 @@ export default function TaskConfirmation({
   }
 
   async function handleConfirm() {
-    if (working || decision) return;
+    if (inFlight.current || decision) return;
+    inFlight.current = true;
 
     setWorking(true);
     setError("");
@@ -66,6 +68,7 @@ export default function TaskConfirmation({
       }
 
       setDecision("saved");
+      window.dispatchEvent(new Event("myryra:tasks-updated"));
       onSaved?.();
     } catch (err) {
       setError(
@@ -74,6 +77,7 @@ export default function TaskConfirmation({
           : "Não foi possível salvar a tarefa."
       );
     } finally {
+      inFlight.current = false;
       setWorking(false);
     }
   }

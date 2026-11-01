@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   saveCloudEvent,
   type NewCalendarEvent,
@@ -17,12 +17,14 @@ export default function EventConfirmation({
   onSaved,
   onCancel,
 }: EventConfirmationProps) {
+  const inFlight = useRef(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
   async function handleConfirm() {
-    if (saving || saved) return;
+    if (inFlight.current || saved) return;
+    inFlight.current = true;
 
     setSaving(true);
     setError("");
@@ -30,6 +32,7 @@ export default function EventConfirmation({
     try {
       await saveCloudEvent(event);
       setSaved(true);
+      window.dispatchEvent(new Event("myryra:events-updated"));
       onSaved?.();
     } catch (err) {
       setError(
@@ -38,6 +41,7 @@ export default function EventConfirmation({
           : "Nao foi possivel salvar o evento."
       );
     } finally {
+      inFlight.current = false;
       setSaving(false);
     }
   }
