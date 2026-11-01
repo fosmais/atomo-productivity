@@ -9,7 +9,7 @@ import {
 type EventConfirmationProps = {
   event: NewCalendarEvent;
   onSaved?: () => void;
-  onCancel?: () => void;
+  onCancel?: () => void | Promise<void>;
 };
 
 export default function EventConfirmation({
@@ -19,6 +19,7 @@ export default function EventConfirmation({
 }: EventConfirmationProps) {
   const inFlight = useRef(false);
   const [saving, setSaving] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
@@ -43,6 +44,21 @@ export default function EventConfirmation({
     } finally {
       inFlight.current = false;
       setSaving(false);
+    }
+  }
+
+  async function handleCancel() {
+    if (inFlight.current || saved) return;
+    inFlight.current = true;
+    setCancelling(true);
+    setError("");
+    try {
+      await onCancel?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível descartar a sugestão.");
+    } finally {
+      inFlight.current = false;
+      setCancelling(false);
     }
   }
 
@@ -105,7 +121,7 @@ export default function EventConfirmation({
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={saving}
+            disabled={saving || cancelling}
             className="rounded-lg bg-violet-600 px-4 py-2 font-semibold disabled:opacity-50"
           >
             {saving ? "Salvando..." : "Confirmar evento"}
@@ -113,11 +129,11 @@ export default function EventConfirmation({
 
           <button
             type="button"
-            onClick={onCancel}
+            onClick={handleCancel}
             disabled={saving}
             className="rounded-lg border border-slate-600 px-4 py-2"
           >
-            Cancelar
+            {cancelling ? "Descartando..." : "Cancelar"}
           </button>
         </div>
       )}

@@ -755,7 +755,17 @@ setConversationId(data.conversationId);
                   window.dispatchEvent(new Event("myryra:events-updated"));
                   router.refresh();
                 }}
-                onCancel={() => {
+                onCancel={async () => {
+                  if (message.id && message.eventStatus === "pending") {
+                    const response = await fetch("/api/myka/proposal", {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ messageId: message.id, kind: "event" }),
+                    });
+                    if (!response.ok) {
+                      throw new Error("Não foi possível descartar no servidor. Tente novamente.");
+                    }
+                  }
                   setMessages((previous) => previous.map((item, itemIndex) =>
                     itemIndex === index ? { ...item, eventStatus: "cancelled" as const } : item
                   ));
