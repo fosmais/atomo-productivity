@@ -1,7 +1,7 @@
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { createRequestClient } from "@/lib/supabase/request-client";
+import { authenticateRequest } from "@/lib/supabase/request-client";
 import { getServerAvailability } from "@/lib/server-availability";
 import { checkConciergeRateLimit } from "@/lib/rate-limit";
 
@@ -107,25 +107,10 @@ function isConciergeResponse(value: unknown): value is ConciergeResponse {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createRequestClient(request);
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: "Usuário não autenticado." },
-        { status: 401 }
-      );
-    }
-
-    const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (assurance.error) return NextResponse.json({ error: "Verificação de sessão indisponível." }, { status: 503 });
-    if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
-      return NextResponse.json({ error: "Segundo fator obrigatório.", code: "MFA_REQUIRED" }, { status: 403 });
-    }
+    const { supabase, user, mfaRequired, assuranceUnavailable } = await authenticateRequest(request);
+    if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+    if (assuranceUnavailable) return NextResponse.json({ error: "Verificação de sessão indisponível." }, { status: 503 });
+    if (mfaRequired) return NextResponse.json({ error: "Segundo fator obrigatório.", code: "MFA_REQUIRED" }, { status: 403 });
 
     const mediaType = (request.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
     if (mediaType !== "application/json") {
