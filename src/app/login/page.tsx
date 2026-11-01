@@ -169,7 +169,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative isolate flex min-h-dvh items-start justify-center overflow-x-hidden bg-[#070716] px-4 py-8 text-white sm:px-6 lg:items-center lg:py-6">
+    <main className="relative isolate flex min-h-dvh items-start justify-center overflow-x-hidden bg-[#070716] px-4 py-8 text-white sm:px-6 lg:items-start lg:py-6">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse at 26% 38%, rgba(124,58,237,.42), transparent 37%), radial-gradient(ellipse at 76% 70%, rgba(14,165,233,.25), transparent 39%), radial-gradient(ellipse at 70% 15%, rgba(168,85,247,.23), transparent 30%), #070716" }} />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-70" style={{ backgroundImage: "radial-gradient(1px 1px at 12% 16%, white 98%, transparent), radial-gradient(2px 2px at 36% 62%, #d8b4fe 98%, transparent), radial-gradient(1px 1px at 77% 22%, white 98%, transparent), radial-gradient(1px 1px at 86% 82%, #a5f3fc 98%, transparent), radial-gradient(1px 1px at 53% 39%, white 98%, transparent)", backgroundSize: "173px 197px, 263px 283px, 199px 241px, 307px 269px, 131px 163px" }} />
       <div aria-hidden="true" className="pointer-events-none absolute left-1/4 top-1/4 h-[35rem] w-[35rem] rounded-full bg-violet-600/15 blur-[100px]" />
@@ -281,7 +281,7 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-      <MykaPlanHelp />
+      <MykaPlanHelp onStartFree={() => { setMode("signup"); setMessage(""); setIsError(false); window.scrollTo({top:0,behavior:"smooth"}); }} />
     </main>
   );
 }
