@@ -4,10 +4,23 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./src/lib/supabase";
 import { AuthScreen } from "./src/components/AuthScreen";
 import { registerAuthLifecycle } from "./src/lib/auth-lifecycle";
+import { MfaChallenge } from "./src/components/MfaChallenge";
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [requiresMfa, setRequiresMfa] = useState(false);
+  const [assuranceLoading, setAssuranceLoading] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    if (!session) { setRequiresMfa(false); return; }
+    setAssuranceLoading(true);
+    supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data, error }) => {
+      if (!cancelled) setRequiresMfa(Boolean(error || (data?.nextLevel === "aal2" && data.currentLevel !== "aal2")));
+    }).catch(() => { if (!cancelled) setRequiresMfa(true); })
+      .finally(() => { if (!cancelled) setAssuranceLoading(false); });
+    return () => { cancelled = true; };
+  }, [session?.access_token]);
   useEffect(() => {
     const unregisterLifecycle = registerAuthLifecycle();
     let mounted = true;
@@ -20,7 +33,7 @@ export default function App() {
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={styles.brand}>M</Text><Text style={styles.title}>MYRYRA</Text>
       <Text style={styles.subtitle}>Your life. In sync.</Text>
-      {loading ? <ActivityIndicator style={{ marginTop: 36 }} color="#B98AFF" /> : session ?
+      {loading || assuranceLoading ? <ActivityIndicator style={{ marginTop: 36 }} color="#B98AFF" /> : session && requiresMfa ? <MfaChallenge onVerified={() => { setRequiresMfa(false); }} /> : session ?
         <View style={styles.welcome}><Text style={styles.message}>Olá, {session.user.email}</Text><Text style={styles.message}>Sua sessão está conectada. Agenda e MYKA serão integradas nos próximos blocos.</Text><Pressable onPress={() => void supabase.auth.signOut()} accessibilityRole="button"><Text style={styles.signout}>Sair</Text></Pressable></View>
         : <AuthScreen />}
     </ScrollView>
