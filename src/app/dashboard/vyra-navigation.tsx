@@ -10,7 +10,7 @@ const primaryItems = [
 ];
 
 const secondaryItems = [
-  { id: "vyra-planner", label: "Planejamento", icon: "◷" },
+  { id: "vyra-planner", label: "Copiloto e planos", icon: "◷" },
   { id: "vyra-scheduling", label: "Agendamento inteligente", icon: "⚡" },
   { id: "vyra-performance", label: "Evolução", icon: "◈" },
   { id: "vyra-settings", label: "Minha conta", icon: "⚙" },
@@ -135,7 +135,7 @@ export default function VyraNavigation({
           id="vyra-mobile-tools"
           className={
             moreOpen || secondaryActive
-              ? "mt-2 grid grid-cols-2 gap-2 rounded-xl border border-white/10 bg-slate-950/80 p-2"
+              ? "mt-2 grid grid-cols-1 gap-2 rounded-xl border border-white/10 bg-slate-950/80 p-2"
               : "hidden"
           }
         >

@@ -24,6 +24,9 @@ type GoogleCalendarEvent = {
 };
 export default function CalendarEvents() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [favoriteEventIds, setFavoriteEventIds] = useState<string[]>([]);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [favoriteBusyId, setFavoriteBusyId] = useState<string | null>(null);
   const [tasks, setTasks] = useState<CalendarTask[]>([]);
   const [tasksError, setTasksError] = useState("");
   useEffect(() => {
@@ -107,6 +110,42 @@ export default function CalendarEvents() {
   async function loadEvents() {
     const result = await getCloudEvents();
     setEvents(result);
+    await loadFavoriteEvents();
+  }
+
+  async function loadFavoriteEvents() {
+    const supabase = createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) throw new Error("Sessão expirada.");
+    const { data, error: favoritesError } = await supabase.from("favorites")
+      .select("event_id").eq("user_id", user.id).not("event_id", "is", null);
+    if (favoritesError) throw favoritesError;
+    setFavoriteEventIds((data ?? []).flatMap((row) => row.event_id ? [row.event_id as string] : []));
+  }
+
+  async function toggleFavoriteEvent(event: CalendarEvent) {
+    if (favoriteBusyId) return;
+    setFavoriteBusyId(event.id);
+    setError("");
+    try {
+      const supabase = createClient();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error("Sessão expirada.");
+      if (favoriteEventIds.includes(event.id)) {
+        const { error } = await supabase.from("favorites").delete()
+          .eq("user_id", user.id).eq("event_id", event.id);
+        if (error) throw error;
+        setFavoriteEventIds((ids) => ids.filter((id) => id !== event.id));
+      } else {
+        const { error } = await supabase.from("favorites").insert({
+          user_id: user.id, event_id: event.id, task_id: null
+        });
+        if (error) throw error;
+        setFavoriteEventIds((ids) => [...ids, event.id]);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível atualizar o favorito.");
+    } finally { setFavoriteBusyId(null); }
   }
 
   useEffect(() => {
@@ -136,7 +175,7 @@ export default function CalendarEvents() {
 
     getCloudEvents()
       .then((result) => {
-        if (active) setEvents(result);
+        if (active) { setEvents(result); void loadFavoriteEvents().catch(() => {}); }
       })
       .catch((err: unknown) => {
         if (active) {
@@ -319,7 +358,7 @@ export default function CalendarEvents() {
 
   const filteredGoogle = googleEvents.filter((event) => inPeriod(event.start))
     .sort((a, b) => (a.start ?? "").localeCompare(b.start ?? ""));
-  const filteredLocal = events.filter((event) => inPeriod(event.startsAt))
+  const filteredLocal = events.filter((event) => inPeriod(event.startsAt) && (!favoritesOnly || favoriteEventIds.includes(event.id)))
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
   const visibleGoogle = showAllGoogle ? filteredGoogle : filteredGoogle.slice(0, 5);
   const visibleLocal = showAllLocal ? filteredLocal : filteredLocal.slice(0, 5);
@@ -529,7 +568,7 @@ export default function CalendarEvents() {
                   className="relative ml-2 min-w-0 max-w-full overflow-hidden rounded-lg border border-slate-700 border-l-2 border-l-violet-500 bg-slate-950/50 p-3"
                 >
                   <details className="group">
-                    <summary className="cursor-pointer list-none rounded-md py-1 focus-visible:outline-2 focus-visible:outline-violet-400">
+                    <summary className="cursor-pointer list-none rounded-md py-1 pr-9 focus-visible:outline-2 focus-visible:outline-violet-400">
                       <span className="flex min-w-0 items-center justify-between gap-3">
                         <span className="min-w-0 break-words font-medium"><span className="mr-2 text-xs font-semibold tabular-nums text-violet-300">{timeLabel(event.start)}</span>{event.title}</span>
                         <span className="shrink-0 text-xs text-slate-400 group-open:hidden">Detalhes +</span><span className="hidden shrink-0 text-xs text-slate-400 group-open:inline">Recolher −</span>
@@ -598,7 +637,7 @@ export default function CalendarEvents() {
         )}
       </div>
       <div className="mt-6 space-y-3">
-        <h3 className="font-semibold">Eventos cadastrados</h3>
+        <div className="flex flex-wrap items-center justify-between gap-3"><h3 className="font-semibold">Eventos cadastrados</h3><label className="inline-flex items-center gap-2 text-xs text-slate-300"><input type="checkbox" checked={favoritesOnly} onChange={(event) => setFavoritesOnly(event.target.checked)} className="accent-violet-500" />★ Somente favoritos</label></div>
 
         {loading ? (
           <p className="text-sm text-slate-400">Carregando eventos...</p>
@@ -613,6 +652,13 @@ export default function CalendarEvents() {
             <div
               className="relative ml-2 rounded-lg border border-slate-700 border-l-2 border-l-violet-500 bg-slate-950/50 p-3"
             >
+              <button type="button" onClick={() => void toggleFavoriteEvent(event)} disabled={favoriteBusyId !== null}
+                aria-pressed={favoriteEventIds.includes(event.id)}
+                aria-label={favoriteEventIds.includes(event.id) ? "Remover compromisso dos favoritos" : "Favoritar compromisso"}
+                title={favoriteEventIds.includes(event.id) ? "Remover favorito" : "Adicionar favorito"}
+                className={`absolute right-3 top-2 z-10 rounded-md px-1.5 text-xl hover:bg-violet-500/15 disabled:opacity-50 ${favoriteEventIds.includes(event.id) ? "text-amber-300" : "text-slate-400"}`}>
+                {favoriteEventIds.includes(event.id) ? "★" : "☆"}
+              </button>
               <details className="group">
                 <summary className="cursor-pointer list-none rounded-md py-1 focus-visible:outline-2 focus-visible:outline-violet-400">
                   <span className="flex min-w-0 items-center justify-between gap-3">
