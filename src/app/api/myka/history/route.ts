@@ -54,10 +54,10 @@ export async function GET() {
     }
 
     if (!conversation) {
-      return NextResponse.json({
-        conversationId: null,
-        messages: [],
-      });
+      return NextResponse.json(
+        { conversationId: null, messages: [] },
+        { headers: { "Cache-Control": "private, no-store" } }
+      );
     }
 
     const statusEnabled =
@@ -157,7 +157,7 @@ export async function GET() {
             : "legacy",
         createdAt: message.created_at,
       })),
-    });
+    }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("Erro ao recuperar historico Myka:", error);
 
