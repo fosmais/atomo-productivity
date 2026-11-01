@@ -1,0 +1,36 @@
+name: MYRYRA Android validation
+
+on:
+  push:
+    branches:
+      - feat/myryra-mvp1-billing-foundation
+    paths:
+      - "apps/mobile/**"
+      - ".github/workflows/mobile-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  expo-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - name: Install mobile dependencies
+        run: npm ci
+      - name: Check Expo dependency compatibility
+        run: npx expo install --check
+      - name: Typecheck native application
+        run: npm run typecheck
