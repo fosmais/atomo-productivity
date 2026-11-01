@@ -1,5 +1,5 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 
 type Message = { role: "user" | "assistant"; text: string };
@@ -19,6 +19,8 @@ export default function MykaPlanHelp({onStartFree}:{onStartFree:()=>void}) {
  const [messages, setMessages] = useState<Message[]>([{role:"assistant",text:welcome}]);
  const [draft,setDraft] = useState("");
  const [loading,setLoading] = useState(false);
+ const logEndRef = useRef<HTMLDivElement>(null);
+ useEffect(()=>{ if(open) logEndRef.current?.scrollIntoView({block:"end",behavior:"smooth"}); },[messages,open]);
  const [selectedPlan,setSelectedPlan] = useState<"free"|"pro"|"premium"|null>(null);
  async function ask(question: string) {
   if(loading) return;
@@ -29,9 +31,13 @@ export default function MykaPlanHelp({onStartFree}:{onStartFree:()=>void}) {
   const q = question.toLocaleLowerCase("pt-BR");
   const wantsToProceed = /quero|seguir|come[cç]ar|cadastr|contrat|assinar|aderir|escolh|ativar|usar|fechar|comprar|migrar|trocar/.test(q);
   const plan = /premium/.test(q) ? "premium" : /\\bpro\\b/.test(q) ? "pro" : /\\bfree\\b|gr[aá]tis|gratuito/.test(q) ? "free" : null;
+  setSelectedPlan(null);
   if(wantsToProceed && plan) {
     setSelectedPlan(plan);
     reply = plan === "free" ? "Perfeito! O Free é gratuito. Vamos criar sua conta, sem pagamento." : `Ótima escolha! O plano ${plan === "pro" ? "Pro" : "Premium"} ainda está em homologação e não pode ser contratado agora. Você pode criar sua conta gratuita para começar a usar a MYRYRA, sem cobrança ou ativação automática do plano pago.`;
+  } else if(plan === "free") {
+    setSelectedPlan("free");
+    reply += " Se quiser começar agora, toque em Criar minha conta grátis.";
   } else if(wantsToProceed && /plano|assinatura/.test(q)) {
     reply = "Qual plano você prefere: Free, Pro ou Premium? Posso encaminhar você ao cadastro gratuito; os planos pagos ainda não estão disponíveis para contratação.";
     setSelectedPlan(null);
@@ -52,6 +58,7 @@ export default function MykaPlanHelp({onStartFree}:{onStartFree:()=>void}) {
   <div className="mb-3 flex items-center justify-between gap-2"><div><p className="font-semibold text-violet-200">MYKA 💜</p><p className="text-xs text-slate-400">Assistente de planos • disponível para perguntas</p></div><span className="rounded-full bg-violet-500/20 px-2 py-1 text-xs text-violet-200">Aberto</span></div>
   <div role="log" aria-live="polite" aria-relevant="additions text" className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl bg-slate-950/60 p-3">
    {messages.map((message,index)=><p key={index} className={message.role==="user" ? "ml-6 rounded-xl bg-violet-700/50 p-3 text-white" : "mr-4 rounded-xl bg-white/5 p-3 text-slate-100"}>{message.text}</p>)}
+   <div ref={logEndRef} aria-hidden="true" />
   </div>
   {selectedPlan && <button type="button" onClick={()=>{setOpen(false);onStartFree();}} className="mt-3 w-full rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-3 font-semibold text-white">{selectedPlan === "free" ? "Criar minha conta grátis" : "Começar com conta gratuita"}</button>}
   <form onSubmit={send} className="mt-3 flex gap-2"><input aria-label="Sua pergunta para a MYKA" maxLength={500} value={draft} onChange={event=>setDraft(event.target.value)} placeholder="Pergunte à MYKA..." className="min-w-0 flex-1 rounded-xl border border-violet-400/30 bg-slate-900 px-3 py-2.5 text-white outline-none placeholder:text-slate-400 focus:border-violet-400"/><button type="submit" disabled={!draft.trim() || loading} className="rounded-xl bg-violet-600 px-4 py-2 font-semibold text-white hover:bg-violet-500 disabled:opacity-50">{loading ? "..." : "Enviar"}</button></form>
