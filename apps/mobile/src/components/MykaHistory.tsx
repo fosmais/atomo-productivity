@@ -51,7 +51,7 @@ export function MykaHistory({ userId }: { userId: string }) {
     } catch { setError("Não foi possível selecionar o arquivo."); }
   }
   async function transcribeVoice() {
-    if (!voiceUri || transcribing) return;
+    if (!voiceUri || transcribing || sending) return;
     setTranscribing(true); setError(null);
     try {
       const { data } = await supabase.auth.getSession();
@@ -63,7 +63,14 @@ export function MykaHistory({ userId }: { userId: string }) {
       form.append("file", { uri: voiceUri, name: "myka-voice.m4a", type: "audio/mp4" } as unknown as Blob);
       const response = await fetch(`${base.replace(/\/$/, "")}/api/myka/transcribe`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: form });
       const result: unknown = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(response.status === 403 ? "Confirme seu segundo fator." : "Não foi possível transcrever o áudio.");
+      if (!response.ok) {
+        if (response.status === 401) throw new Error("Sua sessão expirou. Entre novamente.");
+        if (response.status === 403) throw new Error("Confirme seu segundo fator.");
+        if (response.status === 413) throw new Error("O áudio ultrapassou 10 MB. Grave uma mensagem menor.");
+        if (response.status === 429) throw new Error("Limite de transcrições atingido. Tente novamente mais tarde.");
+        if (response.status === 503) throw new Error("Transcrição temporariamente indisponível.");
+        throw new Error("Não foi possível transcrever o áudio.");
+      }
       if (!result || typeof result !== "object" || !("text" in result) || typeof result.text !== "string") throw new Error("Transcrição inválida.");
       setDraft(result.text); setVoiceUri(null);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Falha na transcrição."); }
@@ -71,7 +78,7 @@ export function MykaHistory({ userId }: { userId: string }) {
   }
   async function send() {
     const content = draft.trim();
-    if ((!content && !attachment) || content.length > 1500 || sending) return;
+    if ((!content && !attachment) || content.length > 1500 || sending || transcribing) return;
     setSending(true); setError(null); setReply(null);
     try {
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -116,10 +123,10 @@ export function MykaHistory({ userId }: { userId: string }) {
     <Text style={styles.caption}>Converse com a MYKA · suas sugestões precisam de confirmação antes de serem executadas</Text>
     <TextInput accessibilityLabel="Mensagem para MYKA" multiline maxLength={1500} value={draft} onChangeText={setDraft} placeholder="Como posso ajudar?" placeholderTextColor="#B0A4C7" style={{ color: "#fff", backgroundColor: "#382A52", padding: 12, borderRadius: 10, minHeight: 70 }} />
     <MykaVoiceRecorder onRecorded={setVoiceUri} />
-    {voiceUri ? <View style={styles.message}><Text style={styles.content}>Áudio gravado, aguardando transcrição.</Text><Pressable accessibilityRole="button" disabled={transcribing} onPress={() => void transcribeVoice()}><Text style={styles.action}>{transcribing ? "Transcrevendo..." : "Transcrever áudio"}</Text></Pressable><Pressable accessibilityRole="button" onPress={() => setVoiceUri(null)}><Text style={styles.action}>Descartar áudio</Text></Pressable></View> : null}
+    {voiceUri ? <View style={styles.message}><Text style={styles.content}>Áudio gravado, aguardando transcrição.</Text><Pressable accessibilityRole="button" disabled={transcribing || sending} onPress={() => void transcribeVoice()}><Text style={styles.action}>{transcribing ? "Transcrevendo..." : "Transcrever áudio"}</Text></Pressable><Pressable accessibilityRole="button" onPress={() => setVoiceUri(null)}><Text style={styles.action}>Descartar áudio</Text></Pressable></View> : null}
     <Pressable accessibilityRole="button" onPress={() => void chooseAttachment()}><Text style={styles.action}>Selecionar anexo (PDF, imagem ou TXT)</Text></Pressable>
     {attachment ? <View style={styles.message}><Text style={styles.content}>{attachment.name} · {Math.ceil((attachment.size ?? 0) / 1024)} KB</Text><Pressable accessibilityRole="button" onPress={() => setAttachment(null)}><Text style={styles.action}>Remover anexo</Text></Pressable></View> : null}
-    <Pressable accessibilityRole="button" disabled={sending || (!draft.trim() && !attachment)} onPress={() => void send()}><Text style={styles.action}>{sending ? "Enviando..." : "Enviar para MYKA"}</Text></Pressable>
+    <Pressable accessibilityRole="button" disabled={sending || transcribing || (!draft.trim() && !attachment)} onPress={() => void send()}><Text style={styles.action}>{sending ? "Enviando..." : "Enviar para MYKA"}</Text></Pressable>
     {reply ? <View style={styles.message}><Text style={styles.role}>MYKA · resposta recente</Text><Text style={styles.content}>{reply}</Text></View> : null}
     <Pressable accessibilityRole="button" onPress={() => void load()}><Text style={styles.action}>Atualizar mensagens</Text></Pressable>
     {error ? <Text style={styles.caption}>{error}</Text> : null}
