@@ -6,6 +6,7 @@ import { AuthScreen } from "./src/components/AuthScreen";
 import { registerAuthLifecycle } from "./src/lib/auth-lifecycle";
 import { MfaChallenge } from "./src/components/MfaChallenge";
 import { AgendaScreen } from "./src/components/AgendaScreen";
+import { MykaHistory } from "./src/components/MykaHistory";
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -35,7 +36,7 @@ export default function App() {
       <Text style={styles.brand}>M</Text><Text style={styles.title}>MYRYRA</Text>
       <Text style={styles.subtitle}>Your life. In sync.</Text>
       {loading || assuranceLoading ? <ActivityIndicator style={{ marginTop: 36 }} color="#B98AFF" /> : session && requiresMfa ? <MfaChallenge onVerified={() => { setRequiresMfa(false); }} /> : session ?
-        <View style={styles.welcome}><Text style={styles.message}>Olá, {session.user.email}</Text><AgendaScreen userId={session.user.id} /><Pressable onPress={() => void supabase.auth.signOut()} accessibilityRole="button"><Text style={styles.signout}>Sair</Text></Pressable></View>
+        <View style={styles.welcome}><Text style={styles.message}>Olá, {session.user.email}</Text><AgendaScreen userId={session.user.id} /><MykaHistory userId={session.user.id} /><Pressable onPress={() => void supabase.auth.signOut()} accessibilityRole="button"><Text style={styles.signout}>Sair</Text></Pressable></View>
         : <AuthScreen />}
     </ScrollView>
   </SafeAreaView>;
