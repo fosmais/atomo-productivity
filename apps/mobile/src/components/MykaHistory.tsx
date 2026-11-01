@@ -11,8 +11,12 @@ export function MykaHistory({ userId }: { userId: string }) {
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
+      const { data: conversation, error: conversationError } = await supabase.from("myka_conversations")
+        .select("id").eq("user_id", userId).order("updated_at", { ascending: false }).limit(1).maybeSingle();
+      if (conversationError) throw conversationError;
+      if (!conversation) { setMessages([]); return; }
       const { data, error: queryError } = await supabase.from("myka_messages")
-        .select("id,role,content,created_at").eq("user_id", userId)
+        .select("id,role,content,created_at").eq("user_id", userId).eq("conversation_id", conversation.id)
         .order("created_at", { ascending: false }).limit(30);
       if (queryError) throw queryError;
       setMessages(((data ?? []) as Message[]).reverse());
@@ -23,7 +27,7 @@ export function MykaHistory({ userId }: { userId: string }) {
   useEffect(() => { void load(); }, [load]);
   return <View style={styles.box}>
     <Text style={styles.heading}>MYKA AI</Text>
-    <Text style={styles.caption}>Histórico recente · somente leitura</Text>
+    <Text style={styles.caption}>Última conversa · somente leitura</Text>
     <Pressable accessibilityRole="button" onPress={() => void load()}><Text style={styles.action}>Atualizar mensagens</Text></Pressable>
     {loading ? <ActivityIndicator color="#B98AFF" /> : error ? <Text style={styles.caption}>{error}</Text>
       : messages.length === 0 ? <Text style={styles.caption}>Nenhuma mensagem encontrada.</Text>
