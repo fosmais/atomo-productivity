@@ -12,6 +12,7 @@ export function MykaHistory({ userId }: { userId: string }) {
   const [draft, setDraft] = useState("");
   const [attachment, setAttachment] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [voiceUri, setVoiceUri] = useState<string | null>(null);
+  const [transcribing, setTranscribing] = useState(false);
   const [sending, setSending] = useState(false);
   const [reply, setReply] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -48,6 +49,25 @@ export function MykaHistory({ userId }: { userId: string }) {
       }
       setAttachment(file); setError(null);
     } catch { setError("Não foi possível selecionar o arquivo."); }
+  }
+  async function transcribeVoice() {
+    if (!voiceUri || transcribing) return;
+    setTranscribing(true); setError(null);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token || data.session?.user.id !== userId) throw new Error("Sua sessão expirou.");
+      const base = process.env.EXPO_PUBLIC_MYRYRA_API_URL;
+      if (!base || !/^https:\/\//.test(base)) throw new Error("Configure a URL HTTPS do backend.");
+      const form = new FormData();
+      form.append("file", { uri: voiceUri, name: "myka-voice.m4a", type: "audio/mp4" } as unknown as Blob);
+      const response = await fetch(`${base.replace(/\/$/, "")}/api/myka/transcribe`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: form });
+      const result: unknown = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(response.status === 403 ? "Confirme seu segundo fator." : "Não foi possível transcrever o áudio.");
+      if (!result || typeof result !== "object" || !("text" in result) || typeof result.text !== "string") throw new Error("Transcrição inválida.");
+      setDraft(result.text); setVoiceUri(null);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Falha na transcrição."); }
+    finally { setTranscribing(false); }
   }
   async function send() {
     const content = draft.trim();
@@ -96,7 +116,7 @@ export function MykaHistory({ userId }: { userId: string }) {
     <Text style={styles.caption}>Converse com a MYKA · suas sugestões precisam de confirmação antes de serem executadas</Text>
     <TextInput accessibilityLabel="Mensagem para MYKA" multiline maxLength={1500} value={draft} onChangeText={setDraft} placeholder="Como posso ajudar?" placeholderTextColor="#B0A4C7" style={{ color: "#fff", backgroundColor: "#382A52", padding: 12, borderRadius: 10, minHeight: 70 }} />
     <MykaVoiceRecorder onRecorded={setVoiceUri} />
-    {voiceUri ? <View style={styles.message}><Text style={styles.content}>Áudio gravado, aguardando transcrição.</Text><Pressable accessibilityRole="button" onPress={() => setVoiceUri(null)}><Text style={styles.action}>Descartar áudio</Text></Pressable></View> : null}
+    {voiceUri ? <View style={styles.message}><Text style={styles.content}>Áudio gravado, aguardando transcrição.</Text><Pressable accessibilityRole="button" disabled={transcribing} onPress={() => void transcribeVoice()}><Text style={styles.action}>{transcribing ? "Transcrevendo..." : "Transcrever áudio"}</Text></Pressable><Pressable accessibilityRole="button" onPress={() => setVoiceUri(null)}><Text style={styles.action}>Descartar áudio</Text></Pressable></View> : null}
     <Pressable accessibilityRole="button" onPress={() => void chooseAttachment()}><Text style={styles.action}>Selecionar anexo (PDF, imagem ou TXT)</Text></Pressable>
     {attachment ? <View style={styles.message}><Text style={styles.content}>{attachment.name} · {Math.ceil((attachment.size ?? 0) / 1024)} KB</Text><Pressable accessibilityRole="button" onPress={() => setAttachment(null)}><Text style={styles.action}>Remover anexo</Text></Pressable></View> : null}
     <Pressable accessibilityRole="button" disabled={sending || (!draft.trim() && !attachment)} onPress={() => void send()}><Text style={styles.action}>{sending ? "Enviando..." : "Enviar para MYKA"}</Text></Pressable>
