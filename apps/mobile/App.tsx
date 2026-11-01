@@ -19,7 +19,7 @@ export default function App() {
     const token = session.access_token;
     supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data, error }) => {
       if (!cancelled) {
-        setRequiresMfa(Boolean(error || (data?.nextLevel === "aal2" && data.currentLevel !== "aal2")));
+        setRequiresMfa(Boolean(error || data?.currentLevel !== "aal2"));
         setVerifiedToken(token);
       }
     }).catch(() => { if (!cancelled) { setRequiresMfa(true); setVerifiedToken(token); } });
