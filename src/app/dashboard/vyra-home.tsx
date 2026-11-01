@@ -16,7 +16,6 @@ export default function VyraHome() {
   const [metrics, setMetrics] = useState<VyraMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [showAllTools, setShowAllTools] = useState(false);
   const [upcoming, setUpcoming] = useState<HomeEvent[]>([]);
   const [agendaLoading, setAgendaLoading] = useState(true);
   const [agendaError, setAgendaError] = useState(false);
@@ -196,51 +195,6 @@ export default function VyraHome() {
             <div className="h-full rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-400 transition-all duration-700" style={{ width: `${progress}%` }} />
           </div>
         </div>
-      </section>
-
-      <section className="space-y-3" aria-label="Ferramentas principais">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold text-white">Seu espaço</h2>
-            <p className="mt-1 text-xs text-slate-400">Tudo o que você precisa, sem distrações.</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { label: "Meu dia", detail: "Agenda e prioridades", icon: "▦", id: "vyra-planner" },
-            { label: "Minhas tarefas", detail: "Organize e acompanhe", icon: "✓", id: "vyra-tasks" },
-            { label: "Copiloto IA", detail: "Converse com a Myka", icon: "✦", id: "vyra-ai" },
-            { label: "Meu progresso", detail: "Resultados e evolução", icon: "◈", id: "vyra-performance" },
-          ].map((action) => (
-            <button key={action.id} type="button"
-              onClick={() => navigateTo(action.id)}
-              className="group min-w-0 rounded-2xl border border-white/10 bg-slate-900/55 p-4 text-left transition-colors hover:border-violet-400/40 hover:bg-violet-950/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 sm:p-5">
-              <span className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/15 text-lg text-violet-300" aria-hidden="true">{action.icon}</span>
-              <span className="block text-sm font-semibold text-white">{action.label}</span>
-              <span className="mt-1 block text-xs text-slate-400">{action.detail}</span>
-            </button>
-          ))}
-        </div>
-        <button type="button" aria-expanded={showAllTools} aria-controls="myryra-extra-tools"
-          onClick={() => setShowAllTools((value) => !value)}
-          className="flex w-full items-center justify-between rounded-xl px-2 py-3 text-left text-sm font-medium text-violet-300 transition hover:bg-violet-500/10 focus-visible:outline-2 focus-visible:outline-violet-400">
-          <span>{showAllTools ? "Ocultar ferramentas" : "Todas as ferramentas"}</span>
-          <span aria-hidden="true">{showAllTools ? "−" : "+"}</span>
-        </button>
-        {showAllTools && (
-          <div id="myryra-extra-tools" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {[
-              { label: "Calendário", id: "vyra-calendar" },
-              { label: "AutoPilot", id: "vyra-scheduling" },
-              { label: "Configurações", id: "vyra-settings" },
-            ].map((action) => (
-              <button key={action.id} type="button" onClick={() => navigateTo(action.id)}
-                className="rounded-xl border border-white/10 bg-slate-900/50 px-4 py-3 text-left text-xs font-medium text-slate-200 transition hover:border-violet-500/40 hover:text-white focus-visible:outline-2 focus-visible:outline-violet-400">
-                {action.label} <span aria-hidden="true" className="text-violet-400">→</span>
-              </button>
-            ))}
-          </div>
-        )}
       </section>
 
       {error && (
