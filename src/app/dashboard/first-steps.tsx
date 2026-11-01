@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useVyraActiveModule } from "./vyra-module-context";
 
 const steps = [
   { label: "Criar sua primeira tarefa", target: "vyra-tasks" },
@@ -10,6 +11,7 @@ const steps = [
 ];
 
 export default function FirstSteps({ userId }: { userId: string }) {
+  const activeModule = useVyraActiveModule();
   const [done, setDone] = useState<number[]>([]);
   const [dismissed, setDismissed] = useState(true);
   const storageKey = `myryra:onboarding:v1:${userId}`;
@@ -25,7 +27,7 @@ export default function FirstSteps({ userId }: { userId: string }) {
     setDismissed(nextDismissed);
     try { localStorage.setItem(storageKey, JSON.stringify({ done: nextDone, dismissed: nextDismissed })); } catch { /* Browser storage may be disabled. */ }
   }
-  if (dismissed || done.length === steps.length) return null;
+  if (activeModule !== "home" || dismissed || done.length === steps.length) return null;
   return <section className="rounded-2xl border border-violet-500/30 bg-slate-900 p-5 text-white" aria-label="Primeiros passos">
     <div className="flex items-start justify-between gap-3">
       <div><p className="text-xs font-semibold uppercase tracking-widest text-violet-400">BEM-VINDO À MYRYRA</p><h3 className="mt-2 text-xl font-semibold">Sua rotina começa aqui.</h3><p className="mt-1 text-sm text-slate-300">{done.length} de {steps.length} passos explorados</p></div>
