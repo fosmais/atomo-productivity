@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, Alert, View 
 import { supabase } from "../lib/supabase";
 import { EditEventTitle } from "./EditEventTitle";
 
-type EventRow = { id: string; title: string; starts_at: string; ends_at: string; location: string | null };
+type EventRow = { id: string; title: string; starts_at: string; ends_at: string; location: string | null; event_status: string | null };
 
 export function AgendaScreen({ userId }: { userId: string }) {
   const [events, setEvents] = useState<EventRow[]>([]);
@@ -16,6 +16,27 @@ export function AgendaScreen({ userId }: { userId: string }) {
   const [endTime, setEndTime] = useState("");
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [cancelingId, setCancelingId] = useState<string | null>(null);
+  async function cancelEvent(eventId: string) {
+    setCancelingId(eventId);
+    try {
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError || auth.user?.id !== userId) throw new Error("Sessão inválida");
+      const { data, error: updateError } = await supabase.from("events")
+        .update({ event_status: "canceled" }).eq("id", eventId).eq("user_id", userId)
+        .select("id").maybeSingle();
+      if (updateError || !data) throw new Error("Falha ao cancelar");
+      await load();
+      Alert.alert("Compromisso cancelado", "O compromisso foi marcado como cancelado.");
+    } catch { Alert.alert("Erro", "Não foi possível cancelar o compromisso."); }
+    finally { setCancelingId(null); }
+  }
+  function confirmCancel(eventId: string) {
+    Alert.alert("Cancelar compromisso?", "Esta ação marcará o compromisso como cancelado.", [
+      { text: "Voltar", style: "cancel" },
+      { text: "Cancelar compromisso", style: "destructive", onPress: () => void cancelEvent(eventId) }
+    ]);
+  }
   async function createEvent() {
     if (!title.trim() || title.trim().length > 200) { Alert.alert("Informe um título de até 200 caracteres."); return; }
     const parse = (date: string, time: string) => {
@@ -46,8 +67,9 @@ export function AgendaScreen({ userId }: { userId: string }) {
     const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
     try {
       const { data, error: queryError } = await supabase.from("events")
-        .select("id,title,starts_at,ends_at,location")
+        .select("id,title,starts_at,ends_at,location,event_status")
         .eq("user_id", userId)
+        .neq("event_status", "canceled")
         .gte("ends_at", now.toISOString())
         .lt("starts_at", end.toISOString())
         .order("starts_at", { ascending: true })
@@ -75,6 +97,7 @@ export function AgendaScreen({ userId }: { userId: string }) {
         <Text style={styles.muted}>{new Date(event.starts_at).toLocaleString("pt-BR")} – {new Date(event.ends_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</Text>
         {event.location ? <Text style={styles.muted}>{event.location}</Text> : null}
         <Pressable accessibilityRole="button" onPress={() => setEditingId(editingId === event.id ? null : event.id)}><Text style={styles.refresh}>{editingId === event.id ? "Fechar edição" : "Editar título"}</Text></Pressable>
+        <Pressable accessibilityRole="button" disabled={cancelingId === event.id} onPress={() => confirmCancel(event.id)}><Text style={styles.refresh}>{cancelingId === event.id ? "Cancelando..." : "Cancelar compromisso"}</Text></Pressable>
         {editingId === event.id ? <EditEventTitle eventId={event.id} userId={userId} initialTitle={event.title} onSaved={() => { setEditingId(null); void load(); }} /> : null}
       </View>
     )}
