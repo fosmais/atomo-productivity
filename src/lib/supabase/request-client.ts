@@ -24,3 +24,33 @@ export async function createRequestClient(request: Request) {
   if (error || !data.user) throw new Error("Invalid bearer token");
   return client;
 }
+
+/**
+ * Authenticates native requests using a server-verified access token.
+ * AAL is read only from cryptographically verified JWT claims.
+ * Cookie requests retain the existing Supabase SSR assurance checks.
+ */
+export async function authenticateRequest(request: Request) {
+  const supabase = await createRequestClient(request);
+  const bearer = request.headers.get("authorization");
+  if (bearer) {
+    const token = bearer.slice(7);
+    const { data: identity, error: identityError } = await supabase.auth.getUser(token);
+    if (identityError || !identity.user) return { supabase, user: null, mfaRequired: false, assuranceUnavailable: false };
+    const { data: verified, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !verified?.claims || verified.claims.sub !== identity.user.id) {
+      return { supabase, user: null, mfaRequired: false, assuranceUnavailable: true };
+    }
+    // Native access is fail-closed until the session is at AAL2.
+    return { supabase, user: identity.user, mfaRequired: verified.claims.aal !== "aal2", assuranceUnavailable: false };
+  }
+  const { data: identity, error: identityError } = await supabase.auth.getUser();
+  if (identityError || !identity.user) return { supabase, user: null, mfaRequired: false, assuranceUnavailable: false };
+  const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  return {
+    supabase,
+    user: identity.user,
+    mfaRequired: !assurance.error && assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2",
+    assuranceUnavailable: Boolean(assurance.error),
+  };
+}
