@@ -6,6 +6,7 @@ import { getCompletionRate, type VyraMetrics } from "./vyra-metrics";
 export default function MyryraScore({metrics,loading}:{metrics:VyraMetrics|null;loading:boolean}) {
  const [notice,setNotice]=useState("");
  const [showExplanation,setShowExplanation]=useState(false);
+ const [showShareMenu,setShowShareMenu]=useState(false);
  const activeModule=useVyraActiveModule();
  const [weekCount,setWeekCount]=useState<number|null>(null);
  useEffect(()=>{
@@ -19,7 +20,7 @@ export default function MyryraScore({metrics,loading}:{metrics:VyraMetrics|null;
   return ()=>{cancelled=true;};
  },[activeModule,metrics]);
  const score=metrics && metrics.total>0 ? getCompletionRate(metrics) : null;
- async function share(){
+ async function share(destination:"status"|"stories"|"native"|"download"){
   if(score===null)return;
   try {
    const canvas=document.createElement("canvas");canvas.width=1080;canvas.height=1350;
@@ -37,12 +38,14 @@ export default function MyryraScore({metrics,loading}:{metrics:VyraMetrics|null;
    const blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,"image/png"));
    if(!blob)throw new Error("Imagem indisponível");
    const file=new File([blob],"myryra-score.png",{type:"image/png"});
-   if(navigator.share && navigator.canShare?.({files:[file]})){
+   if(destination!=="download" && navigator.share && navigator.canShare?.({files:[file]})){
     await navigator.share({title:"MYRYRA Score",files:[file]});
+    if(destination==="status")setNotice("No WhatsApp, selecione Meu status para publicar. A publicação depende da sua confirmação.");
+    else if(destination==="stories")setNotice("Selecione Stories no Instagram, se disponível no compartilhamento.");
    }else{
     const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download=file.name;link.click();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
-    setNotice("Card salvo em PNG. Compartilhe no aplicativo de sua preferência.");
+    setNotice(destination==="status"?"Imagem salva. No celular, abra o WhatsApp, vá em Atualizações > Meu status e selecione a imagem.":destination==="stories"?"Imagem salva. Abra o Instagram, crie um Story e selecione a imagem.":"Card salvo em PNG. Compartilhe no aplicativo de sua preferência.");
    }
   }catch(e){if(!(e instanceof Error && e.name==="AbortError"))setNotice("Não foi possível gerar ou compartilhar o card.");}
  }
@@ -67,7 +70,16 @@ export default function MyryraScore({metrics,loading}:{metrics:VyraMetrics|null;
   </div>
   <footer className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5">
    <p className="text-xs text-violet-100">Sua melhor versão começa hoje.</p>
-   <button type="button" onClick={()=>void share()} disabled={score===null||loading} className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-[#100d22] hover:bg-violet-100 disabled:opacity-40">Compartilhar ↗</button>
+   <div className="relative">
+    <button type="button" aria-expanded={showShareMenu} aria-controls="myryra-share-options" onClick={()=>setShowShareMenu(value=>!value)} disabled={score===null||loading} className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-[#100d22] hover:bg-violet-100 disabled:opacity-40">Compartilhar ↗</button>
+    {showShareMenu&&<div id="myryra-share-options" className="absolute bottom-full right-0 z-20 mb-2 w-64 rounded-2xl border border-violet-400/30 bg-[#201633] p-2 shadow-xl" role="group" aria-label="Opções de compartilhamento">
+      <button type="button" onClick={()=>{setShowShareMenu(false);void share("status");}} className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-violet-500/20">Status do WhatsApp</button>
+      <button type="button" onClick={()=>{setShowShareMenu(false);void share("stories");}} className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-violet-500/20">Instagram Stories</button>
+      <button type="button" onClick={()=>{setShowShareMenu(false);void share("native");}} className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-violet-500/20">Enviar para amigos</button>
+      <button type="button" onClick={()=>{setShowShareMenu(false);void share("download");}} className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-violet-500/20">Baixar imagem PNG</button>
+      <p className="px-3 py-2 text-[11px] leading-4 text-slate-400">A publicação em Status ou Stories não é automática; escolha o destino no aplicativo.</p>
+    </div>}
+   </div>
   </footer>
   {notice&&<p role="status" className="mt-3 text-xs text-violet-200">{notice}</p>}
 
