@@ -700,7 +700,15 @@ if (!rateLimit.allowed) {
     }
 
     if (!isConciergeResponse(parsed)) {
-      console.error("Resposta do Concierge fora do formato esperado.");
+      // Log only schema diagnostics; never log private conversation content.
+      const candidate = isRecord(parsed) ? parsed : {};
+      console.error("Resposta do Concierge fora do formato esperado.", {
+        replyValid: typeof candidate.reply === "string" && candidate.reply.trim().length > 0 && candidate.reply.length <= 12000,
+        proposedTasksArray: Array.isArray(candidate.proposedTasks),
+        proposedTasksValid: Array.isArray(candidate.proposedTasks) && candidate.proposedTasks.length <= 10 && candidate.proposedTasks.every(isConciergeProposal),
+        proposedTaskValid: candidate.proposedTask === null || isConciergeProposal(candidate.proposedTask),
+        proposedEventValid: candidate.proposedEvent == null || isConciergeEventProposal(candidate.proposedEvent),
+      });
       return NextResponse.json(
         { error: "O Concierge retornou uma resposta inválida." },
         { status: 502 }
