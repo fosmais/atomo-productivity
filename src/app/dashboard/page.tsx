@@ -20,7 +20,6 @@ import AvailabilityPanel from "./availability-panel";
 import { LogoutButton } from "./logout-button";
 import PlanningSettings from "./planning-settings";
 import MfaSettings from "./mfa-settings";
-import FavoritesPanel from "./favorites-panel";
 import GoogleCalendarSettings from "./google-calendar-settings";
 import ExternalIntegrations from "./external-integrations";
 import SmartSchedulingPanel from "./smart-scheduling-panel";
@@ -144,7 +143,6 @@ async function DashboardContent() {
       >
         <FeatureAccordion id="goals" title="Metas rápidas" description="Acompanhe suas pequenas conquistas" userId={user.id}><QuickGoals userId={user.id} /></FeatureAccordion>
         <FeatureAccordion id="plans" title="Meus planos" description="Acompanhe seus planos e tarefas" userId={user.id}><CloudPlans /></FeatureAccordion>
-        <FeatureAccordion id="favorites" title="Favoritos" description="Acesse rapidamente o que importa" userId={user.id}><FavoritesPanel /></FeatureAccordion>
         <FeatureAccordion id="capture" title="Captura Inteligente" description="Transforme ideias em tarefas" userId={user.id}><QuickCapture /></FeatureAccordion>
         <FeatureAccordion id="kanban" title="Quadro de tarefas" description="Organize suas tarefas por andamento" userId={user.id} defaultOpen><TaskKanban /></FeatureAccordion>
       </VyraSection>

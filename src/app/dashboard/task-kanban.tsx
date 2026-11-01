@@ -40,6 +40,9 @@ export default function TaskKanban() {
   const [newPriority, setNewPriority] = useState<"Alta" | "Média" | "Normal">("Normal");
   const [newDueDate, setNewDueDate] = useState("");
   const [creating, setCreating] = useState(false);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [favoriteSavingId, setFavoriteSavingId] = useState<string | null>(null);
 
   const loadTasks = useCallback(async () => {
     const requestId = ++latestLoadRef.current;
@@ -78,7 +81,13 @@ export default function TaskKanban() {
         if (focusedTask) loaded = [focusedTask as KanbanTask, ...loaded];
       }
 
-      if (requestId === latestLoadRef.current) setTasks(loaded);
+      const { data: favoriteRows, error: favoritesError } = await supabase.from("favorites")
+        .select("task_id").eq("user_id", auth.user.id).not("task_id", "is", null);
+      if (favoritesError) throw favoritesError;
+      if (requestId === latestLoadRef.current) {
+        setTasks(loaded);
+        setFavoriteIds((favoriteRows ?? []).flatMap((row) => row.task_id ? [row.task_id as string] : []));
+      }
     } catch (err) {
       if (requestId === latestLoadRef.current) setError(
         err instanceof Error
@@ -164,6 +173,32 @@ export default function TaskKanban() {
       setSavingId(null);
     }
   }
+  async function toggleFavorite(task: KanbanTask) {
+    if (favoriteSavingId) return;
+    setFavoriteSavingId(task.id);
+    setError("");
+    try {
+      const supabase = createClient();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error("Faça login para salvar favoritos.");
+      if (favoriteIds.includes(task.id)) {
+        const { error: removeError } = await supabase.from("favorites")
+          .delete().eq("user_id", user.id).eq("task_id", task.id);
+        if (removeError) throw removeError;
+        setFavoriteIds((ids) => ids.filter((id) => id !== task.id));
+      } else {
+        const { error: insertError } = await supabase.from("favorites")
+          .insert({ user_id: user.id, task_id: task.id, event_id: null });
+        if (insertError) throw insertError;
+        setFavoriteIds((ids) => [...ids, task.id]);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível atualizar o favorito.");
+    } finally {
+      setFavoriteSavingId(null);
+    }
+  }
+
   async function deleteTask(task: KanbanTask) {
     if (savingId || !window.confirm(`Excluir a tarefa "${task.title}"? Esta ação não pode ser desfeita.`)) return;
     setSavingId(task.id);
@@ -276,6 +311,12 @@ export default function TaskKanban() {
         </button>
       </div>
 
+      <label className="mb-4 inline-flex cursor-pointer items-center gap-2 text-sm text-slate-300">
+        <input type="checkbox" checked={favoritesOnly} onChange={(event) => setFavoritesOnly(event.target.checked)}
+          className="accent-violet-500" />
+        ★ Somente favoritos
+      </label>
+
       {showCreate && (
         <form onSubmit={createTask} className="mb-5 grid gap-3 rounded-xl border border-violet-500/40 bg-slate-950 p-4 sm:grid-cols-2">
           <label className="sm:col-span-2 text-sm">
@@ -332,7 +373,7 @@ export default function TaskKanban() {
         <div className="grid min-w-0 gap-4 md:grid-cols-2 2xl:grid-cols-4">
           {columns.map((column) => {
             const columnTasks = tasks.filter(
-              (task) => task.status === column.status
+              (task) => task.status === column.status && (!favoritesOnly || favoriteIds.includes(task.id))
             );
             const expanded = expandedColumns.includes(column.status);
             const visibleTasks = expanded ? columnTasks : columnTasks.filter((task) => task.id === focusedTaskId).concat(columnTasks.filter((task) => task.id !== focusedTaskId).slice(0, focusedTaskId && columnTasks.some((task) => task.id === focusedTaskId) ? 3 : 4));
@@ -358,7 +399,16 @@ export default function TaskKanban() {
                           : "border-slate-600 bg-slate-900"
                       }`}
                     >
-                      <p className="break-words text-sm font-semibold leading-snug">{task.title}</p>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="min-w-0 break-words text-sm font-semibold leading-snug">{task.title}</p>
+                        <button type="button" onClick={() => void toggleFavorite(task)} disabled={favoriteSavingId !== null}
+                          aria-pressed={favoriteIds.includes(task.id)}
+                          aria-label={favoriteIds.includes(task.id) ? `Remover ${task.title} dos favoritos` : `Favoritar ${task.title}`}
+                          title={favoriteIds.includes(task.id) ? "Remover favorito" : "Adicionar favorito"}
+                          className={`shrink-0 rounded-md px-1.5 text-xl transition hover:bg-violet-500/15 disabled:opacity-50 ${favoriteIds.includes(task.id) ? "text-amber-300" : "text-slate-400"}`}>
+                          {favoriteIds.includes(task.id) ? "★" : "☆"}
+                        </button>
+                      </div>
 
                       <p className="mt-2 text-xs text-slate-300">
                         Prioridade: {task.priority}
