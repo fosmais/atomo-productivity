@@ -1,6 +1,5 @@
 "use client";
 import Image from "next/image";
-import MykaPlanHelp from "./myka-plan-help";
 
 export default function MykaLoginScene() {
   return (
@@ -16,7 +15,6 @@ export default function MykaLoginScene() {
       /></div>
       <p className="relative mt-3 text-center text-sm font-medium tracking-[.25em] text-violet-200/80">CONHEÇA A MYKA</p>
       <p className="relative mt-2 max-w-sm text-center text-sm leading-relaxed text-slate-300">Sua companheira inteligente para transformar planos em conquistas.</p>
-      <MykaPlanHelp />
     </div>
   );
 }
