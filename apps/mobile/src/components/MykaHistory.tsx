@@ -18,7 +18,7 @@ export function MykaHistory({ userId }: { userId: string }) {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const load = useCallback(async () => {
-    setLoading(true); setError(null);
+    setLoading(true);
     try {
       const { data: conversation, error: conversationError } = await supabase.from("myka_conversations")
         .select("id").eq("user_id", userId).order("updated_at", { ascending: false }).limit(1).maybeSingle();
