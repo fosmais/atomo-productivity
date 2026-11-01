@@ -19,14 +19,23 @@ export default function MykaPlanHelp({onStartFree}:{onStartFree:()=>void}) {
  const [messages, setMessages] = useState<Message[]>([{role:"assistant",text:welcome}]);
  const [draft,setDraft] = useState("");
  const [loading,setLoading] = useState(false);
- const [freeIntent,setFreeIntent] = useState(false);
+ const [selectedPlan,setSelectedPlan] = useState<"free"|"pro"|"premium"|null>(null);
  async function ask(question: string) {
   if(loading) return;
   setLoading(true);
   setMessages(previous=>[...previous.slice(-18),{role:"user",text:question}]);
   let reply = answer(question);
   try { const response = await fetch("/api/public/myka",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question})}); if(response.ok){const data: unknown=await response.json();if(typeof data==="object"&&data!==null&&"reply" in data&&typeof data.reply==="string") reply=data.reply;} } catch { /* Commercial FAQ remains available without AI. */ }
-  if (/\\b(free|gr[aá]tis|gratuito)\\b/.test(question.toLocaleLowerCase("pt-BR")) && /quero|seguir|come[cç]ar|cadastrar|criar|aderir|escolh|usar/.test(question.toLocaleLowerCase("pt-BR"))) {reply="Ótimo! O plano Free é gratuito. Clique em Criar minha conta grátis para começar. Não é necessário informar dados de pagamento.";setFreeIntent(true);}
+  const q = question.toLocaleLowerCase("pt-BR");
+  const wantsToProceed = /quero|seguir|come[cç]ar|cadastr|contrat|assinar|aderir|escolh|ativar|usar|fechar|comprar|migrar|trocar/.test(q);
+  const plan = /premium/.test(q) ? "premium" : /\\bpro\\b/.test(q) ? "pro" : /\\bfree\\b|gr[aá]tis|gratuito/.test(q) ? "free" : null;
+  if(wantsToProceed && plan) {
+    setSelectedPlan(plan);
+    reply = plan === "free" ? "Perfeito! O Free é gratuito. Vamos criar sua conta, sem pagamento." : `Ótima escolha! O plano ${plan === "pro" ? "Pro" : "Premium"} ainda está em homologação e não pode ser contratado agora. Você pode criar sua conta gratuita para começar a usar a MYRYRA, sem cobrança ou ativação automática do plano pago.`;
+  } else if(wantsToProceed && /plano|assinatura/.test(q)) {
+    reply = "Qual plano você prefere: Free, Pro ou Premium? Posso encaminhar você ao cadastro gratuito; os planos pagos ainda não estão disponíveis para contratação.";
+    setSelectedPlan(null);
+  }
   setMessages(previous=>[...previous.slice(-19),{role:"assistant",text:reply}]);
   setLoading(false);
  }
@@ -44,7 +53,7 @@ export default function MykaPlanHelp({onStartFree}:{onStartFree:()=>void}) {
   <div role="log" aria-live="polite" aria-relevant="additions text" className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl bg-slate-950/60 p-3">
    {messages.map((message,index)=><p key={index} className={message.role==="user" ? "ml-6 rounded-xl bg-violet-700/50 p-3 text-white" : "mr-4 rounded-xl bg-white/5 p-3 text-slate-100"}>{message.text}</p>)}
   </div>
-  {freeIntent && <button type="button" onClick={()=>{setOpen(false);onStartFree();}} className="mt-3 w-full rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-3 font-semibold text-white">Criar minha conta grátis</button>}
+  {selectedPlan && <button type="button" onClick={()=>{setOpen(false);onStartFree();}} className="mt-3 w-full rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-3 font-semibold text-white">{selectedPlan === "free" ? "Criar minha conta grátis" : "Começar com conta gratuita"}</button>}
   <form onSubmit={send} className="mt-3 flex gap-2"><input aria-label="Sua pergunta para a MYKA" maxLength={500} value={draft} onChange={event=>setDraft(event.target.value)} placeholder="Pergunte à MYKA..." className="min-w-0 flex-1 rounded-xl border border-violet-400/30 bg-slate-900 px-3 py-2.5 text-white outline-none placeholder:text-slate-400 focus:border-violet-400"/><button type="submit" disabled={!draft.trim() || loading} className="rounded-xl bg-violet-600 px-4 py-2 font-semibold text-white hover:bg-violet-500 disabled:opacity-50">{loading ? "..." : "Enviar"}</button></form>
   <div className="mt-3 flex shrink-0 flex-wrap gap-2">{["Quais os planos?","Como funciona o Pro?","Posso pagar com Pix?"].map(question=><button key={question} type="button" onClick={()=>void ask(question)} className="rounded-full border border-violet-400/30 px-3 py-1 text-xs text-violet-200 hover:bg-violet-600/20">{question}</button>)}</div>
   <Link href="/planos" className="mt-3 inline-block text-xs font-medium text-violet-300 underline underline-offset-2">Ver todos os planos</Link>
