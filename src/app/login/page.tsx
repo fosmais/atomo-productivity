@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import MykaLoginScene from "./myka-login-scene";
+import MykaPlanHelp from "./myka-plan-help";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -280,6 +281,7 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+      <MykaPlanHelp />
     </main>
   );
 }
