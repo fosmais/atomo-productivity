@@ -25,6 +25,9 @@ export default function LoginPage() {
     if (errorCode === "recovery") {
       setIsError(true);
       setMessage("O link de recuperação é inválido ou expirou. Solicite um novo e-mail.");
+    } else if (errorCode === "oauth") {
+      setIsError(true);
+      setMessage("Não foi possível concluir o acesso com Google. Tente novamente.");
     } else if (errorCode === "confirm") {
       setIsError(true);
       setMessage("Não foi possível confirmar o link. Solicite um novo e-mail.");
@@ -123,6 +126,24 @@ export default function LoginPage() {
           : "Ocorreu um erro. Tente novamente."
       );
     } finally {
+      setLoading(false);
+    }
+  }
+
+  async function signInWithGoogle() {
+    if (loading) return;
+    setLoading(true);
+    setMessage("");
+    setIsError(false);
+    try {
+      const { error } = await createClient().auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/auth/oauth-callback` },
+      });
+      if (error) throw error;
+    } catch {
+      setIsError(true);
+      setMessage("Não foi possível iniciar o acesso com Google. Tente novamente.");
       setLoading(false);
     }
   }
@@ -258,6 +279,15 @@ export default function LoginPage() {
                 : "Criar conta"}
           </button>
         </form>}
+
+        {!mfaFactorId && (
+          <div className="mt-4">
+            <div className="mb-3 flex items-center gap-3 text-xs text-slate-400"><span className="h-px flex-1 bg-white/15" />ou continue com<span className="h-px flex-1 bg-white/15" /></div>
+            <button type="button" disabled={loading} onClick={() => void signInWithGoogle()} className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-slate-900/90 px-4 py-3 text-sm font-semibold text-white transition hover:border-violet-400/70 disabled:opacity-50">
+              <span aria-hidden="true" className="font-bold text-violet-300">G</span> Continuar com Google
+            </button>
+          </div>
+        )}
 
         {message && (
           <p
