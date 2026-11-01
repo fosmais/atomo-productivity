@@ -1,7 +1,6 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { BILLING_PLANS } from "@/lib/billing/plans";
 
 type Message = { role: "user" | "assistant"; text: string };
 const welcome = "Olá! Sou a MYKA 💜 Pergunte sobre os planos, recursos, preços ou pagamentos da MYRYRA. Nesta versão, respondo às dúvidas comerciais mais frequentes.";
@@ -37,15 +36,16 @@ export default function MykaPlanHelp() {
   setDraft("");
  }
  return <div className="fixed bottom-4 right-4 z-50 sm:bottom-6 sm:right-6">
-  {open && <section id="myka-floating-chat" aria-label="Converse com a MYKA" className="fixed inset-x-3 bottom-20 top-3 flex flex-col overflow-hidden rounded-2xl sm:inset-x-auto sm:bottom-24 sm:right-6 sm:top-auto sm:h-[min(540px,calc(100dvh-130px))] sm:w-[370px] lg:bottom-auto lg:left-6 lg:right-auto lg:top-1/2 lg:h-[min(540px,calc(100dvh-64px))] lg:-translate-y-1/2 lg:w-[min(370px,27vw)] xl:left-[max(24px,calc(50%-570px))] xl:w-[360px] border border-violet-400/35 bg-[#100d22] p-4 text-left text-sm text-slate-100 shadow-2xl shadow-violet-950/60">
+  {open && <div aria-hidden="true" className="fixed inset-0 bg-[#070716]/95 backdrop-blur-lg" /> }
+  {open && <section id="myka-floating-chat" aria-label="Converse com a MYKA" className="fixed inset-x-4 top-1/2 flex h-[min(560px,calc(100dvh-120px))] -translate-y-1/2 flex-col overflow-hidden rounded-2xl sm:left-1/2 sm:right-auto sm:w-[min(440px,calc(100vw-2rem))] sm:-translate-x-1/2 border border-violet-400/35 bg-[#100d22] p-4 text-left text-sm text-slate-100 shadow-2xl shadow-violet-950/60">
   <div className="mb-3 flex items-center justify-between gap-2"><div><p className="font-semibold text-violet-200">MYKA 💜</p><p className="text-xs text-slate-400">Assistente de planos • disponível para perguntas</p></div><span className="rounded-full bg-violet-500/20 px-2 py-1 text-xs text-violet-200">Aberto</span></div>
-  <div role="log" aria-live="polite" aria-relevant="additions text" className="min-h-24 flex-1 space-y-3 overflow-y-auto rounded-xl bg-slate-950/60 p-3">
+  <div role="log" aria-live="polite" aria-relevant="additions text" className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl bg-slate-950/60 p-3">
    {messages.map((message,index)=><p key={index} className={message.role==="user" ? "ml-6 rounded-xl bg-violet-700/50 p-3 text-white" : "mr-4 rounded-xl bg-white/5 p-3 text-slate-100"}>{message.text}</p>)}
   </div>
   <form onSubmit={send} className="mt-3 flex gap-2"><input aria-label="Sua pergunta para a MYKA" maxLength={500} value={draft} onChange={event=>setDraft(event.target.value)} placeholder="Pergunte à MYKA..." className="min-w-0 flex-1 rounded-xl border border-violet-400/30 bg-slate-900 px-3 py-2.5 text-white outline-none placeholder:text-slate-400 focus:border-violet-400"/><button type="submit" disabled={!draft.trim() || loading} className="rounded-xl bg-violet-600 px-4 py-2 font-semibold text-white hover:bg-violet-500 disabled:opacity-50">{loading ? "..." : "Enviar"}</button></form>
-  <div className="mt-3 flex flex-wrap gap-2">{["Quais os planos?","Como funciona o Pro?","Posso pagar com Pix?"].map(question=><button key={question} type="button" onClick={()=>void ask(question)} className="rounded-full border border-violet-400/30 px-3 py-1 text-xs text-violet-200 hover:bg-violet-600/20">{question}</button>)}</div>
+  <div className="mt-3 flex shrink-0 flex-wrap gap-2">{["Quais os planos?","Como funciona o Pro?","Posso pagar com Pix?"].map(question=><button key={question} type="button" onClick={()=>void ask(question)} className="rounded-full border border-violet-400/30 px-3 py-1 text-xs text-violet-200 hover:bg-violet-600/20">{question}</button>)}</div>
   <Link href="/planos" className="mt-3 inline-block text-xs font-medium text-violet-300 underline underline-offset-2">Ver todos os planos</Link>
-  <p className="mt-2 text-xs text-slate-400">Respostas comerciais com fallback pré-configurado. Valores indicativos, sem cobrança. Não informe senhas ou dados de cartão.</p>
+  <p className="mt-2 text-[11px] text-slate-400">Respostas comerciais com fallback pré-configurado. Valores indicativos, sem cobrança. Não informe senhas ou dados de cartão.</p>
  </section>}
   <div className="flex justify-end"><button type="button" aria-expanded={open} aria-controls="myka-floating-chat" onClick={()=>setOpen(value=>!value)} className="rounded-full border border-violet-300/40 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-900/50 transition hover:scale-[1.03] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400">{open ? "× Fechar MYKA" : "✦ Ajuda MYKA"}</button></div>
  </div>;
