@@ -30,7 +30,7 @@ export default function MykaPlanHelp({onStartFree}:{onStartFree:()=>void}) {
   try { const response = await fetch("/api/public/myka",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question})}); if(response.ok){const data: unknown=await response.json();if(typeof data==="object"&&data!==null&&"reply" in data&&typeof data.reply==="string") reply=data.reply;} } catch { /* Commercial FAQ remains available without AI. */ }
   const q = question.toLocaleLowerCase("pt-BR");
   const wantsToProceed = /quero|seguir|come[cç]ar|cadastr|contrat|assinar|aderir|escolh|ativar|usar|fechar|comprar|migrar|trocar/.test(q);
-  const plan = /premium/.test(q) ? "premium" : /\\bpro\\b/.test(q) ? "pro" : /\\bfree\\b|gr[aá]tis|gratuito/.test(q) ? "free" : null;
+  const plan = /premium/.test(q) ? "premium" : /\bpro\b/.test(q) ? "pro" : /\bfree\b|gr[aá]tis|gratuito/.test(q) ? "free" : null;
   setSelectedPlan(null);
   if(wantsToProceed && plan) {
     setSelectedPlan(plan);
