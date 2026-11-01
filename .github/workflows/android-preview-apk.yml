@@ -34,8 +34,8 @@ jobs:
           test -n "$EXPO_PUBLIC_SUPABASE_ANON_KEY" || { echo "::error::Chave de homologação ausente"; exit 1; }
           test -n "$EXPO_PUBLIC_MYRYRA_API_URL" || { echo "::error::API de homologação ausente"; exit 1; }
           case "$EXPO_PUBLIC_SUPABASE_URL" in
-            https://*.supabase.co) ;;
-            *) echo "::error::URL Supabase inválida"; exit 1 ;;
+            https://vzgahbceixjrdlqdtwoy.supabase.co) ;;
+            *) echo "::error::Somente o projeto Supabase isolado de homologação é permitido"; exit 1 ;;
           esac
           case "$EXPO_PUBLIC_MYRYRA_API_URL" in
             https://*) ;;
