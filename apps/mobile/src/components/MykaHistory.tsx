@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { supabase } from "../lib/supabase";
 import * as DocumentPicker from "expo-document-picker";
+import { MykaVoiceRecorder } from "./MykaVoiceRecorder";
 
 type Message = { id: string; role: string; content: string; created_at: string };
 
@@ -10,6 +11,7 @@ export function MykaHistory({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
   const [attachment, setAttachment] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
+  const [voiceUri, setVoiceUri] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [reply, setReply] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -93,6 +95,8 @@ export function MykaHistory({ userId }: { userId: string }) {
     <Text style={styles.heading}>MYKA AI</Text>
     <Text style={styles.caption}>Converse com a MYKA · suas sugestões precisam de confirmação antes de serem executadas</Text>
     <TextInput accessibilityLabel="Mensagem para MYKA" multiline maxLength={1500} value={draft} onChangeText={setDraft} placeholder="Como posso ajudar?" placeholderTextColor="#B0A4C7" style={{ color: "#fff", backgroundColor: "#382A52", padding: 12, borderRadius: 10, minHeight: 70 }} />
+    <MykaVoiceRecorder onRecorded={setVoiceUri} />
+    {voiceUri ? <View style={styles.message}><Text style={styles.content}>Áudio gravado, aguardando transcrição.</Text><Pressable accessibilityRole="button" onPress={() => setVoiceUri(null)}><Text style={styles.action}>Descartar áudio</Text></Pressable></View> : null}
     <Pressable accessibilityRole="button" onPress={() => void chooseAttachment()}><Text style={styles.action}>Selecionar anexo (PDF, imagem ou TXT)</Text></Pressable>
     {attachment ? <View style={styles.message}><Text style={styles.content}>{attachment.name} · {Math.ceil((attachment.size ?? 0) / 1024)} KB</Text><Pressable accessibilityRole="button" onPress={() => setAttachment(null)}><Text style={styles.action}>Remover anexo</Text></Pressable></View> : null}
     <Pressable accessibilityRole="button" disabled={sending || (!draft.trim() && !attachment)} onPress={() => void send()}><Text style={styles.action}>{sending ? "Enviando..." : "Enviar para MYKA"}</Text></Pressable>
