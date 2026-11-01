@@ -23,6 +23,7 @@ export default function GoogleCalendarSettings() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [connecting, setConnecting] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -90,6 +91,25 @@ export default function GoogleCalendarSettings() {
     window.location.assign("/api/google/connect");
   }
 
+  async function disconnectCalendar() {
+    if (disconnecting || saving || !window.confirm("Desconectar o Google Calendar da MYRYRA? Seus calendários deixarão de ser consultados.")) return;
+    setDisconnecting(true);
+    setError("");
+    setMessage("");
+    try {
+      const response = await fetch("/api/google/disconnect", { method: "POST", credentials: "same-origin", cache: "no-store" });
+      if (!response.ok) throw new Error("Não foi possível desconectar o Google Calendar.");
+      setConnected(false);
+      setCalendars([]);
+      setSelectedIds([]);
+      setMessage("Google Calendar desconectado da MYRYRA.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao desconectar.");
+    } finally {
+      setDisconnecting(false);
+    }
+  }
+
   function toggleCalendar(id: string) {
     setMessage("");
 
@@ -155,6 +175,17 @@ export default function GoogleCalendarSettings() {
         </div>
       ) : (
         <div className="mt-5 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-violet-500/30 bg-violet-500/10 p-3">
+            <span className="text-sm text-emerald-300">Google Calendar conectado</span>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={connectCalendar} disabled={connecting || disconnecting} className="rounded-lg border border-violet-400/60 px-4 py-2 text-sm font-semibold text-violet-200 hover:bg-violet-500/20 disabled:opacity-50">
+                {connecting ? "Conectando..." : "Reconectar"}
+              </button>
+              <button type="button" onClick={disconnectCalendar} disabled={disconnecting || connecting || saving} className="rounded-lg border border-rose-400/50 px-4 py-2 text-sm font-semibold text-rose-200 hover:bg-rose-500/10 disabled:opacity-50">
+                {disconnecting ? "Desconectando..." : "Desconectar"}
+              </button>
+            </div>
+          </div>
           {calendars.map((calendar) => (
             <label
               key={calendar.id}
