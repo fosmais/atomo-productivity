@@ -15,6 +15,15 @@
     },
     "extra": {
       "apiBaseUrl": "https://myryra.com"
-    }
+    },
+    "plugins": [
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Permita que a MYKA use o microfone para gravar suas mensagens de voz.",
+          "recordAudioAndroid": true
+        }
+      ]
+    ]
   }
 }
