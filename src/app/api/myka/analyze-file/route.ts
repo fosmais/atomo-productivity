@@ -1,7 +1,7 @@
 
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { createClient } from "@/lib/supabase/server";
+import { createRequestClient } from "@/lib/supabase/request-client";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { checkConciergeRateLimit } from "@/lib/rate-limit";
 
@@ -18,7 +18,7 @@ const allowedTypes = [
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
+    const supabase = await createRequestClient(request);
     const { data, error } = await supabase.auth.getUser();
 
     if (error || !data.user) {
@@ -215,6 +215,8 @@ export async function POST(request: Request) {
           content: userMessage,
           proposed_task: null,
           proposed_event: null,
+          task_status: "legacy",
+          event_status: "legacy",
         },
         {
           conversation_id: conversationId,
