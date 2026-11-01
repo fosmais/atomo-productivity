@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "MYRYRA",
+    "slug": "myryra",
+    "scheme": "myryra",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "android": {
+      "package": "com.myryra.app",
+      "edgeToEdgeEnabled": true
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "extra": {
+      "apiBaseUrl": "https://myryra.com"
+    }
+  }
+}
