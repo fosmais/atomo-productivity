@@ -170,12 +170,7 @@ export default function LoginPage() {
 
   return (
     <main className="relative isolate flex min-h-dvh items-center justify-center overflow-x-hidden bg-[#070716] px-4 py-6 text-white sm:px-6">
-      {/* Subtle Milky Way, star field and planetary horizon: decorative only. */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{background:"radial-gradient(ellipse at 22% 25%, rgba(132,66,200,.38), transparent 40%), radial-gradient(ellipse at 57% 65%, rgba(103,46,157,.35), transparent 53%), linear-gradient(155deg,#09071a 0%,#1d123d 48%,#291748 75%,#0b1028 100%)"}} />
-      <div aria-hidden="true" className="pointer-events-none absolute -left-[18%] -top-[33%] h-[68%] w-[90%] rotate-[-22deg] opacity-65 blur-[22px]" style={{background:"radial-gradient(ellipse at center,rgba(245,177,242,.52) 0%,rgba(159,85,217,.48) 12%,rgba(91,67,172,.3) 29%,transparent 63%)"}} />
-      <div aria-hidden="true" className="pointer-events-none absolute -left-[14%] -top-[27%] h-[58%] w-[80%] rotate-[-22deg] opacity-70" style={{background:"radial-gradient(ellipse at center,rgba(250,198,239,.4) 0%,rgba(178,103,234,.18) 15%,transparent 55%)"}} />
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-75" style={{backgroundImage:"radial-gradient(1px 1px at 12% 16%, white 98%, transparent),radial-gradient(2px 2px at 36% 62%, #d8b4fe 98%, transparent),radial-gradient(1px 1px at 77% 22%, white 98%, transparent),radial-gradient(1px 1px at 86% 82%, #a5f3fc 98%, transparent),radial-gradient(1px 1px at 53% 39%, white 98%, transparent)",backgroundSize:"173px 197px,263px 283px,199px 241px,307px 269px,131px 163px"}} />
-      <div aria-hidden="true" className="pointer-events-none absolute -bottom-[30%] left-[-15%] h-[43%] w-[130%] rounded-[50%] border-t border-violet-200/40 bg-gradient-to-b from-indigo-400/20 via-violet-500/10 to-transparent shadow-[0_-12px_45px_rgba(177,119,248,.24)]" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-cover bg-center" style={{backgroundImage:"linear-gradient(90deg,rgba(8,7,24,.15),rgba(8,7,24,.36)),url('/milky-way-login.svg')"}} />
       <div className="relative z-10 grid w-full max-w-6xl items-center justify-center gap-8 lg:grid-cols-[minmax(0,390px)_minmax(0,460px)] lg:gap-14">
         <div className="hidden lg:block"><MykaLoginScene /></div>
         <div className="mx-auto w-full max-w-[460px]">
