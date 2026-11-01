@@ -8,13 +8,15 @@ function parseCsv(input: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [], field = "", quoted = false;
   const text = input.replace(/^\uFEFF/, "");
+  const headerLine = text.split(/\r?\n/, 1)[0];
+  const delimiter = (headerLine.match(/;/g) ?? []).length > (headerLine.match(/,/g) ?? []).length ? ";" : ",";
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (ch === '"') {
       if (quoted && text[i + 1] === '"') { field += '"'; i++; }
       else if (!field || quoted) quoted = !quoted;
       else throw new Error("CSV com aspas inválidas.");
-    } else if (ch === "," && !quoted) { row.push(field); field = ""; }
+    } else if (ch === delimiter && !quoted) { row.push(field); field = ""; }
     else if ((ch === "\n" || ch === "\r") && !quoted) {
       if (ch === "\r" && text[i + 1] === "\n") i++;
       row.push(field);
@@ -35,10 +37,12 @@ function parseTasks(input: string): SavedTask[] {
   const titleColumn = headers.findIndex(v => ["title", "título", "titulo", "task", "content", "tarefa"].includes(v));
   if (titleColumn < 0) throw new Error("O CSV precisa de uma coluna title, content ou título.");
   const priorityColumn = headers.findIndex(v => ["priority", "prioridade"].includes(v));
-  const dateColumn = headers.findIndex(v => ["due_date", "due date", "due", "prazo", "data"].includes(v));
+  const dateColumn = headers.findIndex(v => ["due_date", "due date", "due", "date", "prazo", "data"].includes(v));
+  const typeColumn = headers.findIndex(v => v === "type");
   const seen = new Set<string>();
   const tasks: SavedTask[] = [];
   for (const row of rows.slice(1)) {
+    if (typeColumn >= 0 && ["section", "note"].includes((row[typeColumn] ?? "").trim().toLowerCase())) continue;
     const title = (row[titleColumn] ?? "").trim();
     if (!title) continue;
     if (title.length > 200) throw new Error("Há títulos com mais de 200 caracteres.");
@@ -98,7 +102,7 @@ export default function ManualTaskImport() {
     <div className="space-y-3 rounded-2xl border border-violet-400/20 bg-slate-950/50 p-4">
       <h3 className="text-base font-semibold text-white">Importação manual de tarefas · CSV</h3>
       <p className="text-sm text-slate-300">Exporte suas tarefas em CSV e confira a prévia antes de salvar. Esta etapa não conecta contas externas e não sincroniza alterações futuras.</p>
-      <p className="text-xs text-slate-400">Colunas aceitas: title ou content (obrigatória), priority e due_date (AAAA-MM-DD). Arquivos até 1 MB e 200 tarefas. O separador deve ser vírgula.</p>
+      <p className="text-xs text-slate-400">Colunas aceitas: title ou content (obrigatória), priority e due_date (AAAA-MM-DD). Arquivos até 1 MB e 200 tarefas. Separadores aceitos: vírgula e ponto e vírgula.</p>
       <input type="file" accept=".csv,text/csv" aria-label="Selecionar CSV de tarefas" disabled={busy} onChange={event => void readFile(event.target.files?.[0])} className="block w-full text-sm text-slate-200 file:mr-3 file:rounded-lg file:border-0 file:bg-violet-600 file:px-3 file:py-2 file:text-white" />
       {tasks.length > 0 && <div className="space-y-3">
         <p className="text-sm text-violet-200">{tasks.length} tarefa(s) pronta(s) para importar de {filename}.</p>
