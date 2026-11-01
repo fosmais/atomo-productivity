@@ -17,6 +17,7 @@ export default function MyryraScore({metrics,loading}:{metrics:VyraMetrics|null;
    ctx.fillStyle="#ffffff";ctx.font="bold 220px Arial";ctx.fillText(String(score),540,695);
    ctx.fillStyle="#c4b5fd";ctx.font="44px Arial";ctx.fillText("MYRYRA SCORE",540,810);
    ctx.fillStyle="#ffffff";ctx.font="38px Arial";ctx.fillText("Minha evolução em tarefas",540,1010);
+   ctx.fillStyle="#c4b5fd";ctx.font="30px Arial";ctx.fillText(String(metrics?.completed??0)+" de "+String(metrics?.total??0)+" tarefas concluídas",540,1070);
    ctx.fillStyle="#a5a0b8";ctx.font="27px Arial";ctx.fillText("Compartilhado voluntariamente",540,1240);
    const blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,"image/png"));
    if(!blob)throw new Error("Imagem indisponível");
@@ -53,6 +54,6 @@ export default function MyryraScore({metrics,loading}:{metrics:VyraMetrics|null;
    <button type="button" onClick={()=>void share()} disabled={score===null||loading} className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-[#100d22] hover:bg-violet-100 disabled:opacity-40">Compartilhar ↗</button>
   </footer>
   {notice&&<p role="status" className="mt-3 text-xs text-violet-200">{notice}</p>}
-  <p className="mt-3 text-[11px] text-slate-400">Score beta baseado em tarefas. Outros indicadores ainda não calculados; nenhuma informação pessoal é compartilhada.</p>
+  <p className="mt-3 text-[11px] text-slate-400">Score beta = tarefas concluídas ÷ total de tarefas registradas × 100, arredondado. Sem tarefas, não há pontuação. Planejamento, Foco e Equilíbrio ainda não são calculados. O card inclui apenas pontuação e contagem agregada, sem dados pessoais.</p>
  </section>;
 }
