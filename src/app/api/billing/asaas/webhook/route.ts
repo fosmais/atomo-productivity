@@ -11,8 +11,26 @@ export async function POST(request: Request) {
   if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) {
     return NextResponse.json({ error: "Não autorizado." }, { status: 401, headers });
   }
-  const raw = await request.text();
-  if (Buffer.byteLength(raw, "utf8") > 32768) return NextResponse.json({ error: "Evento muito grande." }, { status: 413, headers });
+  const maxBytes = 32768;
+  const reader = request.body?.getReader();
+  if (!reader) return NextResponse.json({ error: "Corpo ausente." }, { status: 400, headers });
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel();
+        return NextResponse.json({ error: "Evento muito grande." }, { status: 413, headers });
+      }
+      chunks.push(value);
+    }
+  } catch {
+    return NextResponse.json({ error: "Falha ao ler evento." }, { status: 400, headers });
+  }
+  const raw = Buffer.concat(chunks, total).toString("utf8");
   let data: unknown;
   try { data = JSON.parse(raw); } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400, headers }); }
   if (!data || typeof data !== "object") return NextResponse.json({ error: "Evento inválido." }, { status: 400, headers });
