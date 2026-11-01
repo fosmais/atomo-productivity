@@ -18,10 +18,12 @@ export default function MykaSupport() {
   const { activeModule } = useVyraNavigation();
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
+  const [topic, setTopic] = useState("context");
   const [sending, setSending] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const context = help[activeModule] ?? help.home;
+  const selected = topic === "context" ? context : help[topic] ?? context;
 
   async function send() {
     const trimmed = message.trim();
@@ -32,7 +34,7 @@ export default function MykaSupport() {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) throw new Error("Faça login novamente para enviar sua solicitação.");
       const { error: insertError } = await supabase.from("beta_feedback").insert({
-        user_id: user.id, category: "problema", message: "[Suporte MYKA · " + context.title + "] " + trimmed,
+        user_id: user.id, category: "problema", message: "[Suporte MYKA · " + context.title + " · assunto: " + selected.title + "] " + trimmed,
       });
       if (insertError) throw insertError;
       setStatus("Solicitação registrada. O atendimento humano ainda não está disponível nesta versão.");
@@ -48,7 +50,8 @@ export default function MykaSupport() {
         <button type="button" aria-label="Fechar suporte" onClick={() => setOpen(false)} className="rounded-lg px-2 py-1 text-slate-300 hover:bg-white/10">✕</button>
       </header>
       <div className="space-y-4 overflow-y-auto p-4">
-        <div className="rounded-xl bg-violet-500/10 p-3 text-sm leading-6 text-slate-200"><strong className="text-violet-200">Como usar {context.title}?</strong><p className="mt-1">{context.answer}</p></div>
+        <div className="space-y-2"><label htmlFor="myka-help-topic" className="block text-xs font-medium text-slate-300">Sobre o que você precisa de ajuda?</label><select id="myka-help-topic" value={topic} onChange={e => setTopic(e.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-900 p-2.5 text-sm text-white"><option value="context">Esta tela: {context.title}</option>{Object.entries(help).filter(([key]) => key !== activeModule).map(([key, item]) => <option key={key} value={key}>{item.title}</option>)}</select></div>
+        <div className="rounded-xl bg-violet-500/10 p-3 text-sm leading-6 text-slate-200"><strong className="text-violet-200">Como usar {selected.title}?</strong><p className="mt-1">{selected.answer}</p></div>
         <div className="space-y-2">
           <label htmlFor="myka-support-message" className="block text-sm font-medium">Ainda precisa de ajuda? Registre uma solicitação</label>
           <textarea id="myka-support-message" value={message} onChange={e => setMessage(e.target.value)} maxLength={1500} rows={4} placeholder="Descreva o problema (mínimo 10 caracteres)..." className="w-full resize-y rounded-xl border border-slate-700 bg-slate-900 p-3 text-sm text-white placeholder:text-slate-500" />
