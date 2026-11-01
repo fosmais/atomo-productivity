@@ -1,7 +1,7 @@
 
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { createRequestClient } from "@/lib/supabase/request-client";
+import { authenticateRequest } from "@/lib/supabase/request-client";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { checkConciergeRateLimit } from "@/lib/rate-limit";
 
@@ -18,26 +18,10 @@ const allowedTypes = [
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createRequestClient(request);
-    const { data, error } = await supabase.auth.getUser();
-
-    if (error || !data.user) {
-      return NextResponse.json(
-        { error: "Não autenticado." },
-        { status: 401 }
-      );
-    }
-
-    const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (assurance.error) {
-      return NextResponse.json({ error: "Verificação de sessão indisponível." }, { status: 503 });
-    }
-    if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
-      return NextResponse.json(
-        { error: "Segundo fator obrigatório.", code: "MFA_REQUIRED" },
-        { status: 403 }
-      );
-    }
+    const { supabase, user, mfaRequired, assuranceUnavailable } = await authenticateRequest(request);
+    if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+    if (assuranceUnavailable) return NextResponse.json({ error: "Verificação de sessão indisponível." }, { status: 503 });
+    if (mfaRequired) return NextResponse.json({ error: "Segundo fator obrigatório.", code: "MFA_REQUIRED" }, { status: 403 });
 
     const apiKey = process.env.OPENAI_API_KEY;
 
@@ -94,7 +78,7 @@ export async function POST(request: Request) {
         .from("myka_conversations")
         .select("id")
         .eq("id", conversationIdInput)
-        .eq("user_id", data.user.id)
+        .eq("user_id", user.id)
         .maybeSingle();
       if (lookupError) throw lookupError;
       if (!existing) {
@@ -105,7 +89,7 @@ export async function POST(request: Request) {
     // File analysis consumes the same daily AI allowance as MYKA chat.
     let rateLimit: Awaited<ReturnType<typeof checkConciergeRateLimit>>;
     try {
-      rateLimit = await checkConciergeRateLimit(data.user.id);
+      rateLimit = await checkConciergeRateLimit(user.id);
     } catch {
       return NextResponse.json(
         { error: "Limite de IA temporariamente indisponível." },
@@ -188,7 +172,7 @@ export async function POST(request: Request) {
         .from("myka_conversations")
         .select("id")
         .eq("id", conversationIdInput)
-        .eq("user_id", data.user.id)
+        .eq("user_id", user.id)
         .maybeSingle();
       if (lookupError) throw lookupError;
       if (!existing) {
@@ -198,7 +182,7 @@ export async function POST(request: Request) {
     } else {
       const { data: created, error: createError } = await mykaAdmin
         .from("myka_conversations")
-        .insert({ user_id: data.user.id, title: userMessage.slice(0, 100) })
+        .insert({ user_id: user.id, title: userMessage.slice(0, 100) })
         .select("id")
         .single();
       if (createError || !created) throw createError ?? new Error("Falha ao criar conversa.");
@@ -210,7 +194,7 @@ export async function POST(request: Request) {
       .insert([
         {
           conversation_id: conversationId,
-          user_id: data.user.id,
+          user_id: user.id,
           role: "user",
           content: userMessage,
           proposed_task: null,
@@ -220,7 +204,7 @@ export async function POST(request: Request) {
         },
         {
           conversation_id: conversationId,
-          user_id: data.user.id,
+          user_id: user.id,
           role: "assistant",
           content: analysis,
           proposed_task: null,
@@ -236,7 +220,7 @@ export async function POST(request: Request) {
       .from("myka_conversations")
       .update({ updated_at: new Date().toISOString() })
       .eq("id", conversationId)
-      .eq("user_id", data.user.id);
+      .eq("user_id", user.id);
     if (updateError) throw updateError;
 
 
