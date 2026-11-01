@@ -1,0 +1,59 @@
+name: MYRYRA Android preview APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preview-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - name: Checkout preview branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/myryra-mvp1-billing-foundation
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Require isolated homologation configuration
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.MYRYRA_HOMOLOG_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.MYRYRA_HOMOLOG_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_MYRYRA_API_URL: ${{ vars.MYRYRA_HOMOLOG_API_URL }}
+        run: |
+          test -n "$EXPO_TOKEN" || { echo "::error::EXPO_TOKEN ausente"; exit 1; }
+          test -n "$EXPO_PUBLIC_SUPABASE_URL" || { echo "::error::Supabase de homologação ausente"; exit 1; }
+          test -n "$EXPO_PUBLIC_SUPABASE_ANON_KEY" || { echo "::error::Chave de homologação ausente"; exit 1; }
+          test -n "$EXPO_PUBLIC_MYRYRA_API_URL" || { echo "::error::API de homologação ausente"; exit 1; }
+          case "$EXPO_PUBLIC_SUPABASE_URL" in
+            https://*.supabase.co) ;;
+            *) echo "::error::URL Supabase inválida"; exit 1 ;;
+          esac
+          case "$EXPO_PUBLIC_MYRYRA_API_URL" in
+            https://*) ;;
+            *) echo "::error::API deve usar HTTPS"; exit 1 ;;
+          esac
+          case "$EXPO_PUBLIC_MYRYRA_API_URL" in
+            *myryra.com*|*atomo-productivity.com*) echo "::error::API de produção não permitida"; exit 1 ;;
+          esac
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate TypeScript
+        run: npm run typecheck
+      - name: Setup EAS CLI
+        run: npm install --global eas-cli
+      - name: Request internal APK build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.MYRYRA_HOMOLOG_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.MYRYRA_HOMOLOG_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_MYRYRA_API_URL: ${{ vars.MYRYRA_HOMOLOG_API_URL }}
+        run: eas build --platform android --profile preview --non-interactive --no-wait
