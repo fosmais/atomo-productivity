@@ -550,7 +550,7 @@ setConversationId(data.conversationId);
           </div>
         )}
 
-        {messages.length > 0 && messages[messages.length - 1]?.role === "user" && /\b(planos?|assin(ar|atura|aturas)|contrat(ar|ação)|upgrade|premium|pro)\b/i.test(messages[messages.length - 1]?.content ?? "") && (
+        {messages.some((item) => item.role === "user" && /\b(planos?|assin(ar|atura|aturas)|contrat(ar|ação)|upgrade|premium|pro)\b/i.test(item.content)) && (
           <section aria-label="Planos MYRYRA" className="rounded-2xl border border-violet-400/40 bg-violet-950/30 p-4">
             <div className="flex items-start gap-3"><span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-violet-400/40"><MykaPortrait className="h-9 w-9" /></span><div><p className="font-semibold text-white">Quer fazer upgrade? Escolha seu plano.</p><p className="mt-1 text-sm text-slate-300">Conheça as opções da MYRYRA. Assinaturas pagas ainda estão em homologação, sem cobrança nesta etapa.</p></div></div>
             <div className="mt-4 grid gap-2 sm:grid-cols-3">
@@ -584,18 +584,6 @@ setConversationId(data.conversationId);
               </p>
             </div>
             </div>
-            {message.role === "assistant" && /\b(planos?|assin(ar|atura|aturas)|contrat(ar|ação)|upgrade|premium|pro)\b/i.test(messages[index - 1]?.content ?? "") && (
-              <div className="ml-10 mt-2 rounded-xl border border-violet-500/40 bg-violet-950/30 p-3 sm:ml-12">
-                <p className="text-sm font-semibold text-white">Escolha seu plano MYRYRA</p>
-                <p className="mt-1 text-xs text-zinc-300">Compare os planos e registre seu interesse. A contratação paga ainda está em homologação.</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <a href="/planos?plano=pro" className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500">Pro · R$ 29,90/mês</a>
-                  <a href="/planos?plano=premium" className="rounded-lg border border-violet-400 px-3 py-2 text-xs font-semibold text-violet-100 hover:bg-violet-900">Premium · R$ 49,90/mês</a>
-                  <a href="/planos" className="rounded-lg border border-white/20 px-3 py-2 text-xs text-white hover:bg-slate-700">Comparar todos</a>
-                </div>
-              </div>
-            )}
-
                         {message.role === "assistant" &&
   Array.isArray(message.proposedTasks) &&
   message.proposedTasks.length > 0 && (
