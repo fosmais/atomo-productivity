@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
+import { createSupabaseAdmin } from "@/lib/supabase/admin";
 
 const noStore = { "Cache-Control": "no-store" };
 
@@ -48,10 +49,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Evento inválido." }, { status: 400, headers: noStore });
   }
 
-  // Intentionally return 503: Asaas retries, rather than silently losing
-  // an event before the durable event inbox and reconciliation are deployed.
-  return NextResponse.json(
-    { error: "Recepção validada; processamento de eventos ainda não habilitado." },
-    { status: 503, headers: noStore },
-  );
+  const event = payload as Record<string, unknown>;
+  const eventId = event.id as string;
+  const eventType = event.event as string;
+  if (eventId.length > 200 || eventType.length > 150) {
+    return NextResponse.json({ error: "Evento inválido." }, { status: 400, headers: noStore });
+  }
+
+  try {
+    const admin = createSupabaseAdmin();
+    const { error } = await admin.from("asaas_webhook_inbox").upsert(
+      { event_id: eventId, event_type: eventType, payload: event, state: "pending" },
+      { onConflict: "event_id", ignoreDuplicates: true },
+    );
+    if (error) throw error;
+  } catch {
+    return NextResponse.json({ error: "Falha ao persistir evento; tente novamente." }, { status: 503, headers: noStore });
+  }
+
+  // Acknowledge only after durable storage. Reconciliation runs separately.
+  return NextResponse.json({ received: true }, { status: 200, headers: noStore });
 }
