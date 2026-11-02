@@ -73,7 +73,7 @@ export default function MykaSupport() {
         <div className="space-y-2"><label htmlFor="myka-help-topic" className="block text-xs font-medium text-slate-300">Sobre o que você precisa de ajuda?</label><select id="myka-help-topic" value={topic} onChange={e => setTopic(e.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-900 p-2.5 text-sm text-white"><option value="context">Esta tela: {context.title}</option>{Object.entries(help).filter(([key]) => key !== activeModule).map(([key, item]) => <option key={key} value={key}>{item.title}</option>)}</select></div>
         <div className="rounded-xl bg-violet-500/10 p-3 text-sm leading-6 text-slate-200"><strong className="text-violet-200">Como usar {selected.title}?</strong><p className="mt-1">{selected.answer}</p></div>
         {topic.startsWith("billing-") && (
-          <a href="/plans" className="inline-flex rounded-xl border border-violet-400/40 px-4 py-2 text-sm font-semibold text-violet-200 hover:bg-violet-500/10">
+          <a href="/planos" className="inline-flex rounded-xl border border-violet-400/40 px-4 py-2 text-sm font-semibold text-violet-200 hover:bg-violet-500/10">
             Ver planos e assinaturas →
           </a>
         )}
