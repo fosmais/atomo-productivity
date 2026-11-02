@@ -34,6 +34,13 @@ function parseTasks(input: string): SavedTask[] {
   const rows = parseCsv(input);
   if (rows.length < 2) throw new Error("Inclua um cabeçalho e pelo menos uma tarefa.");
   const headers = rows[0].map(v => v.trim().toLowerCase());
+  if (rows.length > 1001) throw new Error("CSV muito grande. Divida o arquivo em lotes de até 200 tarefas.");
+  if (headers.some((header, index) => header && headers.indexOf(header) !== index)) {
+    throw new Error("O CSV possui colunas duplicadas no cabeçalho.");
+  }
+  if (rows.slice(1).some(row => row.length !== headers.length)) {
+    throw new Error("O CSV contém linhas com quantidade diferente de colunas. Confira aspas e separadores.");
+  }
   const normalizeDate = (raw: string): string | null => {
     if (!raw) return null;
     const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
@@ -52,7 +59,7 @@ function parseTasks(input: string): SavedTask[] {
   for (const row of rows.slice(1)) {
     if (typeColumn >= 0 && ["section", "note"].includes((row[typeColumn] ?? "").trim().toLowerCase())) continue;
     const title = (row[titleColumn] ?? "").trim();
-    if (!title) continue;
+    if (!title) throw new Error("Há tarefas sem título no CSV.");
     if (title.length > 200) throw new Error("Há títulos com mais de 200 caracteres.");
     const rawPriority = (row[priorityColumn] ?? "").trim().toLowerCase();
     const priority: "Alta" | "Média" | "Normal" = ["alta", "high", "p1", "4"].includes(rawPriority) ? "Alta" : ["média", "media", "medium", "p2", "3"].includes(rawPriority) ? "Média" : "Normal";
