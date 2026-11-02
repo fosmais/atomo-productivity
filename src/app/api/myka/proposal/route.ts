@@ -186,7 +186,7 @@ export async function POST(request: Request) {
     if (outcome.status !== "saved") {
       return NextResponse.json({ error: "Proposta indisponível." }, { status: 409 });
     }
-    return NextResponse.json({ messageId, status: "saved" }, { headers: { "Cache-Control": "private, no-store" } });
+    return NextResponse.json({ messageId, status: "saved", eventId: typeof outcome.eventId === "string" ? outcome.eventId : null }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("Erro ao confirmar evento Myka:", error);
     return NextResponse.json({ error: "Falha ao confirmar compromisso." }, { status: 500 });
