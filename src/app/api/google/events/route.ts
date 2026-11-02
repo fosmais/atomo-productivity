@@ -58,13 +58,34 @@ export async function GET() {
     const oauth = createGoogleOAuthClient();
 
     phase = "token_decryption";
-    oauth.setCredentials({
-      access_token: decryptGoogleToken(
-        connection.encrypted_access_token
-      ),
-      refresh_token: connection.encrypted_refresh_token
+    let accessToken: string;
+    let refreshToken: string | undefined;
+    try {
+      accessToken = decryptGoogleToken(connection.encrypted_access_token);
+      refreshToken = connection.encrypted_refresh_token
         ? decryptGoogleToken(connection.encrypted_refresh_token)
-        : undefined,
+        : undefined;
+    } catch {
+      // A connection encrypted with a different key cannot be recovered here.
+      // Preserve the record; require explicit OAuth reauthorization.
+      console.warn("VYRA Google Events: conexão requer nova autorização.", {
+        phase: "token_decryption",
+      });
+      return NextResponse.json(
+        {
+          connected: false,
+          events: [],
+          error: "A conexão do Google Calendar precisa ser renovada.",
+          code: "GOOGLE_CALENDAR_RECONNECT_REQUIRED",
+          reconnectUrl: "/api/google/connect",
+        },
+        { status: 409 }
+      );
+    }
+
+    oauth.setCredentials({
+      access_token: accessToken,
+      refresh_token: refreshToken,
       expiry_date: connection.token_expires_at
         ? new Date(connection.token_expires_at).getTime()
         : undefined,
