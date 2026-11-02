@@ -32,11 +32,17 @@ export async function provisionAsaasSandboxCustomer(userId: string, name: string
   if (existing) return existing.asaas_customer_id as string;
 
   const operationId = await reserveAsaasOperation(userId, "customer", userId);
-  const remote = await asaasSandboxPost("/customers", {
+  let remote: CustomerResponse;
+  try {
+    remote = await asaasSandboxPost("/customers", {
     name: name.trim(), email: email.trim(), cpfCnpj,
     externalReference: userId,
     notificationDisabled: true,
-  }) as CustomerResponse;
+    }) as CustomerResponse;
+  } catch {
+    await updateAsaasOperation(operationId, "needs_recovery");
+    throw new Error("Resultado do cadastro no Asaas incerto: verificar antes de repetir.");
+  }
   if (typeof remote.id !== "string" || !/^cus_[A-Za-z0-9]+$/.test(remote.id)) {
     throw new Error("Cadastro Asaas não retornou identificador válido.");
   }
@@ -67,7 +73,9 @@ export async function provisionAsaasSandboxSubscription(
   due.setUTCDate(due.getUTCDate() + 2);
   const nextDueDate = due.toISOString().slice(0, 10);
   const operationId = await reserveAsaasOperation(userId, "subscription", `${userId}:${planId}:${billingType}`, { customerId: customer.asaas_customer_id, planId, billingType, amountCents: BILLING_PLANS[planId].monthlyPriceCents });
-  const remote = await asaasSandboxPost("/subscriptions", {
+  let remote: SubscriptionResponse;
+  try {
+    remote = await asaasSandboxPost("/subscriptions", {
     customer: customer.asaas_customer_id,
     billingType,
     value: BILLING_PLANS[planId].monthlyPriceCents / 100,
@@ -75,7 +83,11 @@ export async function provisionAsaasSandboxSubscription(
     cycle: "MONTHLY",
     description: `MYRYRA ${BILLING_PLANS[planId].name} - Sandbox`,
     externalReference: userId,
-  }) as SubscriptionResponse;
+    }) as SubscriptionResponse;
+  } catch {
+    await updateAsaasOperation(operationId, "needs_recovery");
+    throw new Error("Resultado da assinatura no Asaas incerto: verificar antes de repetir.");
+  }
   if (typeof remote.id !== "string" || !/^sub_[A-Za-z0-9]+$/.test(remote.id) ||
       remote.customer !== customer.asaas_customer_id) {
     throw new Error("Assinatura Asaas divergente.");
