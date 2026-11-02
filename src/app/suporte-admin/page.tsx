@@ -9,13 +9,18 @@ export default function SupportAdminPage() {
  const [events,setEvents] = useState<AuditEvent[]>([]);
  const [notice,setNotice] = useState("Consultando chamados...");
  const [busy,setBusy] = useState("");
+ const [refreshing,setRefreshing] = useState(false);
+ const [needsLogin,setNeedsLogin] = useState(false);
  async function refresh() {
+  setRefreshing(true);
   try {
    const response=await fetch("/api/support/admin",{cache:"no-store"});
-   if(!response.ok){const payload=await response.json().catch(()=>({error:""})) as {error?:string};setTickets([]);setEvents([]);setNotice(payload.error || (response.status===401?"Faça login na MYRYRA para acessar o suporte.":response.status===403?"Acesso restrito.":"Consulta indisponível."));return;}
+   if(!response.ok){setNeedsLogin(response.status===401);const payload=await response.json().catch(()=>({error:""})) as {error?:string};setTickets([]);setEvents([]);setNotice(payload.error || (response.status===401?"Faça login na MYRYRA para acessar o suporte.":response.status===403?"Acesso restrito.":"Consulta indisponível."));return;}
    const data=await response.json() as {tickets:Ticket[];events:AuditEvent[]};
+   setNeedsLogin(false);
    setTickets(data.tickets);setEvents(data.events ?? []);setNotice(data.tickets.length?"":"Nenhum chamado encontrado.");
   } catch {setNotice("Falha de conexão.");}
+  finally {setRefreshing(false);}
  }
  useEffect(()=>{void refresh();},[]);
  async function update(id:string,field:"status"|"priority",value:string){
@@ -31,7 +36,8 @@ export default function SupportAdminPage() {
   <a href="/dashboard" className="text-violet-300">Voltar ao painel</a>
   <h1 className="mt-6 text-2xl font-semibold">MYRYRA · Administração de suporte</h1>
   <p className="mt-2 text-sm text-slate-400">Acesso restrito a operadores autorizados.</p>
-  <button type="button" onClick={()=>void refresh()} className="mt-5 rounded-xl border border-violet-400 px-4 py-2">Atualizar</button>
+  <button type="button" onClick={()=>void refresh()} disabled={refreshing} className="mt-5 rounded-xl border border-violet-400 px-4 py-2 disabled:opacity-50">{refreshing?"Consultando...":"Atualizar"}</button>
+  {needsLogin && <div className="mt-4 space-y-2 rounded-xl border border-amber-400/30 bg-amber-400/5 p-4 text-sm"><p>A sessão não está disponível neste endereço. Atualizar não autentica novamente.</p><a className="inline-block rounded-lg bg-violet-600 px-4 py-2 font-semibold text-white" href="/login">Entrar neste ambiente</a><p className="text-slate-400">Após concluir o login e o segundo fator, abra Administração de suporte neste mesmo domínio.</p></div>}
   {notice&&<p role="status" className="mt-4 text-sm text-amber-200">{notice}</p>}
   <div className="mt-6 space-y-4">{tickets.map(ticket=><article key={ticket.id} className="rounded-xl border border-white/10 bg-slate-900 p-4">
    <h2 className="font-semibold">{ticket.subject}</h2>
