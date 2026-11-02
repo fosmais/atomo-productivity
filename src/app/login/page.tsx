@@ -5,9 +5,13 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import MykaLoginScene from "./myka-login-scene";
 import MykaPlanHelp from "./myka-plan-help";
+import TurnstileCaptcha from "./turnstile-captcha";
 
 export default function LoginPage() {
   const router = useRouter();
+  const captchaEnabled = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+  const passwordMin = captchaEnabled ? 6 : 12;
+  const [captchaToken, setCaptchaToken] = useState("");
 
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
@@ -71,14 +75,16 @@ export default function LoginPage() {
       const supabase = createClient();
 
       if (mode === "signup") {
-        if (password.length < 12) {
-          throw new Error("Para criar sua conta, use uma senha com pelo menos 12 caracteres.");
+        if (password.length < passwordMin) {
+          throw new Error(`Para criar sua conta, use uma senha com pelo menos ${passwordMin} caracteres.`);
         }
+        if (captchaEnabled && !captchaToken) throw new Error("Conclua a verificação antirobô.");
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/auth/confirm`,
+            ...(captchaEnabled ? { captchaToken } : {}),
           },
         });
 
@@ -255,7 +261,7 @@ export default function LoginPage() {
               id="password"
               type="password"
               required
-              minLength={mode === "signup" ? 12 : undefined}
+              minLength={mode === "signup" ? passwordMin : undefined}
               autoComplete={
                 mode === "login" ? "current-password" : "new-password"
               }
@@ -266,7 +272,7 @@ export default function LoginPage() {
             />
           </div>
 
-          {mode === "signup" && <p className="text-xs text-slate-400">Use pelo menos 12 caracteres na senha.</p>}
+          {mode === "signup" && <><p className="text-xs text-slate-400">Use pelo menos {passwordMin} caracteres na senha.</p>{captchaEnabled && <TurnstileCaptcha onToken={setCaptchaToken} />}</>}
           <button
             type="submit"
             disabled={loading}
