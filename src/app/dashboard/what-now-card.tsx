@@ -38,9 +38,14 @@ export default function WhatNowCard() {
     const refresh = () => { void load(); };
     window.addEventListener("myryra:tasks-updated", refresh);
     window.addEventListener("myryra:events-updated", refresh);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
       window.removeEventListener("myryra:tasks-updated", refresh);
       window.removeEventListener("myryra:events-updated", refresh);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [load]);
 
