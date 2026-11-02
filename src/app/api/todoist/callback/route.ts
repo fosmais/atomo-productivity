@@ -48,8 +48,9 @@ export async function GET(request: NextRequest) {
       updated_at: new Date().toISOString(),
     }, { onConflict: "user_id" });
     if (saveError) return response;
-    redirect.searchParams.set("todoist", "connected");
-    return response;
+    const success = NextResponse.redirect(new URL("/dashboard?todoist=connected", request.url));
+    success.cookies.delete({ name: "myryra_todoist_oauth_state", path: "/api/todoist" });
+    return success;
   } catch {
     return response;
   }
