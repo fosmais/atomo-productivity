@@ -20,9 +20,9 @@ export default function FeatureHint({ label, title, description, tip }: Props) {
   }, [open]);
   return <span ref={root} className="relative inline-flex max-w-full items-center gap-2 align-middle" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
     <span className="text-xs font-semibold uppercase tracking-widest text-violet-400">{label}</span>
-    <button type="button" aria-label={`Sobre ${label}`} aria-expanded={open} aria-describedby={open ? id : undefined}
+    <button type="button" aria-label={`Como funciona: ${label}`} aria-expanded={open} aria-controls={id}
       onClick={() => setOpen(value => !value)} onFocus={() => setOpen(true)}
-      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-violet-500/50 text-xs font-semibold text-violet-200 transition hover:border-violet-300 hover:bg-violet-500/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400">i</button>
+      className="inline-flex shrink-0 items-center justify-center rounded-full border border-violet-500/50 px-3 py-1.5 text-xs font-semibold text-violet-200 transition hover:border-violet-300 hover:bg-violet-500/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400">ⓘ Como funciona?</button>
     {open && <span id={id} role="tooltip" className="absolute bottom-full left-0 z-50 mb-2 w-[min(19rem,calc(100vw-3rem))] rounded-xl border border-violet-500/50 bg-slate-950 p-4 text-left normal-case tracking-normal text-white shadow-2xl shadow-violet-950/40">
       <strong className="block text-sm font-semibold text-violet-200">{title}</strong>
       <span className="mt-1 block text-sm font-normal leading-relaxed text-slate-200">{description}</span>
