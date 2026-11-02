@@ -68,6 +68,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Falha ao persistir evento; tente novamente." }, { status: 503, headers: noStore });
   }
 
+  // Queue only authenticated Sandbox payment events; do not trust payload as payment evidence.
+  // Queue failures do not lose the durable inbox event; the existing retry path remains available.
+  if (process.env.ASAAS_RECONCILIATION_QUEUE_ENABLED === "true" &&
+      /^PAYMENT_[A-Z_]{1,90}$/.test(eventType) &&
+      /^[A-Za-z0-9_-]{1,128}$/.test(eventId)) {
+    const payment = event.payment;
+    const paymentId = payment && typeof payment === "object" && !Array.isArray(payment)
+      ? (payment as Record<string, unknown>).id : null;
+    if (typeof paymentId === "string" && /^pay_[A-Za-z0-9]+$/.test(paymentId)) {
+      try {
+        const { error: enqueueError } = await createSupabaseAdmin().rpc("enqueue_asaas_reconciliation_event", {
+          p_event_id: eventId, p_event_type: eventType, p_payment_id: paymentId,
+        });
+        if (enqueueError) throw enqueueError;
+      } catch {
+        // Persisted inbox remains the recovery source; never acknowledge before inbox write.
+      }
+    }
+  }
+
   // Durable inbox is the delivery boundary; verification is best-effort and audit-only.
   // A verification failure remains pending for retry; never activate paid plans here.
   try {
