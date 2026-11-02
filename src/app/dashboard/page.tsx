@@ -20,6 +20,7 @@ import AvailabilityPanel from "./availability-panel";
 import { LogoutButton } from "./logout-button";
 import PlanningSettings from "./planning-settings";
 import MfaSettings from "./mfa-settings";
+import ChangePassword from "./change-password";
 import GoogleCalendarSettings from "./google-calendar-settings";
 import ExternalIntegrations from "./external-integrations";
 import SmartSchedulingPanel from "./smart-scheduling-panel";
@@ -209,7 +210,7 @@ async function DashboardContent() {
         description="Gerencie sua conta, conecte aplicativos e compartilhe sugestões."
       >
         <div className="space-y-4">
-          <FeatureAccordion id="mfa" title="Segurança da conta" description="Configure a autenticação em dois fatores" userId={user.id}><MfaSettings /></FeatureAccordion>
+          <FeatureAccordion id="mfa" title="Segurança da conta" description="Configure a autenticação em dois fatores" userId={user.id}><MfaSettings /><ChangePassword /></FeatureAccordion>
           <FeatureAccordion id="external-integrations" title="Integrações de produtividade" description="Google Calendar, Google Tasks, Todoist e Outlook" userId={user.id}>
             <div className="space-y-5">
               <GoogleCalendarSettings />
