@@ -55,8 +55,7 @@ export async function PATCH(request: Request) {
     const { data, error } = await access.admin!.from("support_tickets").update(changes).eq("id", id).select("id,status,priority,updated_at").maybeSingle();
     if (error) throw error;
     if (!data) return NextResponse.json({ error: "Chamado não encontrado." }, { status: 404, headers });
-    const { error: auditError } = await access.admin!.from("support_ticket_events").update({ actor_id: access.userId }).eq("ticket_id", id).is("actor_id", null).eq("created_at", data.updated_at);
-    if (auditError) throw auditError;
+
     return NextResponse.json({ ticket: data }, { headers });
   } catch {
     return NextResponse.json({ error: "Atualização indisponível." }, { status: 503, headers });
