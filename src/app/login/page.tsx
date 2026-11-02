@@ -6,10 +6,12 @@ import { createClient } from "@/lib/supabase/client";
 import MykaLoginScene from "./myka-login-scene";
 import MykaPlanHelp from "./myka-plan-help";
 import TurnstileCaptcha from "./turnstile-captcha";
+import HcaptchaCaptcha from "./hcaptcha-captcha";
 
 export default function LoginPage() {
   const router = useRouter();
-  const captchaEnabled = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+  const hcaptchaEnabled = Boolean(process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY);
+  const captchaEnabled = hcaptchaEnabled || Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
   const passwordMin = captchaEnabled ? 6 : 12;
   const [captchaToken, setCaptchaToken] = useState("");
 
@@ -277,7 +279,7 @@ export default function LoginPage() {
           </div>
 
           {mode === "signup" && <><p className="text-xs text-slate-400">Use pelo menos {passwordMin} caracteres na senha.</p></>}
-          {captchaEnabled && !mfaFactorId && <TurnstileCaptcha onToken={setCaptchaToken} />}
+          {captchaEnabled && !mfaFactorId && (hcaptchaEnabled ? <HcaptchaCaptcha onToken={setCaptchaToken} /> : <TurnstileCaptcha onToken={setCaptchaToken} />)}
           <button
             type="submit"
             disabled={loading}
