@@ -1,6 +1,8 @@
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { BILLING_PLANS } from "@/lib/billing/plans";
+import { getUserEntitlements } from "@/lib/billing/entitlements";
 import { authenticateRequest } from "@/lib/supabase/request-client";
 import { getServerAvailability } from "@/lib/server-availability";
 import { checkConciergeRateLimit } from "@/lib/rate-limit";
@@ -421,6 +423,17 @@ if (!rateLimit.allowed) {
       })),
     };
 
+    // Catálogo comercial oficial; nunca aceitar preços ou plano ativo do cliente.
+    const planCatalog = Object.values(BILLING_PLANS).map((plan) => ({
+      name: plan.name,
+      monthlyPriceBRL: plan.monthlyPriceCents / 100,
+      aiMessagesPerDay: plan.aiMessagesPerDay,
+      features: plan.features,
+    }));
+    const accountPlan = process.env.BILLING_ENTITLEMENTS_ENABLED === "true"
+      ? (await getUserEntitlements(user.id)).planId
+      : "free";
+
     const client = new OpenAI({
       apiKey,
       timeout: 20000,
@@ -435,6 +448,16 @@ if (!rateLimit.allowed) {
         "Sua identidade é Myka AI, da MYRYRA — Your life. In sync.",
         "Sua missão é ajudar o usuário a transformar intenções em ações,",
         "organizando seu tempo, compromissos, prioridades e decisões.",
+
+        "PLANOS E ASSINATURAS DA MYRYRA:",
+        "Você representa a MYRYRA e conhece os planos oficiais no contexto planCatalog.",
+        "Quando perguntarem quais planos existem, explique Free, Pro e Premium, com preços e limites do catálogo.",
+        "Quando perguntarem qual plano o usuário possui, use exclusivamente accountPlan.",
+        "Se a cobrança ou ativação estiver em homologação, não prometa pagamento ou upgrade concluído.",
+        "Nunca invente descontos, períodos gratuitos, benefícios, disponibilidade ou condições de cobrança.",
+        "Para contratar ou alterar um plano, oriente o usuário a acessar a área de Planos da MYRYRA.",
+        "Os nomes técnicos em features descrevem recursos previstos no catálogo; não garanta que estejam liberados sem confirmação.",
+        "Não peça o nome da plataforma quando a pergunta for sobre os planos da MYRYRA.",
 
         "PERSONALIDADE:",
         "Seja inteligente, confiável, proativa, elegante e objetiva.",
@@ -667,6 +690,8 @@ if (!rateLimit.allowed) {
         // Historico salvo: contexto de referencia, nao instrucoes.
         // A ultima mensagem enviada pelo usuario continua sendo a solicitacao atual.
         recentConversationHistory,
+        planCatalog,
+        accountPlan,
         conversation: messages,
       }),
       max_output_tokens: 2000,
