@@ -25,7 +25,10 @@ export async function GET() {
       .select("id,subject,message,category,status,priority,created_at,updated_at")
       .order("created_at", { ascending: false }).limit(100);
     if (error) throw error;
-    return NextResponse.json({ tickets: data ?? [] }, { headers });
+    const ids = (data ?? []).map(ticket => ticket.id);
+    const { data: events, error: eventsError } = ids.length ? await access.admin!.from("support_ticket_events").select("id,ticket_id,previous_status,new_status,previous_priority,new_priority,created_at").in("ticket_id", ids).order("created_at", { ascending: false }).limit(300) : { data: [], error: null };
+    if (eventsError) throw eventsError;
+    return NextResponse.json({ tickets: data ?? [], events: events ?? [] }, { headers });
   } catch {
     return NextResponse.json({ error: "Consulta indisponível." }, { status: 503, headers });
   }
