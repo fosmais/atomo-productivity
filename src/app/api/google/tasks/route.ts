@@ -45,6 +45,7 @@ export async function GET() {
     const api = google.tasks({ version: "v1", auth: oauth });
     const lists: Array<{ id: string; title: string }> = [];
     let pageToken: string | undefined;
+    const seenListPages = new Set<string>();
     for (let page = 0; page < 5; page++) {
       const result = await api.tasklists.list({ maxResults: 100, pageToken });
       for (const item of result.data.items ?? []) {
@@ -52,10 +53,13 @@ export async function GET() {
       }
       pageToken = result.data.nextPageToken || undefined;
       if (!pageToken) break;
+      if (seenListPages.has(pageToken)) throw new Error("Paginação Google Tasks inválida.");
+      seenListPages.add(pageToken);
     }
     const tasks: Array<{ id: string; listId: string; title: string; dueDate: string | null }> = [];
     for (const list of lists.slice(0, 30)) {
       let next: string | undefined;
+      const seenTaskPages = new Set<string>();
       for (let page = 0; page < 5; page++) {
         const result = await api.tasks.list({
           tasklist: list.id, showCompleted: false, showDeleted: false,
@@ -69,6 +73,8 @@ export async function GET() {
         }
         next = result.data.nextPageToken || undefined;
         if (!next || tasks.length >= 500) break;
+        if (seenTaskPages.has(next)) throw new Error("Paginação de tarefas inválida.");
+        seenTaskPages.add(next);
       }
       if (tasks.length >= 500) break;
     }
