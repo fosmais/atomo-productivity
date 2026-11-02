@@ -245,6 +245,7 @@ if (!rateLimit.allowed) {
       error: rateLimit.reason === "minute" ? "Muitas mensagens em pouco tempo. Aguarde um minuto para continuar." : `Você atingiu as ${rateLimit.dailyLimit} mensagens disponíveis hoje no seu plano.`,
       code: rateLimit.reason === "minute" ? "MINUTE_RATE_LIMIT" : "DAILY_PLAN_LIMIT",
       dailyLimit: rateLimit.dailyLimit,
+      resetAt: rateLimit.reset,
     },
     {
       status: 429,
