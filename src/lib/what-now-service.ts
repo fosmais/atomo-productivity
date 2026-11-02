@@ -29,7 +29,7 @@ export async function getWhatNowRecommendation(
 
   const [availability, tasks, googleBlocked] =
     await Promise.all([
-      getCloudAvailability(now, 1),
+      getCloudAvailability(now, 7),
       getCloudTasksForScheduling(),
       getGoogleBusyIntervals(),
     ]);
