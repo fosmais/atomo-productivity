@@ -37,10 +37,10 @@ export default function WhatNowCard() {
     void load();
     const refresh = () => { void load(); };
     window.addEventListener("myryra:tasks-updated", refresh);
-    window.addEventListener("myryra:calendar-updated", refresh);
+    window.addEventListener("myryra:events-updated", refresh);
     return () => {
       window.removeEventListener("myryra:tasks-updated", refresh);
-      window.removeEventListener("myryra:calendar-updated", refresh);
+      window.removeEventListener("myryra:events-updated", refresh);
     };
   }, [load]);
 
