@@ -12,7 +12,7 @@ export default function SupportAdminPage() {
  async function refresh() {
   try {
    const response=await fetch("/api/support/admin",{cache:"no-store"});
-   if(!response.ok){setNotice(response.status===403?"Acesso restrito.":"Consulta indisponível.");return;}
+   if(!response.ok){const payload=await response.json().catch(()=>({error:""})) as {error?:string};setTickets([]);setEvents([]);setNotice(payload.error || (response.status===401?"Faça login na MYRYRA para acessar o suporte.":response.status===403?"Acesso restrito.":"Consulta indisponível."));return;}
    const data=await response.json() as {tickets:Ticket[];events:AuditEvent[]};
    setTickets(data.tickets);setEvents(data.events ?? []);setNotice(data.tickets.length?"":"Nenhum chamado encontrado.");
   } catch {setNotice("Falha de conexão.");}
