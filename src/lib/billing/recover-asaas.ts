@@ -1,6 +1,7 @@
 import "server-only";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { asaasSandboxGet } from "@/lib/billing/asaas";
+import { BILLING_PLANS } from "@/lib/billing/plans";
 
 type Operation = {
   id: string;
@@ -50,6 +51,7 @@ export async function recoverAsaasProvisioningOperation(id: string): Promise<"co
     if ((op.expected_plan_id !== "pro" && op.expected_plan_id !== "premium") ||
         (op.expected_billing_type !== "PIX" && op.expected_billing_type !== "CREDIT_CARD") ||
         !op.expected_customer_id || !Number.isSafeInteger(op.expected_amount_cents) ||
+        op.expected_amount_cents !== BILLING_PLANS[op.expected_plan_id].monthlyPriceCents ||
         remote.customer !== op.expected_customer_id ||
         remote.billingType !== op.expected_billing_type ||
         typeof remote.value !== "number" ||
