@@ -61,3 +61,52 @@ As opções já exibidas na tela de integrações devem ser entregues funcionalm
 7. Tokens OAuth somente no servidor e protegidos; respeitar RLS e isolamento entre contas. Nenhuma integração será marcada concluída sem testes reais.
 
 **Dependência de execução:** após estabilização do Bloco 2 (Asaas Sandbox, persistência e conciliação), iniciar este bloco de integrações; CSV pode ser homologado em paralelo.
+
+
+## Plano de entrega de 02/11/2026 — congelamento de escopo e backlog preservado
+
+**Objetivo:** publicar hoje uma versão web estável com funcionalidades já comprovadas, sem declarar concluídas as funcionalidades não homologadas. A versão Android só será anunciada se houver APK instalável e teste real. O Asaas permanece em Sandbox, sem cobrança real ou concessão automática de acesso até testes financeiros e aprovação explícita.
+
+### P0 — portão de lançamento (hoje)
+
+| Frente | Critério objetivo de saída | Estado em 02/11 |
+|---|---|---|
+| Build web Preview | Vercel READY no commit de release | READY no commit `ebfbd938`; QA funcional pendente |
+| Login/cadastro, Google e MFA | Entrar/sair, recuperar acesso e validar AAL2 em rotas protegidas | Revalidar na versão candidata |
+| Dashboard, Hoje, tarefas e agenda | Criar, editar, concluir/excluir, salvar e recarregar; testar isolamento entre usuários | QA pendente |
+| MYKA / Copiloto | Responder, sugerir ações e só persistir após confirmação | QA pendente |
+| Responsividade, navegação e ajuda | Sem erro bloqueante em desktop/mobile, login, planos e ajuda | QA pendente |
+| Segurança e observabilidade | Sem segredos no cliente, erros críticos verificados, rollback disponível | QA pendente |
+| Publicação web | Promover somente build testado; smoke test em domínio público | Pendente |
+
+### Backlog preservado — não bloquear a publicação web estável
+
+| Prioridade | Funcionalidade ou pendência | Critério de conclusão |
+|---|---|---|
+| P1 | Asaas: PIX, cartão, checkout e assinatura | Homologação Sandbox ponta a ponta, duplicidade, estorno, conciliação, acesso transacional e aprovação antes de cobranças reais |
+| P1 | Fila Asaas: webhook, worker, retry e recuperação de lease expirado | Testes de concorrência, idempotência, falhas e auditoria; flags desativadas até aprovação |
+| P1 | APK Android / Expo e publicação Google Play | Build EAS instalável, autenticação e fluxos principais testados; depois publicação na loja e QR no login |
+| P1 | CSV / Brain Dump | Pré-visualização, confirmação, deduplicação e isolamento por usuário |
+| P1 | Google Tasks | OAuth e importação sob demanda testados |
+| P1 | Todoist | OAuth, projetos e importação sob demanda testados |
+| P1 | Outlook Calendar | Microsoft Graph, consentimento e importação sob demanda testados |
+| P1 | Suporte MYKA e painel admin | Ticket, acompanhamento, notificações, base de conhecimento e priorização com testes reais |
+| P1 | Daily Briefing, What Now?, Focus Mode, Weekly Intelligence Lite | Critérios originais acima, persistência e QA mobile |
+| P1 | Favoritos e metas pessoais | Estrela integrada na criação/edição, persistência RLS, gamificação e compartilhamento opt-in |
+| P1 | Score e compartilhamento WhatsApp | Score confiável na home, compartilhamento voluntário com rosto da MIKA |
+| P1 | Voz e upload de arquivos da MYKA | Permissões, tipos/tamanhos permitidos, segurança e QA Android/web |
+| P1 | Google Calendar e Smart Calendar | Sincronização, fuso horário, sugestões de slots e prevenção de conflitos |
+| P1 | UX e acessibilidade | Revisar login/planos, CTAs, ajuda MIKA, ícones, navegação e identidade visual |
+| P2 | AutoPilot, Inbox Zero, Energy Planner, Goal-to-Action, Life Balance | Fluxos completos e consentimento explícito |
+| P2 | Smart Commute e integrações Maps/viagens | Retomar Routes API após resolver permissões e custos; estacionamento/hotéis/viagens |
+| P2 | Planejamento, Foco, Equilíbrio e Performance avançados | Métricas verificáveis e explicações em Como funciona |
+| P2 | Internacionalização pt-BR/en-US e MYRYRA Business/Teams | QA de idiomas, modelo de organizações e permissões |
+| P2 | Sincronização bidirecional/automática com terceiros | Resolver conflitos, custos, rate limits e autorização |
+| P2 | SEO, aquisição orgânica e automações operacionais | Métricas, indexação e funil verificáveis |
+
+### Governança do progresso
+
+- **90%** é apenas a referência histórica estimada de desenvolvimento, não aprovação de homologação.
+- Registrar separadamente: implementado, publicado em Preview, testado, homologado e publicado em produção.
+- Nenhuma linha sai do backlog por simplificação de escopo; mover somente com evidência verificável.
+- Não promover Preview a produção nem habilitar checkout, entitlements ou cobranças reais sem QA e autorização.
