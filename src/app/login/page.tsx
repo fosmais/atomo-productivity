@@ -30,6 +30,7 @@ export default function LoginPage() {
   useEffect(() => {
     let active = true;
     const params = new URLSearchParams(window.location.search);
+    if (params.get("mode") === "signup") setMode("signup");
     const errorCode = params.get("error");
     const requestedReturn = params.get("next");
     if (requestedReturn === "/suporte-admin") setReturnTo(requestedReturn);
