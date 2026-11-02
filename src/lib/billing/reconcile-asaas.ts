@@ -1,6 +1,7 @@
 import "server-only";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { asaasSandboxGet } from "@/lib/billing/asaas";
+import { verifyAsaasSubscriptionLink } from "@/lib/billing/asaas-links";
 
 type AsaasPayment = {
   id?: unknown;
@@ -37,6 +38,11 @@ export async function reconcileAsaasPaymentEvent(eventId: string): Promise<"veri
     throw new Error("Divergência na consulta do pagamento.");
   }
   const subscriptionId = typeof verified.subscription === "string" ? verified.subscription : null;
+  if (!subscriptionId || typeof verified.customer !== "string") {
+    throw new Error("Pagamento sem vínculo de assinatura verificável.");
+  }
+  await verifyAsaasSubscriptionLink(subscriptionId, verified.customer);
+
   const { error: saveError } = await admin.from("asaas_webhook_inbox").update({
     payment_id: paymentId,
     subscription_id: subscriptionId,
