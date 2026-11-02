@@ -97,7 +97,7 @@ export async function PATCH(request: Request) {
     }
 
     if (kind === "event") {
-      const { data: result, error: cancelError } = await supabase.rpc("myka_cancel_event", { p_message_id: messageId });
+      const { data: result, error: cancelError } = await createSupabaseAdmin().rpc("myka_cancel_event", { p_message_id: messageId, p_user_id: auth.user.id });
       if (cancelError) throw cancelError;
       if (!result || typeof result !== "object" || Array.isArray(result) || result.status !== "cancelled") {
         return NextResponse.json({ error: "Proposta não está pendente." }, { status: 409 });
@@ -171,8 +171,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Tipo inválido." }, { status: 422 });
     }
     // A single database transaction serializes confirmation and cancellation.
-    const { data: result, error: confirmError } = await supabase.rpc("myka_confirm_event", {
+    const { data: result, error: confirmError } = await admin.rpc("myka_confirm_event", {
       p_message_id: messageId,
+      p_user_id: auth.user.id,
     });
     if (confirmError) throw confirmError;
     if (!result || typeof result !== "object" || Array.isArray(result)) {
