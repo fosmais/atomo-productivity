@@ -56,8 +56,17 @@ export async function POST(request: Request) {
           reason = "INVALID_PAYMENT_DATA";
         } else {
           await verifyAsaasSubscriptionLink(payment.subscription, payment.customer);
-          state = "verified";
-          reason = "PROVIDER_LINK_VERIFIED";
+          // Only confirmed/received payments may be audit-verified.
+          if (payment.status === "CONFIRMED" || payment.status === "RECEIVED") {
+            state = "verified";
+            reason = "PROVIDER_PAYMENT_CONFIRMED";
+          } else if (payment.status === "PENDING" || payment.status === "OVERDUE") {
+            state = "retry";
+            reason = "PAYMENT_UNCONFIRMED";
+          } else {
+            state = "rejected";
+            reason = "PAYMENT_NOT_ELIGIBLE";
+          }
         }
       }
     } catch {
