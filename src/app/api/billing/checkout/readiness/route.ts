@@ -33,6 +33,9 @@ export async function GET() {
       subscriptionLinked: Boolean(subscription.data?.length),
       checkoutAvailable: false,
       paymentActivationEnabled: false,
+      provisioningConfigured: process.env.ASAAS_SANDBOX_PROVISIONING_ENABLED === "true",
+      reconciliationConfigured: Boolean(process.env.ASAAS_RECONCILIATION_SECRET),
+      checkoutConfigured: process.env.BILLING_CHECKOUT_ENABLED === "true",
       nextStep: customer.data ? "subscription_creation" : "customer_registration",
     }, { headers });
   } catch {
