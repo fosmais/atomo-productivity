@@ -572,6 +572,17 @@ setConversationId(data.conversationId);
               </p>
             </div>
             </div>
+            {message.role === "assistant" && /\\b(planos?|assin(ar|atura|aturas)|contrat(ar|ação)|upgrade|premium|pro)\\b/i.test(messages[index - 1]?.content ?? "") && (
+              <div className="ml-10 mt-2 rounded-xl border border-violet-500/40 bg-violet-950/30 p-3 sm:ml-12">
+                <p className="text-sm font-semibold text-white">Escolha seu plano MYRYRA</p>
+                <p className="mt-1 text-xs text-zinc-300">Compare os planos e registre seu interesse. A contratação paga ainda está em homologação.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <a href="/planos?plano=pro" className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500">Pro · R$ 29,90/mês</a>
+                  <a href="/planos?plano=premium" className="rounded-lg border border-violet-400 px-3 py-2 text-xs font-semibold text-violet-100 hover:bg-violet-900">Premium · R$ 49,90/mês</a>
+                  <a href="/planos" className="rounded-lg border border-white/20 px-3 py-2 text-xs text-white hover:bg-slate-700">Comparar todos</a>
+                </div>
+              </div>
+            )}
 
                         {message.role === "assistant" &&
   Array.isArray(message.proposedTasks) &&
