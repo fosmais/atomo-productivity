@@ -64,16 +64,28 @@ export default function CalendarEvents() {
   const [googleConnected, setGoogleConnected] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(true);
   const [googleError, setGoogleError] = useState("");
+  const [googleReconnectRequired, setGoogleReconnectRequired] = useState(false);
 
   async function loadGoogleEvents() {
     setGoogleLoading(true);
     setGoogleError("");
+    setGoogleReconnectRequired(false);
 
     try {
       const response = await fetch("/api/google/events", {
         cache: "no-store",
       });
 
+      if (response.status === 409) {
+        const detail: { code?: string } = await response.json();
+        if (detail.code === "GOOGLE_CALENDAR_RECONNECT_REQUIRED") {
+          setGoogleConnected(false);
+          setGoogleEvents([]);
+          setGoogleReconnectRequired(true);
+          setGoogleError("Sua conexão Google Calendar precisa ser renovada.");
+          return;
+        }
+      }
       if (!response.ok) {
         throw new Error("Não foi possível consultar o Google Calendar.");
       }
@@ -544,9 +556,10 @@ export default function CalendarEvents() {
         </div>
 
         {googleError && (
-          <p role="alert" className="mt-3 text-sm text-red-400">
-            {googleError}
-          </p>
+          <div role="alert" className="mt-3 space-y-2">
+            <p className="text-sm text-amber-300">{googleError}</p>
+            {googleReconnectRequired && <a href="/api/google/connect" className="inline-block rounded-lg border border-violet-500 px-3 py-2 text-sm text-violet-200">Reconectar Google Calendar</a>}
+          </div>
         )}
 
         {!googleLoading && !googleConnected && !googleError && (
