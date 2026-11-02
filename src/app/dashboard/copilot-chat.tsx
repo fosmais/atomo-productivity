@@ -782,7 +782,7 @@ setConversationId(data.conversationId);
               <a href="/planos?plano=pro" className="rounded-xl border border-violet-400/60 bg-violet-500/15 p-3 text-sm text-white hover:bg-violet-500/25"><strong className="block">Pro</strong>R$ 29,90/mês · 100 mensagens/dia</a>
               <a href="/planos?plano=premium" className="rounded-xl border border-white/20 p-3 text-sm text-white hover:bg-white/10"><strong className="block">Premium</strong>R$ 49,90/mês · 250 mensagens/dia</a>
             </div>
-            <p className="mt-3 text-xs text-slate-400">Valores previstos para o MVP1. Selecione um plano para comparar os benefícios.</p>
+            <p className="mt-3 text-xs text-slate-400">Compare os benefícios do Pro e Premium e escolha o ideal para você. Assinaturas em breve.</p>
           </section>
         )}
 
