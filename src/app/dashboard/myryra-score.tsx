@@ -16,13 +16,14 @@ export default function MyryraScore({metrics,loading}:{metrics:VyraMetrics|null;
  useEffect(()=>{
   if(activeModule!=="home")return;
   let cancelled=false;
+  setFocusMinutes(null);
   async function loadFocus(){
    try {
     const supabase=createClient();
     const {data:{user},error:authError}=await supabase.auth.getUser();
     if(authError||!user)throw new Error("Not authenticated");
     const since=new Date();since.setHours(0,0,0,0);since.setDate(since.getDate()-6);
-    const {data,error}=await supabase.from("focus_sessions").select("duration_minutes").eq("user_id",user.id).gte("completed_at",since.toISOString()).limit(1000);
+    const {data,error}=await supabase.from("focus_sessions").select("duration_minutes").eq("user_id",user.id).gte("completed_at",since.toISOString()).lte("completed_at",new Date().toISOString()).limit(1000);
     if(error)throw error;
     if(!cancelled)setFocusMinutes((data??[]).reduce((sum,row)=>sum+Number(row.duration_minutes||0),0));
    }catch{if(!cancelled)setFocusMinutes(null);}
