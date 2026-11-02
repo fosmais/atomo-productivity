@@ -66,7 +66,7 @@ export async function provisionAsaasSandboxSubscription(
   const due = new Date();
   due.setUTCDate(due.getUTCDate() + 2);
   const nextDueDate = due.toISOString().slice(0, 10);
-  const operationId = await reserveAsaasOperation(userId, "subscription", `${userId}:${planId}:${billingType}`);
+  const operationId = await reserveAsaasOperation(userId, "subscription", `${userId}:${planId}:${billingType}`, { customerId: customer.asaas_customer_id, planId, billingType, amountCents: BILLING_PLANS[planId].monthlyPriceCents });
   const remote = await asaasSandboxPost("/subscriptions", {
     customer: customer.asaas_customer_id,
     billingType,
