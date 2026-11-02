@@ -777,11 +777,10 @@ setConversationId(data.conversationId);
 
         {messages.some((item) => item.role === "user" && /\b(planos?|assin(ar|atura|aturas)|contrat(ar|ação)|upgrade|premium|pro|opções|opcoes|opcao|opção)\b/i.test(item.content)) && (
           <section aria-label="Planos MYRYRA" className="rounded-2xl border border-violet-400/40 bg-violet-950/30 p-4">
-            <div className="flex items-start gap-3"><span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-violet-400/40"><MykaPortrait className="h-9 w-9" /></span><div><p className="font-semibold text-white">Quer fazer upgrade? Escolha seu plano.</p><p className="mt-1 text-sm text-slate-300">Conheça as opções da MYRYRA. Assinaturas pagas ainda estão em homologação, sem cobrança nesta etapa.</p></div></div>
-            <div className="mt-4 grid gap-2 sm:grid-cols-3">
-              <a href="/planos" className="rounded-xl border border-white/20 p-3 text-sm text-white hover:bg-white/10"><strong className="block">Free</strong>R$ 0,00/mês</a>
-              <a href="/planos?plano=pro" className="rounded-xl border border-violet-400/60 bg-violet-500/15 p-3 text-sm text-white hover:bg-violet-500/25"><strong className="block">Pro</strong>R$ 29,90/mês</a>
-              <a href="/planos?plano=premium" className="rounded-xl border border-white/20 p-3 text-sm text-white hover:bg-white/10"><strong className="block">Premium</strong>R$ 49,90/mês</a>
+            <div className="flex items-start gap-3"><span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-violet-400/40"><MykaPortrait className="h-9 w-9" /></span><div><p className="font-semibold text-white">Você está no Free? Conheça as opções de upgrade.</p><p className="mt-1 text-sm text-slate-300">Conheça as opções da MYRYRA. Assinaturas pagas ainda estão em homologação, sem cobrança nesta etapa.</p></div></div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              <a href="/planos?plano=pro" className="rounded-xl border border-violet-400/60 bg-violet-500/15 p-3 text-sm text-white hover:bg-violet-500/25"><strong className="block">Pro</strong>R$ 29,90/mês · 100 mensagens/dia</a>
+              <a href="/planos?plano=premium" className="rounded-xl border border-white/20 p-3 text-sm text-white hover:bg-white/10"><strong className="block">Premium</strong>R$ 49,90/mês · 250 mensagens/dia</a>
             </div>
             <p className="mt-3 text-xs text-slate-400">Valores previstos para o MVP1. Selecione um plano para comparar os benefícios.</p>
           </section>
@@ -798,10 +797,10 @@ setConversationId(data.conversationId);
 
       {error && (
         <div role="alert" className="mb-3 space-y-2 text-sm text-red-400">
-          <p>{/limite de mensagens atingido/i.test(error) ? "Você atingiu o limite de mensagens disponível neste momento. Conheça os planos da MYRYRA para avaliar suas opções." : error}</p>
+          <p>{/você atingiu as \d+ mensagens disponíveis hoje/i.test(error) ? `${error} Gostaria de conhecer outros planos?` : error}</p>
           <p className="text-slate-300">Precisa de suporte financeiro? Abra um chamado diretamente na Ajuda MYKA, mesmo quando a conversa com IA estiver indisponível.</p>
           <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("myryra:open-support", { detail: { topic: "billing-payments" } }))} className="rounded-lg border border-violet-400 px-3 py-2 font-semibold text-violet-200">Abrir suporte financeiro</button>
-          {/limite de mensagens atingido/i.test(error) ? (
+          {/você atingiu as \d+ mensagens disponíveis hoje/i.test(error) ? (
             <a href="/planos" className="ml-2 inline-flex rounded-lg bg-violet-600 px-3 py-2 font-semibold text-white hover:bg-violet-500">Conhecer planos e fazer upgrade</a>
           ) : (
             <button type="button" onClick={() => setError("")} className="ml-2 rounded-lg border border-slate-600 px-3 py-2 text-slate-200">Tentar novamente</button>
