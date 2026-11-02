@@ -10,6 +10,7 @@ import HcaptchaCaptcha from "./hcaptcha-captcha";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [returnTo, setReturnTo] = useState("/dashboard");
   const hcaptchaEnabled = Boolean(process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY);
   const captchaEnabled = hcaptchaEnabled || Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
   const passwordMin = captchaEnabled ? 6 : 12;
@@ -30,6 +31,8 @@ export default function LoginPage() {
     let active = true;
     const params = new URLSearchParams(window.location.search);
     const errorCode = params.get("error");
+    const requestedReturn = params.get("next");
+    if (requestedReturn === "/suporte-admin") setReturnTo(requestedReturn);
     if (params.get("mfa") === "required") { setMessage("Acesso Google concluído. Aguarde a verificação do autenticador para finalizar o login."); setIsError(false); }
     if (errorCode === "recovery") {
       setIsError(true);
@@ -49,7 +52,7 @@ export default function LoginPage() {
         const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
         if (assurance.error || !active) return;
         if (assurance.data.currentLevel === "aal2" || assurance.data.nextLevel === "aal1") {
-          router.replace("/dashboard");
+          router.replace(requestedReturn === "/suporte-admin" ? "/suporte-admin" : "/dashboard");
           router.refresh();
           return;
         }
@@ -128,7 +131,7 @@ export default function LoginPage() {
           setPassword("");
           return;
         }
-        router.push("/dashboard");
+        router.push(returnTo);
         router.refresh();
       }
     } catch (error) {
@@ -156,7 +159,7 @@ export default function LoginPage() {
     try {
       const { error } = await createClient().auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/auth/oauth-callback` },
+        options: { redirectTo: `${window.location.origin}/auth/oauth-callback${returnTo === "/suporte-admin" ? "?next=%2Fsuporte-admin" : ""}` },
       });
       if (error) throw error;
     } catch {
