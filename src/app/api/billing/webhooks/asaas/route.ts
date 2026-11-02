@@ -1,7 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
-import { reconcileAsaasPaymentEvent } from "@/lib/billing/reconcile-asaas";
 
 const noStore = { "Cache-Control": "no-store" };
 
@@ -88,13 +87,8 @@ export async function POST(request: Request) {
     }
   }
 
-  // Durable inbox is the delivery boundary; verification is best-effort and audit-only.
-  // A verification failure remains pending for retry; never activate paid plans here.
-  try {
-    await reconcileAsaasPaymentEvent(eventId);
-  } catch {
-    // Event is safely stored; a separate retry processor will handle failures.
-  }
+  // Reconciliation is performed by the lease-based queue worker or the authenticated retry route.
+  // Never process a pending event inline: it must first be atomically claimed.
 
   // Acknowledge only after durable storage.
   return NextResponse.json({ received: true }, { status: 200, headers: noStore });
