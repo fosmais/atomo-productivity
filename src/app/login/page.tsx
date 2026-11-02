@@ -230,7 +230,7 @@ export default function LoginPage() {
       <div className="relative z-10 grid w-full max-w-6xl items-center justify-center gap-8 lg:grid-cols-[minmax(0,390px)_minmax(0,460px)] lg:gap-14">
         <div className="hidden lg:flex items-center justify-center"><MykaLoginScene /></div>
         <div className="mx-auto w-full max-w-[460px]">
-          <div className="mb-3 text-center lg:text-left">
+          <div className="mb-2 text-center lg:text-left">
             <h2 className="text-[clamp(1.5rem,2.2vw,2rem)] font-bold leading-tight tracking-tight text-white">Seu universo, <span className="text-violet-300">em sintonia.</span></h2>
             <p className="mt-2 text-sm leading-relaxed text-slate-300">Organize sua vida. Transforme planos em conquistas.</p>
           </div>
@@ -239,14 +239,24 @@ export default function LoginPage() {
             <img src="/myka-transparente.png" alt="MYKA, sua companheira inteligente" className="relative h-auto w-full drop-shadow-[0_12px_28px_rgba(120,65,255,.4)]" />
           </div>
           <div className="rounded-3xl border border-violet-300/45 bg-slate-950/90 p-4 shadow-2xl shadow-violet-950/40 backdrop-blur-xl sm:p-5">
-        <button type="button" disabled={loading} onClick={() => { if (mode === "signup" || mfaFactorId) { setMode("login"); setMfaFactorId(""); setMfaCode(""); setMessage(""); setIsError(false); setCaptchaToken(""); setCaptchaReset(n => n + 1); } else { router.push("/"); } }} className="mb-3 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-violet-200 transition hover:bg-white/10 hover:text-white disabled:opacity-50" aria-label={mode === "signup" ? "Voltar para login" : "Voltar para início"}><span aria-hidden="true">←</span> Voltar</button>
+        <button type="button" disabled={loading} onClick={() => { if (mode === "signup" || mfaFactorId) { setMode("login"); setMfaFactorId(""); setMfaCode(""); setMessage(""); setIsError(false); setCaptchaToken(""); setCaptchaReset(n => n + 1); } else { router.push("/"); } }} className="mb-2 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-violet-200 transition hover:bg-white/10 hover:text-white disabled:opacity-50" aria-label={mode === "signup" ? "Voltar para login" : "Voltar para início"}><span aria-hidden="true">←</span> Voltar</button>
         <div className="mb-3 flex items-center gap-3"><span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl"><img src="/myryra-logo.png" alt="Logotipo MYRYRA" className="h-full w-full object-cover" /></span><div><h1 className="text-2xl font-bold tracking-tight">MYRYRA</h1><p className="text-xs tracking-widest text-violet-300">YOUR LIFE. IN SYNC.</p></div></div><h2 className="text-2xl font-semibold">{mode === "login" ? "Bem-vindo de volta" : "Comece sua jornada"}</h2>
 
         <p className="mt-2 text-slate-400">
           {mode === "login"
             ? "Entre na sua conta."
-            : "Crie sua conta gratuitamente."}
+            : "Plano Free · R$ 0,00 · Sem cartão de crédito."}
         </p>
+
+        {mode === "signup" && !mfaFactorId && (
+          <p className="mt-3 text-sm text-violet-200">A MYKA acompanha seus primeiros passos na organização da rotina.</p>
+        )}
+        {mode === "signup" && !mfaFactorId && process.env.NEXT_PUBLIC_MYRYRA_GOOGLE_LOGIN_ENABLED === "true" && (
+          <div className="mt-4">
+            <button type="button" disabled={loading} onClick={() => void signInWithGoogle()} className="flex w-full items-center justify-center gap-2 rounded-xl border border-violet-400/50 bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"><span aria-hidden="true" className="font-bold text-violet-300">G</span> Criar conta com Google</button>
+            <p className="mt-3 text-center text-xs text-slate-400">ou cadastre-se com e-mail</p>
+          </div>
+        )}
 
         {mfaFactorId ? (
           <form onSubmit={verifyMfa} className="mt-4 space-y-3">
@@ -256,7 +266,7 @@ export default function LoginPage() {
             <button type="submit" disabled={loading || mfaCode.length !== 6} className="w-full rounded-xl bg-violet-600 p-3 font-semibold disabled:opacity-50">{loading ? "Verificando..." : "Verificar e entrar"}</button>
             <button type="button" onClick={async () => { await createClient().auth.signOut(); setMfaFactorId(""); setMfaFactors([]); setMfaCode(""); setMessage(""); }} className="text-sm text-violet-300">Voltar ao login</button>
           </form>
-        ) : <form onSubmit={handleSubmit} className="mt-5 space-y-3">
+        ) : <form onSubmit={handleSubmit} className="mt-4 space-y-3">
           <div>
             <label htmlFor="email" className="mb-2 block text-sm">
               E-mail
@@ -296,7 +306,7 @@ export default function LoginPage() {
           {mode === "signup" && (
             <div role="note" className="rounded-xl border border-violet-400/25 bg-violet-500/10 px-3 py-3 text-xs leading-relaxed text-violet-100">
               <p className="font-semibold">Confirmação por e-mail</p>
-              <p className="mt-1 text-violet-200/90">Após criar sua conta, você poderá receber um e-mail de <strong>Supabase Auth</strong>, nosso serviço de autenticação. É uma mensagem legítima da MYRYRA para confirmar seu endereço. Confira também a pasta de spam.</p>
+              <p className="mt-1 text-violet-200/90">Enviaremos um e-mail para confirmar seu endereço. Confira também a pasta de spam.</p>
             </div>
           )}
           {captchaEnabled && !mfaFactorId && (hcaptchaEnabled ? <HcaptchaCaptcha onToken={setCaptchaToken} resetSignal={captchaReset} /> : <TurnstileCaptcha onToken={setCaptchaToken} />)}
@@ -313,6 +323,8 @@ export default function LoginPage() {
           </button>
         </form>}
 
+
+        {mode === "login" && (
         {!mfaFactorId && process.env.NEXT_PUBLIC_MYRYRA_GOOGLE_LOGIN_ENABLED === "true" && (
           <div className="mt-4">
             <div className="mb-3 flex items-center gap-3 text-xs text-slate-400"><span className="h-px flex-1 bg-white/15" />ou continue com<span className="h-px flex-1 bg-white/15" /></div>
@@ -320,6 +332,8 @@ export default function LoginPage() {
               <span aria-hidden="true" className="font-bold text-violet-300">G</span> Continuar com Google
             </button>
           </div>
+        )}
+
         )}
 
         {message && (
