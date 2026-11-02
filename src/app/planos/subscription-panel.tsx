@@ -23,7 +23,7 @@ export function FreePlanAction() {
     fetch("/api/billing/subscription", { cache: "no-store", signal: controller.signal })
       .then((response) => {
         if (controller.signal.aborted) return;
-        setState(response.ok ? "authenticated" : response.status === 401 || response.status === 403 ? "unknown" : "unknown");
+        setState(response.ok ? "authenticated" : response.status === 401 ? "guest" : "unknown");
       })
       .catch(() => { if (!controller.signal.aborted) setState("unknown"); });
     return () => controller.abort();
