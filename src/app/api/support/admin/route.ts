@@ -14,7 +14,7 @@ async function authorize() {
   const admin = createSupabaseAdmin();
   const { data, error: lookupError } = await admin.from("support_admins").select("user_id").eq("user_id", user.id).maybeSingle();
   if (lookupError || !data) return { error: NextResponse.json({ error: "Acesso não autorizado." }, { status: 403, headers }) };
-  return { admin };
+  return { admin, userId: user.id };
 }
 
 export async function GET() {
@@ -26,7 +26,7 @@ export async function GET() {
       .order("created_at", { ascending: false }).limit(100);
     if (error) throw error;
     const ids = (data ?? []).map(ticket => ticket.id);
-    const { data: events, error: eventsError } = ids.length ? await access.admin!.from("support_ticket_events").select("id,ticket_id,previous_status,new_status,previous_priority,new_priority,created_at").in("ticket_id", ids).order("created_at", { ascending: false }).limit(300) : { data: [], error: null };
+    const { data: events, error: eventsError } = ids.length ? await access.admin!.from("support_ticket_events").select("id,ticket_id,actor_id,previous_status,new_status,previous_priority,new_priority,created_at").in("ticket_id", ids).order("created_at", { ascending: false }).limit(300) : { data: [], error: null };
     if (eventsError) throw eventsError;
     return NextResponse.json({ tickets: data ?? [], events: events ?? [] }, { headers });
   } catch {
@@ -55,6 +55,8 @@ export async function PATCH(request: Request) {
     const { data, error } = await access.admin!.from("support_tickets").update(changes).eq("id", id).select("id,status,priority,updated_at").maybeSingle();
     if (error) throw error;
     if (!data) return NextResponse.json({ error: "Chamado não encontrado." }, { status: 404, headers });
+    const { error: auditError } = await access.admin!.from("support_ticket_events").update({ actor_id: access.userId }).eq("ticket_id", id).is("actor_id", null).eq("created_at", data.updated_at);
+    if (auditError) throw auditError;
     return NextResponse.json({ ticket: data }, { headers });
   } catch {
     return NextResponse.json({ error: "Atualização indisponível." }, { status: 503, headers });
