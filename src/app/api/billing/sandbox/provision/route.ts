@@ -4,6 +4,29 @@ import { provisionAsaasSandboxCustomer, provisionAsaasSandboxSubscription } from
 
 const headers = { "Cache-Control": "private, no-store" };
 
+/** Read-only diagnostic: lets the signed-in tester confirm access without writing to Asaas. */
+export async function GET() {
+  const supabase = await createClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
+    return NextResponse.json({ error: "Autenticação necessária." }, { status: 401, headers });
+  }
+  const allowedIds = (process.env.ASAAS_SANDBOX_TEST_USER_IDS || "").split(",").map((id) => id.trim()).filter(Boolean);
+  return NextResponse.json({
+    environment: process.env.ASAAS_ENVIRONMENT === "sandbox" ? "sandbox" : "unavailable",
+    accountAuthorized: allowedIds.includes(user.id),
+    testEndpointEnabled: process.env.ASAAS_SANDBOX_TEST_ENDPOINT_ENABLED === "true",
+    provisioningEnabled: process.env.ASAAS_SANDBOX_PROVISIONING_ENABLED === "true",
+    checkoutDisabled: process.env.BILLING_CHECKOUT_ENABLED !== "true",
+    entitlementsDisabled: process.env.BILLING_ENTITLEMENTS_ENABLED !== "true",
+    canRunTest: process.env.ASAAS_ENVIRONMENT === "sandbox" &&
+      allowedIds.includes(user.id) &&
+      process.env.ASAAS_SANDBOX_TEST_ENDPOINT_ENABLED === "true" &&
+      process.env.ASAAS_SANDBOX_PROVISIONING_ENABLED === "true" &&
+      process.env.BILLING_CHECKOUT_ENABLED !== "true",
+  }, { headers });
+}
+
 /** Explicitly gated, authenticated Sandbox-only test. Never grants entitlements. */
 export async function POST(request: Request) {
   if (process.env.ASAAS_ENVIRONMENT !== "sandbox" ||
