@@ -102,7 +102,7 @@ export default function LoginPage() {
 
         setPassword("");
         setMessage(
-          "Se o endereço estiver apto para cadastro, você receberá um e-mail de confirmação. Verifique também a caixa de spam."
+          "Solicitação recebida! Se o endereço estiver apto para cadastro, enviaremos um link de confirmação. O e-mail poderá aparecer como enviado por Supabase Auth, serviço de autenticação da MYRYRA. Confira também a pasta de spam."
         );
       } else {
         if (captchaEnabled && !captchaToken) throw new Error("Conclua a verificação antirobô.");
@@ -131,11 +131,15 @@ export default function LoginPage() {
       }
     } catch (error) {
       setIsError(true);
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "Ocorreu um erro. Tente novamente."
-      );
+      const rawMessage = error instanceof Error ? error.message : "";
+      const normalized = rawMessage.toLowerCase();
+      if (normalized.includes("email rate limit exceeded") || normalized.includes("over_email_send_rate_limit")) {
+        setMessage("Você solicitou vários e-mails em pouco tempo. Por segurança, o envio está temporariamente limitado. Aguarde um pouco antes de tentar novamente e confira sua caixa de entrada e spam.");
+      } else if (normalized.includes("already-seen-response")) {
+        setMessage("Esta verificação de segurança já foi utilizada. Marque novamente a opção 'I am human' e tente outra vez.");
+      } else {
+        setMessage(rawMessage || "Não foi possível concluir sua solicitação. Tente novamente em instantes.");
+      }
     } finally {
       if (captchaEnabled) { setCaptchaToken(""); setCaptchaReset((n) => n + 1); }
       setLoading(false);
@@ -283,6 +287,12 @@ export default function LoginPage() {
           </div>
 
           {mode === "signup" && <><p className="text-xs text-slate-400">Use pelo menos {passwordMin} caracteres na senha.</p></>}
+          {mode === "signup" && (
+            <div role="note" className="rounded-xl border border-violet-400/25 bg-violet-500/10 px-3 py-3 text-xs leading-relaxed text-violet-100">
+              <p className="font-semibold">Confirmação por e-mail</p>
+              <p className="mt-1 text-violet-200/90">Após criar sua conta, você poderá receber um e-mail de <strong>Supabase Auth</strong>, nosso serviço de autenticação. É uma mensagem legítima da MYRYRA para confirmar seu endereço. Confira também a pasta de spam.</p>
+            </div>
+          )}
           {captchaEnabled && !mfaFactorId && (hcaptchaEnabled ? <HcaptchaCaptcha onToken={setCaptchaToken} resetSignal={captchaReset} /> : <TurnstileCaptcha onToken={setCaptchaToken} />)}
           <button
             type="submit"
