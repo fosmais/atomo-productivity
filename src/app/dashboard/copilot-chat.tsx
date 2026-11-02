@@ -572,7 +572,7 @@ setConversationId(data.conversationId);
               </p>
             </div>
             </div>
-            {message.role === "assistant" && /\\b(planos?|assin(ar|atura|aturas)|contrat(ar|ação)|upgrade|premium|pro)\\b/i.test(messages[index - 1]?.content ?? "") && (
+            {message.role === "assistant" && /\b(planos?|assin(ar|atura|aturas)|contrat(ar|ação)|upgrade|premium|pro)\b/i.test(messages[index - 1]?.content ?? "") && (
               <div className="ml-10 mt-2 rounded-xl border border-violet-500/40 bg-violet-950/30 p-3 sm:ml-12">
                 <p className="text-sm font-semibold text-white">Escolha seu plano MYRYRA</p>
                 <p className="mt-1 text-xs text-zinc-300">Compare os planos e registre seu interesse. A contratação paga ainda está em homologação.</p>
