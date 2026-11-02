@@ -8,7 +8,7 @@ async function authorize() {
   const { data: { user }, error } = await client.auth.getUser();
   if (error || !user) return { error: NextResponse.json({ error: "Autenticação necessária." }, { status: 401, headers }) };
   const assurance = await client.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (assurance.error || (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2")) {
+  if (assurance.error || assurance.data.currentLevel !== "aal2") {
     return { error: NextResponse.json({ error: "Verificação de segurança necessária." }, { status: 403, headers }) };
   }
   const admin = createSupabaseAdmin();
