@@ -95,7 +95,7 @@ export default function MykaSupport() {
         user_id: user.id, category: topic.startsWith("billing-") ? "billing" : "general", subject: selected.title, message: trimmed,
       }).select("id").single();
       if (insertError) throw insertError;
-      setStatus("Chamado aberto · protocolo " + created.id.slice(0, 8).toUpperCase() + ". Acompanhe o status abaixo; o atendimento humano ainda não está disponível nesta versão.");
+      setStatus("Chamado aberto · protocolo " + created.id.slice(0, 8).toUpperCase() + ". Acompanhe o status abaixo. O prazo de atendimento ainda não está definido.");
       void loadTickets();
       setMessage("");
     } catch (err) { setError(err instanceof Error ? err.message : "Não foi possível registrar a solicitação."); }
@@ -127,7 +127,7 @@ export default function MykaSupport() {
             <button type="button" onClick={() => void loadTickets()} disabled={loadingTickets} className="text-sm font-medium text-violet-200 underline underline-offset-2">{loadingTickets ? "Consultando..." : "Meus chamados · Atualizar"}</button>
             {ticketsNotice && <p className="text-xs text-slate-400">{ticketsNotice}</p>}
             {changedTickets.length > 0 && <p role="status" className="rounded-lg bg-violet-500/15 p-2 text-xs text-violet-200">{changedTickets.length} chamado(s) atualizado(s) desde sua última consulta.</p>}
-            {tickets.length > 0 && <button type="button" onClick={markUpdatesRead} className="text-xs text-violet-300 underline">Marcar atualizações como lidas</button>}
+            {changedTickets.length > 0 && <button type="button" onClick={markUpdatesRead} className="text-xs text-violet-300 underline">Marcar atualizações como lidas</button>}
             {tickets.map(ticket => <div key={ticket.id} className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-slate-300">
               <p className="font-medium text-white">{ticket.subject} · {ticket.id.slice(0, 8).toUpperCase()}</p>
               <p>Status: {({ open: "Aberto", in_progress: "Em análise", resolved: "Resolvido", closed: "Encerrado" } as Record<string,string>)[ticket.status] ?? "Em verificação"} · Prioridade: {({ low: "Baixa", normal: "Normal", high: "Alta", urgent: "Urgente" } as Record<string,string>)[ticket.priority] ?? "Normal"} · {new Date(ticket.created_at).toLocaleDateString("pt-BR")}</p>
