@@ -8,14 +8,18 @@ type Operation = {
   operation_type: "customer" | "subscription";
   state: string;
   provider_id: string | null;
+  expected_customer_id: string | null;
+  expected_plan_id: string | null;
+  expected_billing_type: string | null;
+  expected_amount_cents: number | null;
 };
-type ProviderObject = { id?: unknown; customer?: unknown; externalReference?: unknown };
+type ProviderObject = { id?: unknown; customer?: unknown; externalReference?: unknown; billingType?: unknown; value?: unknown };
 
 export async function recoverAsaasProvisioningOperation(id: string): Promise<"completed" | "manual_review"> {
   if (!/^[0-9a-f-]{36}$/i.test(id)) throw new Error("Operação inválida.");
   const admin = createSupabaseAdmin();
   const { data, error } = await admin.from("asaas_provisioning_operations")
-    .select("id,user_id,operation_type,state,provider_id").eq("id", id).maybeSingle();
+    .select("id,user_id,operation_type,state,provider_id,expected_customer_id,expected_plan_id,expected_billing_type,expected_amount_cents").eq("id", id).maybeSingle();
   if (error || !data) throw new Error("Operação não encontrada.");
   const op = data as Operation;
   if (op.state === "completed") return "completed";
@@ -43,9 +47,30 @@ export async function recoverAsaasProvisioningOperation(id: string): Promise<"co
       if (writeError) return "manual_review";
     }
   } else {
-    // Never infer a paid plan from a remote object or an untrusted webhook.
-    // Subscription recovery requires a persisted plan and customer snapshot.
-    return "manual_review";
+    if ((op.expected_plan_id !== "pro" && op.expected_plan_id !== "premium") ||
+        (op.expected_billing_type !== "PIX" && op.expected_billing_type !== "CREDIT_CARD") ||
+        !op.expected_customer_id || !Number.isSafeInteger(op.expected_amount_cents) ||
+        remote.customer !== op.expected_customer_id ||
+        remote.billingType !== op.expected_billing_type ||
+        typeof remote.value !== "number" ||
+        Math.round(remote.value * 100) !== op.expected_amount_cents) {
+      return "manual_review";
+    }
+    const { data: customer, error: customerError } = await admin.from("asaas_customer_links")
+      .select("asaas_customer_id").eq("user_id", op.user_id).maybeSingle();
+    if (customerError || customer?.asaas_customer_id !== op.expected_customer_id) return "manual_review";
+    const { data: existing, error: readError } = await admin.from("asaas_subscription_links")
+      .select("asaas_subscription_id").eq("asaas_subscription_id", op.provider_id).maybeSingle();
+    if (readError) return "manual_review";
+    if (!existing) {
+      const { error: writeError } = await admin.from("asaas_subscription_links").insert({
+        asaas_subscription_id: op.provider_id,
+        user_id: op.user_id,
+        asaas_customer_id: op.expected_customer_id,
+        plan_id: op.expected_plan_id,
+      });
+      if (writeError) return "manual_review";
+    }
   }
 
   const { error: completeError } = await admin.from("asaas_provisioning_operations")
