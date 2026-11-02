@@ -550,18 +550,6 @@ setConversationId(data.conversationId);
           </div>
         )}
 
-        {messages.some((item) => item.role === "user" && /\b(planos?|assin(ar|atura|aturas)|contrat(ar|ação)|upgrade|premium|pro)\b/i.test(item.content)) && (
-          <section aria-label="Planos MYRYRA" className="rounded-2xl border border-violet-400/40 bg-violet-950/30 p-4">
-            <div className="flex items-start gap-3"><span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-violet-400/40"><MykaPortrait className="h-9 w-9" /></span><div><p className="font-semibold text-white">Quer fazer upgrade? Escolha seu plano.</p><p className="mt-1 text-sm text-slate-300">Conheça as opções da MYRYRA. Assinaturas pagas ainda estão em homologação, sem cobrança nesta etapa.</p></div></div>
-            <div className="mt-4 grid gap-2 sm:grid-cols-3">
-              <a href="/planos" className="rounded-xl border border-white/20 p-3 text-sm text-white hover:bg-white/10"><strong className="block">Free</strong>R$ 0,00/mês</a>
-              <a href="/planos?plano=pro" className="rounded-xl border border-violet-400/60 bg-violet-500/15 p-3 text-sm text-white hover:bg-violet-500/25"><strong className="block">Pro</strong>R$ 29,90/mês</a>
-              <a href="/planos?plano=premium" className="rounded-xl border border-white/20 p-3 text-sm text-white hover:bg-white/10"><strong className="block">Premium</strong>R$ 49,90/mês</a>
-            </div>
-            <p className="mt-3 text-xs text-slate-400">Valores previstos para o MVP1. Selecione um plano para comparar os benefícios.</p>
-          </section>
-        )}
-
         {messages.map((message, index) => (
           <div key={index} className="space-y-3">
             <div className={message.role === "assistant" ? "flex min-w-0 items-start gap-2 sm:gap-3" : ""}>
@@ -786,6 +774,18 @@ setConversationId(data.conversationId);
             )}
           </div>
         ))}
+
+        {messages.some((item) => item.role === "user" && /\b(planos?|assin(ar|atura|aturas)|contrat(ar|ação)|upgrade|premium|pro|opções|opcoes|opcao|opção)\b/i.test(item.content)) && (
+          <section aria-label="Planos MYRYRA" className="rounded-2xl border border-violet-400/40 bg-violet-950/30 p-4">
+            <div className="flex items-start gap-3"><span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-violet-400/40"><MykaPortrait className="h-9 w-9" /></span><div><p className="font-semibold text-white">Quer fazer upgrade? Escolha seu plano.</p><p className="mt-1 text-sm text-slate-300">Conheça as opções da MYRYRA. Assinaturas pagas ainda estão em homologação, sem cobrança nesta etapa.</p></div></div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-3">
+              <a href="/planos" className="rounded-xl border border-white/20 p-3 text-sm text-white hover:bg-white/10"><strong className="block">Free</strong>R$ 0,00/mês</a>
+              <a href="/planos?plano=pro" className="rounded-xl border border-violet-400/60 bg-violet-500/15 p-3 text-sm text-white hover:bg-violet-500/25"><strong className="block">Pro</strong>R$ 29,90/mês</a>
+              <a href="/planos?plano=premium" className="rounded-xl border border-white/20 p-3 text-sm text-white hover:bg-white/10"><strong className="block">Premium</strong>R$ 49,90/mês</a>
+            </div>
+            <p className="mt-3 text-xs text-slate-400">Valores previstos para o MVP1. Selecione um plano para comparar os benefícios.</p>
+          </section>
+        )}
 
         {loading && (
           <p className="animate-pulse text-sm font-medium text-violet-300 motion-reduce:animate-none">
