@@ -94,6 +94,7 @@ function isEventProposal(
   const [dailyLimitReached, setDailyLimitReached] = useState(false);
   const [dailyResetAt, setDailyResetAt] = useState<number | null>(null);
   const [hideOffers, setHideOffers] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState<"free" | "pro" | "premium">("free");
   const [pendingTask, setPendingTask] = useState<SavedTask | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -300,6 +301,24 @@ async function startVoice() {
       }
     }
     void loadQuota();
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void fetch("/api/billing/subscription", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) return;
+        const payload: unknown = await response.json();
+        if (!active || !isRecord(payload) || !isRecord(payload.subscription)) return;
+        const subscription = payload.subscription;
+        if ((subscription.status === "active" || subscription.status === "trialing") &&
+            (subscription.planId === "pro" || subscription.planId === "premium") &&
+            typeof subscription.currentPeriodEnd === "string" &&
+            Date.parse(subscription.currentPeriodEnd) > Date.now()) {
+          setCurrentPlan(subscription.planId);
+        }
+      }).catch(() => {});
     return () => { active = false; };
   }, []);
 
