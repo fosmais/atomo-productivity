@@ -23,8 +23,14 @@ export async function getGoogleBusyIntervals(): Promise<TimeInterval[]> {
     cache: "no-store",
   });
 
+  if (response.status === 409) {
+    const detail: { code?: string } = await response.json().catch(() => ({}));
+    if (detail.code === "GOOGLE_CALENDAR_RECONNECT_REQUIRED") {
+      throw new Error("Reconecte o Google Calendar na Agenda para que a MYKA confirme seus horários livres.");
+    }
+  }
   if (!response.ok) {
-    throw new Error("Não foi possível consultar o Google Calendar.");
+    throw new Error("Não foi possível confirmar os horários do Google Calendar. Tente atualizar a Agenda antes de receber uma sugestão.");
   }
 
   const data: GoogleEventsResponse = await response.json();
