@@ -52,11 +52,16 @@ export async function PATCH(request: Request) {
       changes.priority = String(priority);
     }
     if (!Object.keys(changes).length) return NextResponse.json({ error: "Nenhuma alteração." }, { status: 400, headers });
-    const { data, error } = await access.admin!.from("support_tickets").update(changes).eq("id", id).select("id,status,priority,updated_at").maybeSingle();
+    const { data, error } = await access.admin!.rpc("admin_update_support_ticket", {
+      p_ticket_id: id,
+      p_actor_id: access.userId,
+      p_status: changes.status ?? null,
+      p_priority: changes.priority ?? null,
+    });
     if (error) throw error;
-    if (!data) return NextResponse.json({ error: "Chamado não encontrado." }, { status: 404, headers });
+    if (!data?.length) return NextResponse.json({ error: "Chamado não encontrado." }, { status: 404, headers });
 
-    return NextResponse.json({ ticket: data }, { headers });
+    return NextResponse.json({ ticket: data[0] }, { headers });
   } catch {
     return NextResponse.json({ error: "Atualização indisponível." }, { status: 503, headers });
   }
