@@ -22,13 +22,26 @@ export async function GET() {
     const access = await authorize();
     if (access.error) return access.error;
     const { data, error } = await access.admin!.from("support_tickets")
-      .select("id,subject,message,category,status,priority,created_at,updated_at")
+      .select("id,user_id,subject,message,category,status,priority,created_at,updated_at")
       .order("created_at", { ascending: false }).limit(100);
     if (error) throw error;
     const ids = (data ?? []).map(ticket => ticket.id);
     const { data: events, error: eventsError } = ids.length ? await access.admin!.from("support_ticket_events").select("id,ticket_id,actor_id,previous_status,new_status,previous_priority,new_priority,created_at").in("ticket_id", ids).order("created_at", { ascending: false }).limit(300) : { data: [], error: null };
     if (eventsError) throw eventsError;
-    return NextResponse.json({ tickets: data ?? [], events: events ?? [] }, { headers });
+    // Resolve contact details server-side only after admin authorization and MFA.
+    // Never expose auth.users or user metadata through the public ticket endpoint.
+    const userIds = [...new Set((data ?? []).map(ticket => ticket.user_id))];
+    const contacts = await Promise.all(userIds.map(async userId => {
+      const { data: record, error: contactError } = await access.admin!.auth.admin.getUserById(userId);
+      if (contactError || !record.user) return [userId, { name: null, email: null, phone: null }] as const;
+      const user = record.user;
+      const metadata = user.user_metadata ?? {};
+      const name = [metadata.full_name, metadata.name].find(value => typeof value === "string" && value.trim()) ?? null;
+      return [userId, { name, email: user.email ?? null, phone: user.phone || null }] as const;
+    }));
+    const contactById = new Map(contacts);
+    const tickets = (data ?? []).map(ticket => ({ ...ticket, contact: contactById.get(ticket.user_id) ?? { name: null, email: null, phone: null } }));
+    return NextResponse.json({ tickets, events: events ?? [] }, { headers });
   } catch {
     return NextResponse.json({ error: "Consulta indisponível." }, { status: 503, headers });
   }
