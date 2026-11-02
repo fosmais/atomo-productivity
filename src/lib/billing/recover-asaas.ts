@@ -60,8 +60,10 @@ export async function recoverAsaasProvisioningOperation(id: string): Promise<"co
       .select("asaas_customer_id").eq("user_id", op.user_id).maybeSingle();
     if (customerError || customer?.asaas_customer_id !== op.expected_customer_id) return "manual_review";
     const { data: existing, error: readError } = await admin.from("asaas_subscription_links")
-      .select("asaas_subscription_id").eq("asaas_subscription_id", op.provider_id).maybeSingle();
-    if (readError) return "manual_review";
+      .select("asaas_subscription_id,user_id,asaas_customer_id,plan_id").eq("asaas_subscription_id", op.provider_id).maybeSingle();
+    if (readError || (existing && (existing.user_id !== op.user_id ||
+        existing.asaas_customer_id !== op.expected_customer_id ||
+        existing.plan_id !== op.expected_plan_id))) return "manual_review";
     if (!existing) {
       const { error: writeError } = await admin.from("asaas_subscription_links").insert({
         asaas_subscription_id: op.provider_id,
