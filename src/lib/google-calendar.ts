@@ -4,6 +4,7 @@ import { google } from "googleapis";
 export const GOOGLE_CALENDAR_SCOPES = [
   "https://www.googleapis.com/auth/calendar.events.readonly",
   "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
+  "https://www.googleapis.com/auth/tasks.readonly",
 ];
 
 export function createGoogleOAuthClient() {
