@@ -20,7 +20,7 @@ export default function VyraHome() {
   const [agendaLoading, setAgendaLoading] = useState(true);
   const [agendaError, setAgendaError] = useState(false);
   // MYRYRA_GOOGLE_HOME_CARD
-  const [googleStatus, setGoogleStatus] = useState<"loading" | "connected" | "disconnected" | "error">("loading");
+  const [googleStatus, setGoogleStatus] = useState<"loading" | "connected" | "disconnected" | "mfa_required" | "reconnect_required" | "error">("loading");
 
   useEffect(() => {
     if (activeModule !== "home") return;
@@ -36,6 +36,9 @@ export default function VyraHome() {
         });
 
         if (!response.ok) {
+          const detail: { code?: string } = await response.json().catch(() => ({}));
+          if (!cancelled && detail.code === "MFA_REQUIRED") { setGoogleStatus("mfa_required"); return; }
+          if (!cancelled && detail.code === "GOOGLE_CALENDAR_RECONNECT_REQUIRED") { setGoogleStatus("reconnect_required"); return; }
           throw new Error("Falha ao verificar conexão Google.");
         }
 
@@ -150,6 +153,24 @@ export default function VyraHome() {
       </div>
       <MyryraScore metrics={metrics} loading={loading} />
       <WhatNowCard />
+      {googleStatus === "mfa_required" && (
+        <section role="status" className="rounded-2xl border border-amber-500/30 bg-amber-950/20 p-4 text-sm text-amber-100">
+          A agenda Google está protegida pela verificação em duas etapas. Conclua a verificação de segurança para consultar seus compromissos.
+          <a href="/login?next=%2Fdashboard" className="ml-2 font-semibold underline">Verificar sessão</a>
+        </section>
+      )}
+      {googleStatus === "reconnect_required" && (
+        <section role="status" className="rounded-2xl border border-amber-500/30 bg-amber-950/20 p-4 text-sm text-amber-100">
+          A autorização do Google Calendar expirou ou precisa ser renovada.
+          <a href="/api/google/connect" className="ml-2 font-semibold underline">Renovar autorização</a>
+        </section>
+      )}
+      {googleStatus === "error" && (
+        <section role="status" className="rounded-2xl border border-amber-500/30 bg-amber-950/20 p-4 text-sm text-amber-100">
+          Não foi possível verificar a conexão com o Google Calendar. Seus compromissos não foram descartados.
+          <button type="button" onClick={() => window.location.reload()} className="ml-2 font-semibold underline">Tentar novamente</button>
+        </section>
+      )}
       {googleStatus === "disconnected" && (
         <section className="flex flex-col gap-3 rounded-2xl border border-violet-500/20 bg-slate-900/50 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
