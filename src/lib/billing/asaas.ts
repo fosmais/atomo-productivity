@@ -3,8 +3,7 @@ import "server-only";
 export function asaasSandboxReady() {
   return process.env.ASAAS_ENVIRONMENT === "sandbox" &&
     Boolean(process.env.ASAAS_API_KEY) &&
-    Boolean(process.env.ASAAS_WEBHOOK_TOKEN) &&
-    process.env.BILLING_ENTITLEMENTS_ENABLED === "true";
+    Boolean(process.env.ASAAS_WEBHOOK_TOKEN);
 }
 
 export async function asaasSandboxGet(path: string): Promise<unknown> {
