@@ -9,7 +9,7 @@ type State = "reserved" | "remote_created" | "completed" | "needs_recovery";
  * Unique DB reservation prevents concurrent duplicate provider writes.
  * An uncertain provider outcome must be reconciled manually before retrying.
  */
-export async function reserveAsaasOperation(userId: string, kind: Kind, input: string) {
+export async function reserveAsaasOperation(userId: string, kind: Kind, input: string, expected?: { customerId: string; planId: "pro" | "premium"; billingType: "PIX" | "CREDIT_CARD"; amountCents: number }) {
   const admin = createSupabaseAdmin();
   const fingerprint = createHash("sha256").update(input).digest("hex");
   const operationKey = `${kind}:${userId}:${fingerprint}`;
@@ -20,6 +20,7 @@ export async function reserveAsaasOperation(userId: string, kind: Kind, input: s
       operation_key: operationKey,
       request_fingerprint: fingerprint,
       state: "reserved",
+      ...(expected ? { expected_customer_id: expected.customerId, expected_plan_id: expected.planId, expected_billing_type: expected.billingType, expected_amount_cents: expected.amountCents } : {}),
     })
     .select("id").single();
   if (error || !data) {
