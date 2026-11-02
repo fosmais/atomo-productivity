@@ -40,7 +40,7 @@ export default function WhatNowCard() {
   const recommendation = data?.recommendation;
   const emptyState = data && !recommendation
     ? data.readyTaskCount > 0
-      ? { title: "Sua agenda está cheia neste momento.", description: "Há tarefas prontas, mas nenhuma cabe nos horários disponíveis. Consulte a agenda para reorganizar seu dia.", action: "Ver minha agenda", module: "vyra-calendar" }
+      ? { title: "Nenhuma tarefa cabe em uma janela livre agora.", description: "Pode ser que você esteja fora do horário de planejamento, tenha compromissos neste momento ou que as tarefas sejam mais longas que o tempo disponível. Confira sua agenda e suas preferências de planejamento.", action: "Ver minha agenda", module: "vyra-calendar" }
       : data.missingDurationCount > 0
         ? { title: "Vamos preparar suas próximas prioridades?", description: "Algumas tarefas precisam de uma duração estimada para receber recomendações.", action: "Organizar tarefas", module: "vyra-tasks" }
         : { title: "Tudo tranquilo por enquanto.", description: "Não encontramos tarefas prontas para sugerir. Registre uma prioridade quando quiser.", action: "Adicionar prioridades", module: "vyra-tasks" }
