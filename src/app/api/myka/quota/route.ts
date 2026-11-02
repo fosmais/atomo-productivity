@@ -3,7 +3,7 @@ import { authenticateRequest } from "@/lib/supabase/request-client";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { getUserEntitlements } from "@/lib/billing/entitlements";
 
-export const dynamic = "force-dynamic";
+
 
 export async function GET(request: Request) {
   try {
