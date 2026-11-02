@@ -15,6 +15,12 @@ export async function GET() {
     return NextResponse.json({ error: "Autenticação necessária." }, { status: 401, headers });
   }
 
+  const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (assurance.error) return NextResponse.json({ error: "Verificação de sessão indisponível." }, { status: 503, headers });
+  if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
+    return NextResponse.json({ error: "Segundo fator obrigatório.", code: "MFA_REQUIRED" }, { status: 403, headers });
+  }
+
   const sandbox = process.env.ASAAS_ENVIRONMENT === "sandbox";
   if (!sandbox) return NextResponse.json({ checkoutAvailable: false, reason: "sandbox_only" }, { headers });
 
