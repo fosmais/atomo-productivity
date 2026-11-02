@@ -92,6 +92,7 @@ function isEventProposal(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [dailyLimitReached, setDailyLimitReached] = useState(false);
+  const [dailyResetAt, setDailyResetAt] = useState<number | null>(null);
   const [pendingTask, setPendingTask] = useState<SavedTask | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -304,7 +305,10 @@ async function startVoice() {
       const data: unknown = await response.json();
 
       if (!response.ok) {
-        if (isRecord(data) && data.code === "DAILY_PLAN_LIMIT") setDailyLimitReached(true);
+        if (isRecord(data) && data.code === "DAILY_PLAN_LIMIT") {
+          setDailyLimitReached(true);
+          setDailyResetAt(typeof data.resetAt === "number" && Number.isFinite(data.resetAt) ? data.resetAt : null);
+        }
         throw new Error(
           isRecord(data) && typeof data.error === "string"
             ? data.error
@@ -439,6 +443,7 @@ async function startVoice() {
       }
 
       setDailyLimitReached(false);
+      setDailyResetAt(null);
       if (!isRecord(data) || typeof data.reply !== "string") {
         throw new Error("Resposta inválida da Myka.");
       }
@@ -780,7 +785,7 @@ setConversationId(data.conversationId);
 
         {(dailyLimitReached || messages.some((item) => item.role === "user" && /\b(planos?|assin(ar|atura|aturas)|contrat(ar|ação)|upgrade|premium|pro|opções|opcoes|opcao|opção)\b/i.test(item.content))) && (
           <section aria-label="Planos MYRYRA" className="rounded-2xl border border-violet-400/40 bg-violet-950/30 p-4">
-            <div className="flex items-start gap-3"><span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-violet-400/40"><MykaPortrait className="h-9 w-9" /></span><div><p className="font-semibold text-white">{dailyLimitReached ? "Você atingiu seu limite de 10 mensagens de hoje no plano Free." : "Conheça as opções de upgrade da MYRYRA."}</p><p className="mt-1 text-sm text-slate-300">{dailyLimitReached ? "Seu limite diário será renovado amanhã. Gostaria de conhecer outros planos?" : "Compare as opções disponíveis."} Assinaturas pagas em breve.</p></div></div>
+            <div className="flex items-start gap-3"><span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-violet-400/40"><MykaPortrait className="h-9 w-9" /></span><div><p className="font-semibold text-white">{dailyLimitReached ? "Você atingiu seu limite de 10 mensagens de hoje no plano Free." : "Conheça as opções de upgrade da MYRYRA."}</p><p className="mt-1 text-sm text-slate-300">{dailyLimitReached ? `Seu limite será renovado${dailyResetAt && dailyResetAt > Date.now() ? ` em ${new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(dailyResetAt))} (horário de Brasília)` : " automaticamente"}. Gostaria de conhecer outros planos?` : "Compare as opções disponíveis."} Assinaturas pagas em breve.</p></div></div>
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
               <a href="/planos?plano=pro" className="rounded-xl border border-violet-400/60 bg-violet-500/15 p-3 text-sm text-white hover:bg-violet-500/25"><strong className="block">Pro</strong>R$ 29,90/mês · 100 mensagens/dia</a>
               <a href="/planos?plano=premium" className="rounded-xl border border-white/20 p-3 text-sm text-white hover:bg-white/10"><strong className="block">Premium</strong>R$ 49,90/mês · 250 mensagens/dia</a>
