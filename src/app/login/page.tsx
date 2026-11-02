@@ -28,7 +28,9 @@ export default function LoginPage() {
 
   useEffect(() => {
     let active = true;
-    const errorCode = new URLSearchParams(window.location.search).get("error");
+    const params = new URLSearchParams(window.location.search);
+    const errorCode = params.get("error");
+    if (params.get("mfa") === "required") { setMessage("Acesso Google concluído. Aguarde a verificação do autenticador para finalizar o login."); setIsError(false); }
     if (errorCode === "recovery") {
       setIsError(true);
       setMessage("O link de recuperação é inválido ou expirou. Solicite um novo e-mail.");
@@ -55,7 +57,7 @@ export default function LoginPage() {
           const factors = await supabase.auth.mfa.listFactors();
           if (factors.error || !active) return;
           const factor = factors.data.totp.find(item => item.status === "verified");
-          if (factor) { setMfaFactors(factors.data.totp.filter(item => item.status === "verified").map(item => ({ id: item.id, name: item.friendly_name || "Autenticador" }))); setMfaFactorId(factor.id); }
+          if (factor) { setMessage("Confirme o código de seis dígitos do autenticador para continuar."); setIsError(false); setMfaFactors(factors.data.totp.filter(item => item.status === "verified").map(item => ({ id: item.id, name: item.friendly_name || "Autenticador" }))); setMfaFactorId(factor.id); }
         }
       } catch {
         // The regular sign-in form remains available when session restoration fails.
