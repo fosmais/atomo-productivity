@@ -4,7 +4,6 @@ import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { asaasSandboxGet } from "@/lib/billing/asaas";
 import { verifyAsaasSubscriptionLink } from "@/lib/billing/asaas-links";
 
-export const runtime = "nodejs";
 const headers = { "Cache-Control": "no-store" };
 
 function authorized(value: string | null, secret: string): boolean {
