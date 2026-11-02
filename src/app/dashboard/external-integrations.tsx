@@ -34,7 +34,7 @@ export default function ExternalIntegrations() {
     <section className="space-y-4" aria-label="Integrações externas">
       <p className="text-sm leading-6 text-slate-300">
         Prepare suas ferramentas para trabalhar com a MYRYRA. Google Tasks oferece consulta e importação sob demanda mediante autorização.
-        Todoist e Outlook permanecem em desenvolvimento.
+        Todoist também oferece importação manual após configurar a conexão. Outlook permanece em desenvolvimento.
       </p>
       <div className="grid gap-3 lg:grid-cols-3">
         {integrations.map((integration) => (
@@ -54,8 +54,7 @@ export default function ExternalIntegrations() {
       <ManualTaskImport />
       <ManualCalendarImport />
       <p className="text-xs leading-5 text-slate-400">
-        Antes de ativar a sincronização, configuraremos OAuth com permissões mínimas,
-        armazenamento seguro de credenciais e prevenção de tarefas duplicadas.
+        As importações são manuais, mediante confirmação. Google Tasks e Todoist não alteram dados nas contas externas.
       </p>
     </section>
   );
