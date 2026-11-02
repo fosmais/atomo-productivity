@@ -24,6 +24,7 @@ export async function recoverAsaasProvisioningOperation(id: string): Promise<"co
   if (error || !data) throw new Error("Operação não encontrada.");
   const op = data as Operation;
   if (op.state === "completed") return "completed";
+  if (op.state !== "remote_created" && op.state !== "needs_recovery") return "manual_review";
   if (!op.provider_id) return "manual_review";
 
   const isCustomer = op.operation_type === "customer";
@@ -80,9 +81,10 @@ export async function recoverAsaasProvisioningOperation(id: string): Promise<"co
     }
   }
 
-  const { error: completeError } = await admin.from("asaas_provisioning_operations")
+  const { data: completed, error: completeError } = await admin.from("asaas_provisioning_operations")
     .update({ state: "completed", updated_at: new Date().toISOString(), last_error: null })
-    .eq("id", op.id).eq("provider_id", op.provider_id);
-  if (completeError) return "manual_review";
+    .eq("id", op.id).eq("provider_id", op.provider_id)
+    .in("state", ["remote_created", "needs_recovery"]).select("id").maybeSingle();
+  if (completeError || !completed) return "manual_review";
   return "completed";
 }
