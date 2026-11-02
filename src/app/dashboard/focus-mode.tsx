@@ -30,7 +30,7 @@ export default function FocusMode() {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) throw new Error("Sessão concluída, mas não foi possível confirmar o login.");
       const { error } = await supabase.from("focus_sessions").insert({ user_id: user.id, duration_minutes: minutes });
-      if (error) throw new Error("Sessão concluída, mas o registro no Score ainda não está habilitado neste ambiente.");
+      if (error) throw new Error("Sessão concluída, mas não foi possível salvar no Score. Tente registrar novamente.");
       setSaveStatus("Sessão registrada para o indicador Foco.");
       window.dispatchEvent(new Event("myryra:focus-updated"));
     } catch (error) { savedRef.current = false; setSaveStatus(error instanceof Error ? error.message : "Não foi possível registrar a sessão."); }
