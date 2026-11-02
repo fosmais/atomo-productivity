@@ -22,6 +22,7 @@ export async function reconcileAsaasPaymentEvent(eventId: string): Promise<"veri
     .eq("event_id", eventId).maybeSingle();
   if (error || !event) throw new Error("Evento não encontrado.");
   if (event.state === "processed") return "verified";
+  if (event.state !== "processing") throw new Error("Evento não reservado para conciliação.");
 
   const payload = event.payload as Record<string, unknown> | null;
   const payment = payload?.payment;
@@ -42,6 +43,9 @@ export async function reconcileAsaasPaymentEvent(eventId: string): Promise<"veri
     throw new Error("Pagamento sem vínculo de assinatura verificável.");
   }
   await verifyAsaasSubscriptionLink(subscriptionId, verified.customer);
+  if (verified.status !== "CONFIRMED" && verified.status !== "RECEIVED") {
+    throw new Error("Pagamento ainda não confirmado pelo Asaas.");
+  }
 
   const { error: saveError } = await admin.from("asaas_webhook_inbox").update({
     payment_id: paymentId,
@@ -51,7 +55,7 @@ export async function reconcileAsaasPaymentEvent(eventId: string): Promise<"veri
     state: "processed",
     processed_at: new Date().toISOString(),
     last_error: null,
-  }).eq("event_id", eventId);
+  }).eq("event_id", eventId).eq("state", "processing").select("event_id").maybeSingle();
   if (saveError) throw new Error("Falha ao registrar conciliação.");
   return "verified";
 }
