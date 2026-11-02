@@ -16,6 +16,23 @@ const labels: Record<string, string> = {
   canceled: "Cancelada", unpaid: "Não paga", incomplete: "Aguardando confirmação",
 };
 
+export function FreePlanAction() {
+  const [state, setState] = useState<"loading" | "authenticated" | "unknown" | "guest">("loading");
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/billing/subscription", { cache: "no-store", signal: controller.signal })
+      .then((response) => {
+        if (controller.signal.aborted) return;
+        setState(response.ok ? "authenticated" : response.status === 401 || response.status === 403 ? "unknown" : "unknown");
+      })
+      .catch(() => { if (!controller.signal.aborted) setState("unknown"); });
+    return () => controller.abort();
+  }, []);
+  if (state === "authenticated") return <div className="mt-8 rounded-xl border border-violet-500/50 bg-violet-500/10 px-4 py-3 text-center text-sm font-semibold text-violet-200">Seu plano atual</div>;
+  if (state === "loading" || state === "unknown") return <div className="mt-8 rounded-xl border border-white/15 px-4 py-3 text-center text-sm text-zinc-300">{state === "loading" ? "Verificando seu plano…" : "Consulte seu plano após entrar na conta"}</div>;
+  return <a href="/login?mode=signup" className="mt-8 block rounded-xl bg-violet-600 px-4 py-3 text-center text-sm font-semibold text-white">Criar minha conta grátis</a>;
+}
+
 export default function SubscriptionPanel() {
   const [status, setStatus] = useState<"loading" | "ready" | "unauthorized" | "error">("loading");
   const [data, setData] = useState<ResponseData | null>(null);
