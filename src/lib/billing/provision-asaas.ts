@@ -2,6 +2,7 @@ import "server-only";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { asaasSandboxPost } from "@/lib/billing/asaas";
 import { BILLING_PLANS } from "@/lib/billing/plans";
+import { reserveAsaasOperation, updateAsaasOperation } from "@/lib/billing/asaas-operations";
 
 type PaidPlan = "pro" | "premium";
 type BillingType = "PIX" | "CREDIT_CARD";
@@ -30,6 +31,7 @@ export async function provisionAsaasSandboxCustomer(userId: string, name: string
   if (lookupError) throw new Error("Não foi possível consultar o cliente.");
   if (existing) return existing.asaas_customer_id as string;
 
+  const operationId = await reserveAsaasOperation(userId, "customer", userId);
   const remote = await asaasSandboxPost("/customers", {
     name: name.trim(), email: email.trim(), cpfCnpj,
     externalReference: userId,
@@ -38,9 +40,11 @@ export async function provisionAsaasSandboxCustomer(userId: string, name: string
   if (typeof remote.id !== "string" || !/^cus_[A-Za-z0-9]+$/.test(remote.id)) {
     throw new Error("Cadastro Asaas não retornou identificador válido.");
   }
+  await updateAsaasOperation(operationId, "remote_created", remote.id);
   const { error } = await admin.from("asaas_customer_links")
     .insert({ user_id: userId, asaas_customer_id: remote.id });
   if (error) throw new Error("Cliente criado no Sandbox, mas vínculo local requer recuperação.");
+  await updateAsaasOperation(operationId, "completed", remote.id);
   return remote.id;
 }
 
@@ -62,6 +66,7 @@ export async function provisionAsaasSandboxSubscription(
   const due = new Date();
   due.setUTCDate(due.getUTCDate() + 2);
   const nextDueDate = due.toISOString().slice(0, 10);
+  const operationId = await reserveAsaasOperation(userId, "subscription", `${userId}:${planId}:${billingType}`);
   const remote = await asaasSandboxPost("/subscriptions", {
     customer: customer.asaas_customer_id,
     billingType,
@@ -75,6 +80,7 @@ export async function provisionAsaasSandboxSubscription(
       remote.customer !== customer.asaas_customer_id) {
     throw new Error("Assinatura Asaas divergente.");
   }
+  await updateAsaasOperation(operationId, "remote_created", remote.id);
   const { error } = await admin.from("asaas_subscription_links").insert({
     asaas_subscription_id: remote.id,
     user_id: userId,
@@ -82,5 +88,6 @@ export async function provisionAsaasSandboxSubscription(
     plan_id: planId,
   });
   if (error) throw new Error("Assinatura criada no Sandbox, mas vínculo local requer recuperação.");
+  await updateAsaasOperation(operationId, "completed", remote.id);
   return remote.id;
 }
