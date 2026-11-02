@@ -1,5 +1,5 @@
 import Link from "next/link";
-import SubscriptionPanel from "./subscription-panel";
+import SubscriptionPanel, { FreePlanAction } from "./subscription-panel";
 import { BILLING_PLANS } from "@/lib/billing/plans";
 
 const details = {
@@ -20,7 +20,7 @@ export default function PlanosPage() {
       <div className="mt-10 text-center">
         <p className="text-sm font-semibold tracking-[0.2em] text-violet-300">MYRYRA</p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">Um plano para cada ritmo.</h1>
-        <p className="mx-auto mt-4 max-w-2xl text-base text-zinc-300">Conheça os planos previstos para o MVP 1. Os recursos e valores ainda estão em homologação.</p>
+        <p className="mx-auto mt-4 max-w-2xl text-base text-zinc-300">Encontre a opção ideal para sua rotina. Os planos pagos estarão disponíveis em breve.</p>
       </div>
       <div className="mt-10 grid gap-5 md:grid-cols-3">
         {Object.values(BILLING_PLANS).map((plan) => (
@@ -33,9 +33,7 @@ export default function PlanosPage() {
               {details[plan.id].highlights.map((item) => <li key={item}>✓ {item}</li>)}
             </ul>
             {plan.id === "free" ? (
-              <Link href="/login?mode=signup" className="mt-8 block rounded-xl bg-violet-600 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-violet-500">
-                Criar minha conta grátis
-              </Link>
+              <FreePlanAction />
             ) : (
               <div className="mt-8 rounded-xl border border-white/15 px-4 py-3 text-center text-sm text-zinc-300" aria-label="Assinaturas ainda não disponíveis">
                 {salesEnabled ? "Checkout em preparação" : "Em breve"}
