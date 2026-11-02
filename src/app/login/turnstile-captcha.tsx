@@ -13,7 +13,8 @@ export default function TurnstileCaptcha({ onToken }: { onToken: (token: string)
   const callbackRef = useRef(onToken);
   callbackRef.current = onToken;
   const [errorCode, setErrorCode] = useState<string | null>(null);
-  const key = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+  const key = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim();
+  const diagnosticKey = key ? `${key.slice(0, 10)}…${key.slice(-6)} (${key.length} caracteres)` : "ausente";
   useEffect(() => {
     if (!key || !ref.current) return;
     let cancelled = false;
@@ -47,5 +48,5 @@ export default function TurnstileCaptcha({ onToken }: { onToken: (token: string)
       callbackRef.current("");
     };
   }, [key]);
-  return <div><div ref={ref} aria-label="Verificação antirobô" className="min-h-16" />{errorCode && <p role="alert" className="mt-2 text-xs text-rose-300">Falha na verificação de segurança (código {errorCode}). Atualize a página ou verifique se o domínio está autorizado no Cloudflare.</p>}</div>;
+  return <div><div ref={ref} aria-label="Verificação antirobô" className="min-h-16" />{errorCode && <p className="mt-2 text-xs text-amber-200">Diagnóstico Turnstile: Site Key {diagnosticKey}. Confirme o identificador no painel Cloudflare.</p>}{errorCode && <p role="alert" className="mt-2 text-xs text-rose-300">Falha na verificação de segurança (código {errorCode}). Atualize a página ou verifique se o domínio está autorizado no Cloudflare.</p>}</div>;
 }
