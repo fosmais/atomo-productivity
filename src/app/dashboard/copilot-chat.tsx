@@ -550,7 +550,7 @@ setConversationId(data.conversationId);
           </div>
         )}
 
-        {messages.length > 0 && messages[messages.length - 1]?.role === "user" && /\\b(planos?|assin(ar|atura|aturas)|contrat(ar|ação)|upgrade|premium|pro)\\b/i.test(messages[messages.length - 1]?.content ?? "") && (
+        {messages.length > 0 && messages[messages.length - 1]?.role === "user" && /\b(planos?|assin(ar|atura|aturas)|contrat(ar|ação)|upgrade|premium|pro)\b/i.test(messages[messages.length - 1]?.content ?? "") && (
           <section aria-label="Planos MYRYRA" className="rounded-2xl border border-violet-400/40 bg-violet-950/30 p-4">
             <div className="flex items-start gap-3"><span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-violet-400/40"><MykaPortrait className="h-9 w-9" /></span><div><p className="font-semibold text-white">Quer fazer upgrade? Escolha seu plano.</p><p className="mt-1 text-sm text-slate-300">Conheça as opções da MYRYRA. Assinaturas pagas ainda estão em homologação, sem cobrança nesta etapa.</p></div></div>
             <div className="mt-4 grid gap-2 sm:grid-cols-3">
