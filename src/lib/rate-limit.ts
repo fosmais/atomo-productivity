@@ -51,7 +51,7 @@ export async function checkConciergeRateLimit(userId: string) {
       console.error("[MYKA] Limite de mensagens do Supabase indisponível.");
       throw new Error("Rate limiting indisponível.");
     }
-    return { allowed: data.allowed, reset: data.reset, reason: data.allowed ? null : "daily" as const, dailyLimit };
+    return { allowed: data.allowed, reset: data.reset, reason: data.allowed ? null : (data.reset <= Date.now() + 65000 ? "minute" as const : "daily" as const), dailyLimit };
   }
   const dailyLimiter = dailyLimiters.get(dailyLimit);
   if (!dailyLimiter) throw new Error("Limite diário não configurado.");
