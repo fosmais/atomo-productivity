@@ -2,6 +2,7 @@
 
 import ManualTaskImport from "./manual-task-import";
 import ManualCalendarImport from "./manual-calendar-import";
+import GoogleTasksImport from "./google-tasks-import";
 
 const integrations = [
   {
@@ -31,8 +32,8 @@ export default function ExternalIntegrations() {
   return (
     <section className="space-y-4" aria-label="Integrações externas">
       <p className="text-sm leading-6 text-slate-300">
-        Prepare suas ferramentas para trabalhar com a MYRYRA. As conexões estão em preparação
-        e ainda não sincronizam dados nem solicitam acesso às suas contas.
+        Prepare suas ferramentas para trabalhar com a MYRYRA. Google Tasks oferece consulta e importação sob demanda mediante autorização.
+        Todoist e Outlook permanecem em desenvolvimento.
       </p>
       <div className="grid gap-3 lg:grid-cols-3">
         {integrations.map((integration) => (
@@ -47,6 +48,7 @@ export default function ExternalIntegrations() {
           </article>
         ))}
       </div>
+      <GoogleTasksImport />
       <ManualTaskImport />
       <ManualCalendarImport />
       <p className="text-xs leading-5 text-slate-400">
