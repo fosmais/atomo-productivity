@@ -1,18 +1,20 @@
 "use client";
 import { useEffect, useState } from "react";
 type Ticket = { id:string; subject:string; message:string; status:string; priority:string; category:string; created_at:string };
+type AuditEvent = { id:string; ticket_id:string; previous_status:string|null; new_status:string|null; previous_priority:string|null; new_priority:string|null; created_at:string };
 const statusOptions = [["open","Aberto"],["in_progress","Em análise"],["resolved","Resolvido"],["closed","Encerrado"]];
 const priorityOptions = [["low","Baixa"],["normal","Normal"],["high","Alta"],["urgent","Urgente"]];
 export default function SupportAdminPage() {
  const [tickets,setTickets] = useState<Ticket[]>([]);
+ const [events,setEvents] = useState<AuditEvent[]>([]);
  const [notice,setNotice] = useState("Consultando chamados...");
  const [busy,setBusy] = useState("");
  async function refresh() {
   try {
    const response=await fetch("/api/support/admin",{cache:"no-store"});
    if(!response.ok){setNotice(response.status===403?"Acesso restrito.":"Consulta indisponível.");return;}
-   const data=await response.json() as {tickets:Ticket[]};
-   setTickets(data.tickets);setNotice(data.tickets.length?"":"Nenhum chamado encontrado.");
+   const data=await response.json() as {tickets:Ticket[];events:AuditEvent[]};
+   setTickets(data.tickets);setEvents(data.events ?? []);setNotice(data.tickets.length?"":"Nenhum chamado encontrado.");
   } catch {setNotice("Falha de conexão.");}
  }
  useEffect(()=>{void refresh();},[]);
@@ -39,6 +41,7 @@ export default function SupportAdminPage() {
     <label className="text-sm">Status <select className="ml-2 rounded bg-slate-800 p-2" disabled={busy===ticket.id} value={ticket.status} onChange={e=>void update(ticket.id,"status",e.target.value)}>{statusOptions.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
     <label className="text-sm">Prioridade <select className="ml-2 rounded bg-slate-800 p-2" disabled={busy===ticket.id} value={ticket.priority} onChange={e=>void update(ticket.id,"priority",e.target.value)}>{priorityOptions.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
    </div>
+   {events.some(event=>event.ticket_id===ticket.id)&&<details className="mt-4 text-xs text-slate-300"><summary className="cursor-pointer text-violet-300">Histórico de alterações</summary><ul className="mt-2 space-y-2">{events.filter(event=>event.ticket_id===ticket.id).map(event=><li key={event.id}>{new Date(event.created_at).toLocaleString("pt-BR")} · {event.previous_status!==event.new_status?`Status: ${event.previous_status} → ${event.new_status}`:""} {event.previous_priority!==event.new_priority?`Prioridade: ${event.previous_priority} → ${event.new_priority}`:""}</li>)}</ul></details>}
   </article>)}</div>
  </main>;
 }
