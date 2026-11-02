@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 declare global {
   interface Window {
     turnstile?: {
@@ -10,6 +10,9 @@ declare global {
 }
 export default function TurnstileCaptcha({ onToken }: { onToken: (token: string) => void }) {
   const ref = useRef<HTMLDivElement>(null);
+  const callbackRef = useRef(onToken);
+  callbackRef.current = onToken;
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const key = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   useEffect(() => {
     if (!key || !ref.current) return;
@@ -20,9 +23,9 @@ export default function TurnstileCaptcha({ onToken }: { onToken: (token: string)
       widgetId = window.turnstile.render(ref.current, {
         sitekey: key,
         theme: "dark",
-        callback: (token: string) => onToken(token),
-        "expired-callback": () => onToken(""),
-        "error-callback": () => onToken(""),
+        callback: (token: string) => { setErrorCode(null); callbackRef.current(token); },
+        "expired-callback": () => callbackRef.current(""),
+        "error-callback": (code: string) => { setErrorCode(code || "unknown"); callbackRef.current(""); },
       });
     };
     let script = document.getElementById("myryra-turnstile") as HTMLScriptElement | null;
@@ -41,8 +44,8 @@ export default function TurnstileCaptcha({ onToken }: { onToken: (token: string)
       window.clearInterval(poll);
       script?.removeEventListener("load", render);
       if (widgetId !== undefined) window.turnstile?.remove(widgetId);
-      onToken("");
+      callbackRef.current("");
     };
-  }, [key, onToken]);
-  return <div ref={ref} aria-label="Verificação antirobô" className="min-h-16" />;
+  }, [key]);
+  return <div><div ref={ref} aria-label="Verificação antirobô" className="min-h-16" />{errorCode && <p role="alert" className="mt-2 text-xs text-rose-300">Falha na verificação de segurança (código {errorCode}). Atualize a página ou verifique se o domínio está autorizado no Cloudflare.</p>}</div>;
 }
