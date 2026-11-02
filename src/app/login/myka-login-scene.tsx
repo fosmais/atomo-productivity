@@ -3,8 +3,8 @@ import Image from "next/image";
 
 export default function MykaLoginScene() {
   return (
-    <div aria-label="Conheça a MYKA, sua companheira inteligente" className="relative mx-auto flex w-full max-w-[310px] flex-col items-center justify-center">
-      <div className="pointer-events-none w-full"><Image
+    <div aria-label="Conheça a MYKA, sua companheira inteligente" className="relative mx-auto flex w-full max-w-[310px] translate-y-10 flex-col items-center justify-center">
+      <div className="pointer-events-none flex w-full justify-center"><Image
         src="/myka-transparente.png"
         alt="MYKA, gata roxa com círculo laranja e medalha 1618"
         width={1240}
