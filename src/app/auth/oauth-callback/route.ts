@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
+  const next = url.searchParams.get("next") === "/suporte-admin" ? "/suporte-admin" : "/dashboard";
   if (!code || code.length > 2048) {
     return NextResponse.redirect(new URL("/login?error=oauth", url.origin));
   }
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
     if (assurance.error) throw assurance.error;
     // The login page resumes MFA if a verified factor requires aal2.
     const destination = assurance.data.nextLevel === "aal2" &&
-      assurance.data.currentLevel !== "aal2" ? "/login?mfa=required" : "/dashboard";
+      assurance.data.currentLevel !== "aal2" ? `/login?mfa=required${next === "/suporte-admin" ? "&next=%2Fsuporte-admin" : ""}` : next;
     return NextResponse.redirect(new URL(destination, url.origin));
   } catch {
     return NextResponse.redirect(new URL("/login?error=oauth", url.origin));
