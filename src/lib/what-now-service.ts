@@ -51,8 +51,33 @@ export async function getWhatNowRecommendation(
     now
   );
 
-  const candidates = freeIntervals.flatMap(interval => tasks.ready.filter(task => task.durationMinutes >= 5 && interval.end.getTime() - Math.max(interval.start.getTime(), now.getTime()) >= task.durationMinutes * 60000).map(task => ({ title: task.title, taskId: task.id, durationMinutes: task.durationMinutes, start: new Date(Math.max(interval.start.getTime(), now.getTime())), priority: task.priority })));
-  candidates.sort((a, b) => a.start.getTime() - b.start.getTime() || b.priority - a.priority);
+  // Only offer a future slot when the entire task fits in a valid free interval.
+  const candidates = freeIntervals.flatMap((interval) => {
+    const startMs = Math.max(interval.start.getTime(), now.getTime());
+    const endMs = interval.end.getTime();
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) return [];
+
+    return tasks.ready
+      .filter((task) =>
+        Number.isFinite(task.durationMinutes) &&
+        task.durationMinutes >= 5 &&
+        Number.isFinite(task.priority) &&
+        startMs + task.durationMinutes * 60_000 <= endMs
+      )
+      .map((task) => ({
+        title: task.title,
+        taskId: task.id,
+        durationMinutes: task.durationMinutes,
+        start: new Date(startMs),
+        priority: task.priority,
+      }));
+  });
+  candidates.sort((a, b) =>
+    a.start.getTime() - b.start.getTime() ||
+    b.priority - a.priority ||
+    a.durationMinutes - b.durationMinutes ||
+    a.taskId.localeCompare(b.taskId)
+  );
   const nextOpportunity = recommendation ? null : candidates[0] ?? null;
 
   return {
