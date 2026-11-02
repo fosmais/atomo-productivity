@@ -108,7 +108,7 @@ export default function LoginPage() {
 
         setPassword("");
         setMessage(
-          "Solicitação recebida! Se o endereço estiver apto para cadastro, enviaremos um link de confirmação. O e-mail poderá aparecer como enviado por Supabase Auth, serviço de autenticação da MYRYRA. Confira também a pasta de spam."
+          "Solicitação recebida! Se o endereço estiver apto para cadastro, enviaremos um link de confirmação. Confira sua caixa de entrada e a pasta de spam."
         );
       } else {
         if (captchaEnabled && !captchaToken) throw new Error("Conclua a verificação antirobô.");
