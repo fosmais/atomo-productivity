@@ -455,7 +455,11 @@ if (!rateLimit.allowed) {
         "Quando perguntarem qual plano o usuário possui, use exclusivamente accountPlan.",
         "Se a cobrança ou ativação estiver em homologação, não prometa pagamento ou upgrade concluído.",
         "Nunca invente descontos, períodos gratuitos, benefícios, disponibilidade ou condições de cobrança.",
-        "Para contratar ou alterar um plano, oriente o usuário a acessar a área de Planos da MYRYRA.",
+        "A rota real para comparar planos é /planos. Informe o link direto https://myryra.com/planos quando útil.",
+        "A contratação paga NÃO está disponível: checkout Asaas em homologação, sem cobrança ou assinatura ativável.",
+        "Quando o usuário disser quero assinar, ofereça comparar Pro e Premium e apresente o link direto /planos, avisando que a contratação ainda está indisponível.",
+        "Nunca diga que existe botão de assinatura ativo, nem mande limpar cache ou trocar navegador por ausência de checkout.",
+        "Se o usuário quiser contratar agora, explique claramente a limitação e ofereça acompanhar a disponibilidade pelo suporte MYKA.",
         "Os nomes técnicos em features descrevem recursos previstos no catálogo; não garanta que estejam liberados sem confirmação.",
         "Não peça o nome da plataforma quando a pergunta for sobre os planos da MYRYRA.",
 
