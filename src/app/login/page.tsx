@@ -245,7 +245,7 @@ export default function LoginPage() {
         <p className="mt-2 text-slate-400">
           {mode === "login"
             ? "Entre na sua conta."
-            : "Plano Free · R$ 0,00 · Sem cartão de crédito."}
+            : <><span className="font-semibold text-violet-300">Plano Free · R$ 0,00</span> <span className="text-slate-300">· Sem cartão de crédito.</span></>}
         </p>
 
         {mode === "signup" && !mfaFactorId && (
@@ -253,7 +253,7 @@ export default function LoginPage() {
         )}
         {mode === "signup" && !mfaFactorId && process.env.NEXT_PUBLIC_MYRYRA_GOOGLE_LOGIN_ENABLED === "true" && (
           <div className="mt-4">
-            <button type="button" disabled={loading} onClick={() => void signInWithGoogle()} className="flex w-full items-center justify-center gap-2 rounded-xl border border-violet-400/50 bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"><span aria-hidden="true" className="font-bold text-violet-300">G</span> Criar conta com Google</button>
+            <button type="button" disabled={loading} onClick={() => void signInWithGoogle()} className="flex w-full items-center justify-center gap-2 rounded-xl border border-violet-400/50 bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"><span aria-hidden="true" className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-[13px] font-bold text-[#4285F4]">G</span> Criar conta com Google</button>
             <p className="mt-3 text-center text-xs text-slate-400">ou cadastre-se com e-mail</p>
           </div>
         )}
@@ -309,7 +309,7 @@ export default function LoginPage() {
               <p className="mt-1 text-violet-200/90">Enviaremos um e-mail para confirmar seu endereço. Confira também a pasta de spam.</p>
             </div>
           )}
-          {captchaEnabled && !mfaFactorId && (hcaptchaEnabled ? <HcaptchaCaptcha onToken={setCaptchaToken} resetSignal={captchaReset} /> : <TurnstileCaptcha onToken={setCaptchaToken} />)}
+          {captchaEnabled && !mfaFactorId && <div className="py-1">{hcaptchaEnabled ? <HcaptchaCaptcha onToken={setCaptchaToken} resetSignal={captchaReset} /> : <TurnstileCaptcha onToken={setCaptchaToken} />}</div>}
           <button
             type="submit"
             disabled={loading}
@@ -328,7 +328,7 @@ export default function LoginPage() {
           <div className="mt-4">
             <div className="mb-3 flex items-center gap-3 text-xs text-slate-400"><span className="h-px flex-1 bg-white/15" />ou continue com<span className="h-px flex-1 bg-white/15" /></div>
             <button type="button" disabled={loading} onClick={() => void signInWithGoogle()} className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-slate-900/90 px-4 py-3 text-sm font-semibold text-white transition hover:border-violet-400/70 disabled:opacity-50">
-              <span aria-hidden="true" className="font-bold text-violet-300">G</span> Continuar com Google
+              <span aria-hidden="true" className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-[13px] font-bold text-[#4285F4]">G</span> Continuar com Google
             </button>
           </div>
         )}
