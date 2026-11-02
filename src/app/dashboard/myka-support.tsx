@@ -11,6 +11,9 @@ const help: Record<string, { title: string; answer: string }> = {
   "vyra-calendar": { title: "Agenda", answer: "Na Agenda você visualiza compromissos. Para importar um calendário ICS ou configurar Google Calendar, abra Preferências → Integrações de produtividade." },
   "vyra-scheduling": { title: "Smart Scheduling", answer: "O Smart Scheduling ajuda a encontrar horários no seu planejamento. Confira primeiro se sua Agenda está atualizada." },
   "vyra-performance": { title: "Performance", answer: "A tela Performance apresenta indicadores de produtividade com base nas atividades disponíveis na MYRYRA." },
+  "billing-plans": { title: "Planos e assinaturas", answer: "Consulte as opções de planos e os recursos disponíveis na área de Planos da MYRYRA. Para solicitar alteração de plano ou esclarecer condições de assinatura, registre uma solicitação abaixo. Não informe dados completos de cartão." },
+  "billing-payments": { title: "Pagamentos e cobranças", answer: "Para dúvidas sobre cobrança, pagamento não reconhecido, falha na confirmação ou renovação, informe o plano, a data e uma descrição do ocorrido. Não envie número de cartão, CVV, senhas ou dados bancários." },
+  "billing-cancel": { title: "Cancelamento e reembolso", answer: "Se precisar de ajuda com cancelamento, renovação ou reembolso, descreva sua solicitação abaixo. A abertura do chamado não cancela automaticamente uma assinatura nem confirma um reembolso." },
   "vyra-settings": { title: "Preferências", answer: "Em Preferências você encontra segurança da conta, integrações de produtividade e feedback. Nunca compartilhe senhas ou chaves de API em solicitações." },
 };
 
