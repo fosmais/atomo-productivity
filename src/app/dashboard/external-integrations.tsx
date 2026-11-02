@@ -3,6 +3,7 @@
 import ManualTaskImport from "./manual-task-import";
 import ManualCalendarImport from "./manual-calendar-import";
 import GoogleTasksImport from "./google-tasks-import";
+import TodoistImport from "./todoist-import";
 
 const integrations = [
   {
@@ -49,6 +50,7 @@ export default function ExternalIntegrations() {
         ))}
       </div>
       <GoogleTasksImport />
+      <TodoistImport />
       <ManualTaskImport />
       <ManualCalendarImport />
       <p className="text-xs leading-5 text-slate-400">
