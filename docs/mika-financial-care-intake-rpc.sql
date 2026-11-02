@@ -22,6 +22,17 @@ begin
  select id,plan_id,status,provider,cancel_at_period_end,current_period_end into v_sub
  from public.billing_subscriptions where id=p_subscription_id and user_id=p_user_id for update;
  if not found or v_sub.provider <> 'asaas' or v_sub.status not in ('active','trialing') then raise exception 'ineligible subscription'; end if;
+ -- A concurrent request may have committed while we waited on the subscription lock.
+ -- Recheck the key under that lock before attempting the unique insert.
+ select id,action,target_plan,subscription_id into v_existing
+ from public.billing_financial_care_requests
+ where user_id=p_user_id and idempotency_key=p_idempotency_key;
+ if found then
+   if v_existing.action <> p_action or v_existing.target_plan is distinct from p_target_plan or v_existing.subscription_id <> p_subscription_id then
+     raise exception 'idempotency conflict';
+   end if;
+   return v_existing.id;
+ end if;
  if p_action='cancel_renewal' and (p_target_plan is not null or v_sub.cancel_at_period_end) then raise exception 'invalid cancellation'; end if;
  if p_action='downgrade' and not (
  (v_sub.plan_id='premium' and p_target_plan in ('pro','free')) or
