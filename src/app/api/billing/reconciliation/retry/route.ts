@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { reconcileAsaasPaymentEvent } from "@/lib/billing/reconcile-asaas";
 
@@ -7,8 +8,11 @@ const headers = { "Cache-Control": "no-store" };
 /** Internal, secret-protected manual retry. No billing entitlement changes. */
 export async function POST(request: Request) {
   const secret = process.env.ASAAS_RECONCILIATION_SECRET;
-  if (!secret || secret.length < 24 ||
-      request.headers.get("authorization") !== `Bearer ${secret}`) {
+  const supplied = request.headers.get("authorization");
+  const expected = Buffer.from(`Bearer ${secret || ""}`, "utf8");
+  const actual = Buffer.from(supplied || "", "utf8");
+  if (!secret || secret.length < 24 || !supplied ||
+      actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
     return NextResponse.json({ error: "Não autorizado." }, { status: 401, headers });
   }
   if (process.env.ASAAS_ENVIRONMENT !== "sandbox") {
@@ -41,10 +45,11 @@ export async function POST(request: Request) {
       verified += 1;
     } catch {
       failed += 1;
-      await admin.from("asaas_webhook_inbox").update({
+      const { error: failureError } = await admin.from("asaas_webhook_inbox").update({
         state: "failed",
         last_error: "Falha de verificação no Asaas Sandbox.",
       }).eq("event_id", event.event_id).eq("state", "processing");
+      if (failureError) return NextResponse.json({ error: "Falha ao registrar tentativa." }, { status: 503, headers });
     }
   }
   return NextResponse.json({ scanned: (data ?? []).length, verified, failed }, { headers });
