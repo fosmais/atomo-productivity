@@ -35,6 +35,13 @@ export default function WhatNowCard() {
 
   useEffect(() => {
     void load();
+    const refresh = () => { void load(); };
+    window.addEventListener("myryra:tasks-updated", refresh);
+    window.addEventListener("myryra:calendar-updated", refresh);
+    return () => {
+      window.removeEventListener("myryra:tasks-updated", refresh);
+      window.removeEventListener("myryra:calendar-updated", refresh);
+    };
   }, [load]);
 
   const recommendation = data?.recommendation;
