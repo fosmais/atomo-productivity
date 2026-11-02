@@ -14,7 +14,7 @@ export default function MykaLoginScene() {
         className="relative h-auto w-full max-w-[235px] xl:max-w-[250px]"
       /></div>
       <p className="relative mt-5 text-center text-sm font-medium tracking-[.25em] text-violet-200/80">CONHEÇA A MYKA</p>
-      <p className="relative mt-2 max-w-sm text-center text-sm leading-relaxed text-slate-300">Sua companheira inteligente para transformar planos em conquistas.</p>
+      <p className="relative mt-2 max-w-sm text-center text-sm leading-relaxed text-slate-300">Sua vida tem muitos planos. Eu ajudo você a transformá-los em conquistas.</p>
     </div>
   );
 }
