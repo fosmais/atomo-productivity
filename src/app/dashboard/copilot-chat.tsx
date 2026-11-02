@@ -307,7 +307,7 @@ async function startVoice() {
       if (!response.ok) {
         if (isRecord(data) && data.code === "DAILY_PLAN_LIMIT") {
           setDailyLimitReached(true);
-          setDailyResetAt(typeof data.resetAt === "number" && Number.isFinite(data.resetAt) ? data.resetAt : null);
+          setDailyResetAt(typeof data.resetAt === "number" && Number.isFinite(data.resetAt) ? (data.resetAt < 100000000000 ? data.resetAt * 1000 : data.resetAt) : null);
         }
         throw new Error(
           isRecord(data) && typeof data.error === "string"
@@ -805,7 +805,7 @@ setConversationId(data.conversationId);
 
       {error && (
         <div role="alert" className="mb-3 space-y-2 text-sm text-red-400">
-          <p>{/você atingiu as \d+ mensagens disponíveis hoje/i.test(error) ? `${error} Gostaria de conhecer outros planos?` : error}</p>
+          <p>{/você atingiu as \d+ mensagens disponíveis hoje/i.test(error) ? `${error} ${dailyResetAt && dailyResetAt > Date.now() ? `Renovação: ${new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(dailyResetAt))} (Brasília).` : "A renovação será automática."} Gostaria de conhecer outros planos?` : error}</p>
           <p className="text-slate-300">Precisa de suporte financeiro? Abra um chamado diretamente na Ajuda MYKA, mesmo quando a conversa com IA estiver indisponível.</p>
           <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("myryra:open-support", { detail: { topic: "billing-payments" } }))} className="rounded-lg border border-violet-400 px-3 py-2 font-semibold text-violet-200">Abrir suporte financeiro</button>
           {/você atingiu as \d+ mensagens disponíveis hoje/i.test(error) ? (
