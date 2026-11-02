@@ -32,9 +32,15 @@ export default function PlanosPage() {
             <ul className="mt-7 space-y-3 text-sm text-zinc-200">
               {details[plan.id].highlights.map((item) => <li key={item}>✓ {item}</li>)}
             </ul>
-            <div className="mt-8 rounded-xl border border-white/15 px-4 py-3 text-center text-sm text-zinc-300" aria-label="Assinaturas ainda não disponíveis">
-              {salesEnabled ? "Checkout em preparação" : "Em breve"}
-            </div>
+            {plan.id === "free" ? (
+              <Link href="/login?mode=signup" className="mt-8 block rounded-xl bg-violet-600 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-violet-500">
+                Criar minha conta grátis
+              </Link>
+            ) : (
+              <div className="mt-8 rounded-xl border border-white/15 px-4 py-3 text-center text-sm text-zinc-300" aria-label="Assinaturas ainda não disponíveis">
+                {salesEnabled ? "Checkout em preparação" : "Em breve"}
+              </div>
+            )}
           </section>
         ))}
       </div>
