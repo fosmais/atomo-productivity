@@ -1,5 +1,6 @@
 import Link from "next/link";
 import SubscriptionPanel, { FreePlanAction } from "./subscription-panel";
+import FinancialCarePanel from "./financial-care-panel";
 import { BILLING_PLANS } from "@/lib/billing/plans";
 
 const details = {
@@ -43,6 +44,7 @@ export default function PlanosPage() {
         ))}
       </div>
       <SubscriptionPanel />
+      <FinancialCarePanel />
       <p className="mt-8 text-center text-xs text-zinc-400">Valores indicativos. Nenhuma contratação ou cobrança está disponível nesta página.</p>
     </main>
   );
