@@ -29,6 +29,7 @@ export default function MykaSupport() {
   const [ticketsNotice, setTicketsNotice] = useState("");
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [error, setError] = useState("");
+  const [seenUpdates, setSeenUpdates] = useState<Record<string, string>>({});
   const context = help[activeModule] ?? help.home;
   const selected = topic === "context" ? context : help[topic] ?? context;
 
@@ -51,6 +52,13 @@ export default function MykaSupport() {
     return () => controller.abort();
   }, [open, topic]);
 
+  useEffect(() => {
+    if (!open) return;
+    void loadTickets();
+    const interval = window.setInterval(() => { if (document.visibilityState === "visible") void loadTickets(); }, 60000);
+    return () => window.clearInterval(interval);
+  }, [open]);
+
   async function loadTickets() {
     setLoadingTickets(true); setTicketsNotice("");
     try {
@@ -63,6 +71,11 @@ export default function MykaSupport() {
       if (!data?.length) setTicketsNotice("Você ainda não possui tickets neste ambiente.");
     } catch (err) { setTicketsNotice(err instanceof Error ? err.message : "Não foi possível consultar os tickets."); }
     finally { setLoadingTickets(false); }
+  }
+
+  const changedTickets = tickets.filter(ticket => seenUpdates[ticket.id] && seenUpdates[ticket.id] !== ticket.updated_at);
+  function markUpdatesRead() {
+    setSeenUpdates(previous => ({ ...previous, ...Object.fromEntries(tickets.map(ticket => [ticket.id, ticket.updated_at])) }));
   }
 
   async function send() {
@@ -108,6 +121,8 @@ export default function MykaSupport() {
           <div className="space-y-2 border-t border-white/10 pt-3">
             <button type="button" onClick={() => void loadTickets()} disabled={loadingTickets} className="text-sm font-medium text-violet-200 underline underline-offset-2">{loadingTickets ? "Consultando..." : "Meus chamados · Atualizar"}</button>
             {ticketsNotice && <p className="text-xs text-slate-400">{ticketsNotice}</p>}
+            {changedTickets.length > 0 && <p role="status" className="rounded-lg bg-violet-500/15 p-2 text-xs text-violet-200">{changedTickets.length} chamado(s) atualizado(s) desde sua última consulta.</p>}
+            {tickets.length > 0 && <button type="button" onClick={markUpdatesRead} className="text-xs text-violet-300 underline">Marcar atualizações como lidas</button>}
             {tickets.map(ticket => <div key={ticket.id} className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-slate-300">
               <p className="font-medium text-white">{ticket.subject} · {ticket.id.slice(0, 8).toUpperCase()}</p>
               <p>Status: {({ open: "Aberto", in_progress: "Em análise", resolved: "Resolvido", closed: "Encerrado" } as Record<string,string>)[ticket.status] ?? "Em verificação"} · Prioridade: {({ low: "Baixa", normal: "Normal", high: "Alta", urgent: "Urgente" } as Record<string,string>)[ticket.priority] ?? "Normal"} · {new Date(ticket.created_at).toLocaleDateString("pt-BR")}</p>
