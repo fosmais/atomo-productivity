@@ -93,6 +93,7 @@ function isEventProposal(
   const [error, setError] = useState("");
   const [dailyLimitReached, setDailyLimitReached] = useState(false);
   const [dailyResetAt, setDailyResetAt] = useState<number | null>(null);
+  const [hideOffers, setHideOffers] = useState(false);
   const [pendingTask, setPendingTask] = useState<SavedTask | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -807,7 +808,7 @@ setConversationId(data.conversationId);
           </div>
         ))}
 
-        {(dailyLimitReached || messages.some((item) => item.role === "user" && /\b(planos?|assin(ar|atura|aturas)|contrat(ar|ação)|upgrade|premium|pro|opções|opcoes|opcao|opção)\b/i.test(item.content))) && (
+        {(!hideOffers && dailyLimitReached) && (
           <section aria-label="Planos MYRYRA" className="rounded-2xl border border-violet-400/40 bg-violet-950/30 p-4">
             <div className="flex items-start gap-3"><span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-violet-400/40"><MykaPortrait className="h-9 w-9" /></span><div><p className="font-semibold text-white">{dailyLimitReached ? "Você atingiu seu limite de 10 mensagens de hoje no plano Free." : "Conheça as opções de upgrade da MYRYRA."}</p><p className="mt-1 text-sm text-slate-300">{dailyLimitReached ? `Seu limite será renovado${dailyResetAt && dailyResetAt > Date.now() ? ` em ${new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(dailyResetAt))} (horário de Brasília)` : " automaticamente"}. Gostaria de conhecer outros planos?` : "Compare as opções disponíveis."} Assinaturas pagas em breve.</p></div></div>
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
