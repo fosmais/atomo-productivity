@@ -18,6 +18,10 @@ export async function POST(request: Request) {
   if (error || !user || !user.email) {
     return NextResponse.json({ error: "Autenticação necessária." }, { status: 401, headers });
   }
+  const allowedIds = (process.env.ASAAS_SANDBOX_TEST_USER_IDS || "").split(",").map((id) => id.trim()).filter(Boolean);
+  if (!allowedIds.includes(user.id)) {
+    return NextResponse.json({ error: "Conta não autorizada para homologação." }, { status: 403, headers });
+  }
   const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (assurance.error || (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2")) {
     return NextResponse.json({ error: "Verificação adicional necessária." }, { status: 403, headers });
