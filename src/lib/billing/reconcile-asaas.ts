@@ -27,7 +27,7 @@ export async function reconcileAsaasPaymentEvent(eventId: string): Promise<"veri
   if (!event.event_type.startsWith("PAYMENT_") || !payment ||
       typeof payment !== "object" || Array.isArray(payment) ||
       typeof (payment as Record<string, unknown>).id !== "string") {
-    return "ignored";
+    throw new Error("Evento sem pagamento conciliável.");
   }
   const paymentId = (payment as Record<string, unknown>).id as string;
   if (!/^pay_[a-zA-Z0-9]+$/.test(paymentId)) throw new Error("ID de pagamento inválido.");
