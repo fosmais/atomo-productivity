@@ -40,6 +40,9 @@ export async function POST(request: Request) {
   if (input.paymentMethod !== "PIX" && input.paymentMethod !== "CREDIT_CARD") {
     return NextResponse.json({ error: "Forma de pagamento inválida." }, { status: 400, headers });
   }
+  if (process.env.ASAAS_ENVIRONMENT !== "sandbox") {
+    return NextResponse.json({ error: "Simulação disponível somente no Sandbox." }, { status: 503, headers });
+  }
   const planId: PaidPlan = input.planId;
   const paymentMethod: PaymentMethod = input.paymentMethod;
   const plan = BILLING_PLANS[planId];
