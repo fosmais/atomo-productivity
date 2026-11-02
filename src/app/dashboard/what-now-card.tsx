@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useVyraNavigation } from "./vyra-module-context";
+import FeatureHint from "./feature-hint";
 import {
   getWhatNowRecommendation,
   type WhatNowResult,
@@ -12,7 +13,6 @@ export default function WhatNowCard() {
   const [data, setData] = useState<WhatNowResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [showExplanation, setShowExplanation] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -50,9 +50,7 @@ export default function WhatNowCard() {
     <section className="rounded-3xl border border-violet-400/25 bg-gradient-to-br from-violet-950/65 via-[#15112e] to-slate-950 p-5 shadow-[0_20px_70px_-35px_rgba(124,58,237,0.55)] sm:p-7">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-400">
-            ✦ MYKA · WHAT NOW?
-          </p>
+          <FeatureHint label="✦ MYKA · WHAT NOW?" title="Como funciona o What Now?" description="A MYKA cruza suas tarefas pendentes, prioridades, prazos e durações estimadas com os horários disponíveis na MYRYRA e os compromissos bloqueantes do Google Calendar." tip="A sugestão é opcional. Nenhuma tarefa é iniciada nem nenhum compromisso é alterado automaticamente. Informe a duração estimada das tarefas para melhorar as recomendações." />
 
           <h2 className="mt-2 text-2xl font-semibold text-white">
             O que vale a pena fazer agora?
@@ -61,7 +59,6 @@ export default function WhatNowCard() {
           <p className="mt-2 text-sm text-slate-400">
             A MYKA ajuda você a escolher a próxima tarefa com base em prioridades, prazos, duração e horários livres.
           </p>
-          <button type="button" aria-expanded={showExplanation} aria-controls="what-now-explanation" onClick={() => setShowExplanation(v => !v)} className="mt-3 rounded-full border border-violet-400/30 px-3 py-1.5 text-xs text-violet-200 hover:bg-violet-500/10">ⓘ Como funciona?</button>
         </div>
 
         <button
@@ -74,7 +71,6 @@ export default function WhatNowCard() {
         </button>
       </div>
 
-      {showExplanation && <div id="what-now-explanation" className="mt-4 rounded-2xl border border-violet-400/20 bg-slate-950/40 p-4 text-sm leading-6 text-slate-300"><p className="font-semibold text-violet-200">Como a MYKA escolhe seu próximo passo?</p><p className="mt-2">Ela cruza tarefas pendentes, prioridades, prazos e durações estimadas com os horários disponíveis na MYRYRA e os compromissos bloqueantes do Google Calendar conectado.</p><p className="mt-2">A sugestão é opcional: nenhuma tarefa é iniciada e nenhum compromisso é alterado automaticamente. Informe a duração das tarefas para melhorar as recomendações.</p></div>}
       <div className="mt-6">
         {loading ? (
           <div role="status" aria-live="polite" className="flex items-center gap-3 rounded-2xl border border-violet-400/15 bg-slate-950/40 p-5">
