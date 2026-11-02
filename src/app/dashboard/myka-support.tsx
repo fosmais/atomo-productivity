@@ -30,6 +30,15 @@ export default function MykaSupport() {
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [error, setError] = useState("");
   const [seenUpdates, setSeenUpdates] = useState<Record<string, string>>({});
+  useEffect(() => {
+    function openSupport(event: Event) {
+      const detail = (event as CustomEvent<{ topic?: string }>).detail;
+      if (detail?.topic && Object.prototype.hasOwnProperty.call(help, detail.topic)) setTopic(detail.topic);
+      setOpen(true);
+    }
+    window.addEventListener("myryra:open-support", openSupport);
+    return () => window.removeEventListener("myryra:open-support", openSupport);
+  }, []);
   const context = help[activeModule] ?? help.home;
   const selected = topic === "context" ? context : help[topic] ?? context;
 
