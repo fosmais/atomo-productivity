@@ -63,12 +63,21 @@ export default function VyraHome() {
       setAgendaLoading(true);
       setAgendaError(false);
       try {
-        const [local, googleResponse] = await Promise.all([
+        const [localResult, googleResult] = await Promise.allSettled([
           getCloudEvents(),
           fetch("/api/google/events", { cache: "no-store" }),
         ]);
-        if (!googleResponse.ok) throw new Error("Agenda externa indisponível");
-        const google: { connected: boolean; events?: Array<{ id: string | null; title: string; start: string | null; status?: string | null }> } = await googleResponse.json();
+        if (localResult.status === "rejected" && googleResult.status === "rejected") {
+          throw new Error("Não foi possível consultar nenhuma agenda.");
+        }
+        const local = localResult.status === "fulfilled" ? localResult.value : [];
+        const google: { connected: boolean; events?: Array<{ id: string | null; title: string; start: string | null; status?: string | null }> } =
+          googleResult.status === "fulfilled" && googleResult.value.ok
+            ? await googleResult.value.json().catch(() => ({ connected: false, events: [] }))
+            : { connected: false, events: [] };
+        if (localResult.status === "rejected" && !google.connected) {
+          throw new Error("Não foi possível consultar nenhuma agenda.");
+        }
         const now = Date.now();
         const combined: HomeEvent[] = [
           ...local.map((event) => ({ id: event.id, title: event.title, start: event.startsAt, source: "MYRYRA" as const })),
