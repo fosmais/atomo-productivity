@@ -77,7 +77,7 @@ export default function MykaSupport() {
         user_id: user.id, category: "problema", message: "[Suporte MYKA · " + context.title + " · assunto: " + selected.title + "] " + trimmed,
       });
       if (insertError) throw insertError;
-      setStatus("Solicitação registrada. O atendimento humano ainda não está disponível nesta versão.");
+      setStatus("Relato enviado para avaliação. Este registro ainda não gera um chamado com acompanhamento ou atendimento humano.");
       setMessage("");
     } catch (err) { setError(err instanceof Error ? err.message : "Não foi possível registrar a solicitação."); }
     finally { setSending(false); }
@@ -99,9 +99,9 @@ export default function MykaSupport() {
           </a>
         )}
         <div className="space-y-2">
-          <label htmlFor="myka-support-message" className="block text-sm font-medium">Ainda precisa de ajuda? Registre uma solicitação</label>
-          <textarea id="myka-support-message" value={message} onChange={e => setMessage(e.target.value)} maxLength={1500} rows={4} placeholder="Descreva o problema (mínimo 10 caracteres)..." className="w-full resize-y rounded-xl border border-slate-700 bg-slate-900 p-3 text-sm text-white placeholder:text-slate-500" />
-          <button type="button" onClick={() => void send()} disabled={sending || message.trim().length < 10} className="w-full rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold disabled:opacity-50">{sending ? "Registrando..." : "Registrar solicitação"}</button>
+          <label htmlFor="myka-support-message" className="block text-sm font-medium">Ainda precisa de ajuda? Envie um relato</label>
+          <textarea id="myka-support-message" value={message} onChange={e => setMessage(e.target.value)} maxLength={1500} rows={4} placeholder="Descreva sua dúvida ou problema (mínimo 10 caracteres). Não informe dados de pagamento..." className="w-full resize-y rounded-xl border border-slate-700 bg-slate-900 p-3 text-sm text-white placeholder:text-slate-500" />
+          <button type="button" onClick={() => void send()} disabled={sending || message.trim().length < 10} className="w-full rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold disabled:opacity-50">{sending ? "Enviando..." : "Enviar relato"}</button>
           {status && <p role="status" className="text-sm text-emerald-300">{status}</p>}
           {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
           <p className="text-xs text-slate-400">Ajuda guiada inicial, sem chat com IA nesta versão. Não envie senhas, dados bancários ou chaves.</p>
