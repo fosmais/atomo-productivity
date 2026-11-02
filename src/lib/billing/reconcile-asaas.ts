@@ -47,7 +47,7 @@ export async function reconcileAsaasPaymentEvent(eventId: string): Promise<"veri
     throw new Error("Pagamento ainda não confirmado pelo Asaas.");
   }
 
-  const { error: saveError } = await admin.from("asaas_webhook_inbox").update({
+  const { data: saved, error: saveError } = await admin.from("asaas_webhook_inbox").update({
     payment_id: paymentId,
     subscription_id: subscriptionId,
     verified_payment_status: verified.status,
@@ -56,6 +56,6 @@ export async function reconcileAsaasPaymentEvent(eventId: string): Promise<"veri
     processed_at: new Date().toISOString(),
     last_error: null,
   }).eq("event_id", eventId).eq("state", "processing").select("event_id").maybeSingle();
-  if (saveError) throw new Error("Falha ao registrar conciliação.");
+  if (saveError || !saved) throw new Error("Falha ao registrar conciliação.");
   return "verified";
 }
