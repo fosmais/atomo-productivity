@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useVyraNavigation } from "./vyra-module-context";
 
@@ -20,6 +20,7 @@ const help: Record<string, { title: string; answer: string }> = {
 export default function MykaSupport() {
   const { activeModule } = useVyraNavigation();
   const [open, setOpen] = useState(false);
+  const [billingInfo, setBillingInfo] = useState("Consultando assinatura...");
   const [message, setMessage] = useState("");
   const [topic, setTopic] = useState("context");
   const [sending, setSending] = useState(false);
@@ -30,6 +31,25 @@ export default function MykaSupport() {
   const [error, setError] = useState("");
   const context = help[activeModule] ?? help.home;
   const selected = topic === "context" ? context : help[topic] ?? context;
+
+  useEffect(() => {
+    if (!open || !topic.startsWith("billing-")) return;
+    const controller = new AbortController();
+    setBillingInfo("Consultando assinatura...");
+    fetch("/api/billing/subscription", { cache: "no-store", signal: controller.signal })
+      .then(async (response) => {
+        if (response.status === 401 || response.status === 403) return "Entre na sua conta para consultar sua assinatura.";
+        if (!response.ok) throw new Error("Consulta indisponível");
+        const data = await response.json() as { subscription?: { planId?: string; status?: string } | null };
+        if (!data.subscription) return "Nenhuma assinatura paga registrada. Plano Free.";
+        const plan = data.subscription.planId === "premium" ? "Premium" : data.subscription.planId === "pro" ? "Pro" : "Não identificado";
+        const status = ({ active: "ativa", trialing: "em teste", past_due: "pagamento pendente", canceled: "cancelada", unpaid: "não paga", incomplete: "aguardando confirmação" } as Record<string, string>)[data.subscription.status ?? ""] ?? "em verificação";
+        return "Assinatura registrada: " + plan + " · situação: " + status + ".";
+      })
+      .then((value) => { if (!controller.signal.aborted) setBillingInfo(value); })
+      .catch(() => { if (!controller.signal.aborted) setBillingInfo("Não foi possível consultar sua assinatura agora."); });
+    return () => controller.abort();
+  }, [open, topic]);
 
   async function loadTickets() {
     setLoadingTickets(true); setTicketsNotice("");
@@ -72,6 +92,7 @@ export default function MykaSupport() {
       <div className="space-y-4 overflow-y-auto p-4">
         <div className="space-y-2"><label htmlFor="myka-help-topic" className="block text-xs font-medium text-slate-300">Sobre o que você precisa de ajuda?</label><select id="myka-help-topic" value={topic} onChange={e => setTopic(e.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-900 p-2.5 text-sm text-white"><option value="context">Esta tela: {context.title}</option>{Object.entries(help).filter(([key]) => key !== activeModule).map(([key, item]) => <option key={key} value={key}>{item.title}</option>)}</select></div>
         <div className="rounded-xl bg-violet-500/10 p-3 text-sm leading-6 text-slate-200"><strong className="text-violet-200">Como usar {selected.title}?</strong><p className="mt-1">{selected.answer}</p></div>
+        {topic.startsWith("billing-") && <p role="status" className="rounded-xl border border-violet-400/20 bg-violet-500/10 p-3 text-sm text-slate-200">{billingInfo}</p>}
         {topic.startsWith("billing-") && (
           <a href="/planos" className="inline-flex rounded-xl border border-violet-400/40 px-4 py-2 text-sm font-semibold text-violet-200 hover:bg-violet-500/10">
             Ver planos e assinaturas →
