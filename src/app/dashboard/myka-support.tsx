@@ -28,7 +28,6 @@ export default function MykaSupport() {
   const [tickets, setTickets] = useState<Array<{ id: string; subject: string; status: string; priority: string; updated_at: string; created_at: string }>>([]);
   const [ticketsNotice, setTicketsNotice] = useState("");
   const [loadingTickets, setLoadingTickets] = useState(false);
-  const [lastSeenUpdates, setLastSeenUpdates] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const context = help[activeModule] ?? help.home;
   const selected = topic === "context" ? context : help[topic] ?? context;
@@ -61,11 +60,6 @@ export default function MykaSupport() {
       const { data, error: queryError } = await supabase.from("support_tickets").select("id,subject,status,priority,updated_at,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
       if (queryError) throw new Error("A consulta de tickets ainda não está habilitada neste ambiente.");
       setTickets(data ?? []);
-      setLastSeenUpdates(previous => {
-        const next = { ...previous };
-        for (const ticket of data ?? []) if (!next[ticket.id]) next[ticket.id] = ticket.updated_at;
-        return next;
-      });
       if (!data?.length) setTicketsNotice("Você ainda não possui tickets neste ambiente.");
     } catch (err) { setTicketsNotice(err instanceof Error ? err.message : "Não foi possível consultar os tickets."); }
     finally { setLoadingTickets(false); }
