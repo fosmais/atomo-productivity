@@ -221,7 +221,7 @@ export default function LoginPage() {
             <h2 className="text-[clamp(1.5rem,2.2vw,2rem)] font-bold leading-tight tracking-tight text-white">Seu universo, <span className="text-violet-300">em sintonia.</span></h2>
             <p className="mt-2 text-sm leading-relaxed text-slate-300">Organize sua vida. Transforme planos em conquistas.</p>
           </div>
-          <div className="relative mx-auto mb-5 flex w-full max-w-[210px] items-center justify-center lg:hidden" aria-label="MYKA, sua companheira inteligente">
+          <div className="relative mx-auto mb-5 flex w-full max-w-[165px] items-center justify-center lg:hidden" aria-label="MYKA, sua companheira inteligente">
             <div aria-hidden="true" className="absolute inset-4 rounded-full bg-violet-500/25 blur-2xl" />
             <img src="/myka-transparente.png" alt="MYKA, sua companheira inteligente" className="relative h-auto w-full drop-shadow-[0_12px_28px_rgba(120,65,255,.4)]" />
           </div>
