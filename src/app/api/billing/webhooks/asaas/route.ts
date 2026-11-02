@@ -1,8 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 
-export const runtime = "nodejs";
-
 const noStore = { "Cache-Control": "no-store" };
 
 function matchesToken(provided: string | null, expected: string): boolean {
