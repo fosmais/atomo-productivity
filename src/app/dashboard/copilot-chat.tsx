@@ -786,9 +786,12 @@ setConversationId(data.conversationId);
       </div>
 
       {error && (
-        <p role="alert" className="mb-3 text-sm text-red-400">
-          {error}
-        </p>
+        <div role="alert" className="mb-3 space-y-2 text-sm text-red-400">
+          <p>{error}</p>
+          <p className="text-slate-300">Precisa de suporte financeiro? Abra um chamado diretamente na Ajuda MYKA, mesmo quando a conversa com IA estiver indisponível.</p>
+          <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("myryra:open-support", { detail: { topic: "billing-payments" } }))} className="rounded-lg border border-violet-400 px-3 py-2 font-semibold text-violet-200">Abrir suporte financeiro</button>
+          <button type="button" onClick={() => setError("")} className="ml-2 rounded-lg border border-slate-600 px-3 py-2 text-slate-200">Tentar novamente</button>
+        </div>
       )}
 
       {attachment && (
