@@ -279,6 +279,30 @@ async function startVoice() {
     };
   }, []);
   useEffect(() => {
+    let active = true;
+    async function loadQuota() {
+      try {
+        const response = await fetch("/api/myka/quota", { cache: "no-store" });
+        if (!response.ok) return;
+        const data: unknown = await response.json();
+        if (!active || !isRecord(data) || data.available !== true) return;
+        if (data.reached === true && typeof data.dailyLimit === "number") {
+          setDailyLimitReached(true);
+          setDailyResetAt(typeof data.resetAt === "number" ? data.resetAt : null);
+          setError(`Você atingiu as ${data.dailyLimit} mensagens disponíveis hoje no seu plano.`);
+        } else if (data.reached === false) {
+          setDailyLimitReached(false);
+          setDailyResetAt(null);
+        }
+      } catch {
+        // Quota display is informational; never block chat when unavailable.
+      }
+    }
+    void loadQuota();
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({
       behavior: "smooth",
     });
