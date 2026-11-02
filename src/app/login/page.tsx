@@ -14,6 +14,7 @@ export default function LoginPage() {
   const captchaEnabled = hcaptchaEnabled || Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
   const passwordMin = captchaEnabled ? 6 : 12;
   const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaReset, setCaptchaReset] = useState(0);
 
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
@@ -136,6 +137,7 @@ export default function LoginPage() {
           : "Ocorreu um erro. Tente novamente."
       );
     } finally {
+      if (captchaEnabled) { setCaptchaToken(""); setCaptchaReset((n) => n + 1); }
       setLoading(false);
     }
   }
@@ -180,6 +182,7 @@ export default function LoginPage() {
       setIsError(true);
       setMessage("Não foi possível solicitar a recuperação. Tente novamente.");
     } finally {
+      if (captchaEnabled) { setCaptchaToken(""); setCaptchaReset((n) => n + 1); }
       setLoading(false);
     }
   }
@@ -279,7 +282,7 @@ export default function LoginPage() {
           </div>
 
           {mode === "signup" && <><p className="text-xs text-slate-400">Use pelo menos {passwordMin} caracteres na senha.</p></>}
-          {captchaEnabled && !mfaFactorId && (hcaptchaEnabled ? <HcaptchaCaptcha onToken={setCaptchaToken} /> : <TurnstileCaptcha onToken={setCaptchaToken} />)}
+          {captchaEnabled && !mfaFactorId && (hcaptchaEnabled ? <HcaptchaCaptcha onToken={setCaptchaToken} resetSignal={captchaReset} /> : <TurnstileCaptcha onToken={setCaptchaToken} />)}
           <button
             type="submit"
             disabled={loading}
