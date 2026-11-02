@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     if (assurance.error) throw assurance.error;
     // The login page resumes MFA if a verified factor requires aal2.
     const destination = assurance.data.nextLevel === "aal2" &&
-      assurance.data.currentLevel !== "aal2" ? "/login" : "/dashboard";
+      assurance.data.currentLevel !== "aal2" ? "/login?mfa=required" : "/dashboard";
     return NextResponse.redirect(new URL(destination, url.origin));
   } catch {
     return NextResponse.redirect(new URL("/login?error=oauth", url.origin));
