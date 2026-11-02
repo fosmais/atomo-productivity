@@ -242,7 +242,9 @@ try {
 if (!rateLimit.allowed) {
   return NextResponse.json(
     {
-      error: "Limite de mensagens atingido. Aguarde para tentar novamente.",
+      error: rateLimit.reason === "minute" ? "Muitas mensagens em pouco tempo. Aguarde um minuto para continuar." : `Você atingiu as ${rateLimit.dailyLimit} mensagens disponíveis hoje no seu plano.`,
+      code: rateLimit.reason === "minute" ? "MINUTE_RATE_LIMIT" : "DAILY_PLAN_LIMIT",
+      dailyLimit: rateLimit.dailyLimit,
     },
     {
       status: 429,
