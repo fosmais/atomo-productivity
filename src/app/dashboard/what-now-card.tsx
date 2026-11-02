@@ -38,7 +38,8 @@ export default function WhatNowCard() {
   }, [load]);
 
   const recommendation = data?.recommendation;
-  const emptyState = data && !recommendation
+  const nextOpportunity = data?.nextOpportunity;
+  const emptyState = data && !recommendation && !nextOpportunity
     ? data.readyTaskCount > 0
       ? { title: "Nenhuma tarefa cabe em uma janela livre agora.", description: "Pode ser que você esteja fora do horário de planejamento, tenha compromissos neste momento ou que as tarefas sejam mais longas que o tempo disponível. Confira sua agenda e suas preferências de planejamento.", action: "Ver minha agenda", module: "vyra-calendar" }
       : data.missingDurationCount > 0
@@ -88,6 +89,14 @@ export default function WhatNowCard() {
               Não foi possível verificar sua disponibilidade.
             </p>
             <p className="text-xs text-slate-400">{error}</p>
+          </div>
+        ) : nextOpportunity ? (
+          <div className="rounded-2xl border border-violet-400/15 bg-white/[0.045] p-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-violet-300">PRÓXIMA OPORTUNIDADE</p>
+            <h3 className="mt-3 text-xl font-semibold text-white">{nextOpportunity.title}</h3>
+            <p className="mt-2 text-sm text-slate-300">Esta tarefa cabe na próxima janela disponível.</p>
+            <p className="mt-3 text-sm text-violet-200">{new Date(nextOpportunity.start).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })} · {nextOpportunity.durationMinutes} minutos</p>
+            <button type="button" onClick={() => navigateToTask?.(nextOpportunity.taskId)} disabled={!navigateToTask} className="mt-4 rounded-xl border border-violet-400/30 px-4 py-2 text-sm text-violet-200 disabled:opacity-50">Ver tarefa →</button>
           </div>
         ) : recommendation ? (
           <div className="rounded-2xl border border-violet-400/15 bg-white/[0.045] p-5">
