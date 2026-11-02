@@ -45,11 +45,12 @@ export async function POST(request: Request) {
       verified += 1;
     } catch {
       failed += 1;
-      const { error: failureError } = await admin.from("asaas_webhook_inbox").update({
+      const { data: failedRecord, error: failureError } = await admin.from("asaas_webhook_inbox").update({
         state: "failed",
         last_error: "Falha de verificação no Asaas Sandbox.",
-      }).eq("event_id", event.event_id).eq("state", "processing");
-      if (failureError) return NextResponse.json({ error: "Falha ao registrar tentativa." }, { status: 503, headers });
+      }).eq("event_id", event.event_id).eq("state", "processing")
+        .eq("attempts", event.attempts + 1).select("event_id").maybeSingle();
+      if (failureError || !failedRecord) return NextResponse.json({ error: "Falha ao registrar tentativa." }, { status: 503, headers });
     }
   }
   return NextResponse.json({ scanned: (data ?? []).length, verified, failed }, { headers });
