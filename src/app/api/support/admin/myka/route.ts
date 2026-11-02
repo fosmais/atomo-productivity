@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
+import { sendSupportEmail } from "@/lib/support/email";
 
 const headers = { "Cache-Control": "private, no-store" };
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -17,7 +18,7 @@ export async function PATCH(request: Request) {
     if (memberError || !member) return NextResponse.json({ error: "Acesso não autorizado." }, { status: 403, headers });
     const body = await request.json() as { id?: unknown; authorized?: unknown; reply?: unknown };
     if (typeof body.id !== "string" || !uuid.test(body.id)) return NextResponse.json({ error: "Chamado inválido." }, { status: 400, headers });
-    const { data: ticket, error: ticketError } = await admin.from("support_tickets").select("id,myka_authorized").eq("id",body.id).maybeSingle();
+    const { data: ticket, error: ticketError } = await admin.from("support_tickets").select("id,user_id,myka_authorized").eq("id",body.id).maybeSingle();
     if (ticketError) throw ticketError;
     if (!ticket) return NextResponse.json({ error: "Chamado não encontrado." }, { status: 404, headers });
     if (typeof body.authorized === "boolean") {
@@ -31,7 +32,16 @@ export async function PATCH(request: Request) {
       if (!reply || reply.length > 3000) return NextResponse.json({ error: "Resposta inválida." }, { status: 400, headers });
       const { error: insertError } = await admin.from("support_ticket_replies").insert({ ticket_id: body.id, author_type: "myka", author_id: user.id, body: reply });
       if (insertError) throw insertError;
-      return NextResponse.json({ sent: true }, { headers });
+      // Notification is intentionally generic; financial details remain inside the authenticated app.
+      const { data: recipient } = await admin.auth.admin.getUserById(ticket.user_id);
+      let emailSent = false;
+      if (recipient?.user?.email) {
+        try {
+          const notification = await sendSupportEmail({ to: recipient.user.email, subject: "MYRYRA · Atualização do seu chamado", ticketId: body.id, message: "Uma nova resposta da equipe de suporte está disponível na sua conta." });
+          emailSent = notification.sent;
+        } catch { /* The approved reply is stored even if email delivery fails. */ }
+      }
+      return NextResponse.json({ sent: true, emailSent }, { headers });
     }
     return NextResponse.json({ error: "Operação inválida." }, { status: 400, headers });
   } catch {
