@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useVyraNavigation } from "./vyra-module-context";
 import FeatureHint from "./feature-hint";
 import {
@@ -13,23 +13,25 @@ export default function WhatNowCard() {
   const [data, setData] = useState<WhatNowResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const requestId = useRef(0);
 
   const load = useCallback(async () => {
+    const currentRequest = ++requestId.current;
     setLoading(true);
     setError("");
     setData(null);
 
     try {
       const result = await getWhatNowRecommendation();
-      setData(result);
+      if (currentRequest === requestId.current) setData(result);
     } catch (err) {
-      setError(
+      if (currentRequest === requestId.current) setError(
         err instanceof Error
           ? err.message
           : "Não foi possível calcular sua próxima ação."
       );
     } finally {
-      setLoading(false);
+      if (currentRequest === requestId.current) setLoading(false);
     }
   }, []);
 
@@ -43,6 +45,7 @@ export default function WhatNowCard() {
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
+      requestId.current += 1;
       window.removeEventListener("myryra:tasks-updated", refresh);
       window.removeEventListener("myryra:events-updated", refresh);
       document.removeEventListener("visibilitychange", onVisibilityChange);
