@@ -1,0 +1,51 @@
+import "server-only";
+import { createSupabaseAdmin } from "@/lib/supabase/admin";
+import { asaasSandboxGet } from "@/lib/billing/asaas";
+
+type AsaasPayment = {
+  id?: unknown;
+  status?: unknown;
+  subscription?: unknown;
+  customer?: unknown;
+};
+
+/**
+ * Verifies a stored payment event against Asaas Sandbox.
+ * Audit-only: never grants entitlements or changes a subscription.
+ * Idempotent event IDs are enforced by the inbox unique constraint.
+ */
+export async function reconcileAsaasPaymentEvent(eventId: string): Promise<"verified" | "ignored"> {
+  const admin = createSupabaseAdmin();
+  const { data: event, error } = await admin.from("asaas_webhook_inbox")
+    .select("event_id,event_type,payload,state")
+    .eq("event_id", eventId).maybeSingle();
+  if (error || !event) throw new Error("Evento não encontrado.");
+  if (event.state === "processed") return "verified";
+
+  const payload = event.payload as Record<string, unknown> | null;
+  const payment = payload?.payment;
+  if (!event.event_type.startsWith("PAYMENT_") || !payment ||
+      typeof payment !== "object" || Array.isArray(payment) ||
+      typeof (payment as Record<string, unknown>).id !== "string") {
+    return "ignored";
+  }
+  const paymentId = (payment as Record<string, unknown>).id as string;
+  if (!/^pay_[a-zA-Z0-9]+$/.test(paymentId)) throw new Error("ID de pagamento inválido.");
+
+  const verified = await asaasSandboxGet("/payments/" + paymentId) as AsaasPayment;
+  if (verified.id !== paymentId || typeof verified.status !== "string") {
+    throw new Error("Divergência na consulta do pagamento.");
+  }
+  const subscriptionId = typeof verified.subscription === "string" ? verified.subscription : null;
+  const { error: saveError } = await admin.from("asaas_webhook_inbox").update({
+    payment_id: paymentId,
+    subscription_id: subscriptionId,
+    verified_payment_status: verified.status,
+    reconciled_at: new Date().toISOString(),
+    state: "processed",
+    processed_at: new Date().toISOString(),
+    last_error: null,
+  }).eq("event_id", eventId);
+  if (saveError) throw new Error("Falha ao registrar conciliação.");
+  return "verified";
+}
