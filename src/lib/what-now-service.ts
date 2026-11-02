@@ -17,6 +17,7 @@ export type WhatNowResult = {
   missingDurationCount: number;
   readyTaskCount: number;
   checkedAt: Date;
+  nextOpportunity: { title: string; taskId: string; durationMinutes: number; start: Date } | null;
 };
 
 export async function getWhatNowRecommendation(
@@ -50,8 +51,13 @@ export async function getWhatNowRecommendation(
     now
   );
 
+  const candidates = freeIntervals.flatMap(interval => tasks.ready.filter(task => task.durationMinutes >= 5 && interval.end.getTime() - Math.max(interval.start.getTime(), now.getTime()) >= task.durationMinutes * 60000).map(task => ({ title: task.title, taskId: task.id, durationMinutes: task.durationMinutes, start: new Date(Math.max(interval.start.getTime(), now.getTime())), priority: task.priority })));
+  candidates.sort((a, b) => a.start.getTime() - b.start.getTime() || b.priority - a.priority);
+  const nextOpportunity = recommendation ? null : candidates[0] ?? null;
+
   return {
     recommendation,
+    nextOpportunity,
     missingDurationCount: tasks.missingDuration.length,
     readyTaskCount: tasks.ready.length,
     checkedAt: new Date(now.getTime()),
