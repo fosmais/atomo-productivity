@@ -102,9 +102,11 @@ export default function LoginPage() {
           "Se o endereço estiver apto para cadastro, você receberá um e-mail de confirmação. Verifique também a caixa de spam."
         );
       } else {
+        if (captchaEnabled && !captchaToken) throw new Error("Conclua a verificação antirobô.");
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
+          options: captchaEnabled ? { captchaToken } : undefined,
         });
 
         if (error) throw error;
@@ -165,8 +167,10 @@ export default function LoginPage() {
     setMessage("");
     setIsError(false);
     try {
+      if (captchaEnabled && !captchaToken) throw new Error("Conclua a verificação antirobô.");
       const result = await createClient().auth.resetPasswordForEmail(email.trim(), {
         redirectTo: `${window.location.origin}/auth/recovery-callback`,
+        ...(captchaEnabled ? { captchaToken } : {}),
       });
       if (result.error) throw result.error;
       setMessage("Se este e-mail estiver cadastrado, você receberá instruções para redefinir sua senha.");
@@ -272,7 +276,8 @@ export default function LoginPage() {
             />
           </div>
 
-          {mode === "signup" && <><p className="text-xs text-slate-400">Use pelo menos {passwordMin} caracteres na senha.</p>{captchaEnabled && <TurnstileCaptcha onToken={setCaptchaToken} />}</>}
+          {mode === "signup" && <><p className="text-xs text-slate-400">Use pelo menos {passwordMin} caracteres na senha.</p></>}
+          {captchaEnabled && !mfaFactorId && <TurnstileCaptcha onToken={setCaptchaToken} />}
           <button
             type="submit"
             disabled={loading}
