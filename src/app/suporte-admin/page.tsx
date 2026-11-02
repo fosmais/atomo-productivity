@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-type Ticket = { id:string; subject:string; message:string; status:string; priority:string; category:string; created_at:string };
+type Ticket = { id:string; subject:string; message:string; status:string; priority:string; category:string; created_at:string; contact?: { name:string|null; email:string|null; phone:string|null } };
 type AuditEvent = { id:string; ticket_id:string; previous_status:string|null; new_status:string|null; previous_priority:string|null; new_priority:string|null; created_at:string };
 const statusOptions = [["open","Aberto"],["in_progress","Em análise"],["resolved","Resolvido"],["closed","Encerrado"]];
 const priorityOptions = [["low","Baixa"],["normal","Normal"],["high","Alta"],["urgent","Urgente"]];
@@ -42,6 +42,12 @@ export default function SupportAdminPage() {
   <div className="mt-6 space-y-4">{tickets.map(ticket=><article key={ticket.id} className="rounded-xl border border-white/10 bg-slate-900 p-4">
    <h2 className="font-semibold">{ticket.subject}</h2>
    <p className="mt-1 text-xs text-slate-400">{ticket.id.slice(0,8).toUpperCase()} · {ticket.category==="billing"?"Financeiro":"Suporte"} · {new Date(ticket.created_at).toLocaleDateString("pt-BR")}</p>
+   <div className="mt-3 rounded-lg border border-white/10 bg-slate-950/60 p-3 text-sm">
+    <p className="font-semibold text-violet-200">Solicitante</p>
+    <p className="mt-1">{ticket.contact?.name || "Nome não informado"}</p>
+    <div className="mt-1 flex flex-wrap items-center gap-2"><span className="break-all text-slate-300">{ticket.contact?.email || "E-mail não disponível"}</span>{ticket.contact?.email && <button type="button" className="rounded border border-violet-400/40 px-2 py-1 text-xs text-violet-200" onClick={() => void navigator.clipboard.writeText(ticket.contact!.email!)}>Copiar e-mail</button>}</div>
+    <p className="mt-1 text-slate-300">Telefone: {ticket.contact?.phone || "Não informado"}</p>
+   </div>
    <p className="mt-3 whitespace-pre-wrap break-words text-sm">{ticket.message}</p>
    <div className="mt-4 flex flex-wrap gap-4">
     <label className="text-sm">Status <select className="ml-2 rounded bg-slate-800 p-2" disabled={busy===ticket.id} value={ticket.status} onChange={e=>void update(ticket.id,"status",e.target.value)}>{statusOptions.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
