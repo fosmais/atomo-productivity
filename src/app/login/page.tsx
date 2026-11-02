@@ -333,8 +333,6 @@ export default function LoginPage() {
           </div>
         )}
 
-        )}
-
         {message && (
           <p
             role={isError ? "alert" : "status"}
