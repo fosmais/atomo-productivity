@@ -22,7 +22,7 @@ export async function GET() {
     const access = await authorize();
     if (access.error) return access.error;
     const { data, error } = await access.admin!.from("support_tickets")
-      .select("id,user_id,subject,message,category,status,priority,created_at,updated_at")
+      .select("id,user_id,subject,message,category,status,priority,myka_authorized,created_at,updated_at")
       .order("created_at", { ascending: false }).limit(100);
     if (error) throw error;
     const ids = (data ?? []).map(ticket => ticket.id);
@@ -41,7 +41,9 @@ export async function GET() {
     }));
     const contactById = new Map(contacts);
     const tickets = (data ?? []).map(ticket => ({ ...ticket, contact: contactById.get(ticket.user_id) ?? { name: null, email: null, phone: null } }));
-    return NextResponse.json({ tickets, events: events ?? [] }, { headers });
+    const { data: replies, error: replyError } = ids.length ? await access.admin!.from("support_ticket_replies").select("id,ticket_id,author_type,body,created_at").in("ticket_id",ids).order("created_at",{ascending:true}).limit(500) : { data: [], error: null };
+    if (replyError) throw replyError;
+    return NextResponse.json({ tickets, events: events ?? [], replies: replies ?? [] }, { headers });
   } catch {
     return NextResponse.json({ error: "Consulta indisponível." }, { status: 503, headers });
   }
