@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useVyraNavigation } from "./vyra-module-context";
 
@@ -55,6 +55,7 @@ export default function FinanceSubscriptions() {
   const [notifications, setNotifications] = useState<FinanceNotification[]>([]);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notificationsError, setNotificationsError] = useState("");
+  const lastAutoSyncKey = useRef("");
   const monthlyCents = useMemo(() => items.reduce((sum, item) => sum + (item.billing_cycle === "monthly" ? Number(item.amount_cents) : Number(item.amount_cents) / 12), 0), [items]);
   useEffect(() => {
     let active = true;
@@ -157,6 +158,13 @@ export default function FinanceSubscriptions() {
       setNotifications((data ?? []) as FinanceNotification[]);
     } catch { setNotificationsError("Não foi possível atualizar as notificações."); }
   };
+  useEffect(() => {
+    if (loading || error || !alertUserId || !asOf) return;
+    const key = JSON.stringify({ user: alertUserId, date: asOf, days: alertDays, subscriptions: alertSubscriptions, expenses: alertExpenses, alerts: upcomingAlerts.map(item => item.id + ":" + item.due) });
+    if (lastAutoSyncKey.current === key) return;
+    lastAutoSyncKey.current = key;
+    if (upcomingAlerts.length > 0) void syncNotifications();
+  }, [loading, error, alertUserId, asOf, alertDays, alertSubscriptions, alertExpenses, upcomingAlerts]);
   const markNotificationRead = async (id: string) => {
     if (!alertUserId) return;
     try {
