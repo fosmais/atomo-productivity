@@ -243,7 +243,7 @@ export default function TaskKanban() {
   }
 
   async function deleteTask(task: KanbanTask) {
-    if (savingId || !window.confirm(`Excluir a tarefa "${task.title}"? Esta ação não pode ser desfeita.`)) return;
+    if (savingId || !window.confirm(`Excluir a tarefa "${task.title}"? Você poderá recuperar na lixeira.`)) return;
     setSavingId(task.id);
     setError("");
     try {
@@ -252,7 +252,7 @@ export default function TaskKanban() {
       if (authError || !auth.user) throw new Error("Usuário não autenticado.");
       const { data, error: deleteError } = await supabase
         .from("tasks")
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", task.id)
         .eq("user_id", auth.user.id)
         .select("id")
