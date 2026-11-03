@@ -9,16 +9,16 @@ import WhatNowCard from "./what-now-card";
 
 const shortcuts = [
   { label: "Agenda", icon: "▦", module: "vyra-calendar" },
-  { label: "Tarefas", icon: "✓", module: "vyra-tasks" },
-  { label: "Lembretes", icon: "◷", module: "vyra-tasks" },
+  { label: "Tarefas", icon: "✓", module: "vyra-tasks", action: "kanban" },
+  { label: "Lembretes", icon: "◷", module: "vyra-tasks", action: "capture" },
   { label: "Financeiro", icon: "◇", module: "vyra-finance" },
-  { label: "Metas", icon: "◎", module: "vyra-tasks" },
+  { label: "Metas", icon: "◎", module: "vyra-tasks", action: "goals" },
   { label: "MIKA", icon: "✦", module: "vyra-ai" },
 ];
 
 export default function VyraHome() {
   const activeModule = useVyraActiveModule();
-  const { navigateTo } = useVyraNavigation();
+  const { navigateTo, navigateToQuickAction } = useVyraNavigation();
   const [metrics, setMetrics] = useState<VyraMetrics | null>(null);
   const [nextEvent, setNextEvent] = useState<{ title: string; start: string } | null>(null);
   const [agendaError, setAgendaError] = useState(false);
@@ -71,11 +71,11 @@ export default function VyraHome() {
         <h2 className="mb-3 text-sm font-semibold text-white">O que precisa fazer?</h2>
         <div className="grid grid-cols-3 gap-2">
           {[
-            { label: "Nova tarefa", icon: "+", module: "vyra-tasks" },
+            { label: "Nova tarefa", icon: "+", module: "vyra-tasks", action: "capture" },
             { label: "Agendar", icon: "▦", module: "vyra-calendar" },
             { label: "Lembrete", icon: "◷", module: "vyra-tasks" },
           ].map((item) => (
-            <button key={item.label} type="button" onClick={() => navigateTo(item.module)}
+            <button key={item.label} type="button" onClick={() => "action" in item && item.action ? navigateToQuickAction?.(item.action) : navigateTo(item.module)}
               className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-xs font-medium text-white transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
               <span className="text-xl text-violet-200" aria-hidden="true">{item.icon}</span>{item.label}
             </button>
