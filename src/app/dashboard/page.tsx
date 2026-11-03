@@ -69,12 +69,6 @@ async function DashboardContent() {
     >
       <VyraWorkspace>
       <VyraHome />
-      <VyraModule id="home">
-        <section className="grid min-w-0 gap-4 md:grid-cols-2" aria-label="Sua rotina de hoje">
-          <FeatureAccordion id="briefing" title="Seu resumo de hoje" description="Prioridades, compromissos e disponibilidade em um só lugar" userId={user.id} defaultOpen><DailyBriefing /></FeatureAccordion>
-          <FeatureAccordion id="focus" title="Iniciar foco" description="Temporizador para trabalhar sem distrações" userId={user.id}><FocusMode /></FeatureAccordion>
-        </section>
-      </VyraModule>
       <FirstSteps userId={user.id} />
 
         <div className="min-w-0 space-y-6">
