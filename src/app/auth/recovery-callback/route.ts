@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
@@ -10,12 +9,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=recovery", url.origin));
   }
 
-  const store = await cookies();
   const response = NextResponse.redirect(new URL("/auth/reset-password", url.origin));
   const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {
     cookies: {
-      getAll: () => store.getAll(),
-      setAll: (items) => items.forEach(({ name, value, options }) => response.cookies.set(name, value, options)),
+      getAll: () => request.cookies.getAll(),
+      setAll: (items) => items.forEach(({ name, value, options }) => {
+        request.cookies.set(name, value);
+        response.cookies.set(name, value, options);
+      }),
     },
   });
   const { error } = code
