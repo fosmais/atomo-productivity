@@ -22,7 +22,7 @@ export default function PlanosPage() {
         <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">Um plano para cada ritmo.</h1>
         <p className="mx-auto mt-4 max-w-2xl text-base text-zinc-300">Compare os planos e seus recursos previstos. As assinaturas Pro e Premium ainda não podem ser contratadas.</p>
       </div>
-      <div className="mt-10 grid gap-5 md:grid-cols-3">
+      <div id="planos" className="mt-10 grid gap-5 md:grid-cols-3">
         {Object.values(BILLING_PLANS).map((plan) => (
           <section key={plan.id} className={`rounded-3xl border p-7 ${plan.id === "pro" ? "border-violet-500 bg-violet-950/40" : "border-white/15 bg-slate-900/90"}`}>
             <h2 className="text-2xl font-semibold">{plan.name}</h2>
