@@ -31,7 +31,7 @@ export default function LoginPage() {
     let active = true;
     // The legacy Preview alias is also attached to Production. Always start OAuth
     // on the canonical origin so the PKCE verifier and callback share storage.
-    if (window.location.hostname === "atomo-productivity-git-feat-myryra-mvp1-billing-6ff8ee-fosmais.vercel.app") {
+    if (window.location.hostname.endsWith(".vercel.app")) {
       window.location.replace(`https://www.myryra.com${window.location.pathname}${window.location.search}${window.location.hash}`);
       return () => { active = false; };
     }
@@ -98,7 +98,7 @@ export default function LoginPage() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/confirm`,
+            emailRedirectTo: "https://www.myryra.com/auth/confirm",
             ...(captchaEnabled ? { captchaToken } : {}),
           },
         });
@@ -160,7 +160,7 @@ export default function LoginPage() {
 
   async function signInWithGoogle() {
     if (loading || process.env.NEXT_PUBLIC_MYRYRA_GOOGLE_LOGIN_ENABLED !== "true") return;
-    if (window.location.hostname === "atomo-productivity-git-feat-myryra-mvp1-billing-6ff8ee-fosmais.vercel.app") {
+    if (window.location.hostname.endsWith(".vercel.app")) {
       window.location.replace("https://www.myryra.com/login");
       return;
     }
@@ -170,7 +170,7 @@ export default function LoginPage() {
     try {
       const { error } = await createClient().auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/auth/oauth-callback${returnTo === "/suporte-admin" ? "?next=%2Fsuporte-admin" : ""}` },
+        options: { redirectTo: `https://www.myryra.com/auth/oauth-callback${returnTo === "/suporte-admin" ? "?next=%2Fsuporte-admin" : ""}` },
       });
       if (error) throw error;
     } catch {
@@ -193,7 +193,7 @@ export default function LoginPage() {
     try {
       if (captchaEnabled && !captchaToken) throw new Error("Conclua a verificação antirobô.");
       const result = await createClient().auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/auth/recovery-callback`,
+        redirectTo: "https://www.myryra.com/auth/recovery-callback",
         ...(captchaEnabled ? { captchaToken } : {}),
       });
       if (result.error) throw result.error;
