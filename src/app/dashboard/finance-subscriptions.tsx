@@ -206,8 +206,11 @@ export default function FinanceSubscriptions() {
     setError("");
     try {
       const db = createClient();
-      const { error: deleteError } = await db.from("myryra_finance_subscriptions").delete().eq("id", id);
+      const { data: auth, error: authError } = await db.auth.getUser();
+      if (authError || !auth.user) throw new Error("Sessão expirada.");
+      const { data: deleted, error: deleteError } = await db.from("myryra_finance_subscriptions").delete().eq("id", id).eq("user_id", auth.user.id).select("id");
       if (deleteError) throw deleteError;
+      if (!deleted?.length) throw new Error("Registro não encontrado.");
       setItems(previous => previous.filter(item => item.id !== id));
     } catch { setError("Não foi possível excluir a assinatura."); }
   }
