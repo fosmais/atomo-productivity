@@ -310,13 +310,6 @@ export default function CalendarEvents() {
     const [year, month, day] = key.split("-");
     return `${day}/${month}/${year}`;
   }
-  const weekDays = Array.from({ length: 7 }, (_, index) => {
-    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + index);
-    const key = day.toLocaleDateString("en-CA");
-    const count = events.filter((event) => dateKey(event.startsAt) === key).length +
-      googleEvents.filter((event) => dateKey(event.start) === key).length;
-    return { key, count, weekday: day.toLocaleDateString("pt-BR", { weekday: "short" }), day: day.getDate() };
-  });
   const anchor = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   if (calendarView === "day") anchor.setDate(anchor.getDate() + calendarOffset);
   if (calendarView === "week") anchor.setDate(anchor.getDate() - ((anchor.getDay() + 6) % 7) + calendarOffset * 7);
@@ -381,17 +374,17 @@ export default function CalendarEvents() {
   const visibleLocal = showAllLocal ? filteredLocal : filteredLocal.slice(0, 5);
 
   return (
-    <section className="rounded-2xl border border-violet-400/20 bg-gradient-to-b from-slate-900 to-slate-950 p-5 text-white shadow-xl shadow-violet-950/20 sm:p-7">
-      <p className="text-sm font-semibold text-violet-400">MYRYRA CALENDAR</p>
-
-      <h2 className="mt-1 text-2xl font-bold">Meus compromissos</h2>
-
-      <p className="mt-2 text-sm text-slate-400">
-        Cadastre seus eventos e organize seus horários.
-      </p>
+    <section className="min-w-0 space-y-4 text-white">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-slate-400">Eventos e tarefas MYRYRA + Google, em uma única visão.</p>
+        <button type="button" onClick={() => setShowForm(value => !value)} aria-expanded={showForm}
+          className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">
+          {showForm ? "Fechar formulário" : "+ Novo compromisso"}
+        </button>
+      </div>
 
       {tasksError && <p role="status" className="mt-3 text-xs text-amber-300">{tasksError}</p>}
-      <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/60 p-3 sm:p-4" aria-label="Smart Calendar">
+      <div className="rounded-2xl border border-white/15 bg-slate-900/75 p-3 sm:p-5" aria-label="Smart Calendar">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div><p className="text-xs font-semibold uppercase tracking-widest text-violet-300">Smart Calendar · Beta</p><h3 className="mt-1 text-lg font-semibold capitalize">{calendarPeriod}</h3></div>
           <div className="flex flex-wrap gap-2">
@@ -424,11 +417,7 @@ export default function CalendarEvents() {
         </div>}
       </div>
 
-      <button type="button" onClick={() => setShowForm((value) => !value)}
-        aria-expanded={showForm}
-        className="mt-4 rounded-xl border border-violet-500/40 px-4 py-2 text-sm font-semibold text-violet-200 hover:bg-violet-500/10">
-        {showForm ? "Fechar formulário" : "+ Novo compromisso"}
-      </button>
+
       {showForm && <div id="myryra-calendar-event-form" className="mt-4 scroll-mt-8 rounded-xl border border-slate-700 p-4">
       <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
         <input
@@ -521,24 +510,6 @@ export default function CalendarEvents() {
         </p>
       )}
 
-<section className="mt-5 rounded-xl border border-violet-500/20 bg-slate-900/60 p-3 sm:p-4" aria-label="Resumo dos próximos sete dias">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold text-white">Visão dos próximos 7 dias</h3>
-          <span className="text-xs text-slate-400">Compromissos por dia</span>
-        </div>
-        <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
-          {weekDays.map((day) => (
-            <button key={day.key} type="button" aria-pressed={selectedDay === day.key}
-              onClick={() => { setSelectedDay((current) => current === day.key ? null : day.key); setShowAllGoogle(false); setShowAllLocal(false); }}
-              className={`min-w-0 rounded-lg border px-1 py-2 text-center transition focus-visible:outline-2 focus-visible:outline-violet-400 ${selectedDay === day.key ? "border-violet-400 bg-violet-600/30" : "border-slate-700 bg-slate-950/50 hover:border-violet-500/60"}`}>
-              <span className="block truncate text-[10px] text-slate-400 sm:text-xs">{day.weekday}</span>
-              <span className="mt-1 block text-sm font-semibold text-white">{day.day}</span>
-              <span className={`mx-auto mt-1 flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${day.count > 0 ? "bg-violet-500/25 text-violet-200" : "bg-slate-800 text-slate-500"}`}>{day.count}</span>
-            </button>
-          ))}
-        </div>
-        {selectedDay && <button type="button" onClick={() => setSelectedDay(null)} className="mt-3 text-xs font-semibold text-violet-300 underline">Limpar seleção do dia</button>}
-      </section>
       {/* VYRA_GOOGLE_LAYOUT_FIX */}
       {/* Google Calendar — eventos externos somente leitura */}
       <div className="mt-6 min-w-0 max-w-full overflow-hidden rounded-xl border border-violet-500/30 bg-slate-900/50 p-4">
