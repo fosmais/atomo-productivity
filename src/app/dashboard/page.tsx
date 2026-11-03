@@ -26,6 +26,7 @@ import ExternalIntegrations from "./external-integrations";
 import SmartSchedulingPanel from "./smart-scheduling-panel";
 import AutoPilot from "./auto-pilot";
 import TaskKanban from "./task-kanban";
+import MyryraTrash from "./myryra-trash";
 import PerformanceInsights from "./performance-insights";
 import VyraHeader from "./vyra-header";
 import VyraNavigation from "./vyra-navigation";
@@ -217,6 +218,7 @@ async function DashboardContent() {
               <ExternalIntegrations />
             </div>
           </FeatureAccordion>
+          <FeatureAccordion id="trash" title="Lixeira" description="Recupere tarefas e compromissos excluídos" userId={user.id}><MyryraTrash /></FeatureAccordion>
           <FeatureAccordion id="feedback" title="Feedback" description="Envie sugestões e relatos sobre o beta" userId={user.id}><BetaFeedback /></FeatureAccordion>
         </div>
       </VyraSection>
