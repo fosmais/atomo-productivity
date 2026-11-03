@@ -140,7 +140,7 @@ async function DashboardContent() {
           description="Compromissos e disponibilidade em um só lugar para você decidir como usar seu tempo."
         >
           <div className="min-w-0 space-y-5">
-            <div className="rounded-2xl border border-violet-400/20 bg-gradient-to-br from-violet-950/30 via-slate-900/75 to-slate-950/80 p-4 sm:p-5">
+            <div className="border-b border-white/10 pb-4">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">Sua visão do tempo</p>
               <h3 className="mt-2 text-xl font-semibold tracking-tight text-white">Compromissos e prioridades</h3>
               <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-400">Crie, consulte e ajuste os eventos da sua agenda sem precisar abrir uma seção adicional.</p>
