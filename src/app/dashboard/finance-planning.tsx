@@ -7,10 +7,24 @@ type Goal = { id: string; title: string; target_cents: number; saved_cents: numb
 type Expense = { id: string; title: string; amount_cents: number; due_date: string };
 const money = (n: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n / 100);
 function parseCents(input: string) {
-  const normalized = input.trim().replace(",", ".");
-  if (!/^\\d{1,9}(?:\\.\\d{1,2})?$/.test(normalized)) return null;
-  const value = Math.round(Number(normalized) * 100);
-  return Number.isSafeInteger(value) && value > 0 ? value : null;
+  const raw = input.trim().replace(/^R\\$\\s*/i, "").replace(/\\s/g, "");
+  if (!raw) return null;
+  // Accept pt-BR currency (7.000,00), plain digits (7000) and decimals (7000.00).
+  // Never guess ambiguous grouping such as 7,000 or 7.000: treat those as
+  // thousands only when exactly three digits follow the separator.
+  let normalized: string;
+  if (/^\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?$/.test(raw)) {
+    normalized = raw.replace(/\\./g, "").replace(",", ".");
+  } else if (/^\\d{1,3}(?:,\\d{3})+(?:\\.\\d{1,2})?$/.test(raw)) {
+    normalized = raw.replace(/,/g, "");
+  } else if (/^\\d+(?:[.,]\\d{1,2})?$/.test(raw)) {
+    normalized = raw.replace(",", ".");
+  } else {
+    return null;
+  }
+  const [integer, fraction = ""] = normalized.split(".");
+  const cents = Number(integer) * 100 + Number(fraction.padEnd(2, "0"));
+  return Number.isSafeInteger(cents) && cents > 0 && cents <= 100000000000 ? cents : null;
 }
 
 export default function FinancePlanning() {
@@ -97,7 +111,7 @@ export default function FinancePlanning() {
       <div><h3 className="text-lg font-semibold text-white">Metas financeiras</h3><p className="mt-1 text-sm text-slate-400">Planeje objetivos. O valor reservado é informativo e não bloqueia dinheiro.</p></div>
       <form onSubmit={addGoal} className="grid gap-2">
         <input required maxLength={100} aria-label="Nome da meta financeira" placeholder="Ex.: Reserva de emergência" value={goalTitle} onChange={e => setGoalTitle(e.target.value)} className="rounded-xl border border-white/20 bg-slate-950 p-3 text-white" />
-        <input required inputMode="decimal" aria-label="Valor da meta em reais" placeholder="Valor da meta (R$)" value={goalAmount} onChange={e => setGoalAmount(e.target.value)} className="rounded-xl border border-white/20 bg-slate-950 p-3 text-white" />
+        <input required inputMode="decimal" aria-label="Valor da meta em reais" placeholder="Ex.: R$ 10.000,00" value={goalAmount} onChange={e => setGoalAmount(e.target.value)} className="rounded-xl border border-white/20 bg-slate-950 p-3 text-white" />
         <button disabled={busy || loading} className="rounded-xl bg-violet-600 px-4 py-2 font-medium text-white disabled:opacity-50">Criar meta</button>
       </form>
       <ul className="space-y-2">{goals.map(goal => <li key={goal.id} className="flex items-center justify-between gap-2 rounded-xl border border-white/10 p-3"><span className="min-w-0"><span className="block truncate text-sm text-white">{goal.title}</span><span className="text-xs text-slate-400">Objetivo: {money(goal.target_cents)}</span></span><button type="button" onClick={() => void remove("myryra_finance_goals", goal.id)} className="text-xs text-violet-300">Excluir</button></li>)}</ul>
@@ -108,7 +122,7 @@ export default function FinancePlanning() {
       <p className="text-xl font-semibold text-white">{money(plannedTotal)} <span className="text-xs font-normal text-slate-400">em despesas planejadas cadastradas</span></p>
       <form onSubmit={addExpense} className="grid gap-2">
         <input required maxLength={100} aria-label="Descrição da despesa planejada" placeholder="Ex.: Aluguel" value={expenseTitle} onChange={e => setExpenseTitle(e.target.value)} className="rounded-xl border border-white/20 bg-slate-950 p-3 text-white" />
-        <div className="grid grid-cols-2 gap-2"><input required inputMode="decimal" aria-label="Valor da despesa em reais" placeholder="Valor (R$)" value={expenseAmount} onChange={e => setExpenseAmount(e.target.value)} className="min-w-0 rounded-xl border border-white/20 bg-slate-950 p-3 text-white" /><input required type="date" aria-label="Data prevista" value={expenseDate} onChange={e => setExpenseDate(e.target.value)} className="min-w-0 rounded-xl border border-white/20 bg-slate-950 p-3 text-white" /></div>
+        <div className="grid grid-cols-2 gap-2"><input required inputMode="decimal" aria-label="Valor da despesa em reais" placeholder="Ex.: R$ 7.000,00" value={expenseAmount} onChange={e => setExpenseAmount(e.target.value)} className="min-w-0 rounded-xl border border-white/20 bg-slate-950 p-3 text-white" /><input required type="date" aria-label="Data prevista" value={expenseDate} onChange={e => setExpenseDate(e.target.value)} className="min-w-0 rounded-xl border border-white/20 bg-slate-950 p-3 text-white" /></div>
         <button disabled={busy || loading} className="rounded-xl bg-violet-600 px-4 py-2 font-medium text-white disabled:opacity-50">Planejar despesa</button>
       </form>
       <ul className="space-y-2">{expenses.map(expense => <li key={expense.id} className="flex items-center justify-between gap-2 rounded-xl border border-white/10 p-3"><span className="min-w-0"><span className="block truncate text-sm text-white">{expense.title}</span><span className="text-xs text-slate-400">{expense.due_date.split("-").reverse().join("/")} · {money(expense.amount_cents)}</span></span><button type="button" onClick={() => void remove("myryra_finance_planned_expenses", expense.id)} className="text-xs text-violet-300">Excluir</button></li>)}</ul>
