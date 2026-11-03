@@ -5,6 +5,8 @@ import { createContext, useContext } from "react";
 export type VyraNavigationContextValue = {
   activeModule: string;
   navigateTo: (moduleId: string) => void;
+  quickAction?: string | null;
+  navigateToQuickAction?: (action: string) => void;
   focusedTaskId?: string | null;
   navigateToTask?: (taskId: string) => void;
 };
