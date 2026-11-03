@@ -28,6 +28,11 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
       if (details) {
         details.open = true;
         details.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (quickAction === "capture") {
+          window.setTimeout(() => window.dispatchEvent(new Event("myryra:focus-quick-capture")), 100);
+        } else if (quickAction === "goals") {
+          window.setTimeout(() => document.querySelector<HTMLInputElement>('[aria-label="Nome da meta"]')?.focus({ preventScroll: true }), 100);
+        }
       }
     }, 80);
     return () => window.clearTimeout(timer);
