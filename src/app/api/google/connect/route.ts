@@ -16,10 +16,9 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser();
 
   if (error || !user) {
-    return NextResponse.json(
-      { error: "Usuário não autenticado." },
-      { status: 401 }
-    );
+    // Browser navigation: guide users to login instead of showing raw JSON.
+    const url = new URL(request.url);
+    return NextResponse.redirect(new URL("/login", url.origin));
   }
 
   const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
