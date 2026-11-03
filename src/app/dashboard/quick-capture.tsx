@@ -1,7 +1,7 @@
 "use client";
 import FeatureHint from "./feature-hint";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { saveCloudPlan } from "@/lib/plan-cloud";
 import { saveCloudEvent } from "@/lib/event-cloud";
 
@@ -60,6 +60,12 @@ export default function QuickCapture() {
   const savingRef = useRef(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    const focusCapture = () => document.getElementById("quick-capture-input")?.focus({ preventScroll: true });
+    window.addEventListener("myryra:focus-quick-capture", focusCapture);
+    return () => window.removeEventListener("myryra:focus-quick-capture", focusCapture);
+  }, []);
 
   async function saveQuickEvent() {
     if (savingRef.current) return;
