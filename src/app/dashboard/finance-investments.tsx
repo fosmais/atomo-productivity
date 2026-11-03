@@ -1,11 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useVyraNavigation } from "./vyra-module-context";
 
 const format = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 const number = (input: string) => Number(input.trim().replace(",", "."));
 
 export default function FinanceInvestments() {
+  const { navigateTo } = useVyraNavigation();
+  const [copied, setCopied] = useState(false);
   const [initial, setInitial] = useState("1000");
   const [monthly, setMonthly] = useState("200");
   const [rate, setRate] = useState("10");
@@ -31,6 +34,18 @@ export default function FinanceInvestments() {
     const invested = principal + contribution * months;
     return { balance, invested, gain: balance - invested, checkpoints };
   }, [initial, monthly, rate, years, ratePeriod]);
+
+  async function askMyka() {
+    const prompt = `MYKA, quero planejar meus investimentos para alcançar meu objetivo. Meu valor inicial simulado é R$ ${initial}, aporte mensal R$ ${monthly}, taxa hipotética ${rate}% ${ratePeriod === "annual" ? "ao ano" : "ao mês"} e prazo de ${years} anos. Antes de comparar opções como Tesouro Direto, CDB e fundos, pergunte meu objetivo, necessidade de liquidez, reserva de emergência, tolerância a perdas e experiência. Explique riscos, custos, impostos e diferenças, sem prometer ganhos ou indicar uma opção como a melhor sem conhecer meu perfil.`;
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopied(true);
+      navigateTo("vyra-ai");
+    } catch {
+      setCopied(false);
+      navigateTo("vyra-ai");
+    }
+  }
 
   return <section className="min-w-0 space-y-4 rounded-2xl border border-violet-400/25 bg-slate-900/75 p-4 sm:p-6" aria-label="Simulador de investimentos">
     <div>
@@ -71,6 +86,16 @@ export default function FinanceInvestments() {
         <div className="mt-2 flex justify-between text-xs text-slate-400"><span>Ano 1</span><span>Ano {years}</span></div>
       </div>
     </>}
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-violet-400/40 bg-gradient-to-r from-violet-950/60 to-slate-950/70 p-4 sm:p-5">
+      <div className="min-w-0">
+        <p className="text-xs font-semibold uppercase tracking-widest text-violet-300">✦ MYKA · Planejamento inteligente</p>
+        <h4 className="mt-1 text-lg font-semibold text-white">Qual investimento combina com seu objetivo?</h4>
+        <p className="mt-1 max-w-xl text-sm text-slate-300">Converse com a MYKA para comparar alternativas, riscos, prazos e liquidez de acordo com suas necessidades.</p>
+      </div>
+      <button type="button" onClick={() => void askMyka()} className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300">Perguntar à MYKA</button>
+      {copied && <p role="status" className="w-full text-xs text-violet-200">Pergunta com os dados da simulação copiada. Cole no chat da MYKA para iniciar a conversa.</p>}
+    </div>
+    <p className="text-xs leading-5 text-slate-400">A MYKA oferece informações educativas e comparações, não consultoria individualizada nem recomendação de compra. Consulte um profissional habilitado para decisões personalizadas.</p>
     <p className="text-xs leading-5 text-slate-400">Projeção matemática ilustrativa com taxa constante e capitalização mensal. Não considera impostos, inflação, tarifas, volatilidade ou risco de perda. Rentabilidade futura não é garantida. Nenhum dinheiro é investido pela MYRYRA.</p>
   </section>;
 }
