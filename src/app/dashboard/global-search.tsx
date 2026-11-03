@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useVyraNavigation } from "./vyra-module-context";
 
-type SearchResult = { id: string; title: string; kind: "Tarefa" | "Plano" | "Compromisso"; detail: string };
+type SearchResult = { id: string; title: string; kind: "Tarefa" | "Plano" | "Compromisso" | "Meta rápida"; detail: string };
 
 export default function GlobalSearch() {
   const { navigateTo, navigateToTask } = useVyraNavigation();
@@ -37,14 +37,28 @@ export default function GlobalSearch() {
         ]);
         if (controller.signal.aborted) return;
         if (tasks.error || plans.error || events.error) throw new Error(tasks.error?.message ?? plans.error?.message ?? events.error?.message ?? "Erro ao buscar.");
+        // Quick goals currently live in this browser's per-user localStorage.
+        // Search them locally until cross-device synchronization is implemented.
+        let quickGoals: SearchResult[] = [];
+        try {
+          const raw: unknown = JSON.parse(localStorage.getItem(`myryra:quick-goals:v1:${auth.user.id}`) || "[]");
+          if (Array.isArray(raw)) {
+            quickGoals = raw.filter((g): g is { id: string; title: string; progress: number; target: number } =>
+              !!g && typeof g.id === "string" && typeof g.title === "string" &&
+              typeof g.progress === "number" && typeof g.target === "number")
+              .filter(g => g.title.toLocaleLowerCase("pt-BR").includes(needle))
+              .map(g => ({ id: g.id, title: g.title, kind: "Meta rápida" as const, detail: `${g.progress} / ${g.target} · Salva neste navegador` }));
+          }
+        } catch { /* Invalid local data should not break cloud search. */ }
         const all: SearchResult[] = [
+          ...quickGoals,
           ...(tasks.data ?? []).map(t => ({ id: t.id, title: t.title, kind: "Tarefa" as const, detail: t.due_date ? `Prazo: ${t.due_date}` : "Sem prazo" })),
           ...(plans.data ?? []).map(p => ({ id: p.id, title: p.title, kind: "Plano" as const, detail: "Plano salvo" })),
           ...(events.data ?? []).map(e => ({ id: e.id, title: e.title, kind: "Compromisso" as const, detail: new Date(e.starts_at).toLocaleDateString("pt-BR") })),
         ];
         if (active) {
           const matching = all.filter(item => item.title.toLocaleLowerCase("pt-BR").includes(needle));
-          const groups = (["Tarefa", "Plano", "Compromisso"] as const).map(kind => matching.filter(item => item.kind === kind));
+          const groups = (["Tarefa", "Plano", "Compromisso", "Meta rápida"] as const).map(kind => matching.filter(item => item.kind === kind));
           const balanced: SearchResult[] = [];
           for (let index = 0; balanced.length < 30 && groups.some(group => index < group.length); index++) {
             for (const group of groups) {
@@ -68,7 +82,7 @@ export default function GlobalSearch() {
     </button>
     {isOpen && <div id="myryra-global-search-panel" className="absolute right-0 top-full z-50 mt-3 w-[min(88vw,420px)] max-h-[70dvh] overflow-y-auto rounded-2xl border border-violet-400/30 bg-slate-950 p-4 shadow-2xl shadow-black/60">
       <div className="mb-3 flex items-center justify-between gap-3"><label htmlFor="myryra-global-search" className="text-sm font-semibold text-violet-100">Busca global</label><button type="button" onClick={() => { setExpanded(false); setQuery(""); }} className="rounded-lg px-2 py-1 text-xs text-slate-300 hover:bg-white/10" aria-label="Fechar busca">Fechar</button></div>
-    <input id="myryra-global-search" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Busque tarefas, planos e compromissos..." className="mt-3 w-full rounded-xl border border-slate-600 bg-slate-950 p-3 text-sm text-white placeholder:text-slate-500 focus:border-violet-400 focus:outline-none" />
+    <input id="myryra-global-search" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Busque tarefas, planos, metas e compromissos..." className="mt-3 w-full rounded-xl border border-slate-600 bg-slate-950 p-3 text-sm text-white placeholder:text-slate-500 focus:border-violet-400 focus:outline-none" />
     {(loading || (query.trim().length >= 2 && completedQuery !== query.trim() && !error)) && <p role="status" className="mt-3 text-xs text-slate-400">Pesquisando...</p>}
     {error && <p role="alert" className="mt-3 text-sm text-rose-300">{error}</p>}
     {!loading && completedQuery === query.trim() && query.trim().length >= 2 && !error && <div className="mt-3 space-y-2" aria-live="polite">
