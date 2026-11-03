@@ -32,15 +32,15 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
             aria-selected={active === section.id}
             aria-controls={`planning-panel-${section.id}`}
             onClick={() => setActive(section.id)}
-            className={`min-w-0 rounded-2xl border p-5 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 ${
+            className={`flex min-h-[116px] min-w-0 flex-col justify-center rounded-2xl border p-5 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 ${
               active === section.id
-                ? "border-violet-400/70 bg-violet-600/20 shadow-lg shadow-violet-950/30"
+                ? "border-violet-400/70 bg-violet-600/15 shadow-lg shadow-violet-950/20"
                 : "border-white/15 bg-slate-900/75 hover:border-violet-400/50 hover:bg-slate-800/80"
             }`}
           >
             <span aria-hidden="true" className="mb-3 block text-2xl text-violet-300">{section.icon}</span>
-            <span className="block text-lg font-semibold text-white">{section.title}</span>
-            <span className="mt-1 block text-sm text-slate-300">{section.description}</span>
+            <span className="block text-base font-semibold text-white">{section.title}</span>
+            <span className="mt-1 block text-xs text-slate-300">{section.description}</span>
           </button>
         ))}
       </div>
