@@ -194,7 +194,7 @@ async function DashboardContent() {
       </VyraSection>
 </VyraModule>
       <VyraModule id="vyra-finance">
-        <VyraSection id="vyra-finance" eyebrow="MYRYRA FINANCE · MVP2" title="Seu dinheiro, com mais clareza." description="Organize receitas e despesas sem precisar conectar um banco.">
+        <VyraSection id="vyra-finance" eyebrow="MYRYRA FINANCE" title="Seu dinheiro, com mais clareza." description="Organize receitas e despesas sem precisar conectar um banco.">
           <div className="space-y-5"><MyryraFinanceStarter /><FinancePlanning /><FinanceInvestments /></div>
         </VyraSection>
       </VyraModule>
