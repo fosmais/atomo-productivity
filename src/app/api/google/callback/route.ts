@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     const oauth = createGoogleOAuthClient();
     const { tokens } = await oauth.getToken(code);
 
-    if (!tokens.access_token || !tokens.refresh_token) {
+    if (!tokens.access_token) {
       return redirect("missing_tokens");
     }
 
@@ -83,13 +83,31 @@ export async function GET(request: NextRequest) {
     const googleAccountId = calendarInfo.id ?? null;
 
     const admin = createSupabaseAdmin();
+    // Google may omit refresh_token on repeat consent. Only reuse a saved
+    // token when the Google account is the same; never cross account boundaries.
+    let encryptedRefreshToken = tokens.refresh_token
+      ? encryptGoogleToken(tokens.refresh_token)
+      : null;
+    if (!encryptedRefreshToken) {
+      const { data: previous, error: previousError } = await admin
+        .from("google_calendar_connections")
+        .select("google_account_id, encrypted_refresh_token")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (previousError) return redirect("save_error");
+      if (previous?.google_account_id && previous.google_account_id === googleAccountId) {
+        encryptedRefreshToken = previous.encrypted_refresh_token ?? null;
+      }
+    }
+    if (!encryptedRefreshToken) return redirect("missing_tokens");
+
     const { error: saveError } = await admin
       .from("google_calendar_connections")
       .upsert({
         user_id: user.id,
         google_account_id: googleAccountId,
         encrypted_access_token: encryptGoogleToken(tokens.access_token),
-        encrypted_refresh_token: encryptGoogleToken(tokens.refresh_token),
+        encrypted_refresh_token: encryptedRefreshToken,
         token_expires_at: tokens.expiry_date
           ? new Date(tokens.expiry_date).toISOString()
           : null,
