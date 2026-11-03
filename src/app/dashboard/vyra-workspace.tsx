@@ -26,7 +26,7 @@ export default function VyraWorkspace({
   useEffect(() => {
     const syncFromUrl = () => {
       const requested = decodeURIComponent(window.location.hash.slice(1));
-      setActiveModule(validModules.includes(requested) ? requested : "home");
+      setActiveModule(requested === "vyra-planner" ? "vyra-tasks" : validModules.includes(requested) ? requested : "home");
     };
     syncFromUrl();
     window.addEventListener("hashchange", syncFromUrl);
@@ -49,7 +49,7 @@ export default function VyraWorkspace({
     home: "Seu espaço inteligente",
     "vyra-ai": "Myka AI",
     "vyra-planner": "Planner",
-    "vyra-tasks": "Tarefas",
+    "vyra-tasks": "Tarefas e Planejamento",
     "vyra-calendar": "Agenda",
     "vyra-scheduling": "Smart Scheduling",
     "vyra-performance": "Performance",
