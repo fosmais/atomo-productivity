@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useVyraNavigation } from "./vyra-module-context";
 
 type PlannedExpense = { id: string; title: string; amount_cents: number; due_date: string };
 type FinanceEntry = { amount_cents: number; kind: string };
@@ -18,6 +19,8 @@ function parseMoney(value: string) {
   return Number.isSafeInteger(cents) && cents > 0 && cents <= 100000000000 ? cents : null;
 }
 export default function FinanceSubscriptions() {
+  const { navigateTo } = useVyraNavigation();
+  const [handoffError, setHandoffError] = useState(false);
   const [items, setItems] = useState<Subscription[]>([]);
   const [planned, setPlanned] = useState<PlannedExpense[]>([]);
   const [entries, setEntries] = useState<FinanceEntry[]>([]);
@@ -92,6 +95,26 @@ export default function FinanceSubscriptions() {
     });
   },[asOf,opening,entries,planned,items,horizon,excludedExpenseIds]);
   const firstNegative = projection.find(row=>row.position<0);
+  function askMyka() {
+    if (!projection.length) return;
+    const final = projection[projection.length - 1];
+    const warning = firstNegative ? "Há risco de saldo negativo em "+firstNegative.period+"." : "Não há saldo negativo no período simulado.";
+    const prompt = [
+      "MYKA, ajude-me a revisar meu planejamento financeiro pessoal, com orientações educativas.",
+      "Horizonte: "+horizon+" meses. Saldo final estimado: "+brl(final.position)+".",
+      warning,
+      "Total de despesas futuras previstas: "+brl(projection.reduce((sum,row)=>sum+row.expenses,0))+".",
+      "Total de assinaturas futuras: "+brl(projection.reduce((sum,row)=>sum+row.subscriptionsDue,0))+".",
+      "Possíveis despesas duplicadas identificadas: "+potentialDuplicates.length+".",
+      "Faça uma pergunta por vez para entender prioridades, despesas essenciais e oportunidades de economia.",
+      "Não altere registros nem assuma que o saldo é bancário. Não recomende investimentos ou crédito específicos."
+    ].join(" ");
+    try {
+      sessionStorage.setItem("myryra:myka:investment-handoff",prompt);
+      setHandoffError(false);
+      navigateTo("vyra-ai");
+    } catch { setHandoffError(true); }
+  }
   async function add(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const cents = parseMoney(amount);
@@ -138,6 +161,8 @@ export default function FinanceSubscriptions() {
       {potentialDuplicates.length>0&&<div className="space-y-2 rounded-xl border border-amber-400/30 bg-amber-950/20 p-3"><p className="text-sm font-semibold text-amber-200">Possíveis compromissos duplicados</p><p className="text-xs text-slate-300">Encontramos despesas com mesmo nome e valor de uma assinatura. Confirme se deseja ignorá-las apenas nesta projeção; os registros não serão excluídos.</p>{potentialDuplicates.map(item=><label key={item.id} className="flex items-center gap-2 text-sm text-white"><input type="checkbox" checked={excludedExpenseIds.includes(item.id)} onChange={event=>setExcludedExpenseIds(current=>event.target.checked?[...current,item.id]:current.filter(id=>id!==item.id))}/><span>Ignorar {item.title} ({brl(item.amount_cents)}) na projeção</span></label>)}</div>}
       {firstNegative&&<p role="status" className="rounded-xl border border-rose-400/30 bg-rose-950/20 p-3 text-sm text-rose-200">Atenção: o saldo projetado fica negativo em {firstNegative.period.slice(5)}/{firstNegative.period.slice(0,4)}. Revise os compromissos futuros.</p>}
       <div className="overflow-x-auto"><table className="w-full min-w-[520px] text-left text-sm"><thead><tr className="border-b border-white/15 text-slate-400"><th className="p-2">Mês</th><th className="p-2">Despesas</th><th className="p-2">Assinaturas</th><th className="p-2">Saldo projetado</th></tr></thead><tbody>{projection.map(row=><tr key={row.period} className="border-b border-white/10"><td className="p-2 text-white">{row.period.slice(5)}/{row.period.slice(0,4)}</td><td className="p-2 text-slate-300">{brl(row.expenses)}</td><td className="p-2 text-slate-300">{brl(row.subscriptionsDue)}</td><td className={row.position<0?"p-2 font-semibold text-rose-300":"p-2 font-semibold text-emerald-300"}>{brl(row.position)}</td></tr>)}</tbody></table></div>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-violet-400/20 bg-slate-950/60 p-3"><div><p className="text-sm font-semibold text-violet-200">✦ MYKA · Planejamento financeiro</p><p className="mt-1 text-xs text-slate-300">Converse sobre riscos de saldo negativo e alternativas para organizar seu orçamento. Os números da simulação serão enviados ao chat apenas ao clicar.</p></div><button type="button" onClick={askMyka} disabled={!projection.length} className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500 disabled:opacity-50">Analisar com a MYKA</button></div>
+      {handoffError&&<p role="alert" className="text-xs text-rose-300">Não foi possível abrir a análise. Verifique as permissões do navegador.</p>}
       <p className="text-xs text-slate-400">Estimativa sem receitas futuras, inflação ou gastos não cadastrados. Revise possíveis duplicidades acima. Atualize a página após alterar outros lançamentos.</p>
     </div>
     <form onSubmit={add} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
