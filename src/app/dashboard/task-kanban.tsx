@@ -34,6 +34,10 @@ export default function TaskKanban() {
   const [expandedColumns, setExpandedColumns] = useState<TaskStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editPriority, setEditPriority] = useState("Normal");
+  const [editDueDate, setEditDueDate] = useState("");
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -215,30 +219,41 @@ export default function TaskKanban() {
     }
   }
 
-  async function renameTask(task: KanbanTask) {
+  function beginEdit(task: KanbanTask) {
+    setEditingId(task.id);
+    setEditTitle(task.title);
+    setEditPriority(task.priority);
+    setEditDueDate(task.due_date ?? "");
+    setError("");
+  }
+
+  async function saveTaskEdits(task: KanbanTask) {
     if (savingId) return;
-    const proposed = window.prompt("Editar título da tarefa:", task.title);
-    if (proposed === null) return;
-    const title = proposed.trim();
+    const title = editTitle.trim();
     if (!title || title.length > 200 || !/[\p{L}\p{N}]/u.test(title)) {
       setError("Informe um título válido de até 200 caracteres.");
       return;
     }
-    if (title === task.title) return;
+    if (!["Alta", "Média", "Normal"].includes(editPriority)) {
+      setError("Selecione uma prioridade válida.");
+      return;
+    }
     setSavingId(task.id);
     setError("");
     try {
       const supabase = createClient();
       const { data: auth, error: authError } = await supabase.auth.getUser();
       if (authError || !auth.user) throw new Error("Usuário não autenticado.");
+      const changes = { title, priority: editPriority, due_date: editDueDate || null };
       const { data, error: updateError } = await supabase.from("tasks")
-        .update({ title }).eq("id", task.id).eq("user_id", auth.user.id)
-        .select("id").single();
-      if (updateError || !data) throw new Error(updateError?.message ?? "Não foi possível editar o título.");
-      setTasks((current) => current.map((item) => item.id === task.id ? { ...item, title } : item));
+        .update(changes).eq("id", task.id).eq("user_id", auth.user.id)
+        .is("deleted_at", null).select("id").single();
+      if (updateError || !data) throw new Error(updateError?.message ?? "Não foi possível salvar.");
+      setTasks(current => current.map(item => item.id === task.id ? { ...item, ...changes } : item));
+      setEditingId(null);
       window.dispatchEvent(new Event("myryra:tasks-updated"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível editar o título.");
+      setError(err instanceof Error ? err.message : "Falha ao editar tarefa.");
     } finally {
       setSavingId(null);
     }
@@ -505,8 +520,14 @@ export default function TaskKanban() {
                           ))}
                         </select>
                       </label>
+                      {editingId === task.id && <div className="mt-3 space-y-2 rounded-lg border border-violet-400/40 bg-slate-950/80 p-3">
+                        <label className="block text-xs text-slate-300">Título<input aria-label="Editar título da tarefa" maxLength={200} value={editTitle} onChange={event => setEditTitle(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 p-2 text-sm text-white" /></label>
+                        <label className="block text-xs text-slate-300">Prioridade<select aria-label="Editar prioridade" value={editPriority} onChange={event => setEditPriority(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 p-2 text-sm text-white"><option value="Normal">Normal</option><option value="Média">Média</option><option value="Alta">Alta</option></select></label>
+                        <label className="block text-xs text-slate-300">Prazo<input aria-label="Editar prazo" type="date" value={editDueDate} onChange={event => setEditDueDate(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 p-2 text-sm text-white" /></label>
+                        <div className="flex justify-end gap-2"><button type="button" disabled={savingId !== null} onClick={() => setEditingId(null)} className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs">Cancelar</button><button type="button" disabled={savingId !== null} onClick={() => void saveTaskEdits(task)} className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">Salvar</button></div>
+                      </div>}
                       <div className="mt-3 flex justify-end gap-2">
-                        <button type="button" disabled={savingId !== null} onClick={() => void renameTask(task)} aria-label={`Editar título: ${task.title}`} className="rounded-lg border border-violet-400/40 px-3 py-1.5 text-xs font-medium text-violet-200 transition hover:bg-violet-500/10 disabled:opacity-50">Editar título</button>
+                        <button type="button" disabled={savingId !== null} onClick={() => editingId === task.id ? setEditingId(null) : beginEdit(task)} aria-label={`Editar tarefa: ${task.title}`} className="rounded-lg border border-violet-400/40 px-3 py-1.5 text-xs font-medium text-violet-200 transition hover:bg-violet-500/10 disabled:opacity-50">Editar</button>
                         <button type="button" disabled={savingId !== null} onClick={() => void deleteTask(task)} aria-label={`Excluir tarefa: ${task.title}`} className="rounded-lg border border-rose-400/35 px-3 py-1.5 text-xs font-medium text-rose-200 transition hover:bg-rose-500/10 disabled:opacity-50">Excluir tarefa</button>
                       </div>
                     </article>
