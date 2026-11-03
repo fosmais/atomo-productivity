@@ -62,7 +62,8 @@ export async function getCloudAvailability(
     .from("events")
     .select("starts_at, ends_at")
     .eq("user_id", user.id)
-    .eq("blocks_time", true)
+    // Every saved appointment occupies its time slot, including legacy events
+    // that were created with blocks_time=false.
     .lt("starts_at", rangeEnd.toISOString())
     .gt("ends_at", rangeStart.toISOString());
 
