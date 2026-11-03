@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useVyraNavigation } from "./vyra-module-context";
 
+type ExpectedIncome = { id: string; title: string; amount_cents: number; due_date: string };
 type PlannedExpense = { id: string; title: string; amount_cents: number; due_date: string };
 type FinanceEntry = { amount_cents: number; kind: string };
 type Subscription = { id: string; title: string; amount_cents: number; billing_cycle: "monthly" | "yearly"; next_due_date: string };
@@ -23,6 +24,10 @@ export default function FinanceSubscriptions() {
   const [handoffError, setHandoffError] = useState(false);
   const [items, setItems] = useState<Subscription[]>([]);
   const [planned, setPlanned] = useState<PlannedExpense[]>([]);
+  const [expectedIncome, setExpectedIncome] = useState<ExpectedIncome[]>([]);
+  const [incomeTitle, setIncomeTitle] = useState("");
+  const [incomeAmount, setIncomeAmount] = useState("");
+  const [incomeDue, setIncomeDue] = useState("");
   const [entries, setEntries] = useState<FinanceEntry[]>([]);
   const [opening, setOpening] = useState(0);
   const [horizon, setHorizon] = useState(6);
@@ -52,15 +57,17 @@ export default function FinanceSubscriptions() {
         if (authError || !auth.user) throw new Error("Sessão inválida");
         const { data, error: queryError } = await db.from("myryra_finance_subscriptions").select("id,title,amount_cents,billing_cycle,next_due_date").eq("user_id", auth.user.id).order("next_due_date", { ascending: true }).limit(200);
         if (queryError) throw queryError;
-        const [future, history, balance] = await Promise.all([
+        const [future, history, balance, income] = await Promise.all([
           db.from("myryra_finance_planned_expenses").select("id,title,amount_cents,due_date").eq("user_id",auth.user.id).limit(1000),
           db.from("myryra_finance_entries").select("amount_cents,kind").eq("user_id",auth.user.id).limit(1000),
-          db.from("myryra_finance_balances").select("opening_balance_cents").eq("user_id",auth.user.id).maybeSingle()
+          db.from("myryra_finance_balances").select("opening_balance_cents").eq("user_id",auth.user.id).maybeSingle(),
+          db.from("myryra_finance_expected_income").select("id,title,amount_cents,due_date").eq("user_id",auth.user.id).limit(1000)
         ]);
-        if(future.error || history.error || balance.error) throw new Error("Falha na projeção");
+        if(future.error || history.error || balance.error || income.error) throw new Error("Falha na projeção");
         if (active) {
           setItems((data ?? []) as Subscription[]);
           setPlanned((future.data ?? []) as PlannedExpense[]);
+          setExpectedIncome((income.data ?? []) as ExpectedIncome[]);
           setEntries((history.data ?? []) as FinanceEntry[]);
           setOpening(Number(balance.data?.opening_balance_cents ?? 0));
         }
@@ -95,10 +102,11 @@ export default function FinanceSubscriptions() {
         const interval=item.billing_cycle==="yearly"?12:1;
         if(distance>=0 && distance%interval===0 && (distance>0 || item.next_due_date>=asOf)) subscriptionsDue+=Number(item.amount_cents);
       }
-      position-=expenses+subscriptionsDue;
-      return {period,expenses,subscriptionsDue,position};
+      const incoming = expectedIncome.filter(item=>item.due_date.startsWith(period)&&item.due_date>=asOf).reduce((sum,item)=>sum+Number(item.amount_cents),0);
+      position+=incoming-expenses-subscriptionsDue;
+      return {period,expenses,subscriptionsDue,incoming,position};
     });
-  },[asOf,opening,entries,planned,items,horizon,excludedExpenseIds]);
+  },[asOf,opening,entries,planned,items,horizon,excludedExpenseIds,expectedIncome]);
   const firstNegative = projection.find(row=>row.position<0);
   const scenario = useMemo(() => {
     let cumulativeSavings = 0;
@@ -136,6 +144,7 @@ export default function FinanceSubscriptions() {
       "MYKA, ajude-me a revisar meu planejamento financeiro pessoal, com orientações educativas.",
       "Horizonte: "+horizon+" meses. Saldo final estimado: "+brl(final.position)+".",
       warning,
+      "Total de receitas futuras previstas: "+brl(projection.reduce((sum,row)=>sum+row.incoming,0))+".",
       "Total de despesas futuras previstas: "+brl(projection.reduce((sum,row)=>sum+row.expenses,0))+".",
       "Total de assinaturas futuras: "+brl(projection.reduce((sum,row)=>sum+row.subscriptionsDue,0))+".",
       "Possíveis despesas duplicadas identificadas: "+potentialDuplicates.length+".",
@@ -148,6 +157,32 @@ export default function FinanceSubscriptions() {
       setHandoffError(false);
       navigateTo("vyra-ai");
     } catch { setHandoffError(true); }
+  }
+  async function addIncome(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const cents=parseMoney(incomeAmount);
+    if(!incomeTitle.trim()||incomeTitle.trim().length>100||!cents||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(incomeDue)){setError("Informe os dados da receita prevista.");return;}
+    setBusy(true);setError("");
+    try {
+      const db=createClient();
+      const {data:auth,error:authError}=await db.auth.getUser();
+      if(authError||!auth.user)throw new Error("Sessão inválida");
+      const {data,error:insertError}=await db.from("myryra_finance_expected_income").insert({user_id:auth.user.id,title:incomeTitle.trim(),amount_cents:cents,due_date:incomeDue}).select("id,title,amount_cents,due_date").single();
+      if(insertError)throw insertError;
+      setExpectedIncome(old=>[...old,data as ExpectedIncome]);setIncomeTitle("");setIncomeAmount("");setIncomeDue("");
+    } catch {setError("Não foi possível salvar a receita prevista.");}
+    finally {setBusy(false);}
+  }
+  async function removeIncome(id:string) {
+    setError("");
+    try {
+      const db=createClient();
+      const {data:auth,error:authError}=await db.auth.getUser();
+      if(authError||!auth.user)throw new Error("Sessão inválida");
+      const {error:deleteError}=await db.from("myryra_finance_expected_income").delete().eq("id",id).eq("user_id",auth.user.id);
+      if(deleteError)throw deleteError;
+      setExpectedIncome(old=>old.filter(item=>item.id!==id));
+    } catch {setError("Não foi possível excluir a receita prevista.");}
   }
   async function add(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -194,12 +229,13 @@ export default function FinanceSubscriptions() {
       <div className="flex flex-wrap items-center justify-between gap-2"><div><h4 className="font-semibold text-white">Projeção do saldo mensal</h4><p className="text-xs text-slate-400">Despesas futuras e assinaturas descontadas do saldo manual estimado.</p></div><label className="text-sm text-slate-300">Período <select value={horizon} onChange={e=>setHorizon(Number(e.target.value))} className="ml-2 rounded-lg border border-white/20 bg-slate-950 p-2 text-white"><option value={3}>3 meses</option><option value={6}>6 meses</option><option value={12}>12 meses</option></select></label></div>
       {potentialDuplicates.length>0&&<div className="space-y-2 rounded-xl border border-amber-400/30 bg-amber-950/20 p-3"><p className="text-sm font-semibold text-amber-200">Possíveis compromissos duplicados</p><p className="text-xs text-slate-300">Encontramos despesas com mesmo nome e valor de uma assinatura. Confirme se deseja ignorá-las apenas nesta projeção; os registros não serão excluídos.</p>{potentialDuplicates.map(item=><label key={item.id} className="flex items-center gap-2 text-sm text-white"><input type="checkbox" checked={excludedExpenseIds.includes(item.id)} onChange={event=>setExcludedExpenseIds(current=>event.target.checked?[...current,item.id]:current.filter(id=>id!==item.id))}/><span>Ignorar {item.title} ({brl(item.amount_cents)}) na projeção</span></label>)}</div>}
       {firstNegative&&<div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-400/30 bg-rose-950/20 p-3"><div><p className="text-sm font-semibold text-rose-200">Seu saldo poderá ficar negativo em {firstNegative.period.slice(5)}/{firstNegative.period.slice(0,4)}.</p><p className="mt-1 text-xs text-rose-100">A MIKA pode ajudar você a reorganizar despesas, revisar assinaturas e simular um plano para equilibrar o orçamento.</p></div><button type="button" onClick={askMyka} className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">Replanejar meus gastos com a MIKA</button></div>}
-      <div className="overflow-x-auto"><table className="w-full min-w-[520px] text-left text-sm"><thead><tr className="border-b border-white/15 text-slate-400"><th className="p-2">Mês</th><th className="p-2">Despesas</th><th className="p-2">Assinaturas</th><th className="p-2">Saldo projetado</th></tr></thead><tbody>{projection.map(row=><tr key={row.period} className="border-b border-white/10"><td className="p-2 text-white">{row.period.slice(5)}/{row.period.slice(0,4)}</td><td className="p-2 text-slate-300">{brl(row.expenses)}</td><td className="p-2 text-slate-300">{brl(row.subscriptionsDue)}</td><td className={row.position<0?"p-2 font-semibold text-rose-300":"p-2 font-semibold text-emerald-300"}>{brl(row.position)}</td></tr>)}</tbody></table></div>
+      <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-left text-sm"><thead><tr className="border-b border-white/15 text-slate-400"><th className="p-2">Mês</th><th className="p-2">Receitas</th><th className="p-2">Despesas</th><th className="p-2">Assinaturas</th><th className="p-2">Saldo projetado</th></tr></thead><tbody>{projection.map(row=><tr key={row.period} className="border-b border-white/10"><td className="p-2 text-white">{row.period.slice(5)}/{row.period.slice(0,4)}</td><td className="p-2 text-emerald-300">{brl(row.incoming)}</td><td className="p-2 text-slate-300">{brl(row.expenses)}</td><td className="p-2 text-slate-300">{brl(row.subscriptionsDue)}</td><td className={row.position<0?"p-2 font-semibold text-rose-300":"p-2 font-semibold text-emerald-300"}>{brl(row.position)}</td></tr>)}</tbody></table></div>
       <div className="space-y-3 rounded-xl border border-violet-400/25 bg-slate-950/50 p-4"><div><h4 className="font-semibold text-white">Simule um orçamento mais equilibrado</h4><p className="mt-1 text-xs text-slate-400">Ajuste reduções hipotéticas de gastos. Nenhum registro será alterado.</p></div><div className="grid gap-3 sm:grid-cols-2"><fieldset className="space-y-2"><legend className="text-sm font-semibold text-white">Despesas para retirar do cenário</legend>{planned.filter(item=>item.due_date>=asOf&&!excludedExpenseIds.includes(item.id)).length===0?<p className="text-xs text-slate-400">Nenhuma despesa futura cadastrada.</p>:planned.filter(item=>item.due_date>=asOf&&!excludedExpenseIds.includes(item.id)).map(item=><label key={item.id} className="flex items-center gap-2 text-xs text-slate-200"><input type="checkbox" checked={scenarioExpenseIds.includes(item.id)} onChange={e=>setScenarioExpenseIds(old=>e.target.checked?[...old,item.id]:old.filter(id=>id!==item.id))}/>{item.title} · {brl(item.amount_cents)} · {item.due_date.split("-").reverse().join("/")}</label>)}</fieldset><fieldset className="space-y-2"><legend className="text-sm font-semibold text-white">Assinaturas para cancelar no cenário</legend>{items.length===0?<p className="text-xs text-slate-400">Nenhuma assinatura cadastrada.</p>:items.map(item=><label key={item.id} className="flex items-center gap-2 text-xs text-slate-200"><input type="checkbox" checked={scenarioSubscriptionIds.includes(item.id)} onChange={e=>setScenarioSubscriptionIds(old=>e.target.checked?[...old,item.id]:old.filter(id=>id!==item.id))}/>{item.title} · {brl(item.amount_cents)} ({item.billing_cycle==="monthly"?"mensal":"anual"})</label>)}</fieldset></div><fieldset className="space-y-2"><legend className="text-sm font-semibold text-white">Adiar despesas no cenário</legend>{planned.filter(item=>item.due_date>=asOf&&!excludedExpenseIds.includes(item.id)&&!scenarioExpenseIds.includes(item.id)).map(item=><label key={item.id} className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-200"><span>{item.title} · {brl(item.amount_cents)} · {item.due_date.split("-").reverse().join("/")}</span><select aria-label={"Adiar "+item.title} value={deferredExpenses[item.id]??0} onChange={e=>setDeferredExpenses(current=>({...current,[item.id]:Number(e.target.value)}))} className="rounded-lg border border-white/20 bg-slate-900 p-2 text-white"><option value={0}>Não adiar</option><option value={1}>Adiar 1 mês</option><option value={2}>Adiar 2 meses</option><option value={3}>Adiar 3 meses</option></select></label>)}</fieldset><p className="text-xs text-slate-400">Despesas adiadas continuam no orçamento no novo mês. Se o novo vencimento cair fora do período analisado, o valor não aparecerá no saldo final simulado.</p><p className="text-xs text-slate-400">As seleções são hipóteses: retiram a despesa inteira ou todas as próximas cobranças da assinatura apenas do cenário. Não cancelam contratos nem modificam lançamentos.</p><div className="grid gap-3 sm:grid-cols-2"><label className="text-sm text-slate-300">Redução de assinaturas: {subscriptionSavings}%<input type="range" min="0" max="100" step="5" value={subscriptionSavings} onChange={e=>setSubscriptionSavings(Number(e.target.value))} className="mt-2 w-full accent-violet-500"/></label><label className="text-sm text-slate-300">Redução de despesas planejadas: {expenseSavings}%<input type="range" min="0" max="100" step="5" value={expenseSavings} onChange={e=>setExpenseSavings(Number(e.target.value))} className="mt-2 w-full accent-violet-500"/></label></div><div className="grid gap-2 sm:grid-cols-3"><div><p className="text-xs text-slate-400">Economia simulada</p><p className="font-semibold text-emerald-300">{brl(totalScenarioSavings)}</p></div><div><p className="text-xs text-slate-400">Saldo final simulado</p><p className="font-semibold text-white">{brl(scenario.length?scenario[scenario.length-1].scenarioPosition:0)}</p></div><div><p className="text-xs text-slate-400">Primeiro mês negativo no cenário</p><p className="font-semibold text-white">{scenarioNegative?scenarioNegative.period.slice(5)+"/"+scenarioNegative.period.slice(0,4):"Nenhum no período"}</p></div></div><p className="text-xs text-slate-400">A redução é aplicada proporcionalmente a todas as despesas da categoria, inclusive essenciais. Use apenas para explorar possibilidades, não como plano de cortes automático.</p><button type="button" onClick={askMyka} disabled={!projection.length} className="rounded-lg border border-violet-400 px-3 py-2 text-sm font-semibold text-violet-200 disabled:opacity-50">Conversar com a MIKA sobre este cenário</button></div>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-violet-400/20 bg-slate-950/60 p-3"><div><p className="text-sm font-semibold text-violet-200">✦ MYKA · Planejamento financeiro</p><p className="mt-1 text-xs text-slate-300">Converse sobre riscos de saldo negativo e alternativas para organizar seu orçamento. Os números da simulação serão enviados ao chat apenas ao clicar.</p></div><button type="button" onClick={askMyka} disabled={!projection.length} className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500 disabled:opacity-50">Analisar com a MYKA</button></div>
       {handoffError&&<p role="alert" className="text-xs text-rose-300">Não foi possível abrir a análise. Verifique as permissões do navegador.</p>}
-      <p className="text-xs text-slate-400">Estimativa sem receitas futuras, inflação ou gastos não cadastrados. Revise possíveis duplicidades acima. Atualize a página após alterar outros lançamentos.</p>
+      <p className="text-xs text-slate-400">Estimativa com receitas futuras cadastradas manualmente, sem garantia de recebimento, inflação ou gastos não cadastrados. Revise possíveis duplicidades acima. Atualize a página após alterar outros lançamentos.</p>
     </div>
+    <div className="space-y-3 rounded-xl border border-emerald-400/20 bg-slate-950/40 p-4"><h4 className="font-semibold text-white">Receitas futuras previstas</h4><p className="text-xs text-slate-400">Cadastre entradas esperadas, como salário ou pagamentos. São previsões manuais, não dinheiro recebido.</p><form onSubmit={addIncome} className="grid gap-2 sm:grid-cols-4"><input required maxLength={100} aria-label="Descrição da receita" placeholder="Ex.: Salário" value={incomeTitle} onChange={e=>setIncomeTitle(e.target.value)} className="rounded-lg border border-white/20 bg-slate-900 p-2 text-white"/><input required inputMode="decimal" aria-label="Valor da receita" placeholder="Valor (R$)" value={incomeAmount} onChange={e=>setIncomeAmount(e.target.value)} className="rounded-lg border border-white/20 bg-slate-900 p-2 text-white"/><input required type="date" aria-label="Data prevista da receita" value={incomeDue} onChange={e=>setIncomeDue(e.target.value)} className="rounded-lg border border-white/20 bg-slate-900 p-2 text-white"/><button disabled={busy} className="rounded-lg bg-emerald-700 p-2 font-semibold text-white disabled:opacity-50">Adicionar receita</button></form><div className="space-y-2">{expectedIncome.map(item=><div key={item.id} className="flex items-center justify-between gap-2 text-sm text-slate-200"><span>{item.title} · {brl(item.amount_cents)} · {item.due_date.split("-").reverse().join("/")}</span><button type="button" onClick={()=>removeIncome(item.id)} className="text-rose-300">Excluir</button></div>)}</div></div>
     <form onSubmit={add} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <label className="text-sm text-slate-300">Serviço ou assinatura<input required maxLength={100} value={title} onChange={event => setTitle(event.target.value)} placeholder="Ex.: Streaming" className="mt-1 w-full rounded-xl border border-white/20 bg-slate-950 p-3 text-white"/></label>
       <label className="text-sm text-slate-300">Valor (R$)<input required inputMode="decimal" value={amount} onChange={event => setAmount(event.target.value)} placeholder="Ex.: R$ 49,90" className="mt-1 w-full rounded-xl border border-white/20 bg-slate-950 p-3 text-white"/></label>
