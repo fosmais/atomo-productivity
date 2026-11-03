@@ -148,7 +148,7 @@ export default function MyryraFinanceStarter() {
         {entries.length === 0 ? <p className="text-sm text-slate-400">{loading ? "Carregando lançamentos..." : "Nenhum lançamento cadastrado."}</p> : <ul className="space-y-2">{entries.map(item => <li key={item.id} className="flex items-center justify-between gap-3 border-b border-white/10 py-2 text-sm"><span className="min-w-0 truncate text-slate-200">{item.description}</span><span className={item.kind === "income" ? "text-emerald-300" : "text-rose-300"}>{item.kind === "income" ? "+" : "−"} {currency(item.amount_cents / 100)}</span><button type="button" onClick={() => void deleteEntry(item.id)} className="text-slate-400 underline hover:text-white">Excluir</button></li>)}</ul>}
       </div>
       {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
-      <p className="text-xs text-slate-400">Próximas entregas: metas financeiras, assinaturas recorrentes, projeções de despesas e orientação da MYKA. Os valores apresentados são estimativas, não saldos bancários verificados.</p>
+      <p className="text-xs text-slate-400">Os valores são estimativas baseadas nos dados informados por você. A MYRYRA não consulta saldos bancários nem movimenta seu dinheiro.</p>
     </div>
   );
 }
