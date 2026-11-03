@@ -101,53 +101,36 @@ async function DashboardContent() {
         </VyraSection>
       </VyraModule>
       <VyraModule id="vyra-tasks">
-<VyraSection
-        id="vyra-tasks"
-        eyebrow="MYRYRA TASKS"
-        title="Tarefas e Planejamento"
-        description="Suas tarefas, metas, prioridades e planejamento inteligente no mesmo espaço."
-      >
-        <FeatureAccordion id="goals" title="Metas rápidas" description="Acompanhe suas pequenas conquistas" userId={user.id}><QuickGoals userId={user.id} /></FeatureAccordion>
-        <FeatureAccordion id="plans" title="Meus planos" description="Acompanhe seus planos e tarefas" userId={user.id}><CloudPlans /></FeatureAccordion>
-        <FeatureAccordion id="capture" title="Captura Inteligente" description="Transforme ideias em tarefas" userId={user.id}><QuickCapture /></FeatureAccordion>
-        <FeatureAccordion id="kanban" title="Quadro de tarefas" description="Organize suas tarefas por andamento" userId={user.id} defaultOpen><TaskKanban /></FeatureAccordion>
-      </VyraSection>
-      <section id="planner-section" className="mt-6 scroll-mt-8">
-        <VyraSection
-          id="vyra-planner"
-          eyebrow="MYRYRA PLANNER"
-          title="Planeje com clareza."
-          description="Seu planejamento organizado por contexto. Abra apenas a ferramenta de que precisa."
-        >
-          <div className="min-w-0 space-y-6">
-            <FeatureAccordion id="planning-settings" title="Preferências de planejamento" description="Personalize horários, rotina e regras do Planner" userId={user.id}><PlanningSettings /></FeatureAccordion>
-            <p className="inline-flex items-center rounded-full border border-violet-400/25 bg-violet-500/10 px-3 py-1 text-xs font-semibold tracking-wide text-violet-200" data-myryra-planner-version="2.0">Planner 2.0 · Nova experiência</p>
-            <PlannerQuickNav />
-            <div id="planner-today" className="min-w-0 scroll-mt-6 rounded-3xl border border-violet-400/20 bg-gradient-to-br from-violet-950/35 via-slate-900/70 to-slate-950/80 p-4 shadow-[0_18px_50px_rgba(49,20,100,0.14)] sm:p-6">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">Seu ponto de partida</p>
-                  <h3 className="mt-2 text-xl font-semibold tracking-tight text-white">Organize seu dia</h3>
-                  <p className="mt-1 text-sm text-slate-400">Comece pelas prioridades e compromissos que precisam de atenção.</p>
-                </div>
-                <span className="rounded-full border border-violet-400/25 bg-violet-500/10 px-3 py-1.5 text-xs font-medium text-violet-200">Planejamento diário</span>
-              </div>
-              <div className="min-w-0 rounded-2xl border border-violet-400/20 bg-slate-950/55 p-4 sm:p-6" aria-label="Prioridades e compromissos de hoje"><MyDay /></div>
-            </div>
-            <div className="grid min-w-0 gap-5 xl:grid-cols-2">
-
-              <section id="planner-intelligence" className="min-w-0 scroll-mt-6 space-y-3" aria-label="Inteligência e planejamento">
-                <div className="px-1 pb-1">
-                  <h3 className="text-base font-semibold text-white">Inteligência e planejamento</h3>
-                  <p className="mt-1 text-sm text-slate-400">Ajuste seus planos com o apoio da MYRYRA.</p>
-                </div>
-                <FeatureAccordion id="daily-copilot" title="Copiloto diário" description="Planejamento com inteligência artificial" userId={user.id}><DailyCopilot /></FeatureAccordion>
-                <FeatureAccordion id="replan" title="Replanejamento" description="Atualize tarefas atrasadas com controle" userId={user.id}><SmartReplan /></FeatureAccordion>
-              </section>
-            </div>
-          </div>
-        </VyraSection>
+  <VyraSection
+    id="vyra-tasks"
+    eyebrow="MYRYRA WORKSPACE"
+    title="Tarefas e Planejamento"
+    description="Tudo para organizar suas prioridades e transformar planos em ações."
+  >
+    <div className="grid min-w-0 items-start gap-4 lg:grid-cols-2 xl:gap-5">
+      <section className="min-w-0 space-y-3" aria-label="Tarefas e metas">
+        <div className="px-1"><h3 className="text-lg font-semibold text-white">Minhas tarefas</h3><p className="text-sm text-slate-400">Organize tarefas, metas e planos.</p></div>
+        <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
+          <FeatureAccordion id="goals" title="Metas rápidas" description="Acompanhe pequenas conquistas" userId={user.id}><QuickGoals userId={user.id} /></FeatureAccordion>
+          <FeatureAccordion id="plans" title="Meus planos" description="Acompanhe seus planos" userId={user.id}><CloudPlans /></FeatureAccordion>
+          <FeatureAccordion id="capture" title="Captura Inteligente" description="Transforme ideias em tarefas" userId={user.id}><QuickCapture /></FeatureAccordion>
+        </div>
+        <FeatureAccordion id="kanban" title="Quadro de tarefas" description="Acompanhe o andamento" userId={user.id} defaultOpen><TaskKanban /></FeatureAccordion>
       </section>
+      <section id="planner-section" className="min-w-0 space-y-3 scroll-mt-8" aria-label="Planejamento">
+        <div className="px-1"><h3 className="text-lg font-semibold text-white">Planejamento inteligente</h3><p className="text-sm text-slate-400">Prioridades, rotina e apoio da MYKA.</p></div>
+        <div id="planner-today" className="min-w-0 scroll-mt-6 rounded-2xl border border-violet-400/30 bg-gradient-to-br from-violet-950/40 to-slate-900/90 p-4 sm:p-5">
+          <div className="mb-3"><h4 className="text-base font-semibold text-white">Meu dia</h4><p className="text-sm text-slate-400">O que merece sua atenção hoje?</p></div>
+          <div className="min-w-0"><MyDay /></div>
+        </div>
+        <div id="planner-intelligence" className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2 scroll-mt-6">
+          <FeatureAccordion id="daily-copilot" title="Copiloto diário" description="Planeje com a MYKA" userId={user.id}><DailyCopilot /></FeatureAccordion>
+          <FeatureAccordion id="replan" title="Replanejamento" description="Reorganize tarefas atrasadas" userId={user.id}><SmartReplan /></FeatureAccordion>
+        </div>
+        <FeatureAccordion id="planning-settings" title="Preferências de planejamento" description="Horários e regras da rotina" userId={user.id}><PlanningSettings /></FeatureAccordion>
+      </section>
+    </div>
+  </VyraSection>
 </VyraModule>
       <VyraModule id="vyra-calendar">
         <VyraSection
