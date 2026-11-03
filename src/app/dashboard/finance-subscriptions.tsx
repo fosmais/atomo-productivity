@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useVyraNavigation } from "./vyra-module-context";
 
+type FinanceNotification = { id: string; alert_key: string; title: string; body: string; due_date: string | null; read_at: string | null; created_at: string };
 type ExpectedIncome = { id: string; title: string; amount_cents: number; due_date: string };
 type PlannedExpense = { id: string; title: string; amount_cents: number; due_date: string };
 type FinanceEntry = { amount_cents: number; kind: string };
@@ -51,6 +52,9 @@ export default function FinanceSubscriptions() {
   const [alertExpenses, setAlertExpenses] = useState(true);
   const [alertSettingsOpen, setAlertSettingsOpen] = useState(false);
   const [alertSettingsError, setAlertSettingsError] = useState("");
+  const [notifications, setNotifications] = useState<FinanceNotification[]>([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notificationsError, setNotificationsError] = useState("");
   const monthlyCents = useMemo(() => items.reduce((sum, item) => sum + (item.billing_cycle === "monthly" ? Number(item.amount_cents) : Number(item.amount_cents) / 12), 0), [items]);
   useEffect(() => {
     let active = true;
@@ -71,6 +75,13 @@ export default function FinanceSubscriptions() {
             setAlertSubscriptions(savedAlerts.subscriptions);
             setAlertExpenses(savedAlerts.expenses);
           }
+        }
+        const { data: previousNotifications, error: notificationsLoadError } = await db.from("myryra_finance_notifications")
+          .select("id,alert_key,title,body,due_date,read_at,created_at")
+          .eq("user_id", auth.user.id).order("created_at", { ascending: false }).limit(30);
+        if (active) {
+          if (notificationsLoadError) setNotificationsError("Histórico de notificações indisponível.");
+          else setNotifications((previousNotifications ?? []) as FinanceNotification[]);
         }
         const { data, error: queryError } = await db.from("myryra_finance_subscriptions").select("id,title,amount_cents,billing_cycle,next_due_date").eq("user_id", auth.user.id).order("next_due_date", { ascending: true }).limit(200);
         if (queryError) throw queryError;
@@ -124,6 +135,41 @@ export default function FinanceSubscriptions() {
       return Number.isFinite(days) && days >= 0 && days <= alertDays;
     }).sort((a, b) => a.due.localeCompare(b.due)).slice(0, 5);
   }, [asOf, items, planned, alertDays, alertSubscriptions, alertExpenses]);
+  const syncNotifications = async () => {
+    if (!alertUserId || upcomingAlerts.length === 0) return;
+    setNotificationsError("");
+    try {
+      const db = createClient();
+      const { data: auth, error: authError } = await db.auth.getUser();
+      if (authError || auth.user?.id !== alertUserId) throw new Error("Sessão inválida");
+      const payload = upcomingAlerts.map(item => ({
+        user_id: alertUserId, alert_key: item.id + ":" + item.due,
+        title: "Vencimento próximo: " + item.title.slice(0, 150),
+        body: item.type + " em " + item.due.slice(8, 10) + "/" + item.due.slice(5, 7) + ". Valor informado: " + brl(item.amount) + ".",
+        due_date: item.due
+      }));
+      const { error: insertError } = await db.from("myryra_finance_notifications").upsert(payload, { onConflict: "user_id,alert_key", ignoreDuplicates: true });
+      if (insertError) throw insertError;
+      const { data, error: readError } = await db.from("myryra_finance_notifications")
+        .select("id,alert_key,title,body,due_date,read_at,created_at")
+        .eq("user_id", alertUserId).order("created_at", { ascending: false }).limit(30);
+      if (readError) throw readError;
+      setNotifications((data ?? []) as FinanceNotification[]);
+    } catch { setNotificationsError("Não foi possível atualizar as notificações."); }
+  };
+  const markNotificationRead = async (id: string) => {
+    if (!alertUserId) return;
+    try {
+      const db = createClient();
+      const { data: auth } = await db.auth.getUser();
+      if (auth.user?.id !== alertUserId) throw new Error("Sessão inválida");
+      const readAt = new Date().toISOString();
+      const { data, error: updateError } = await db.from("myryra_finance_notifications")
+        .update({ read_at: readAt }).eq("id", id).eq("user_id", alertUserId).select("id");
+      if (updateError || !data?.length) throw new Error("Falha ao atualizar");
+      setNotifications(previous => previous.map(item => item.id === id ? { ...item, read_at: readAt } : item));
+    } catch { setNotificationsError("Não foi possível marcar a notificação como lida."); }
+  };
   const potentialDuplicates = useMemo(() => {
     const normalize = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]/g,"");
     return planned.filter(expense => items.some(sub => {
@@ -264,6 +310,16 @@ export default function FinanceSubscriptions() {
   }
   return <section className="space-y-4 rounded-2xl border border-white/15 bg-slate-900/75 p-4 sm:p-5">
     <div><p className="text-xs font-semibold uppercase tracking-widest text-violet-300">MYRYRA FINANCE</p><h3 className="mt-1 text-lg font-semibold text-white">Assinaturas recorrentes</h3><p className="mt-1 text-sm text-slate-400">Controle serviços e compromissos recorrentes. Os vencimentos são informativos; não há cobrança ou pagamento automático.</p></div>
+    {!loading && !error && (
+      <div className="rounded-xl border border-white/15 bg-slate-950/50 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div><p className="text-sm font-semibold text-white">Central de notificações da MIKA</p><p className="text-xs text-slate-400">{notifications.filter(item => !item.read_at).length} não lidas · histórico financeiro na sua conta</p></div>
+          <div className="flex gap-2"><button type="button" onClick={() => void syncNotifications()} className="rounded-lg border border-violet-400/40 px-3 py-2 text-xs text-violet-100">Atualizar avisos</button><button type="button" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen(value => !value)} className="rounded-lg border border-white/20 px-3 py-2 text-xs text-slate-200">{notificationsOpen ? "Fechar" : "Ver histórico"}</button></div>
+        </div>
+        {notificationsOpen && <ul className="mt-3 max-h-72 space-y-2 overflow-y-auto">{notifications.length === 0 ? <li className="text-xs text-slate-400">Nenhuma notificação registrada. Use “Atualizar avisos” para registrar vencimentos próximos.</li> : notifications.map(item => <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 p-3"><div className="min-w-0"><p className="text-xs font-semibold text-white">{item.title}</p><p className="mt-1 text-xs text-slate-300">{item.body}</p><p className="mt-1 text-xs text-slate-400">{new Date(item.created_at).toLocaleDateString("pt-BR")} · {item.read_at ? "Lida" : "Não lida"}</p></div>{!item.read_at && <button type="button" onClick={() => void markNotificationRead(item.id)} className="rounded-lg border border-violet-400/40 px-3 py-2 text-xs text-violet-100">Marcar como lida</button>}</li>)}</ul>}
+        {notificationsError && <p role="alert" className="mt-2 text-xs text-rose-300">{notificationsError}</p>}
+      </div>
+    )}
     {!loading && !error && (
       <div className="flex justify-end"><button type="button" aria-expanded={alertSettingsOpen} onClick={() => setAlertSettingsOpen(value => !value)} className="rounded-lg border border-white/20 px-3 py-2 text-xs text-slate-200 hover:border-violet-400/50">Preferências de alertas</button></div>
     )}
