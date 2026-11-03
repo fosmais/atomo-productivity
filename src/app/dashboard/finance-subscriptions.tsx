@@ -45,6 +45,11 @@ export default function FinanceSubscriptions() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [alertUserId, setAlertUserId] = useState("");
+  const [alertDays, setAlertDays] = useState<3 | 7 | 14>(7);
+  const [alertSubscriptions, setAlertSubscriptions] = useState(true);
+  const [alertExpenses, setAlertExpenses] = useState(true);
+  const [alertSettingsOpen, setAlertSettingsOpen] = useState(false);
   const monthlyCents = useMemo(() => items.reduce((sum, item) => sum + (item.billing_cycle === "monthly" ? Number(item.amount_cents) : Number(item.amount_cents) / 12), 0), [items]);
   useEffect(() => {
     let active = true;
@@ -55,6 +60,17 @@ export default function FinanceSubscriptions() {
         const db = createClient();
         const { data: auth, error: authError } = await db.auth.getUser();
         if (authError || !auth.user) throw new Error("Sessão inválida");
+        if (active) {
+          setAlertUserId(auth.user.id);
+          try {
+            const saved = JSON.parse(localStorage.getItem("myryra:finance:alerts:" + auth.user.id) ?? "null");
+            if (saved && typeof saved === "object") {
+              if ([3, 7, 14].includes(saved.days)) setAlertDays(saved.days);
+              if (typeof saved.subscriptions === "boolean") setAlertSubscriptions(saved.subscriptions);
+              if (typeof saved.expenses === "boolean") setAlertExpenses(saved.expenses);
+            }
+          } catch { /* Storage is optional; keep safe defaults. */ }
+        }
         const { data, error: queryError } = await db.from("myryra_finance_subscriptions").select("id,title,amount_cents,billing_cycle,next_due_date").eq("user_id", auth.user.id).order("next_due_date", { ascending: true }).limit(200);
         if (queryError) throw queryError;
         const [future, history, balance, income] = await Promise.all([
@@ -76,19 +92,28 @@ export default function FinanceSubscriptions() {
     })();
     return () => { active = false; };
   }, []);
+  const saveAlertSettings = (days: 3 | 7 | 14, subscriptions: boolean, expenses: boolean) => {
+    setAlertDays(days);
+    setAlertSubscriptions(subscriptions);
+    setAlertExpenses(expenses);
+    if (alertUserId) {
+      try { localStorage.setItem("myryra:finance:alerts:" + alertUserId, JSON.stringify({ days, subscriptions, expenses })); }
+      catch { /* Preferences remain active for this session. */ }
+    }
+  };
   const upcomingAlerts = useMemo(() => {
     if (!asOf) return [];
     const start = Date.parse(asOf + "T12:00:00Z");
     if (!Number.isFinite(start)) return [];
     const alerts = [
-      ...items.map(item => ({ id: "sub-" + item.id, title: item.title, amount: Number(item.amount_cents), due: item.next_due_date, type: "Assinatura" })),
-      ...planned.map(item => ({ id: "exp-" + item.id, title: item.title, amount: Number(item.amount_cents), due: item.due_date, type: "Despesa planejada" }))
+      ...(alertSubscriptions ? items : []).map(item => ({ id: "sub-" + item.id, title: item.title, amount: Number(item.amount_cents), due: item.next_due_date, type: "Assinatura" })),
+      ...(alertExpenses ? planned : []).map(item => ({ id: "exp-" + item.id, title: item.title, amount: Number(item.amount_cents), due: item.due_date, type: "Despesa planejada" }))
     ];
     return alerts.filter(item => {
       const days = (Date.parse(item.due + "T12:00:00Z") - start) / 86400000;
-      return Number.isFinite(days) && days >= 0 && days <= 7;
+      return Number.isFinite(days) && days >= 0 && days <= alertDays;
     }).sort((a, b) => a.due.localeCompare(b.due)).slice(0, 5);
-  }, [asOf, items, planned]);
+  }, [asOf, items, planned, alertDays, alertSubscriptions, alertExpenses]);
   const potentialDuplicates = useMemo(() => {
     const normalize = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]/g,"");
     return planned.filter(expense => items.some(sub => {
@@ -229,10 +254,21 @@ export default function FinanceSubscriptions() {
   }
   return <section className="space-y-4 rounded-2xl border border-white/15 bg-slate-900/75 p-4 sm:p-5">
     <div><p className="text-xs font-semibold uppercase tracking-widest text-violet-300">MYRYRA FINANCE</p><h3 className="mt-1 text-lg font-semibold text-white">Assinaturas recorrentes</h3><p className="mt-1 text-sm text-slate-400">Controle serviços e compromissos recorrentes. Os vencimentos são informativos; não há cobrança ou pagamento automático.</p></div>
+    {!loading && !error && (
+      <div className="flex justify-end"><button type="button" aria-expanded={alertSettingsOpen} onClick={() => setAlertSettingsOpen(value => !value)} className="rounded-lg border border-white/20 px-3 py-2 text-xs text-slate-200 hover:border-violet-400/50">Preferências de alertas</button></div>
+    )}
+    {!loading && !error && alertSettingsOpen && (
+      <div className="grid gap-3 rounded-xl border border-violet-400/20 bg-slate-950/50 p-3 sm:grid-cols-3">
+        <label className="text-xs text-slate-200">Antecedência<select aria-label="Antecedência dos alertas" value={alertDays} onChange={e => saveAlertSettings(Number(e.target.value) as 3 | 7 | 14, alertSubscriptions, alertExpenses)} className="mt-1 block w-full rounded-lg border border-white/20 bg-slate-900 p-2 text-white"><option value={3}>3 dias</option><option value={7}>7 dias</option><option value={14}>14 dias</option></select></label>
+        <label className="flex items-center gap-2 text-xs text-slate-200"><input type="checkbox" checked={alertSubscriptions} onChange={e => saveAlertSettings(alertDays, e.target.checked, alertExpenses)}/> Assinaturas</label>
+        <label className="flex items-center gap-2 text-xs text-slate-200"><input type="checkbox" checked={alertExpenses} onChange={e => saveAlertSettings(alertDays, alertSubscriptions, e.target.checked)}/> Despesas planejadas</label>
+        <p className="text-xs text-slate-400 sm:col-span-3">Preferências salvas neste navegador para sua conta. Não enviamos notificações externas nesta fase.</p>
+      </div>
+    )}
     {!loading && !error && upcomingAlerts.length > 0 && (
       <div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-3 sm:p-4" role="status">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div><p className="text-sm font-semibold text-amber-100">MIKA · Próximos vencimentos</p><p className="text-xs text-slate-300">Compromissos informados por você para os próximos 7 dias.</p></div>
+          <div><p className="text-sm font-semibold text-amber-100">MIKA · Próximos vencimentos</p><p className="text-xs text-slate-300">Compromissos informados por você para os próximos {alertDays} dias.</p></div>
           <span className="rounded-full bg-amber-300/10 px-2 py-1 text-xs text-amber-100">{upcomingAlerts.length} {upcomingAlerts.length === 1 ? "aviso" : "avisos"}</span>
         </div>
         <ul className="mt-3 space-y-2">{upcomingAlerts.map(item => (
