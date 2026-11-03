@@ -292,6 +292,28 @@ export async function GET() {
       code,
     });
 
+    // An authorization revoked at Google cannot be repaired by retrying API calls.
+    // Return a dedicated response so the user can explicitly reconnect.
+    const googleError = error as { response?: { data?: { error?: unknown } } } | null;
+    const googleReason = googleError?.response?.data?.error;
+    const reason = typeof googleReason === "string"
+      ? googleReason
+      : googleReason && typeof googleReason === "object" && "status" in googleReason
+        ? String((googleReason as { status?: unknown }).status)
+        : "";
+    if (status === 401 || reason === "invalid_grant" || reason === "UNAUTHENTICATED") {
+      return NextResponse.json(
+        {
+          connected: false,
+          events: [],
+          error: "O acesso ao Google Calendar expirou ou foi revogado. Reconecte sua conta.",
+          code: "GOOGLE_CALENDAR_RECONNECT_REQUIRED",
+          reconnectUrl: "/api/google/connect",
+        },
+        { status: 409 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Não foi possível consultar o Google Calendar.", code: "CALENDAR_QUERY_FAILED" },
       { status: 502 }
