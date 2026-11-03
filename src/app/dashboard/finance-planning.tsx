@@ -79,7 +79,7 @@ export default function FinancePlanning() {
   async function addExpense(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const cents = parseCents(expenseAmount);
-    if (!cents || !expenseTitle.trim() || expenseTitle.trim().length > 100 || !/^\\d{4}-\\d{2}-\\d{2}$/.test(expenseDate)) {
+    if (!cents || !expenseTitle.trim() || expenseTitle.trim().length > 100 || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(expenseDate)) {
       setError("Informe despesa, valor e data válidos."); return;
     }
     setBusy(true); setError("");
