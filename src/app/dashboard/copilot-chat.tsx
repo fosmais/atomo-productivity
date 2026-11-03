@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import MykaPortrait from "@/components/myka-portrait";
 import type { FormEvent } from "react";
 import TaskConfirmation from "./task-confirmation";
+import { useVyraActiveModule } from "./vyra-module-context";
 import EventConfirmation from "./event-confirmation";
 import type { SavedTask } from "@/lib/plan-storage";
 import type { NewCalendarEvent } from "@/lib/event-cloud";
@@ -85,10 +86,18 @@ function isEventProposal(
   );
 }
   const router = useRouter();
+  const activeModule = useVyraActiveModule();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [input, setInput] = useState("");
+  useEffect(() => {
+    if (activeModule !== "vyra-ai") return;
+    const prompt = sessionStorage.getItem("myryra:myka:investment-handoff");
+    if (!prompt) return;
+    sessionStorage.removeItem("myryra:myka:investment-handoff");
+    setInput(prompt.slice(0, 1500));
+  }, [activeModule]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [dailyLimitReached, setDailyLimitReached] = useState(false);
