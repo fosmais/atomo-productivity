@@ -242,7 +242,8 @@ export default function LoginPage() {
         <div className="mx-auto w-full min-w-0 max-w-[420px]">
           <div className="mb-2 text-center lg:text-left [@media(max-height:850px)]:mb-1">
             <h2 className="text-[clamp(1.5rem,2.2vw,2rem)] font-bold leading-tight tracking-tight text-white">Seu universo, <span className="text-violet-300">em sintonia.</span></h2>
-            <p className="mt-2 text-sm leading-relaxed text-slate-300">Organize sua vida. Transforme planos em conquistas.</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-300">Compromissos, tarefas e metas em um só lugar. A MYKA, sua assistente de IA, ajuda você a decidir o que fazer agora, organizar prioridades e encontrar tempo para o que importa.</p>
+            <p className="mt-2 text-xs font-medium leading-relaxed text-violet-200">Mais que uma agenda: planejamento inteligente para transformar seus planos em ação.</p>
           </div>
           <div className="relative mx-auto mb-5 flex w-full max-w-[165px] items-center justify-center lg:hidden" aria-label="MYKA, sua companheira inteligente">
             <div aria-hidden="true" className="absolute inset-4 rounded-full bg-violet-500/25 blur-2xl" />
