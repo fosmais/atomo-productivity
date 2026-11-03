@@ -99,8 +99,11 @@ export default function FinancePlanning() {
     setError("");
     try {
       const client = createClient();
-      const { error: deleteError } = await client.from(table).delete().eq("id", id);
+      const { data: auth, error: authError } = await client.auth.getUser();
+      if (authError || !auth.user) throw new Error("Sessão expirada.");
+      const { data: deleted, error: deleteError } = await client.from(table).delete().eq("id", id).eq("user_id", auth.user.id).select("id");
       if (deleteError) throw deleteError;
+      if (!deleted?.length) throw new Error("Registro não encontrado.");
       if (table === "myryra_finance_goals") setGoals(previous => previous.filter(item => item.id !== id));
       else setExpenses(previous => previous.filter(item => item.id !== id));
     } catch { setError("Não foi possível excluir o item."); }
