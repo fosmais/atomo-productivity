@@ -74,6 +74,13 @@ export default function FinanceSubscriptions() {
       <div className="rounded-xl border border-white/10 bg-slate-950/50 p-4"><p className="text-sm text-slate-400">Custo anual estimado</p><p className="mt-2 text-xl font-semibold text-white">{brl(monthlyCents * 12)}</p></div>
       <div className="rounded-xl border border-white/10 bg-slate-950/50 p-4"><p className="text-sm text-slate-400">Assinaturas cadastradas</p><p className="mt-2 text-xl font-semibold text-white">{items.length}</p></div>
     </div>
+    <div className="rounded-xl border border-violet-400/20 bg-violet-950/20 p-4">
+      <h4 className="text-sm font-semibold text-white">Projeção dos custos recorrentes</h4>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        {[3,6,12].map(months => <div key={months} className="rounded-lg border border-white/10 bg-slate-950/50 p-3"><p className="text-xs text-slate-400">{months} meses</p><p className="mt-1 font-semibold text-white">{brl(monthlyCents * months)}</p></div>)}
+      </div>
+      <p className="mt-2 text-xs text-slate-400">Projeção média com base nas assinaturas cadastradas, sem reajustes ou novas contratações. O valor efetivamente cobrado em cada mês pode variar para planos anuais.</p>
+    </div>
     <form onSubmit={add} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <label className="text-sm text-slate-300">Serviço ou assinatura<input required maxLength={100} value={title} onChange={event => setTitle(event.target.value)} placeholder="Ex.: Streaming" className="mt-1 w-full rounded-xl border border-white/20 bg-slate-950 p-3 text-white"/></label>
       <label className="text-sm text-slate-300">Valor (R$)<input required inputMode="decimal" value={amount} onChange={event => setAmount(event.target.value)} placeholder="Ex.: R$ 49,90" className="mt-1 w-full rounded-xl border border-white/20 bg-slate-950 p-3 text-white"/></label>
