@@ -17,7 +17,7 @@ function safeEqual(a: string, b: string): boolean {
 export async function GET(request: NextRequest) {
   const redirect = (status: string) => {
     const response = NextResponse.redirect(
-      new URL(`/dashboard?google_calendar=${status}`, request.url)
+      new URL(`/dashboard?google_calendar=${status}#vyra-settings`, request.url)
     );
     response.cookies.delete({
       name: "vyra_google_oauth_state",
