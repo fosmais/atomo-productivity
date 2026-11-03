@@ -240,15 +240,11 @@ export default function LoginPage() {
       <div className="relative z-10 grid w-full max-w-5xl items-center justify-center gap-6 lg:grid-cols-[minmax(0,300px)_minmax(0,420px)] lg:gap-8 xl:gap-12">
         <div className="hidden lg:flex items-center justify-center"><MykaLoginScene /></div>
         <div className="mx-auto w-full min-w-0 max-w-[420px]">
-          <div className="mb-2 text-center lg:text-left [@media(max-height:850px)]:mb-1">
-            <h2 className="text-[clamp(1.5rem,2.2vw,2rem)] font-bold leading-tight tracking-tight text-white">Seu universo, <span className="text-violet-300">em sintonia.</span></h2>
-            <p className="mt-2 text-sm leading-relaxed text-slate-300">Compromissos, tarefas e metas em um só lugar. A MYKA, sua assistente de IA, ajuda você a decidir o que fazer agora, organizar prioridades e encontrar tempo para o que importa.</p>
-            <p className="mt-2 text-xs font-medium leading-relaxed text-violet-200">Mais que uma agenda: planejamento inteligente para transformar seus planos em ação.</p>
-          </div>
           <div className="relative mx-auto mb-5 flex w-full max-w-[165px] items-center justify-center lg:hidden" aria-label="MYKA, sua companheira inteligente">
             <div aria-hidden="true" className="absolute inset-4 rounded-full bg-violet-500/25 blur-2xl" />
             <img src="/myka-transparente.png" alt="MYKA, sua companheira inteligente" className="relative h-auto w-full drop-shadow-[0_12px_28px_rgba(120,65,255,.4)]" />
           </div>
+          <div className="mb-5 space-y-2 text-center lg:hidden"><h2 className="text-2xl font-bold leading-tight text-white">Seu universo, <span className="text-violet-300">em sintonia.</span></h2><p className="text-base leading-relaxed text-slate-200">Compromissos, tarefas e metas em um só lugar. A MYKA ajuda você a organizar prioridades e encontrar tempo para o que importa.</p><p className="text-sm font-semibold text-violet-200">Mais que uma agenda: inteligência para transformar planos em ação.</p></div>
           <div className="rounded-3xl border border-violet-300/45 bg-slate-950/90 p-4 shadow-2xl shadow-violet-950/40 backdrop-blur-xl sm:p-5 [@media(max-height:850px)]:sm:p-3">
         {(mode === "signup" || mfaFactorId) && <button type="button" disabled={loading} onClick={() => { setMode("login"); setMfaFactorId(""); setMfaCode(""); setMessage(""); setIsError(false); setCaptchaToken(""); setCaptchaReset(n => n + 1); }} className="mb-2 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-violet-200 transition hover:bg-white/10 hover:text-white disabled:opacity-50" aria-label="Voltar para login"><span aria-hidden="true">←</span> Voltar para login</button>}
         <div className="mb-2 flex items-center gap-3"><span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl"><img src="/myryra-logo.png" alt="Logotipo MYRYRA" className="h-full w-full object-cover" /></span><div><h1 className="text-2xl font-bold tracking-tight">MYRYRA</h1><p className="text-xs tracking-widest text-violet-300">YOUR LIFE. IN SYNC.</p></div></div><h2 className="text-xl font-semibold">{mode === "login" ? "Bem-vindo de volta" : "Comece sua jornada"}</h2>
