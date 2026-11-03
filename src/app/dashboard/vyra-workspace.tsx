@@ -61,8 +61,8 @@ export default function VyraWorkspace({
     <VyraNavigationContext.Provider value={{ activeModule, navigateTo, focusedTaskId, navigateToTask }}>
     <VyraModuleContext.Provider value={activeModule}>
     <div className="min-w-0 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0">
-      <div className="mb-6"><VyraHeader /></div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className={activeModule === "home" ? "mb-3" : "mb-6"}><VyraHeader /></div>
+      {activeModule !== "home" && <div className="mb-6 flex items-center justify-between">
         <div>
           <p className="text-xs font-medium uppercase tracking-widest text-violet-400">
             MYRYRA WORKSPACE
@@ -72,7 +72,7 @@ export default function VyraWorkspace({
             {moduleTitles[activeModule] ?? "MYRYRA"}
           </h2>
         </div>
-      </div>
+      </div>}
 
       <div className="lg:grid lg:grid-cols-[200px_minmax(0,1fr)] lg:items-start lg:gap-6">
         <VyraNavigation
