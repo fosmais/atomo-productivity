@@ -213,6 +213,35 @@ export default function TaskKanban() {
     }
   }
 
+  async function renameTask(task: KanbanTask) {
+    if (savingId) return;
+    const proposed = window.prompt("Editar título da tarefa:", task.title);
+    if (proposed === null) return;
+    const title = proposed.trim();
+    if (!title || title.length > 200 || !/[\\p{L}\\p{N}]/u.test(title)) {
+      setError("Informe um título válido de até 200 caracteres.");
+      return;
+    }
+    if (title === task.title) return;
+    setSavingId(task.id);
+    setError("");
+    try {
+      const supabase = createClient();
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError || !auth.user) throw new Error("Usuário não autenticado.");
+      const { data, error: updateError } = await supabase.from("tasks")
+        .update({ title }).eq("id", task.id).eq("user_id", auth.user.id)
+        .select("id").single();
+      if (updateError || !data) throw new Error(updateError?.message ?? "Não foi possível editar o título.");
+      setTasks((current) => current.map((item) => item.id === task.id ? { ...item, title } : item));
+      window.dispatchEvent(new Event("myryra:tasks-updated"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível editar o título.");
+    } finally {
+      setSavingId(null);
+    }
+  }
+
   async function deleteTask(task: KanbanTask) {
     if (savingId || !window.confirm(`Excluir a tarefa "${task.title}"? Esta ação não pode ser desfeita.`)) return;
     setSavingId(task.id);
@@ -474,7 +503,8 @@ export default function TaskKanban() {
                           ))}
                         </select>
                       </label>
-                      <div className="mt-3 flex justify-end">
+                      <div className="mt-3 flex justify-end gap-2">
+                        <button type="button" disabled={savingId !== null} onClick={() => void renameTask(task)} aria-label={`Editar título: ${task.title}`} className="rounded-lg border border-violet-400/40 px-3 py-1.5 text-xs font-medium text-violet-200 transition hover:bg-violet-500/10 disabled:opacity-50">Editar título</button>
                         <button type="button" disabled={savingId !== null} onClick={() => void deleteTask(task)} aria-label={`Excluir tarefa: ${task.title}`} className="rounded-lg border border-rose-400/35 px-3 py-1.5 text-xs font-medium text-rose-200 transition hover:bg-rose-500/10 disabled:opacity-50">Excluir tarefa</button>
                       </div>
                     </article>
