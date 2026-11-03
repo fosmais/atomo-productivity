@@ -24,6 +24,7 @@ export default function GoogleCalendarSettings() {
   const [message, setMessage] = useState("");
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [reconnectRequired, setReconnectRequired] = useState(false);
 
   useEffect(() => {
     const status = new URLSearchParams(window.location.search).get("google_calendar");
@@ -59,7 +60,18 @@ export default function GoogleCalendarSettings() {
         });
 
         if (!response.ok) {
-          throw new Error("Falha ao consultar calendários Google.");
+          const result: { code?: string; error?: string } = await response.json().catch(() => ({}));
+          if (response.status === 409 && result.code === "GOOGLE_CALENDAR_RECONNECT_REQUIRED") {
+            if (active) {
+              setReconnectRequired(true);
+              setConnected(false);
+              setError("Sua autorização do Google Calendar precisa ser renovada. Clique em Reconectar para recuperar a integração.");
+            }
+            return;
+          }
+          if (response.status === 401) throw new Error("Sua sessão expirou. Entre novamente para acessar os calendários.");
+          if (response.status === 403 && result.code === "MFA_REQUIRED") throw new Error("Conclua a verificação de dois fatores para acessar seus calendários.");
+          throw new Error(result.error || "Falha ao consultar calendários Google.");
         }
 
         const data: {
@@ -70,6 +82,7 @@ export default function GoogleCalendarSettings() {
         if (!active) return;
 
         setConnected(data.connected);
+        setReconnectRequired(false);
 
         if (!data.connected) return;
 
@@ -124,6 +137,7 @@ export default function GoogleCalendarSettings() {
       const response = await fetch("/api/google/disconnect", { method: "POST", credentials: "same-origin", cache: "no-store" });
       if (!response.ok) throw new Error("Não foi possível desconectar o Google Calendar.");
       setConnected(false);
+      setReconnectRequired(false);
       setCalendars([]);
       setSelectedIds([]);
       setMessage("Google Calendar desconectado da MYRYRA.");
@@ -194,7 +208,7 @@ export default function GoogleCalendarSettings() {
             disabled={connecting}
             className="rounded-lg bg-violet-600 px-5 py-3 font-semibold text-white transition hover:bg-violet-500 disabled:opacity-50"
           >
-            {connecting ? "Conectando..." : "Conectar Google Calendar"}
+            {connecting ? "Conectando..." : reconnectRequired ? "Reconectar Google Calendar" : "Conectar Google Calendar"}
           </button>
         </div>
       ) : (
