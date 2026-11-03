@@ -10,8 +10,8 @@ export async function proxy(request: NextRequest) {
   const isAppPage = pathname === "/" || pathname === "/login" || pathname === "/dashboard" ||
     pathname.startsWith("/dashboard/") || pathname === "/planos";
   if (
-    process.env.VERCEL_ENV === "production" &&
-    hostname.endsWith(".vercel.app") &&
+    (hostname === "atomo-productivity-git-feat-myryra-mvp1-billing-6ff8ee-fosmais.vercel.app" ||
+      (process.env.VERCEL_ENV === "production" && hostname.endsWith(".vercel.app"))) &&
     isNavigation &&
     isAppPage
   ) {
