@@ -50,7 +50,14 @@ export function FeatureAccordion({ id, title, description, userId, defaultOpen =
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
-    node.open = storedOpen(userId, id, defaultOpen);
+    const oauthCallback = id === "external-integrations" &&
+      new URLSearchParams(window.location.search).has("google_calendar");
+    node.open = oauthCallback || storedOpen(userId, id, defaultOpen);
+    if (oauthCallback) {
+      window.requestAnimationFrame(() => {
+        node.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    }
     const onAll = (event: Event) => {
       const detail = (event as CustomEvent<{ open: boolean }>).detail;
       if (typeof detail?.open === "boolean") node.open = detail.open;
