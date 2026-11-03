@@ -26,6 +26,8 @@ export default function FinanceSubscriptions() {
   const [entries, setEntries] = useState<FinanceEntry[]>([]);
   const [opening, setOpening] = useState(0);
   const [horizon, setHorizon] = useState(6);
+  const [subscriptionSavings, setSubscriptionSavings] = useState(0);
+  const [expenseSavings, setExpenseSavings] = useState(0);
   const [excludedExpenseIds, setExcludedExpenseIds] = useState<string[]>([]);
   const [asOf, setAsOf] = useState("");
   const [title, setTitle] = useState("");
@@ -95,6 +97,17 @@ export default function FinanceSubscriptions() {
     });
   },[asOf,opening,entries,planned,items,horizon,excludedExpenseIds]);
   const firstNegative = projection.find(row=>row.position<0);
+  const scenario = useMemo(() => {
+    let cumulativeSavings = 0;
+    return projection.map(row => {
+      const savings = Math.round(row.subscriptionsDue * subscriptionSavings / 100) + Math.round(row.expenses * expenseSavings / 100);
+      cumulativeSavings += savings;
+      return {...row, savings, scenarioPosition: row.position + cumulativeSavings};
+    });
+  },[projection,subscriptionSavings,expenseSavings]);
+  const scenarioNegative = scenario.find(row=>row.scenarioPosition<0);
+  const totalScenarioSavings = scenario.reduce((sum,row)=>sum+row.savings,0);
+
   function askMyka() {
     if (!projection.length) return;
     const final = projection[projection.length - 1];
@@ -106,6 +119,7 @@ export default function FinanceSubscriptions() {
       "Total de despesas futuras previstas: "+brl(projection.reduce((sum,row)=>sum+row.expenses,0))+".",
       "Total de assinaturas futuras: "+brl(projection.reduce((sum,row)=>sum+row.subscriptionsDue,0))+".",
       "Possíveis despesas duplicadas identificadas: "+potentialDuplicates.length+".",
+      "Cenário hipotético: redução de "+subscriptionSavings+"% em assinaturas e "+expenseSavings+"% em despesas planejadas. Economia total estimada "+brl(totalScenarioSavings)+". Saldo final simulado "+brl(scenario.length?scenario[scenario.length-1].scenarioPosition:0)+".",
       "Faça uma pergunta por vez para entender prioridades, despesas essenciais e oportunidades de economia.",
       "Não altere registros nem assuma que o saldo é bancário. Não recomende investimentos ou crédito específicos."
     ].join(" ");
@@ -161,6 +175,7 @@ export default function FinanceSubscriptions() {
       {potentialDuplicates.length>0&&<div className="space-y-2 rounded-xl border border-amber-400/30 bg-amber-950/20 p-3"><p className="text-sm font-semibold text-amber-200">Possíveis compromissos duplicados</p><p className="text-xs text-slate-300">Encontramos despesas com mesmo nome e valor de uma assinatura. Confirme se deseja ignorá-las apenas nesta projeção; os registros não serão excluídos.</p>{potentialDuplicates.map(item=><label key={item.id} className="flex items-center gap-2 text-sm text-white"><input type="checkbox" checked={excludedExpenseIds.includes(item.id)} onChange={event=>setExcludedExpenseIds(current=>event.target.checked?[...current,item.id]:current.filter(id=>id!==item.id))}/><span>Ignorar {item.title} ({brl(item.amount_cents)}) na projeção</span></label>)}</div>}
       {firstNegative&&<div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-400/30 bg-rose-950/20 p-3"><div><p className="text-sm font-semibold text-rose-200">Seu saldo poderá ficar negativo em {firstNegative.period.slice(5)}/{firstNegative.period.slice(0,4)}.</p><p className="mt-1 text-xs text-rose-100">A MIKA pode ajudar você a reorganizar despesas, revisar assinaturas e simular um plano para equilibrar o orçamento.</p></div><button type="button" onClick={askMyka} className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">Replanejar meus gastos com a MIKA</button></div>}
       <div className="overflow-x-auto"><table className="w-full min-w-[520px] text-left text-sm"><thead><tr className="border-b border-white/15 text-slate-400"><th className="p-2">Mês</th><th className="p-2">Despesas</th><th className="p-2">Assinaturas</th><th className="p-2">Saldo projetado</th></tr></thead><tbody>{projection.map(row=><tr key={row.period} className="border-b border-white/10"><td className="p-2 text-white">{row.period.slice(5)}/{row.period.slice(0,4)}</td><td className="p-2 text-slate-300">{brl(row.expenses)}</td><td className="p-2 text-slate-300">{brl(row.subscriptionsDue)}</td><td className={row.position<0?"p-2 font-semibold text-rose-300":"p-2 font-semibold text-emerald-300"}>{brl(row.position)}</td></tr>)}</tbody></table></div>
+      <div className="space-y-3 rounded-xl border border-violet-400/25 bg-slate-950/50 p-4"><div><h4 className="font-semibold text-white">Simule um orçamento mais equilibrado</h4><p className="mt-1 text-xs text-slate-400">Ajuste reduções hipotéticas de gastos. Nenhum registro será alterado.</p></div><div className="grid gap-3 sm:grid-cols-2"><label className="text-sm text-slate-300">Redução de assinaturas: {subscriptionSavings}%<input type="range" min="0" max="100" step="5" value={subscriptionSavings} onChange={e=>setSubscriptionSavings(Number(e.target.value))} className="mt-2 w-full accent-violet-500"/></label><label className="text-sm text-slate-300">Redução de despesas planejadas: {expenseSavings}%<input type="range" min="0" max="100" step="5" value={expenseSavings} onChange={e=>setExpenseSavings(Number(e.target.value))} className="mt-2 w-full accent-violet-500"/></label></div><div className="grid gap-2 sm:grid-cols-3"><div><p className="text-xs text-slate-400">Economia simulada</p><p className="font-semibold text-emerald-300">{brl(totalScenarioSavings)}</p></div><div><p className="text-xs text-slate-400">Saldo final simulado</p><p className="font-semibold text-white">{brl(scenario.length?scenario[scenario.length-1].scenarioPosition:0)}</p></div><div><p className="text-xs text-slate-400">Primeiro mês negativo no cenário</p><p className="font-semibold text-white">{scenarioNegative?scenarioNegative.period.slice(5)+"/"+scenarioNegative.period.slice(0,4):"Nenhum no período"}</p></div></div><p className="text-xs text-slate-400">A redução é aplicada proporcionalmente a todas as despesas da categoria, inclusive essenciais. Use apenas para explorar possibilidades, não como plano de cortes automático.</p><button type="button" onClick={askMyka} disabled={!projection.length} className="rounded-lg border border-violet-400 px-3 py-2 text-sm font-semibold text-violet-200 disabled:opacity-50">Conversar com a MIKA sobre este cenário</button></div>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-violet-400/20 bg-slate-950/60 p-3"><div><p className="text-sm font-semibold text-violet-200">✦ MYKA · Planejamento financeiro</p><p className="mt-1 text-xs text-slate-300">Converse sobre riscos de saldo negativo e alternativas para organizar seu orçamento. Os números da simulação serão enviados ao chat apenas ao clicar.</p></div><button type="button" onClick={askMyka} disabled={!projection.length} className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500 disabled:opacity-50">Analisar com a MYKA</button></div>
       {handoffError&&<p role="alert" className="text-xs text-rose-300">Não foi possível abrir a análise. Verifique as permissões do navegador.</p>}
       <p className="text-xs text-slate-400">Estimativa sem receitas futuras, inflação ou gastos não cadastrados. Revise possíveis duplicidades acima. Atualize a página após alterar outros lançamentos.</p>
