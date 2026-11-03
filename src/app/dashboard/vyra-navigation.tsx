@@ -4,13 +4,12 @@ import { useState } from "react";
 
 const primaryItems = [
   { id: "home", label: "Hoje", icon: "⌂" },
-  { id: "vyra-tasks", label: "Tarefas", icon: "✓" },
+  { id: "vyra-tasks", label: "Tarefas e Plano", icon: "✓" },
   { id: "vyra-calendar", label: "Agenda", icon: "▦" },
   { id: "vyra-ai", label: "Myka AI", icon: "✦" },
 ];
 
 const secondaryItems = [
-  { id: "vyra-planner", label: "Copiloto e planos", icon: "◷" },
   { id: "vyra-scheduling", label: "Agendamento inteligente", icon: "⚡" },
   { id: "vyra-performance", label: "Evolução", icon: "◈" },
   { id: "vyra-settings", label: "Minha conta", icon: "⚙" },
@@ -27,10 +26,8 @@ export default function VyraNavigation({
 }: VyraNavigationProps) {
   const [localActive, setLocalActive] = useState("home");
   const [moreOpen, setMoreOpen] = useState(false);
-  const [planningOpen, setPlanningOpen] = useState(false);
 
   const current = activeModule ?? localActive;
-  const planningActive = current === "vyra-planner" || current === "vyra-scheduling";
   const secondaryActive = secondaryItems.some(
     (item) => item.id === current
   );
@@ -106,13 +103,7 @@ export default function VyraNavigation({
                 : "hidden"
             }
           >
-            <div className="space-y-1">
-              <button type="button" onClick={() => setPlanningOpen((value) => !value)} aria-expanded={planningOpen || planningActive} className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-medium text-slate-300 hover:bg-violet-500/10">
-                <span>◷ Planejamento</span><span aria-hidden="true">{planningOpen || planningActive ? "⌃" : "⌄"}</span>
-              </button>
-              {(planningOpen || planningActive) && <div className="space-y-1 border-l border-violet-400/20 pl-3">{secondaryItems.slice(0,2).map(navigationButton)}</div>}
-              {secondaryItems.slice(2).map(navigationButton)}
-            </div>
+            <div className="space-y-1">{secondaryItems.map(navigationButton)}            </div>
           </div>
         </div>
       </nav>
@@ -139,13 +130,7 @@ export default function VyraNavigation({
               : "hidden"
           }
         >
-          <div className="space-y-1">
-              <button type="button" onClick={() => setPlanningOpen((value) => !value)} aria-expanded={planningOpen || planningActive} className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-medium text-slate-300 hover:bg-violet-500/10">
-                <span>◷ Planejamento</span><span aria-hidden="true">{planningOpen || planningActive ? "⌃" : "⌄"}</span>
-              </button>
-              {(planningOpen || planningActive) && <div className="space-y-1 border-l border-violet-400/20 pl-3">{secondaryItems.slice(0,2).map(navigationButton)}</div>}
-              {secondaryItems.slice(2).map(navigationButton)}
-            </div>
+          <div className="space-y-1">{secondaryItems.map(navigationButton)}            </div>
         </div>
       </div>
     </>
