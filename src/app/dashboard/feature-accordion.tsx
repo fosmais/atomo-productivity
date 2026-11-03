@@ -69,11 +69,11 @@ export function FeatureAccordion({ id, title, description, userId, defaultOpen =
     if (!event.currentTarget.isConnected) return;
     try { localStorage.setItem(prefix + userId + ":" + id, String(event.currentTarget.open)); } catch { /* optional */ }
   }} className="group relative min-w-0 overflow-visible rounded-2xl border border-white/15 bg-slate-900/75 shadow-sm transition-all duration-200 hover:border-violet-400/50 hover:bg-slate-800/80 open:border-violet-400/70 open:bg-violet-600/10 open:shadow-lg open:shadow-violet-950/20">
-    <summary className="flex min-h-[104px] cursor-pointer list-none items-center justify-between gap-4 px-5 py-5 pr-24 text-left marker:hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 sm:pl-6 sm:pr-28 [&::-webkit-details-marker]:hidden">
+    <summary className="flex min-h-[112px] cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 pr-20 text-left marker:hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 sm:px-5 sm:py-5 sm:pr-28 [&::-webkit-details-marker]:hidden">
       <span className="min-w-0"><span className="block text-[15px] font-semibold tracking-tight text-white sm:text-base">{title}</span><span className="mt-1.5 block text-sm leading-relaxed text-slate-400">{description}</span></span>
-      <span aria-hidden="true" className="absolute right-5 top-[28px] flex h-9 w-9 items-center justify-center rounded-xl border border-violet-400/25 bg-violet-500/10 text-xl text-violet-200 transition-all duration-200 group-hover:bg-violet-500/20 group-open:rotate-45 group-open:border-violet-400/50">+</span>
+      <span aria-hidden="true" className="absolute right-4 top-[30px] flex h-8 w-8 sm:right-5 sm:h-9 sm:w-9 items-center justify-center rounded-xl border border-violet-400/25 bg-violet-500/10 text-xl text-violet-200 transition-all duration-200 group-hover:bg-violet-500/20 group-open:rotate-45 group-open:border-violet-400/50">+</span>
     </summary>
-    <div ref={helpRef} className="absolute right-16 top-[30px] z-20">
+    <div ref={helpRef} className="absolute right-14 top-[30px] z-20 sm:right-16">
       <button type="button" aria-label={`Como funciona: ${title}`} aria-expanded={helpOpen} aria-controls={helpOpen ? helpId : undefined}
         onClick={() => setHelpOpen((value) => !value)}
         className="flex h-8 w-8 items-center justify-center rounded-full border border-violet-400/45 bg-violet-500/10 text-xs font-semibold text-violet-200 transition hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">i</button>
@@ -85,7 +85,7 @@ export function FeatureAccordion({ id, title, description, userId, defaultOpen =
         <p className="mt-2 text-xs text-slate-400">Toque no cartão para abrir a ferramenta.</p>
       </div>}
     </div>
-    <div className="min-w-0 space-y-4 border-t border-white/10 bg-slate-950/25 px-4 py-5 sm:px-6">{children}</div>
+    <div className="min-w-0 space-y-4 border-t border-white/10 bg-slate-950/25 px-3 py-4 sm:px-5 sm:py-5">{children}</div>
   </details>;
 }
 
