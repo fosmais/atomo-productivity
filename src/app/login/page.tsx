@@ -29,12 +29,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     let active = true;
-    // The legacy Preview alias is also attached to Production. Always start OAuth
-    // on the canonical origin so the PKCE verifier and callback share storage.
-    if (window.location.hostname.endsWith(".vercel.app")) {
-      window.location.replace(`https://www.myryra.com${window.location.pathname}${window.location.search}${window.location.hash}`);
-      return () => { active = false; };
-    }
+    // Keep Preview on its own hostname for isolated email/password homologation.
+    // Google OAuth remains canonicalized separately until Preview redirect URIs are configured.
     const params = new URLSearchParams(window.location.search);
     if (params.get("mode") === "signup") setMode("signup");
     const errorCode = params.get("error");
