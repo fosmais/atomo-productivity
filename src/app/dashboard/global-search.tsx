@@ -31,7 +31,7 @@ export default function GlobalSearch() {
         // Escape LIKE wildcards so user input is searched literally.
         const pattern = `%${query.trim().replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
         const [tasks, plans, events] = await Promise.all([
-          supabase.from("tasks").select("id,title,due_date").eq("user_id", auth.user.id).ilike("title", pattern).order("created_at", { ascending: false }).limit(30),
+          supabase.from("tasks").select("id,title,due_date").eq("user_id", auth.user.id).is("deleted_at", null).ilike("title", pattern).order("created_at", { ascending: false }).limit(30),
           supabase.from("plans").select("id,title").eq("user_id", auth.user.id).ilike("title", pattern).order("created_at", { ascending: false }).limit(30),
           supabase.from("events").select("id,title,starts_at").eq("user_id", auth.user.id).ilike("title", pattern).order("starts_at", { ascending: false }).limit(30),
         ]);
