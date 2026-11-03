@@ -7,17 +7,17 @@ type Goal = { id: string; title: string; target_cents: number; saved_cents: numb
 type Expense = { id: string; title: string; amount_cents: number; due_date: string };
 const money = (n: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n / 100);
 function parseCents(input: string) {
-  const raw = input.trim().replace(/^R\\$\\s*/i, "").replace(/\\s/g, "");
+  const raw = input.trim().replace(/^R\$\s*/i, "").replace(/\s/g, "");
   if (!raw) return null;
   // Accept pt-BR currency (7.000,00), plain digits (7000) and decimals (7000.00).
   // Never guess ambiguous grouping such as 7,000 or 7.000: treat those as
   // thousands only when exactly three digits follow the separator.
   let normalized: string;
-  if (/^\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?$/.test(raw)) {
-    normalized = raw.replace(/\\./g, "").replace(",", ".");
-  } else if (/^\\d{1,3}(?:,\\d{3})+(?:\\.\\d{1,2})?$/.test(raw)) {
+  if (/^\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?$/.test(raw)) {
+    normalized = raw.replace(/\./g, "").replace(",", ".");
+  } else if (/^\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?$/.test(raw)) {
     normalized = raw.replace(/,/g, "");
-  } else if (/^\\d+(?:[.,]\\d{1,2})?$/.test(raw)) {
+  } else if (/^\d+(?:[.,]\d{1,2})?$/.test(raw)) {
     normalized = raw.replace(",", ".");
   } else {
     return null;
