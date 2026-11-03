@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useVyraNavigation } from "./vyra-module-context";
 
 type View = "tasks" | "today" | "intelligence" | "focus";
 
@@ -18,6 +19,19 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
   focus: ReactNode;
 }) {
   const [active, setActive] = useState<View>("tasks");
+  const { activeModule, quickAction } = useVyraNavigation();
+  useEffect(() => {
+    if (activeModule !== "vyra-tasks" || !quickAction) return;
+    setActive("tasks");
+    const timer = window.setTimeout(() => {
+      const details = document.querySelector<HTMLDetailsElement>(`[data-feature-id="${quickAction}"]`);
+      if (details) {
+        details.open = true;
+        details.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [activeModule, quickAction]);
   const panels: Record<View, ReactNode> = { tasks, today, intelligence, focus };
 
   function onTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
