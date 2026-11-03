@@ -8,7 +8,7 @@ const number = (input: string) => Number(input.trim().replace(",", "."));
 
 export default function FinanceInvestments() {
   const { navigateTo } = useVyraNavigation();
-  const [copied, setCopied] = useState(false);
+  const [handoffError, setHandoffError] = useState(false);
   const [initial, setInitial] = useState("1000");
   const [monthly, setMonthly] = useState("200");
   const [rate, setRate] = useState("10");
@@ -35,15 +35,14 @@ export default function FinanceInvestments() {
     return { balance, invested, gain: balance - invested, checkpoints };
   }, [initial, monthly, rate, years, ratePeriod]);
 
-  async function askMyka() {
+  function askMyka() {
     const prompt = `MYKA, quero planejar meus investimentos para alcançar meu objetivo. Meu valor inicial simulado é R$ ${initial}, aporte mensal R$ ${monthly}, taxa hipotética ${rate}% ${ratePeriod === "annual" ? "ao ano" : "ao mês"} e prazo de ${years} anos. Antes de comparar opções como Tesouro Direto, CDB e fundos, pergunte meu objetivo, necessidade de liquidez, reserva de emergência, tolerância a perdas e experiência. Explique riscos, custos, impostos e diferenças, sem prometer ganhos ou indicar uma opção como a melhor sem conhecer meu perfil.`;
     try {
-      await navigator.clipboard.writeText(prompt);
-      setCopied(true);
+      sessionStorage.setItem("myryra:myka:investment-handoff", prompt);
+      setHandoffError(false);
       navigateTo("vyra-ai");
     } catch {
-      setCopied(false);
-      navigateTo("vyra-ai");
+      setHandoffError(true);
     }
   }
 
@@ -92,8 +91,8 @@ export default function FinanceInvestments() {
         <h4 className="mt-1 text-lg font-semibold text-white">Qual investimento combina com seu objetivo?</h4>
         <p className="mt-1 max-w-xl text-sm text-slate-300">Converse com a MYKA para comparar alternativas, riscos, prazos e liquidez de acordo com suas necessidades.</p>
       </div>
-      <button type="button" onClick={() => void askMyka()} className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300">Perguntar à MYKA</button>
-      {copied && <p role="status" className="w-full text-xs text-violet-200">Pergunta com os dados da simulação copiada. Cole no chat da MYKA para iniciar a conversa.</p>}
+      <button type="button" onClick={askMyka} className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300">Perguntar à MYKA</button>
+      {handoffError && <p role="alert" className="w-full text-xs text-rose-300">Não foi possível transferir a simulação para a MYKA. Verifique as permissões de armazenamento do navegador.</p>}
     </div>
     <p className="text-xs leading-5 text-slate-400">A MYKA oferece informações educativas e comparações, não consultoria individualizada nem recomendação de compra. Consulte um profissional habilitado para decisões personalizadas.</p>
     <p className="text-xs leading-5 text-slate-400">Projeção matemática ilustrativa com taxa constante e capitalização mensal. Não considera impostos, inflação, tarifas, volatilidade ou risco de perda. Rentabilidade futura não é garantida. Nenhum dinheiro é investido pela MYRYRA.</p>
