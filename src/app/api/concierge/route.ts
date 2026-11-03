@@ -745,7 +745,7 @@ if (!rateLimit.allowed) {
             titleValid: typeof task.title === "string" && task.title.trim().length > 0 && task.title.length <= 200,
             priorityValid: task.priority === "Alta" || task.priority === "Média" || task.priority === "Normal",
             dueDateValid: task.dueDate === null || isValidDateOnly(task.dueDate),
-            dueDateKind: task.dueDate === null ? "null" : typeof task.dueDate === "string" ? (/^\\d{4}-\\d{2}-\\d{2}T/.test(task.dueDate) ? "datetime" : /^\\d{4}-\\d{2}-\\d{2}$/.test(task.dueDate) ? "date" : "other-string") : typeof task.dueDate,
+            dueDateKind: task.dueDate === null ? "null" : typeof task.dueDate === "string" ? (/^\d{4}-\d{2}-\d{2}T/.test(task.dueDate) ? "datetime" : /^\d{4}-\d{2}-\d{2}$/.test(task.dueDate) ? "date" : "other-string") : typeof task.dueDate,
           };
         }) : [],
       });
