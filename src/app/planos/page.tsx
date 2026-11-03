@@ -14,14 +14,13 @@ function formatPrice(cents: number) {
 }
 
 export default function PlanosPage() {
-  const salesEnabled = false;
   return (
     <main className="mx-auto min-h-dvh w-full max-w-6xl bg-[#070716] px-5 py-12 text-white">
       <Link href="/dashboard" className="text-sm text-violet-300 hover:text-white">← Voltar ao painel</Link>
       <div className="mt-10 text-center">
         <p className="text-sm font-semibold tracking-[0.2em] text-violet-300">MYRYRA</p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">Um plano para cada ritmo.</h1>
-        <p className="mx-auto mt-4 max-w-2xl text-base text-zinc-300">Encontre a opção ideal para sua rotina. Os planos pagos estarão disponíveis em breve.</p>
+        <p className="mx-auto mt-4 max-w-2xl text-base text-zinc-300">Compare os planos e seus recursos previstos. As assinaturas Pro e Premium ainda não podem ser contratadas.</p>
       </div>
       <div className="mt-10 grid gap-5 md:grid-cols-3">
         {Object.values(BILLING_PLANS).map((plan) => (
@@ -30,19 +29,21 @@ export default function PlanosPage() {
             <p className="mt-2 min-h-12 text-sm text-zinc-300">{details[plan.id].description}</p>
             <p className="mt-5 text-3xl font-semibold">{formatPrice(plan.monthlyPriceCents)}<span className="text-sm font-normal text-zinc-300"> / mês</span></p>
             <p className="mt-3 text-sm text-violet-200">{plan.aiMessagesPerDay} interações de IA por dia (previstas)</p>
-            <ul className="mt-7 space-y-3 text-sm text-zinc-200">
+            <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-amber-200">{plan.id === "free" ? "Recursos do plano atual" : "Recursos previstos — sujeitos à liberação"}</p>
+            <ul className="mt-3 space-y-3 text-sm text-zinc-200">
               {details[plan.id].highlights.map((item) => <li key={item}>✓ {item}</li>)}
             </ul>
             {plan.id === "free" ? (
               <FreePlanAction />
             ) : (
               <div className="mt-8 rounded-xl border border-white/15 px-4 py-3 text-center text-sm text-zinc-300" aria-label="Assinaturas ainda não disponíveis">
-                {salesEnabled ? "Checkout em preparação" : "Em breve"}
+                Em breve — contratação indisponível
               </div>
             )}
           </section>
         ))}
       </div>
+      <p className="mt-6 text-center text-sm text-zinc-300">Precisa de ajuda sobre planos ou pagamentos? Utilize o atendimento financeiro abaixo, mesmo se tiver atingido o limite diário do chat de IA.</p>
       <SubscriptionPanel />
       <FinancialCarePanel />
       <p className="mt-8 text-center text-xs text-zinc-400">Valores indicativos. Nenhuma contratação ou cobrança está disponível nesta página.</p>
