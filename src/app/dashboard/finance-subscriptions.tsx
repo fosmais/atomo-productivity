@@ -51,6 +51,9 @@ export default function FinanceSubscriptions() {
   const [alertSubscriptions, setAlertSubscriptions] = useState(true);
   const [alertExpenses, setAlertExpenses] = useState(true);
   const [alertSettingsOpen, setAlertSettingsOpen] = useState(false);
+  const [emailEnabled, setEmailEnabled] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [dailyDigestEnabled, setDailyDigestEnabled] = useState(false);
   const [alertSettingsError, setAlertSettingsError] = useState("");
   const [notifications, setNotifications] = useState<FinanceNotification[]>([]);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -68,13 +71,16 @@ export default function FinanceSubscriptions() {
         if (authError || !auth.user) throw new Error("Sessão inválida");
         if (active) setAlertUserId(auth.user.id);
         const { data: savedAlerts, error: savedAlertsError } = await db.from("myryra_finance_alert_preferences")
-          .select("days,subscriptions,expenses").eq("user_id", auth.user.id).maybeSingle();
+          .select("days,subscriptions,expenses,email_enabled,push_enabled,daily_digest_enabled").eq("user_id", auth.user.id).maybeSingle();
         if (active) {
           if (savedAlertsError) setAlertSettingsError("Não foi possível carregar as preferências de alertas.");
           else if (savedAlerts) {
             if ([3, 7, 14].includes(savedAlerts.days)) setAlertDays(savedAlerts.days as 3 | 7 | 14);
             setAlertSubscriptions(savedAlerts.subscriptions);
             setAlertExpenses(savedAlerts.expenses);
+            setEmailEnabled(savedAlerts.email_enabled);
+            setPushEnabled(savedAlerts.push_enabled);
+            setDailyDigestEnabled(savedAlerts.daily_digest_enabled);
           }
         }
         const { data: previousNotifications, error: notificationsLoadError } = await db.from("myryra_finance_notifications")
@@ -122,6 +128,26 @@ export default function FinanceSubscriptions() {
     } catch {
       setAlertSettingsError("Não foi possível sincronizar as preferências. Tente novamente.");
     }
+  };
+  const saveChannelPreference = async (channel: "email_enabled" | "push_enabled" | "daily_digest_enabled", enabled: boolean) => {
+    if (!alertUserId) { setAlertSettingsError("Faça login para salvar suas preferências."); return; }
+    setAlertSettingsError("");
+    try {
+      const db = createClient();
+      const { data: auth, error: authError } = await db.auth.getUser();
+      if (authError || auth.user?.id !== alertUserId) throw new Error("Sessão inválida");
+      const { error: saveError } = await db.from("myryra_finance_alert_preferences").upsert({
+        user_id: alertUserId, days: alertDays, subscriptions: alertSubscriptions, expenses: alertExpenses,
+        email_enabled: channel === "email_enabled" ? enabled : emailEnabled,
+        push_enabled: channel === "push_enabled" ? enabled : pushEnabled,
+        daily_digest_enabled: channel === "daily_digest_enabled" ? enabled : dailyDigestEnabled,
+        updated_at: new Date().toISOString()
+      }, { onConflict: "user_id" });
+      if (saveError) throw saveError;
+      if (channel === "email_enabled") setEmailEnabled(enabled);
+      if (channel === "push_enabled") setPushEnabled(enabled);
+      if (channel === "daily_digest_enabled") setDailyDigestEnabled(enabled);
+    } catch { setAlertSettingsError("Não foi possível salvar a preferência do canal."); }
   };
   const upcomingAlerts = useMemo(() => {
     if (!asOf) return [];
@@ -336,7 +362,11 @@ export default function FinanceSubscriptions() {
         <label className="text-xs text-slate-200">Antecedência<select aria-label="Antecedência dos alertas" value={alertDays} onChange={e => saveAlertSettings(Number(e.target.value) as 3 | 7 | 14, alertSubscriptions, alertExpenses)} className="mt-1 block w-full rounded-lg border border-white/20 bg-slate-900 p-2 text-white"><option value={3}>3 dias</option><option value={7}>7 dias</option><option value={14}>14 dias</option></select></label>
         <label className="flex items-center gap-2 text-xs text-slate-200"><input type="checkbox" checked={alertSubscriptions} onChange={e => saveAlertSettings(alertDays, e.target.checked, alertExpenses)}/> Assinaturas</label>
         <label className="flex items-center gap-2 text-xs text-slate-200"><input type="checkbox" checked={alertExpenses} onChange={e => saveAlertSettings(alertDays, alertSubscriptions, e.target.checked)}/> Despesas planejadas</label>
-        <p className="text-xs text-slate-400 sm:col-span-3">Preferências sincronizadas com sua conta para acesso em outros dispositivos. Não enviamos notificações externas nesta fase.</p>
+        <div className="border-t border-white/10 pt-3 sm:col-span-3"><p className="text-sm font-semibold text-white">Canais de notificações (preparação)</p><p className="mt-1 text-xs text-slate-400">Os canais externos ainda não enviam mensagens. Estas escolhas ficam registradas para uma ativação futura após testes.</p></div>
+        <label className="flex items-center gap-2 text-xs text-slate-200"><input type="checkbox" checked={emailEnabled} onChange={e => void saveChannelPreference("email_enabled", e.target.checked)}/> Autorizar e-mail futuramente</label>
+        <label className="flex items-center gap-2 text-xs text-slate-200"><input type="checkbox" checked={pushEnabled} onChange={e => void saveChannelPreference("push_enabled", e.target.checked)}/> Autorizar push futuramente</label>
+        <label className="flex items-center gap-2 text-xs text-slate-200"><input type="checkbox" checked={dailyDigestEnabled} onChange={e => void saveChannelPreference("daily_digest_enabled", e.target.checked)}/> Resumo diário futuramente</label>
+        <p className="text-xs text-slate-400 sm:col-span-3">Preferências sincronizadas com sua conta. Nenhum canal externo está ativo.</p>
       </div>
     )}
     {alertSettingsError && <p role="alert" className="text-xs text-rose-300">{alertSettingsError}</p>}
