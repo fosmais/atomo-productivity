@@ -24,6 +24,7 @@ export default function FinancialCarePanel() {
   const [requests, setRequests] = useState<Protocol[]>([]);
   const [state, setState] = useState<"loading" | "ready" | "unavailable" | "signin">("loading");
   const [message, setMessage] = useState("");
+  const [historyUnavailable, setHistoryUnavailable] = useState(false);
   const [busy, setBusy] = useState(false);
   const [subscription, setSubscription] = useState<{planId:string;status:string;provider:string|null;currentPeriodEnd:string|null}|null>(null);
 
@@ -36,10 +37,16 @@ export default function FinancialCarePanel() {
       if (history.status === 401 || history.status === 403 || sub.status === 401 || sub.status === 403) {
         setState("signin"); return;
       }
-      if (!history.ok || !sub.ok) { setState("unavailable"); return; }
-      const [h, s] = await Promise.all([history.json(), sub.json()]);
-      setRequests(Array.isArray(h.requests) ? h.requests : []);
-      setSubscription(s.subscription ?? null);
+      if (!sub.ok) { setState("unavailable"); return; }
+      const subscriptionData = await sub.json();
+      setSubscription(subscriptionData.subscription ?? null);
+      setHistoryUnavailable(!history.ok);
+      if (history.ok) {
+        const historyData = await history.json();
+        setRequests(Array.isArray(historyData.requests) ? historyData.requests : []);
+      } else {
+        setRequests([]);
+      }
       setState("ready");
     } catch { setState("unavailable"); }
   }, []);
@@ -83,7 +90,8 @@ export default function FinancialCarePanel() {
           <p className="mt-3 text-xs text-zinc-400">Estornos precisam de verificação do pagamento. Solicite análise pelo suporte; não há estorno automático nesta versão.</p>
           {!eligible && <p className="mt-2 text-xs text-amber-200">Nenhuma assinatura Asaas ativa elegível para alterações foi encontrada.</p>}
           <h3 className="mt-7 text-base font-semibold text-white">Meus protocolos</h3>
-          {requests.length === 0 ? <p className="mt-2 text-sm text-zinc-400">Nenhuma solicitação registrada.</p> : (
+          {historyUnavailable && <p role="status" className="mt-2 text-sm text-amber-200">O histórico de protocolos ainda não está disponível neste ambiente. A consulta de assinatura continua acessível.</p>}
+          {historyUnavailable ? null : requests.length === 0 ? <p className="mt-2 text-sm text-zinc-400">Nenhuma solicitação registrada.</p> : (
             <ul className="mt-3 space-y-3">
               {requests.map((item) => <li key={item.id} className="rounded-xl border border-white/10 bg-black/20 p-3 text-sm">
                 <p className="font-medium text-white">{actionNames[item.action] ?? "Solicitação"} · {statusNames[item.status] ?? "Em verificação"}</p>
