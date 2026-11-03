@@ -65,7 +65,7 @@ export function FeatureAccordion({ id, title, description, userId, defaultOpen =
     window.addEventListener(eventName, onAll);
     return () => window.removeEventListener(eventName, onAll);
   }, [id, userId, defaultOpen]);
-  return <details ref={ref} onToggle={event => {
+  return <details data-feature-id={id} ref={ref} onToggle={event => {
     if (!event.currentTarget.isConnected) return;
     try { localStorage.setItem(prefix + userId + ":" + id, String(event.currentTarget.open)); } catch { /* optional */ }
   }} className="group relative min-w-0 overflow-visible rounded-2xl border border-white/15 bg-slate-900/75 shadow-sm transition-all duration-200 hover:border-violet-400/50 hover:bg-slate-800/80 open:border-violet-400/70 open:bg-violet-600/10 open:shadow-lg open:shadow-violet-950/20">
