@@ -39,6 +39,7 @@ import VyraSection from "./vyra-section";
 import { FeatureAccordion } from "./feature-accordion";
 import MyryraFinanceStarter from "./myryra-finance-starter";
 import FinancePlanning from "./finance-planning";
+import FinanceInvestments from "./finance-investments";
 
 async function DashboardContent() {
   await connection();
@@ -194,7 +195,7 @@ async function DashboardContent() {
 </VyraModule>
       <VyraModule id="vyra-finance">
         <VyraSection id="vyra-finance" eyebrow="MYRYRA FINANCE · MVP2" title="Seu dinheiro, com mais clareza." description="Organize receitas e despesas sem precisar conectar um banco.">
-          <div className="space-y-5"><MyryraFinanceStarter /><FinancePlanning /></div>
+          <div className="space-y-5"><MyryraFinanceStarter /><FinancePlanning /><FinanceInvestments /></div>
         </VyraSection>
       </VyraModule>
       <VyraModule id="vyra-settings">
