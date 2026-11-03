@@ -20,19 +20,37 @@ export async function GET(request: NextRequest) {
       }),
     },
   });
+  let stage = "exchange";
   try {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (error) throw error;
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) throw new Error("Invalid session");
-    const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (assurance.error) throw assurance.error;
-    // The login page resumes MFA if a verified factor requires aal2.
-    const destination = assurance.data.nextLevel === "aal2" &&
-      assurance.data.currentLevel !== "aal2" ? `/login?mfa=required${next === "/suporte-admin" ? "&next=%2Fsuporte-admin" : ""}` : next;
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) {
+      console.error("[auth/oauth-callback] exchange failed", { code: error.code, status: error.status });
+      throw error;
+    }
+    if (!data.session || !data.user) throw new Error("OAuth exchange returned no session");
+    // The exchange already validates the code and returns the authenticated user.
+    // Avoid an additional getUser() request before the redirect, which can
+    // fail on a stale request cookie and discard an otherwise valid login.
+    stage = "mfa";
+    let destination = next;
+    try {
+      const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (!assurance.error && assurance.data.nextLevel === "aal2" &&
+          assurance.data.currentLevel !== "aal2") {
+        destination = `/login?mfa=required${next === "/suporte-admin" ? "&next=%2Fsuporte-admin" : ""}`;
+      } else if (assurance.error) {
+        console.warn("[auth/oauth-callback] MFA assurance unavailable", { code: assurance.error.code });
+      }
+    } catch {
+      console.warn("[auth/oauth-callback] MFA assurance request failed");
+    }
     response.headers.set("Location", new URL(destination, url.origin).toString());
     return response;
-  } catch {
+  } catch (error) {
+    console.error("[auth/oauth-callback] login failed", {
+      stage,
+      code: error && typeof error === "object" && "code" in error ? String(error.code) : "unknown",
+    });
     return NextResponse.redirect(new URL("/login?error=oauth", url.origin));
   }
 }
