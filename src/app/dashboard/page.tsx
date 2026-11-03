@@ -84,8 +84,8 @@ async function DashboardContent() {
           title="Converse com a MYKA."
           description="Sua assistente pessoal para transformar ideias em decisões e próximos passos."
         >
-          <div className="min-w-0 space-y-5">
-            <div className="rounded-3xl border border-violet-400/20 bg-gradient-to-br from-violet-950/40 via-slate-900/75 to-slate-950/80 p-5 sm:p-7">
+          <div className="min-w-0 space-y-4">
+            <div className="rounded-2xl border border-violet-400/20 bg-gradient-to-br from-violet-950/40 via-slate-900/75 to-slate-950/80 p-5 sm:p-7">
               <div className="flex flex-wrap items-center gap-3">
                 <img src="/myka-transparente.png" alt="MYKA" className="h-12 w-12 shrink-0 object-contain" />
                 <div>
@@ -95,7 +95,7 @@ async function DashboardContent() {
               </div>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">Converse naturalmente sobre prioridades, compromissos e objetivos. A MYKA ajuda você a organizar o que importa.</p>
             </div>
-            <section className="min-w-0 rounded-3xl border border-white/10 bg-slate-900/60 p-3 sm:p-5" aria-label="Conversa com a MYKA">
+            <section className="min-w-0 rounded-2xl border border-white/15 bg-slate-900/75 p-3 sm:p-5" aria-label="Conversa com a MYKA">
               <CopilotChat />
             </section>
           </div>
@@ -146,14 +146,14 @@ async function DashboardContent() {
               <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-400">Crie, consulte e ajuste os eventos da sua agenda sem precisar abrir uma seção adicional.</p>
             </div>
             <div className="grid min-w-0 items-start gap-5">
-              <section className="min-w-0 rounded-3xl border border-white/10 bg-slate-900/60 p-4 sm:p-6" aria-label="Eventos da agenda">
+              <section className="min-w-0 rounded-2xl border border-white/15 bg-slate-900/75 p-4 sm:p-6" aria-label="Eventos da agenda">
                 <div className="mb-5">
                   <h3 className="text-base font-semibold text-white">Eventos da agenda</h3>
                   <p className="mt-1 text-sm text-slate-400">Seus compromissos, sempre à mão.</p>
                 </div>
                 <CalendarEvents />
               </section>
-              <aside className="min-w-0 space-y-3 rounded-3xl border border-white/10 bg-slate-900/40 p-4 sm:p-5" aria-label="Planejamento de disponibilidade">
+              <aside className="min-w-0 space-y-3" aria-label="Planejamento de disponibilidade">
                 <div className="px-1">
                   <h3 className="text-base font-semibold text-white">Planeje os horários livres</h3>
                   <p className="mt-1 text-sm text-slate-400">Consulte sua disponibilidade antes de assumir novos compromissos.</p>
@@ -171,8 +171,10 @@ async function DashboardContent() {
         title="Seu tempo, melhor aproveitado."
         description="Descubra os melhores horários para suas tarefas com base nas prioridades, durações e compromissos da sua agenda."
       >
+        <div className="grid min-w-0 gap-3 md:grid-cols-2">
         <FeatureAccordion id="autopilot" title="AutoPilot" description="Encontre horários para executar tarefas" userId={user.id}><AutoPilot /></FeatureAccordion>
         <FeatureAccordion id="scheduling" title="Smart Scheduling" description="Sugestões inteligentes para sua agenda" userId={user.id}><SmartSchedulingPanel /></FeatureAccordion>
+        </div>
       </VyraSection>
 </VyraModule>
       <VyraModule id="vyra-performance">
@@ -182,8 +184,10 @@ async function DashboardContent() {
         title="Sua evolução em números."
         description="Acompanhe suas conquistas, identifique oportunidades de melhoria e tome decisões com base em dados reais."
       >
+        <div className="grid min-w-0 gap-3 md:grid-cols-2">
         <FeatureAccordion id="weekly" title="Weekly Intelligence" description="Indicadores de sua semana" userId={user.id} defaultOpen><WeeklyIntelligence /></FeatureAccordion>
         <FeatureAccordion id="performance" title="Performance & Insights" description="Explore seus indicadores de produtividade" userId={user.id}><PerformanceInsights /></FeatureAccordion>
+        </div>
       </VyraSection>
 </VyraModule>
       <VyraModule id="vyra-settings">
@@ -193,7 +197,7 @@ async function DashboardContent() {
         title="Uma experiência feita para você."
         description="Gerencie sua conta, conecte aplicativos e compartilhe sugestões."
       >
-        <div className="space-y-4">
+        <div className="grid min-w-0 items-start gap-3 md:grid-cols-2">
           <FeatureAccordion id="mfa" title="Segurança da conta" description="Configure a autenticação em dois fatores" userId={user.id}><MfaSettings /><ChangePassword /></FeatureAccordion>
           <FeatureAccordion id="external-integrations" title="Integrações de produtividade" description="Google Calendar, Google Tasks, Todoist e Outlook" userId={user.id}>
             <div className="space-y-5">
