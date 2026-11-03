@@ -10,8 +10,8 @@ const primaryItems = [
 ];
 
 const secondaryItems = [
-  { id: "vyra-finance", label: "Finance · MVP2", icon: "◇" },
-  { id: "vyra-scheduling", label: "Agendamento inteligente", icon: "⚡" },
+  { id: "vyra-finance", label: "Finance", icon: "◇" },
+  { id: "vyra-scheduling", label: "Agendamento", icon: "⚡" },
   { id: "vyra-performance", label: "Evolução", icon: "◈" },
   { id: "vyra-settings", label: "Minha conta", icon: "⚙" },
 ];
