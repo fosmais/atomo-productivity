@@ -716,6 +716,19 @@ if (!rateLimit.allowed) {
       );
     }
 
+    // The legacy single-task field is redundant when proposedTasks is valid.
+    // Normalize only that field; keep strict validation for every other field.
+    if (isRecord(parsed) && Array.isArray(parsed.proposedTasks) &&
+        parsed.proposedTasks.length <= 10 &&
+        parsed.proposedTasks.every(isConciergeProposal) &&
+        parsed.proposedTask !== null &&
+        !isConciergeProposal(parsed.proposedTask)) {
+      parsed = {
+        ...parsed,
+        proposedTask: parsed.proposedTasks[0] ?? null,
+      };
+    }
+
     if (!isConciergeResponse(parsed)) {
       // Log only schema diagnostics; never log private conversation content.
       const candidate = isRecord(parsed) ? parsed : {};
