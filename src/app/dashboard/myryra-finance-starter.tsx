@@ -2,10 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useVyraNavigation } from "./vyra-module-context";
 
 type Entry = { id: string; description: string; amount_cents: number; kind: "income" | "expense"; created_at: string };
 
 export default function MyryraFinanceStarter() {
+  const { navigateTo } = useVyraNavigation();
+  const [handoffError, setHandoffError] = useState(false);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [openingBalanceCents, setOpeningBalanceCents] = useState(0);
   const [openingBalanceInput, setOpeningBalanceInput] = useState("");
@@ -44,6 +47,20 @@ export default function MyryraFinanceStarter() {
   const [kind, setKind] = useState<"income" | "expense">("expense");
   const totals = useMemo(() => openingBalanceCents + entries.reduce((sum, item) => sum + (item.kind === "income" ? item.amount_cents : -item.amount_cents), 0), [entries, openingBalanceCents]);
   const currency = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+  const askMykaToReplan = () => {
+    const prompt = [
+      "MIKA, meu saldo financeiro estimado ficou negativo. Ajude-me a reorganizar meu orçamento com orientações educativas.",
+      "Saldo estimado informado na MYRYRA: " + currency(totals / 100) + ".",
+      "Considere que os valores são lançamentos manuais, não um saldo bancário verificado.",
+      "Faça uma pergunta por vez para identificar gastos essenciais, despesas adiáveis e prioridades.",
+      "Sugira um plano realista sem alterar registros automaticamente e sem recomendar crédito ou investimentos específicos."
+    ].join(" ");
+    try {
+      sessionStorage.setItem("myryra:myka:investment-handoff", prompt);
+      setHandoffError(false);
+      navigateTo("vyra-ai");
+    } catch { setHandoffError(true); }
+  };
   const addEntry = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const normalized = amount.trim().replace(",", ".");
@@ -109,6 +126,13 @@ export default function MyryraFinanceStarter() {
       <div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-3 text-sm text-amber-100">
         Planejamento financeiro manual: o saldo estimado depende dos valores que você informa. Não há conexão bancária, atualização em tempo real ou movimentação de dinheiro.
       </div>
+      {!loading && !error && totals < 0 && (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-400/40 bg-rose-500/10 p-4">
+          <div className="min-w-0"><p className="font-semibold text-rose-100">Seu saldo estimado está negativo</p><p className="mt-1 text-sm text-rose-100/85">Converse com a MIKA para rever gastos e construir um plano de recuperação. Os valores são informados manualmente.</p></div>
+          <button type="button" onClick={askMykaToReplan} className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-violet-300">Replanejar com a MIKA</button>
+        </div>
+      )}
+      {handoffError && <p role="alert" className="text-sm text-rose-300">Não foi possível abrir a MIKA. Verifique as permissões do navegador.</p>}
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-2xl border border-white/15 bg-slate-900/75 p-5">
           <p className="text-sm text-slate-300">Saldo estimado</p>
