@@ -65,6 +65,7 @@ export default function TaskKanban() {
         .from("tasks")
         .select("id, title, priority, due_date, status, completed_at")
         .eq("user_id", auth.user.id)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .limit(200);
 
@@ -77,6 +78,7 @@ export default function TaskKanban() {
           .from("tasks")
           .select("id, title, priority, due_date, status, completed_at")
           .eq("user_id", auth.user.id)
+          .is("deleted_at", null)
           .eq("id", focusedTaskId)
           .maybeSingle();
         if (focusedError) throw focusedError;
