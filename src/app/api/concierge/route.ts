@@ -738,6 +738,16 @@ if (!rateLimit.allowed) {
         proposedTasksValid: Array.isArray(candidate.proposedTasks) && candidate.proposedTasks.length <= 10 && candidate.proposedTasks.every(isConciergeProposal),
         proposedTaskValid: candidate.proposedTask === null || isConciergeProposal(candidate.proposedTask),
         proposedEventValid: candidate.proposedEvent == null || isConciergeEventProposal(candidate.proposedEvent),
+        taskFieldDiagnostics: Array.isArray(candidate.proposedTasks) ? candidate.proposedTasks.slice(0, 10).map((task) => {
+          if (!isRecord(task)) return { object: false };
+          return {
+            object: true,
+            titleValid: typeof task.title === "string" && task.title.trim().length > 0 && task.title.length <= 200,
+            priorityValid: task.priority === "Alta" || task.priority === "Média" || task.priority === "Normal",
+            dueDateValid: task.dueDate === null || isValidDateOnly(task.dueDate),
+            dueDateKind: task.dueDate === null ? "null" : typeof task.dueDate === "string" ? (/^\\d{4}-\\d{2}-\\d{2}T/.test(task.dueDate) ? "datetime" : /^\\d{4}-\\d{2}-\\d{2}$/.test(task.dueDate) ? "date" : "other-string") : typeof task.dueDate,
+          };
+        }) : [],
       });
       return NextResponse.json(
         { error: "O Concierge retornou uma resposta inválida." },
