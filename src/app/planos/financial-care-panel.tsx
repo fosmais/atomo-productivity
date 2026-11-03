@@ -26,6 +26,7 @@ export default function FinancialCarePanel() {
   const [message, setMessage] = useState("");
   const [historyUnavailable, setHistoryUnavailable] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [showCancellation, setShowCancellation] = useState(false);
   const [subscription, setSubscription] = useState<{planId:string;status:string;provider:string|null;currentPeriodEnd:string|null}|null>(null);
 
   const refresh = useCallback(async () => {
@@ -75,20 +76,32 @@ export default function FinancialCarePanel() {
   const eligible = subscription?.provider === "asaas" && ["active","trialing"].includes(subscription.status);
   return (
     <section className="mt-8 rounded-3xl border border-white/15 bg-slate-900/90 p-6" aria-label="Atendimento financeiro MIKA">
-      <h2 className="text-xl font-semibold text-white">Gerenciar assinatura com a MIKA</h2>
-      <p className="mt-2 text-sm text-zinc-300">Consulte solicitações e acompanhe protocolos. Alterações financeiras dependem de confirmação e homologação.</p>
+      <h2 className="text-xl font-semibold text-white">Atendimento de assinatura com a MIKA</h2>
+      <p className="mt-2 text-sm text-zinc-300">Tire dúvidas sobre cobrança, conheça alternativas de plano e acompanhe suas solicitações. Alterações financeiras dependem de confirmação e homologação.</p>
       {state === "loading" && <p className="mt-4 text-sm text-zinc-300">Carregando atendimento financeiro…</p>}
       {state === "signin" && <p className="mt-4 text-sm text-zinc-300">Entre na conta e conclua a verificação de segurança para gerenciar sua assinatura.</p>}
       {state === "unavailable" && <p role="status" className="mt-4 text-sm text-amber-200">Autoatendimento ainda não habilitado. Nenhuma alteração financeira será realizada.</p>}
       {state === "ready" && (
         <>
           <div className="mt-5 flex flex-wrap gap-3">
-            <button type="button" disabled={!eligible || busy} onClick={() => void submit("cancel_renewal")} className="rounded-xl border border-violet-400/50 px-4 py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40">Solicitar cancelamento</button>
             {subscription?.planId === "premium" && <button type="button" disabled={!eligible || busy} onClick={() => void submit("downgrade", "pro")} className="rounded-xl border border-white/20 px-4 py-3 text-sm font-medium text-white disabled:opacity-40">Mudar para Pro</button>}
             {(subscription?.planId === "premium" || subscription?.planId === "pro") && <button type="button" disabled={!eligible || busy} onClick={() => void submit("downgrade", "free")} className="rounded-xl border border-white/20 px-4 py-3 text-sm font-medium text-white disabled:opacity-40">Mudar para Free</button>}
           </div>
           <p className="mt-3 text-xs text-zinc-400">Estornos precisam de verificação do pagamento. Solicite análise pelo suporte; não há estorno automático nesta versão.</p>
           {!eligible && <p className="mt-2 text-xs text-amber-200">Nenhuma assinatura Asaas ativa elegível para alterações foi encontrada.</p>}
+          {eligible && (
+            <div className="mt-6 border-t border-white/10 pt-4">
+              <p className="text-sm text-zinc-300">Se os planos atuais não atendem às suas necessidades, podemos avaliar alternativas. Você também pode solicitar o cancelamento da renovação a qualquer momento.</p>
+              {!showCancellation ? (
+                <button type="button" onClick={() => setShowCancellation(true)} className="mt-3 text-sm text-zinc-300 underline underline-offset-4 hover:text-white">Opções de cancelamento</button>
+              ) : (
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <button type="button" disabled={busy} onClick={() => void submit("cancel_renewal")} className="rounded-xl border border-white/20 px-4 py-3 text-sm text-white disabled:opacity-40">Solicitar cancelamento da renovação</button>
+                  <button type="button" onClick={() => setShowCancellation(false)} className="text-sm text-zinc-300 underline">Voltar</button>
+                </div>
+              )}
+            </div>
+          )}
           <h3 className="mt-7 text-base font-semibold text-white">Meus protocolos</h3>
           {historyUnavailable && <p role="status" className="mt-2 text-sm text-amber-200">O histórico de protocolos ainda não está disponível neste ambiente. A consulta de assinatura continua acessível.</p>}
           {historyUnavailable ? null : requests.length === 0 ? <p className="mt-2 text-sm text-zinc-400">Nenhuma solicitação registrada.</p> : (
