@@ -57,10 +57,10 @@ export default function VyraNavigation({
         type="button"
         onClick={() => navigateTo(item.id)}
         aria-current={selected ? "page" : undefined}
-        className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium transition-colors lg:w-full lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:py-3 lg:text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 ${
+        className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl border border-transparent px-2 py-2 text-[11px] font-medium transition-colors lg:w-full lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:py-3 lg:text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 ${
           selected
-            ? "bg-violet-600 text-white shadow-lg shadow-violet-500/20"
-            : "text-slate-400 hover:bg-violet-500/10 hover:text-white"
+            ? "border-violet-400/70 bg-violet-600/20 text-white shadow-sm shadow-violet-950/20"
+            : "text-slate-300 hover:border-violet-400/30 hover:bg-slate-800/80 hover:text-white"
         }`}
       >
         <span className="text-xl leading-none lg:text-lg" aria-hidden="true">
@@ -75,9 +75,9 @@ export default function VyraNavigation({
     <>
       <nav
         aria-label="Navegação da MYRYRA"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-violet-400/20 bg-slate-950/95 px-2 pb-[env(safe-area-inset-bottom)] pt-2 shadow-2xl shadow-violet-950/40 backdrop-blur-xl lg:sticky lg:top-6 lg:inset-x-auto lg:bottom-auto lg:w-full lg:rounded-2xl lg:border lg:border-white/10 lg:bg-slate-950/80 lg:p-3"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-violet-400/20 bg-slate-950/95 px-2 pb-[env(safe-area-inset-bottom)] pt-2 shadow-2xl shadow-violet-950/40 backdrop-blur-xl lg:sticky lg:top-6 lg:inset-x-auto lg:bottom-auto lg:w-full lg:rounded-2xl lg:border lg:border-white/15 lg:bg-slate-900/75 lg:p-3"
       >
-        <div className="grid grid-cols-4 gap-1 lg:grid-cols-1">
+        <div className="grid grid-cols-4 gap-1.5 lg:grid-cols-1 lg:gap-2">
           {primaryItems.map(navigationButton)}
         </div>
 
@@ -114,7 +114,7 @@ export default function VyraNavigation({
           onClick={() => setMoreOpen((value) => !value)}
           aria-expanded={moreOpen || secondaryActive}
           aria-controls="vyra-mobile-tools"
-          className="flex w-full items-center justify-between rounded-xl border border-violet-400/20 bg-violet-500/10 px-4 py-3 text-sm font-medium text-violet-200"
+          className="flex w-full items-center justify-between rounded-xl border border-white/15 bg-slate-900/75 px-4 py-3 text-sm font-medium text-violet-200"
         >
           <span>Mais ferramentas</span>
           <span aria-hidden="true">
@@ -126,7 +126,7 @@ export default function VyraNavigation({
           id="vyra-mobile-tools"
           className={
             moreOpen || secondaryActive
-              ? "mt-2 grid grid-cols-1 gap-2 rounded-xl border border-white/10 bg-slate-950/80 p-2"
+              ? "mt-2 grid grid-cols-1 gap-2 rounded-xl border border-white/15 bg-slate-900/75 p-2"
               : "hidden"
           }
         >
