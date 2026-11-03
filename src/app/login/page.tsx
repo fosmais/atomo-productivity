@@ -29,6 +29,12 @@ export default function LoginPage() {
 
   useEffect(() => {
     let active = true;
+    // The legacy Preview alias is also attached to Production. Always start OAuth
+    // on the canonical origin so the PKCE verifier and callback share storage.
+    if (window.location.hostname === "atomo-productivity-git-feat-myryra-mvp1-billing-6ff8ee-fosmais.vercel.app") {
+      window.location.replace(`https://www.myryra.com${window.location.pathname}${window.location.search}${window.location.hash}`);
+      return () => { active = false; };
+    }
     const params = new URLSearchParams(window.location.search);
     if (params.get("mode") === "signup") setMode("signup");
     const errorCode = params.get("error");
@@ -154,6 +160,10 @@ export default function LoginPage() {
 
   async function signInWithGoogle() {
     if (loading || process.env.NEXT_PUBLIC_MYRYRA_GOOGLE_LOGIN_ENABLED !== "true") return;
+    if (window.location.hostname === "atomo-productivity-git-feat-myryra-mvp1-billing-6ff8ee-fosmais.vercel.app") {
+      window.location.replace("https://www.myryra.com/login");
+      return;
+    }
     setLoading(true);
     setMessage("");
     setIsError(false);
