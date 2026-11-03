@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-type PlannedExpense = { amount_cents: number; due_date: string };
+type PlannedExpense = { id: string; title: string; amount_cents: number; due_date: string };
 type FinanceEntry = { amount_cents: number; kind: string };
 type Subscription = { id: string; title: string; amount_cents: number; billing_cycle: "monthly" | "yearly"; next_due_date: string };
 const brl = (cents: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
@@ -23,6 +23,7 @@ export default function FinanceSubscriptions() {
   const [entries, setEntries] = useState<FinanceEntry[]>([]);
   const [opening, setOpening] = useState(0);
   const [horizon, setHorizon] = useState(6);
+  const [excludedExpenseIds, setExcludedExpenseIds] = useState<string[]>([]);
   const [asOf, setAsOf] = useState("");
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
@@ -44,7 +45,7 @@ export default function FinanceSubscriptions() {
         const { data, error: queryError } = await db.from("myryra_finance_subscriptions").select("id,title,amount_cents,billing_cycle,next_due_date").eq("user_id", auth.user.id).order("next_due_date", { ascending: true }).limit(200);
         if (queryError) throw queryError;
         const [future, history, balance] = await Promise.all([
-          db.from("myryra_finance_planned_expenses").select("amount_cents,due_date").eq("user_id",auth.user.id).limit(1000),
+          db.from("myryra_finance_planned_expenses").select("id,title,amount_cents,due_date").eq("user_id",auth.user.id).limit(1000),
           db.from("myryra_finance_entries").select("amount_cents,kind").eq("user_id",auth.user.id).limit(1000),
           db.from("myryra_finance_balances").select("opening_balance_cents").eq("user_id",auth.user.id).maybeSingle()
         ]);
@@ -60,6 +61,14 @@ export default function FinanceSubscriptions() {
     })();
     return () => { active = false; };
   }, []);
+  const potentialDuplicates = useMemo(() => {
+    const normalize = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]/g,"");
+    return planned.filter(expense => items.some(sub => {
+      const name = normalize(expense.title);
+      return name.length > 2 && name === normalize(sub.title) && Number(expense.amount_cents) === Number(sub.amount_cents) &&
+        expense.due_date.slice(0,7) >= sub.next_due_date.slice(0,7);
+    }));
+  },[planned,items]);
   const projection = useMemo(() => {
     if(!asOf) return [];
     const [year,month] = asOf.split("-").map(Number);
@@ -67,7 +76,7 @@ export default function FinanceSubscriptions() {
     return Array.from({length:horizon},(_,offset)=>{
       const current = new Date(Date.UTC(year,month-1+offset,1));
       const period = current.toISOString().slice(0,7);
-      const expenses = planned.filter(item=>item.due_date.startsWith(period)&&item.due_date>=asOf).reduce((sum,item)=>sum+Number(item.amount_cents),0);
+      const expenses = planned.filter(item=>item.due_date.startsWith(period)&&item.due_date>=asOf&&!excludedExpenseIds.includes(item.id)).reduce((sum,item)=>sum+Number(item.amount_cents),0);
       let subscriptionsDue=0;
       for(const item of items){
         const first=new Date(item.next_due_date+"T12:00:00Z");
@@ -81,7 +90,8 @@ export default function FinanceSubscriptions() {
       position-=expenses+subscriptionsDue;
       return {period,expenses,subscriptionsDue,position};
     });
-  },[asOf,opening,entries,planned,items,horizon]);
+  },[asOf,opening,entries,planned,items,horizon,excludedExpenseIds]);
+  const firstNegative = projection.find(row=>row.position<0);
   async function add(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const cents = parseMoney(amount);
@@ -125,8 +135,10 @@ export default function FinanceSubscriptions() {
     </div>
     <div className="space-y-3 rounded-xl border border-violet-400/20 bg-violet-950/20 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2"><div><h4 className="font-semibold text-white">Projeção do saldo mensal</h4><p className="text-xs text-slate-400">Despesas futuras e assinaturas descontadas do saldo manual estimado.</p></div><label className="text-sm text-slate-300">Período <select value={horizon} onChange={e=>setHorizon(Number(e.target.value))} className="ml-2 rounded-lg border border-white/20 bg-slate-950 p-2 text-white"><option value={3}>3 meses</option><option value={6}>6 meses</option><option value={12}>12 meses</option></select></label></div>
+      {potentialDuplicates.length>0&&<div className="space-y-2 rounded-xl border border-amber-400/30 bg-amber-950/20 p-3"><p className="text-sm font-semibold text-amber-200">Possíveis compromissos duplicados</p><p className="text-xs text-slate-300">Encontramos despesas com mesmo nome e valor de uma assinatura. Confirme se deseja ignorá-las apenas nesta projeção; os registros não serão excluídos.</p>{potentialDuplicates.map(item=><label key={item.id} className="flex items-center gap-2 text-sm text-white"><input type="checkbox" checked={excludedExpenseIds.includes(item.id)} onChange={event=>setExcludedExpenseIds(current=>event.target.checked?[...current,item.id]:current.filter(id=>id!==item.id))}/><span>Ignorar {item.title} ({brl(item.amount_cents)}) na projeção</span></label>)}</div>}
+      {firstNegative&&<p role="status" className="rounded-xl border border-rose-400/30 bg-rose-950/20 p-3 text-sm text-rose-200">Atenção: o saldo projetado fica negativo em {firstNegative.period.slice(5)}/{firstNegative.period.slice(0,4)}. Revise os compromissos futuros.</p>}
       <div className="overflow-x-auto"><table className="w-full min-w-[520px] text-left text-sm"><thead><tr className="border-b border-white/15 text-slate-400"><th className="p-2">Mês</th><th className="p-2">Despesas</th><th className="p-2">Assinaturas</th><th className="p-2">Saldo projetado</th></tr></thead><tbody>{projection.map(row=><tr key={row.period} className="border-b border-white/10"><td className="p-2 text-white">{row.period.slice(5)}/{row.period.slice(0,4)}</td><td className="p-2 text-slate-300">{brl(row.expenses)}</td><td className="p-2 text-slate-300">{brl(row.subscriptionsDue)}</td><td className={row.position<0?"p-2 font-semibold text-rose-300":"p-2 font-semibold text-emerald-300"}>{brl(row.position)}</td></tr>)}</tbody></table></div>
-      <p className="text-xs text-slate-400">Estimativa sem receitas futuras, inflação ou gastos não cadastrados. Não registre o mesmo compromisso como despesa planejada e assinatura. Atualize a página após alterar outros lançamentos.</p>
+      <p className="text-xs text-slate-400">Estimativa sem receitas futuras, inflação ou gastos não cadastrados. Revise possíveis duplicidades acima. Atualize a página após alterar outros lançamentos.</p>
     </div>
     <form onSubmit={add} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <label className="text-sm text-slate-300">Serviço ou assinatura<input required maxLength={100} value={title} onChange={event => setTitle(event.target.value)} placeholder="Ex.: Streaming" className="mt-1 w-full rounded-xl border border-white/20 bg-slate-950 p-3 text-white"/></label>
