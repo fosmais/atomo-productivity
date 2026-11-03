@@ -48,6 +48,7 @@ export async function getCloudEvents(): Promise<CalendarEvent[]> {
       .from("events")
       .select("id, title, starts_at, ends_at, location, notes, event_type, blocks_time")
       .eq("user_id", userId)
+      .is("deleted_at", null)
       .order("starts_at", { ascending: true })
       .order("id", { ascending: true })
       .range(offset, offset + pageSize - 1);
@@ -118,7 +119,7 @@ export async function deleteCloudEvent(eventId: string): Promise<void> {
 
   const { error } = await supabase
     .from("events")
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq("id", eventId)
     .eq("user_id", userId);
 
