@@ -301,7 +301,8 @@ export async function GET() {
       : googleReason && typeof googleReason === "object" && "status" in googleReason
         ? String((googleReason as { status?: unknown }).status)
         : "";
-    if (status === 401 || reason === "invalid_grant" || reason === "UNAUTHENTICATED" || (phase === "calendar_api" && status === 400 && reason === "INVALID_ARGUMENT")) {
+    const oauthErrorCode = typeof failure?.code === "string" ? failure.code : "";
+    if (status === 401 || reason === "invalid_grant" || reason === "UNAUTHENTICATED" || oauthErrorCode === "invalid_grant") {
       return NextResponse.json(
         {
           connected: false,
