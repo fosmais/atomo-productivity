@@ -100,7 +100,19 @@ async function DashboardContent() {
           </div>
         </VyraSection>
       </VyraModule>
-      <VyraModule id="vyra-planner">
+      <VyraModule id="vyra-tasks">
+<VyraSection
+        id="vyra-tasks"
+        eyebrow="MYRYRA TASKS"
+        title="Tarefas e Planejamento"
+        description="Suas tarefas, metas, prioridades e planejamento inteligente no mesmo espaço."
+      >
+        <FeatureAccordion id="goals" title="Metas rápidas" description="Acompanhe suas pequenas conquistas" userId={user.id}><QuickGoals userId={user.id} /></FeatureAccordion>
+        <FeatureAccordion id="plans" title="Meus planos" description="Acompanhe seus planos e tarefas" userId={user.id}><CloudPlans /></FeatureAccordion>
+        <FeatureAccordion id="capture" title="Captura Inteligente" description="Transforme ideias em tarefas" userId={user.id}><QuickCapture /></FeatureAccordion>
+        <FeatureAccordion id="kanban" title="Quadro de tarefas" description="Organize suas tarefas por andamento" userId={user.id} defaultOpen><TaskKanban /></FeatureAccordion>
+      </VyraSection>
+      <section id="planner-section" className="mt-6 scroll-mt-8">
         <VyraSection
           id="vyra-planner"
           eyebrow="MYRYRA PLANNER"
@@ -135,19 +147,7 @@ async function DashboardContent() {
             </div>
           </div>
         </VyraSection>
-      </VyraModule>
-      <VyraModule id="vyra-tasks">
-<VyraSection
-        id="vyra-tasks"
-        eyebrow="MYRYRA TASKS"
-        title="Transforme planos em conquistas."
-        description="Acompanhe suas tarefas, prioridades e progresso em um único lugar."
-      >
-        <FeatureAccordion id="goals" title="Metas rápidas" description="Acompanhe suas pequenas conquistas" userId={user.id}><QuickGoals userId={user.id} /></FeatureAccordion>
-        <FeatureAccordion id="plans" title="Meus planos" description="Acompanhe seus planos e tarefas" userId={user.id}><CloudPlans /></FeatureAccordion>
-        <FeatureAccordion id="capture" title="Captura Inteligente" description="Transforme ideias em tarefas" userId={user.id}><QuickCapture /></FeatureAccordion>
-        <FeatureAccordion id="kanban" title="Quadro de tarefas" description="Organize suas tarefas por andamento" userId={user.id} defaultOpen><TaskKanban /></FeatureAccordion>
-      </VyraSection>
+      </section>
 </VyraModule>
       <VyraModule id="vyra-calendar">
         <VyraSection
