@@ -3,234 +3,115 @@
 import { useEffect, useState } from "react";
 import { useVyraActiveModule, useVyraNavigation } from "./vyra-module-context";
 import { loadVyraMetrics } from "./vyra-metrics-service";
+import { getCompletionRate, type VyraMetrics } from "./vyra-metrics";
 import { getCloudEvents } from "@/lib/event-cloud";
 import WhatNowCard from "./what-now-card";
-import MyryraScore from "./myryra-score";
-import { getCompletionRate, type VyraMetrics } from "./vyra-metrics";
 
-type HomeEvent = { id: string; title: string; start: string; source: "MYRYRA" | "Google" };
+const shortcuts = [
+  { label: "Agenda", icon: "▦", module: "vyra-calendar" },
+  { label: "Tarefas", icon: "✓", module: "vyra-tasks" },
+  { label: "Lembretes", icon: "◷", module: "vyra-tasks" },
+  { label: "Financeiro", icon: "◇", module: "vyra-finance" },
+  { label: "Metas", icon: "◎", module: "vyra-tasks" },
+  { label: "MIKA", icon: "✦", module: "vyra-ai" },
+];
 
 export default function VyraHome() {
   const activeModule = useVyraActiveModule();
   const { navigateTo } = useVyraNavigation();
   const [metrics, setMetrics] = useState<VyraMetrics | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [upcoming, setUpcoming] = useState<HomeEvent[]>([]);
-  const [agendaLoading, setAgendaLoading] = useState(true);
+  const [nextEvent, setNextEvent] = useState<{ title: string; start: string } | null>(null);
   const [agendaError, setAgendaError] = useState(false);
-  // MYRYRA_GOOGLE_HOME_CARD
-  const [googleStatus, setGoogleStatus] = useState<"loading" | "connected" | "disconnected" | "mfa_required" | "reconnect_required" | "error">("loading");
-
-  useEffect(() => {
-    if (activeModule !== "home") return;
-
-    let cancelled = false;
-
-    async function checkGoogleConnection() {
-      setGoogleStatus("loading");
-
-      try {
-        const response = await fetch("/api/google/events", {
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
-          const detail: { code?: string } = await response.json().catch(() => ({}));
-          if (!cancelled && detail.code === "MFA_REQUIRED") { setGoogleStatus("mfa_required"); return; }
-          if (!cancelled && detail.code === "GOOGLE_CALENDAR_RECONNECT_REQUIRED") { setGoogleStatus("reconnect_required"); return; }
-          throw new Error("Falha ao verificar conexão Google.");
-        }
-
-        const result: { connected?: boolean } = await response.json();
-
-        if (!cancelled) {
-          setGoogleStatus(result.connected ? "connected" : "disconnected");
-        }
-      } catch {
-        if (!cancelled) setGoogleStatus("error");
-      }
-    }
-
-    void checkGoogleConnection();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [activeModule]);
 
   useEffect(() => {
     if (activeModule !== "home") return;
     let cancelled = false;
+    void loadVyraMetrics().then((value) => {
+      if (!cancelled) setMetrics(value);
+    }).catch(() => { if (!cancelled) setMetrics(null); });
     async function loadAgenda() {
-      setAgendaLoading(true);
-      setAgendaError(false);
       try {
         const [localResult, googleResult] = await Promise.allSettled([
           getCloudEvents(),
           fetch("/api/google/events", { cache: "no-store" }),
         ]);
-        if (localResult.status === "rejected" && googleResult.status === "rejected") {
-          throw new Error("Não foi possível consultar nenhuma agenda.");
-        }
         const local = localResult.status === "fulfilled" ? localResult.value : [];
-        const google: { connected: boolean; events?: Array<{ id: string | null; title: string; start: string | null; status?: string | null }> } =
-          googleResult.status === "fulfilled" && googleResult.value.ok
-            ? await googleResult.value.json().catch(() => ({ connected: false, events: [] }))
-            : { connected: false, events: [] };
-        if (localResult.status === "rejected" && !google.connected) {
-          throw new Error("Não foi possível consultar nenhuma agenda.");
-        }
-        const now = Date.now();
-        const combined: HomeEvent[] = [
-          ...local.map((event) => ({ id: event.id, title: event.title, start: event.startsAt, source: "MYRYRA" as const })),
-          ...(google.connected ? (google.events ?? []).filter((event) => event.start && event.status !== "cancelled").map((event, index) => ({ id: event.id ?? `google-${index}`, title: event.title, start: event.start!, source: "Google" as const })) : []),
-        ];
-        const next = combined.filter((event) => {
-          const time = new Date(event.start).getTime();
-          return Number.isFinite(time) && time >= now;
-        }).sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()).slice(0, 3);
-        if (!cancelled) setUpcoming(next);
+        const google = googleResult.status === "fulfilled" && googleResult.value.ok
+          ? await googleResult.value.json().catch(() => ({ connected: false, events: [] }))
+          : { connected: false, events: [] };
+        if (localResult.status === "rejected" && !google.connected) throw new Error("Agenda indisponível");
+        const events = [
+          ...local.map((event) => ({ title: event.title, start: event.startsAt })),
+          ...(google.connected ? (google.events ?? []).filter((event: { start?: string | null; status?: string }) => event.start && event.status !== "cancelled").map((event: { title: string; start: string }) => ({ title: event.title, start: event.start })) : []),
+        ].filter((event) => new Date(event.start).getTime() >= Date.now())
+          .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+        if (!cancelled) setNextEvent(events[0] ?? null);
       } catch {
         if (!cancelled) setAgendaError(true);
-      } finally {
-        if (!cancelled) setAgendaLoading(false);
       }
     }
     void loadAgenda();
     return () => { cancelled = true; };
   }, [activeModule]);
 
-  useEffect(() => {
-    if (activeModule !== "home") return;
-
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      setError("");
-
-      try {
-        const result = await loadVyraMetrics();
-        if (!cancelled) setMetrics(result);
-      } catch (err) {
-        if (!cancelled) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Não foi possível carregar seus indicadores."
-          );
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [activeModule]);
-
   if (activeModule !== "home") return null;
-
-  const progress = metrics ? getCompletionRate(metrics) : 0;
-
+  const progress = metrics ? getCompletionRate(metrics) : null;
 
   return (
-    <section className="space-y-6">
-      <div className="flex flex-col gap-2 py-2 md:py-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-400">
-          MYRYRA · FOCUS FIRST
-        </p>
-        <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">
-          Seu dia, em sintonia.
-        </h1>
-        <p className="max-w-2xl text-sm leading-relaxed text-slate-400">
-          Priorize o que importa. A MYRYRA ajuda você a decidir o próximo passo.
-        </p>
-      </div>
-      <MyryraScore metrics={metrics} loading={loading} />
-      <WhatNowCard />
-      {googleStatus === "mfa_required" && (
-        <section role="status" className="rounded-2xl border border-amber-500/30 bg-amber-950/20 p-4 text-sm text-amber-100">
-          A agenda Google está protegida pela verificação em duas etapas. Conclua a verificação de segurança para consultar seus compromissos.
-          <a href="/login?next=%2Fdashboard" className="ml-2 font-semibold underline">Verificar sessão</a>
-        </section>
-      )}
-      {googleStatus === "reconnect_required" && (
-        <section role="status" className="rounded-2xl border border-amber-500/30 bg-amber-950/20 p-4 text-sm text-amber-100">
-          A autorização do Google Calendar expirou ou precisa ser renovada.
-          <a href="/api/google/connect" className="ml-2 font-semibold underline">Renovar autorização</a>
-        </section>
-      )}
-      {googleStatus === "error" && (
-        <section role="status" className="rounded-2xl border border-amber-500/30 bg-amber-950/20 p-4 text-sm text-amber-100">
-          Não foi possível verificar a conexão com o Google Calendar. Seus compromissos não foram descartados.
-          <button type="button" onClick={() => window.location.reload()} className="ml-2 font-semibold underline">Tentar novamente</button>
-        </section>
-      )}
-      {googleStatus === "disconnected" && (
-        <section className="flex flex-col gap-3 rounded-2xl border border-violet-500/20 bg-slate-900/50 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-sm font-semibold text-white">Conecte sua agenda Google</h2>
-            <p className="mt-1 text-xs text-slate-400">Sincronize seus compromissos para receber sugestões mais completas.</p>
-          </div>
-          <a href="/api/google/connect" className="shrink-0 rounded-xl bg-violet-600 px-4 py-2 text-center text-xs font-semibold text-white hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-violet-400">Conectar calendário</a>
-        </section>
-      )}
-      <section className="grid gap-3 lg:grid-cols-2" aria-label="Resumo do dia">
-        <div className="min-w-0 rounded-2xl border border-white/10 bg-slate-900/45 p-4 sm:p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-semibold text-white">Próximo compromisso</h2>
-              <p className="mt-1 text-xs text-slate-400">O que vem a seguir na sua agenda</p>
-            </div>
-            <button type="button" onClick={() => navigateTo("vyra-calendar")}
-              className="shrink-0 text-xs font-semibold text-violet-300 hover:text-white focus-visible:outline-2 focus-visible:outline-violet-400">Ver agenda →</button>
-          </div>
-          {agendaLoading ? <p role="status" className="mt-5 text-sm text-slate-400">Consultando agenda...</p>
-            : agendaError ? <p role="status" className="mt-5 text-sm text-amber-300">Agenda temporariamente indisponível.</p>
-            : upcoming.length === 0 ? <p className="mt-5 text-sm text-slate-400">Nenhum próximo compromisso encontrado.</p>
-            : <div className="mt-4 flex min-w-0 items-center justify-between gap-3 rounded-xl bg-white/[0.035] px-3 py-3">
-                <span className="min-w-0 truncate text-sm font-medium text-white" title={upcoming[0].title}>{upcoming[0].title}</span>
-                <span className="shrink-0 text-right text-xs text-slate-400">{new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(upcoming[0].start))}<span className="block text-violet-300">{upcoming[0].source}</span></span>
-              </div>}
-          {upcoming.length > 1 && !agendaLoading && !agendaError && (
-            <p className="mt-2 text-xs text-slate-500">Mais {upcoming.length - 1} compromisso(s) na sequência</p>
-          )}
+    <main className="flex min-w-0 flex-col gap-3 lg:max-h-[calc(100dvh-210px)] lg:overflow-y-auto" aria-label="Início MYRYRA">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-300">MYRYRA · HOJE</p>
+          <h1 className="text-xl font-semibold text-white sm:text-2xl">Seu dia, do seu jeito.</h1>
         </div>
-        <div className="min-w-0 rounded-2xl border border-white/10 bg-slate-900/45 p-4 sm:p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-semibold text-white">Seu progresso</h2>
-              <p className="mt-1 text-xs text-slate-400">Um resumo sem distrações</p>
-            </div>
-            <button type="button" onClick={() => navigateTo("vyra-performance")}
-              className="shrink-0 text-xs font-semibold text-violet-300 hover:text-white focus-visible:outline-2 focus-visible:outline-violet-400">Detalhes →</button>
-          </div>
-          <div className="mt-4 flex items-end justify-between gap-4">
-            <div>
-              <p className="text-3xl font-semibold tabular-nums text-white">{loading ? "…" : metrics ? `${progress}%` : "—"}</p>
-              <p className="mt-1 text-xs text-slate-400">Tarefas concluídas</p>
-            </div>
-            <div className="text-right text-xs text-slate-400">
-              <p><span className="font-semibold text-slate-200">{metrics?.pending ?? "—"}</span> pendentes</p>
-              <p className="mt-1"><span className="font-semibold text-slate-200">{metrics?.overdue ?? "—"}</span> atrasadas</p>
-            </div>
-          </div>
-          <div role="progressbar" aria-label="Progresso das tarefas" aria-valuemin={0} aria-valuemax={100}
-            aria-valuenow={metrics ? progress : undefined} className="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-800">
-            <div className="h-full rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-400 transition-all duration-700" style={{ width: `${progress}%` }} />
-          </div>
+        <button type="button" onClick={() => navigateTo("vyra-ai")} className="rounded-xl border border-violet-400/40 bg-violet-500/15 px-3 py-2 text-xs font-semibold text-violet-100 hover:bg-violet-500/25">✦ Pergunte à MIKA</button>
+      </div>
+
+      <section className="rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-950/45 to-slate-900/70 p-3 sm:p-4" aria-label="O que precisa fazer">
+        <h2 className="mb-3 text-sm font-semibold text-white">O que precisa fazer?</h2>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: "Nova tarefa", icon: "+", module: "vyra-tasks" },
+            { label: "Agendar", icon: "▦", module: "vyra-calendar" },
+            { label: "Lembrete", icon: "◷", module: "vyra-tasks" },
+          ].map((item) => (
+            <button key={item.label} type="button" onClick={() => navigateTo(item.module)}
+              className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-xs font-medium text-white transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
+              <span className="text-xl text-violet-200" aria-hidden="true">{item.icon}</span>{item.label}
+            </button>
+          ))}
         </div>
       </section>
 
-      {error && (
-        <p role="alert" className="text-sm text-red-400">
-          {error}
-        </p>
-      )}    </section>
+      <section className="rounded-2xl border border-white/10 bg-slate-900/55 p-3 sm:p-4" aria-label="Menu rápido">
+        <h2 className="mb-3 text-sm font-semibold text-white">O que quer acessar?</h2>
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+          {shortcuts.map((item) => (
+            <button key={item.label} type="button" onClick={() => navigateTo(item.module)}
+              className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border border-white/10 bg-slate-950/60 px-2 py-2 text-xs font-medium text-slate-100 transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
+              <span className="text-xl text-violet-300" aria-hidden="true">{item.icon}</span>{item.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="grid grid-cols-2 gap-2 text-xs" aria-label="Resumo rápido">
+        <button type="button" onClick={() => navigateTo("vyra-calendar")} className="min-w-0 rounded-xl border border-white/10 bg-slate-900/50 p-3 text-left hover:border-violet-400/50">
+          <span className="block text-slate-400">Próximo compromisso</span>
+          <span className="mt-1 block truncate font-semibold text-white">{nextEvent ? nextEvent.title : agendaError ? "Agenda indisponível" : "Nenhum compromisso"}</span>
+          {nextEvent && <span className="mt-1 block text-violet-300">{new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(nextEvent.start))}</span>}
+        </button>
+        <button type="button" onClick={() => navigateTo("vyra-performance")} className="rounded-xl border border-white/10 bg-slate-900/50 p-3 text-left hover:border-violet-400/50">
+          <span className="block text-slate-400">Seu progresso</span>
+          <span className="mt-1 block text-lg font-semibold text-white">{progress === null ? "—" : `${progress}%`}</span>
+          <span className="block text-slate-400">{metrics?.pending ?? "—"} pendentes</span>
+        </button>
+      </section>
+
+      <details className="rounded-xl border border-white/10 bg-slate-900/35 px-3 py-2">
+        <summary className="cursor-pointer text-xs font-semibold text-violet-200">✦ Sugestão inteligente · O que fazer agora?</summary>
+        <div className="mt-3"><WhatNowCard /></div>
+      </details>
+    </main>
   );
 }
