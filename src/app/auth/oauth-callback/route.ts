@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
 
 /** OAuth callback accepts only a fixed same-origin post-login destination. */
 export async function GET(request: NextRequest) {
@@ -11,12 +10,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=oauth", url.origin));
   }
 
-  const store = await cookies();
   const response = NextResponse.redirect(new URL(next, url.origin));
   const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {
     cookies: {
-      getAll: () => store.getAll(),
-      setAll: (items) => items.forEach(({ name, value, options }) => response.cookies.set(name, value, options)),
+      getAll: () => request.cookies.getAll(),
+      setAll: (items) => items.forEach(({ name, value, options }) => {
+        request.cookies.set(name, value);
+        response.cookies.set(name, value, options);
+      }),
     },
   });
   try {
