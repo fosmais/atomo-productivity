@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
+type PlannedExpense = { amount_cents: number; due_date: string };
+type FinanceEntry = { amount_cents: number; kind: string };
 type Subscription = { id: string; title: string; amount_cents: number; billing_cycle: "monthly" | "yearly"; next_due_date: string };
 const brl = (cents: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
 function parseMoney(value: string) {
@@ -17,6 +19,11 @@ function parseMoney(value: string) {
 }
 export default function FinanceSubscriptions() {
   const [items, setItems] = useState<Subscription[]>([]);
+  const [planned, setPlanned] = useState<PlannedExpense[]>([]);
+  const [entries, setEntries] = useState<FinanceEntry[]>([]);
+  const [opening, setOpening] = useState(0);
+  const [horizon, setHorizon] = useState(6);
+  const [asOf, setAsOf] = useState("");
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [cycle, setCycle] = useState<"monthly" | "yearly">("monthly");
@@ -27,6 +34,8 @@ export default function FinanceSubscriptions() {
   const monthlyCents = useMemo(() => items.reduce((sum, item) => sum + (item.billing_cycle === "monthly" ? Number(item.amount_cents) : Number(item.amount_cents) / 12), 0), [items]);
   useEffect(() => {
     let active = true;
+    const now = new Date();
+    setAsOf([now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-"));
     (async () => {
       try {
         const db = createClient();
@@ -34,12 +43,45 @@ export default function FinanceSubscriptions() {
         if (authError || !auth.user) throw new Error("Sessão inválida");
         const { data, error: queryError } = await db.from("myryra_finance_subscriptions").select("id,title,amount_cents,billing_cycle,next_due_date").eq("user_id", auth.user.id).order("next_due_date", { ascending: true }).limit(200);
         if (queryError) throw queryError;
-        if (active) setItems((data ?? []) as Subscription[]);
+        const [future, history, balance] = await Promise.all([
+          db.from("myryra_finance_planned_expenses").select("amount_cents,due_date").eq("user_id",auth.user.id).limit(1000),
+          db.from("myryra_finance_entries").select("amount_cents,kind").eq("user_id",auth.user.id).limit(1000),
+          db.from("myryra_finance_balances").select("opening_balance_cents").eq("user_id",auth.user.id).maybeSingle()
+        ]);
+        if(future.error || history.error || balance.error) throw new Error("Falha na projeção");
+        if (active) {
+          setItems((data ?? []) as Subscription[]);
+          setPlanned((future.data ?? []) as PlannedExpense[]);
+          setEntries((history.data ?? []) as FinanceEntry[]);
+          setOpening(Number(balance.data?.opening_balance_cents ?? 0));
+        }
       } catch { if (active) setError("Não foi possível carregar suas assinaturas."); }
       finally { if (active) setLoading(false); }
     })();
     return () => { active = false; };
   }, []);
+  const projection = useMemo(() => {
+    if(!asOf) return [];
+    const [year,month] = asOf.split("-").map(Number);
+    let position = opening + entries.reduce((sum,item)=>sum+(item.kind==="income"?1:-1)*Number(item.amount_cents),0);
+    return Array.from({length:horizon},(_,offset)=>{
+      const current = new Date(Date.UTC(year,month-1+offset,1));
+      const period = current.toISOString().slice(0,7);
+      const expenses = planned.filter(item=>item.due_date.startsWith(period)&&item.due_date>=asOf).reduce((sum,item)=>sum+Number(item.amount_cents),0);
+      let subscriptionsDue=0;
+      for(const item of items){
+        const first=new Date(item.next_due_date+"T12:00:00Z");
+        if(Number.isNaN(first.getTime()))continue;
+        const billingMonth=first.getUTCFullYear()*12+first.getUTCMonth();
+        const currentMonth=current.getUTCFullYear()*12+current.getUTCMonth();
+        const distance=currentMonth-billingMonth;
+        const interval=item.billing_cycle==="yearly"?12:1;
+        if(distance>=0 && distance%interval===0 && (distance>0 || item.next_due_date>=asOf)) subscriptionsDue+=Number(item.amount_cents);
+      }
+      position-=expenses+subscriptionsDue;
+      return {period,expenses,subscriptionsDue,position};
+    });
+  },[asOf,opening,entries,planned,items,horizon]);
   async function add(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const cents = parseMoney(amount);
@@ -80,6 +122,11 @@ export default function FinanceSubscriptions() {
         {[3,6,12].map(months => <div key={months} className="rounded-lg border border-white/10 bg-slate-950/50 p-3"><p className="text-xs text-slate-400">{months} meses</p><p className="mt-1 font-semibold text-white">{brl(monthlyCents * months)}</p></div>)}
       </div>
       <p className="mt-2 text-xs text-slate-400">Projeção média com base nas assinaturas cadastradas, sem reajustes ou novas contratações. O valor efetivamente cobrado em cada mês pode variar para planos anuais.</p>
+    </div>
+    <div className="space-y-3 rounded-xl border border-violet-400/20 bg-violet-950/20 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2"><div><h4 className="font-semibold text-white">Projeção do saldo mensal</h4><p className="text-xs text-slate-400">Despesas futuras e assinaturas descontadas do saldo manual estimado.</p></div><label className="text-sm text-slate-300">Período <select value={horizon} onChange={e=>setHorizon(Number(e.target.value))} className="ml-2 rounded-lg border border-white/20 bg-slate-950 p-2 text-white"><option value={3}>3 meses</option><option value={6}>6 meses</option><option value={12}>12 meses</option></select></label></div>
+      <div className="overflow-x-auto"><table className="w-full min-w-[520px] text-left text-sm"><thead><tr className="border-b border-white/15 text-slate-400"><th className="p-2">Mês</th><th className="p-2">Despesas</th><th className="p-2">Assinaturas</th><th className="p-2">Saldo projetado</th></tr></thead><tbody>{projection.map(row=><tr key={row.period} className="border-b border-white/10"><td className="p-2 text-white">{row.period.slice(5)}/{row.period.slice(0,4)}</td><td className="p-2 text-slate-300">{brl(row.expenses)}</td><td className="p-2 text-slate-300">{brl(row.subscriptionsDue)}</td><td className={row.position<0?"p-2 font-semibold text-rose-300":"p-2 font-semibold text-emerald-300"}>{brl(row.position)}</td></tr>)}</tbody></table></div>
+      <p className="text-xs text-slate-400">Estimativa sem receitas futuras, inflação ou gastos não cadastrados. Não registre o mesmo compromisso como despesa planejada e assinatura. Atualize a página após alterar outros lançamentos.</p>
     </div>
     <form onSubmit={add} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <label className="text-sm text-slate-300">Serviço ou assinatura<input required maxLength={100} value={title} onChange={event => setTitle(event.target.value)} placeholder="Ex.: Streaming" className="mt-1 w-full rounded-xl border border-white/20 bg-slate-950 p-3 text-white"/></label>
