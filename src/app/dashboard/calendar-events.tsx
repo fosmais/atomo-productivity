@@ -217,6 +217,11 @@ export default function CalendarEvents() {
       return;
     }
 
+    if (startMs < Date.now() - 60_000) {
+      setError("Não é possível agendar um novo compromisso no passado. Escolha uma data e horário futuros.");
+      return;
+    }
+
     setSaving(true);
     setError("");
 
