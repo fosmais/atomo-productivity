@@ -34,21 +34,28 @@ export default function HcaptchaCaptcha({ onToken, resetSignal }: { onToken: (to
       });
       widgetId.current = id;
     };
+    // The hCaptcha global may exist before its API is fully initialized.
+    // Wait for the official onload callback rather than polling render().
+    const onReadyName = "myryraHcaptchaReady";
+    const win = window as Window & { myryraHcaptchaReady?: () => void; myryraHcaptchaLoaded?: boolean };
+    const previousReady = win.myryraHcaptchaReady;
+    win.myryraHcaptchaReady = () => {
+      win.myryraHcaptchaLoaded = true;
+      previousReady?.();
+      render();
+    };
     let script = document.getElementById("myryra-hcaptcha") as HTMLScriptElement | null;
     if (!script) {
       script = document.createElement("script");
       script.id = "myryra-hcaptcha";
-      script.src = "https://js.hcaptcha.com/1/api.js?render=explicit";
+      script.src = `https://js.hcaptcha.com/1/api.js?render=explicit&onload=${onReadyName}`;
       script.async = true;
       document.head.appendChild(script);
     }
-    script.addEventListener("load", render);
-    const poll = window.setInterval(render, 250);
-    render();
+    if (win.myryraHcaptchaLoaded) render();
     return () => {
       cancelled = true;
-      window.clearInterval(poll);
-      script?.removeEventListener("load", render);
+      if (win.myryraHcaptchaReady && previousReady !== win.myryraHcaptchaReady) win.myryraHcaptchaReady = previousReady;
       if (id !== undefined) window.hcaptcha?.remove(id);
       widgetId.current = undefined;
       callback.current("");
