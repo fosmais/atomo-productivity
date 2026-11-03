@@ -480,8 +480,8 @@ if (!rateLimit.allowed) {
         "Prefira recomendações práticas a explicações desnecessariamente longas.",
 
         "ORIENTAÇÃO FINANCEIRA EDUCATIVA — MYRYRA FINANCE:",
-        "Quando o usuário pedir ajuda com investimentos ou objetivos financeiros, conduza uma conversa natural, uma pergunta por resposta, e não um questionário com várias perguntas juntas.",
-        "Descubra progressivamente: objetivo e valor desejado, prazo, necessidade de liquidez, existência de reserva de emergência, tolerância a perdas e experiência. Não repita perguntas já respondidas.",
+        "REGRA OBRIGATÓRIA PARA INVESTIMENTOS: no máximo UMA pergunta por mensagem. Não inclua outras perguntas no mesmo parágrafo ou após a primeira. Na primeira resposta, pergunte SOMENTE qual é o objetivo financeiro. Não enumere as perguntas futuras nem antecipe perguntas sobre liquidez, reserva, experiência ou riscos.",
+        "Em mensagens seguintes, descubra progressivamente objetivo e valor desejado, prazo, liquidez, reserva, tolerância a perdas e experiência. Faça uma única pergunta curta por turno, com uma breve explicação apenas se necessária. Não repita perguntas respondidas.",
         "Depois de reunir contexto suficiente, compare alternativas por características gerais, como Tesouro Selic, Tesouro IPCA+, CDB, fundos e renda variável, quando pertinente; apresente riscos, liquidez, tributação e custos sem prometer retornos.",
         "Não presuma perfil de investidor, não escolha um produto específico como recomendação individual nem instrua compra ou venda. Não trate taxa hipotética do simulador como taxa de mercado.",
         "Se o usuário quiser testar uma hipótese no simulador, informe os valores e premissas de forma clara e peça confirmação antes de aplicar qualquer alteração.",
@@ -726,6 +726,35 @@ if (!rateLimit.allowed) {
         { error: "Não foi possível interpretar a resposta do Concierge." },
         { status: 502 }
       );
+    }
+
+    // Investment onboarding: enforce one question at a time even if the model
+    // ignores its conversational instructions. Do not alter other workflows.
+    if (isRecord(parsed) && typeof parsed.reply === "string") {
+      const conversation = messages.filter(
+        (message): message is { role: "user" | "assistant"; content: string } =>
+          isRecord(message) &&
+          (message.role === "user" || message.role === "assistant") &&
+          typeof message.content === "string"
+      );
+      const latest = [...conversation].reverse().find(message => message.role === "user");
+      const isInvestmentOnboarding = Boolean(
+        latest && /planejar meus investimentos|investimentos para alcançar meu objetivo/i.test(latest.content)
+      );
+      const previousInvestmentDiscussion = conversation.slice(0, -1).some(
+        message => /objetivo financeiro|investimentos para alcançar meu objetivo/i.test(message.content)
+      );
+      if (isInvestmentOnboarding && !previousInvestmentDiscussion) {
+        parsed = {
+          ...parsed,
+          reply: "Vamos começar pelo que é mais importante para você. Qual objetivo financeiro deseja alcançar com esse investimento?",
+        };
+      } else if (isInvestmentOnboarding && (parsed.reply.match(/\\?/g) ?? []).length > 1) {
+        parsed = {
+          ...parsed,
+          reply: parsed.reply.slice(0, parsed.reply.indexOf("?") + 1).trim(),
+        };
+      }
     }
 
     // The legacy single-task field is redundant when proposedTasks is valid.
