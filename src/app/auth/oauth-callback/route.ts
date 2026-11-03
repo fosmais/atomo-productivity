@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 /** OAuth callback accepts only a fixed same-origin post-login destination. */
 export async function GET(request: NextRequest) {
@@ -10,7 +11,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=oauth", url.origin));
   }
 
-  const supabase = await createClient();
+  const store = await cookies();
+  const response = NextResponse.redirect(new URL(next, url.origin));
+  const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {
+    cookies: {
+      getAll: () => store.getAll(),
+      setAll: (items) => items.forEach(({ name, value, options }) => response.cookies.set(name, value, options)),
+    },
+  });
   try {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) throw error;
@@ -21,7 +29,8 @@ export async function GET(request: NextRequest) {
     // The login page resumes MFA if a verified factor requires aal2.
     const destination = assurance.data.nextLevel === "aal2" &&
       assurance.data.currentLevel !== "aal2" ? `/login?mfa=required${next === "/suporte-admin" ? "&next=%2Fsuporte-admin" : ""}` : next;
-    return NextResponse.redirect(new URL(destination, url.origin));
+    response.headers.set("Location", new URL(destination, url.origin).toString());
+    return response;
   } catch {
     return NextResponse.redirect(new URL("/login?error=oauth", url.origin));
   }
