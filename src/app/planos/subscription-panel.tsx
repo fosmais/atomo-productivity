@@ -56,7 +56,7 @@ export default function SubscriptionPanel() {
       {status === "loading" && <p className="mt-3 text-sm text-zinc-300">Consultando assinatura…</p>}
       {status === "unauthorized" && <p className="mt-3 text-sm text-zinc-300">Entre na sua conta e conclua a verificação de segurança para consultar sua assinatura.</p>}
       {status === "error" && <p role="status" className="mt-3 text-sm text-zinc-300">Não foi possível consultar sua assinatura agora.</p>}
-      {status === "ready" && !data?.subscription && <p className="mt-3 text-sm text-zinc-300">Nenhuma assinatura paga registrada. Seu acesso permanece no plano Free.</p>}
+      {status === "ready" && !data?.subscription && <p className="mt-3 text-sm text-zinc-300">Plano atual: Free. Você está utilizando o plano gratuito da MYRYRA.</p>}
       {status === "ready" && data?.subscription && (
         <div className="mt-4 space-y-2 text-sm text-zinc-200">
           <p>Plano registrado: <strong className="text-white">{data.subscription.planId === "premium" ? "Premium" : data.subscription.planId === "pro" ? "Pro" : "Free"}</strong></p>
@@ -68,7 +68,8 @@ export default function SubscriptionPanel() {
           <p className="text-xs text-zinc-400">O acesso efetivo depende da confirmação de pagamento e das regras de assinatura.</p>
         </div>
       )}
-      <p className="mt-4 text-xs text-violet-200">Contratações, alterações e cancelamentos estarão disponíveis após a homologação do Asaas.</p>
+      {status === "ready" && !data?.subscription && <a href="#planos" className="mt-3 inline-block text-sm text-violet-300 underline underline-offset-4">Conhecer os planos Pro e Premium</a>}
+      <p className="mt-4 text-xs text-violet-200">Os planos Pro e Premium ainda não estão disponíveis para contratação. Nenhuma cobrança será realizada nesta página.</p>
     </section>
   );
 }
