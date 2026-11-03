@@ -76,6 +76,19 @@ export default function FinanceSubscriptions() {
     })();
     return () => { active = false; };
   }, []);
+  const upcomingAlerts = useMemo(() => {
+    if (!asOf) return [];
+    const start = Date.parse(asOf + "T12:00:00Z");
+    if (!Number.isFinite(start)) return [];
+    const alerts = [
+      ...items.map(item => ({ id: "sub-" + item.id, title: item.title, amount: Number(item.amount_cents), due: item.next_due_date, type: "Assinatura" })),
+      ...planned.map(item => ({ id: "exp-" + item.id, title: item.title, amount: Number(item.amount_cents), due: item.due_date, type: "Despesa planejada" }))
+    ];
+    return alerts.filter(item => {
+      const days = (Date.parse(item.due + "T12:00:00Z") - start) / 86400000;
+      return Number.isFinite(days) && days >= 0 && days <= 7;
+    }).sort((a, b) => a.due.localeCompare(b.due)).slice(0, 5);
+  }, [asOf, items, planned]);
   const potentialDuplicates = useMemo(() => {
     const normalize = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]/g,"");
     return planned.filter(expense => items.some(sub => {
@@ -216,6 +229,21 @@ export default function FinanceSubscriptions() {
   }
   return <section className="space-y-4 rounded-2xl border border-white/15 bg-slate-900/75 p-4 sm:p-5">
     <div><p className="text-xs font-semibold uppercase tracking-widest text-violet-300">MYRYRA FINANCE</p><h3 className="mt-1 text-lg font-semibold text-white">Assinaturas recorrentes</h3><p className="mt-1 text-sm text-slate-400">Controle serviços e compromissos recorrentes. Os vencimentos são informativos; não há cobrança ou pagamento automático.</p></div>
+    {!loading && !error && upcomingAlerts.length > 0 && (
+      <div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-3 sm:p-4" role="status">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div><p className="text-sm font-semibold text-amber-100">MIKA · Próximos vencimentos</p><p className="text-xs text-slate-300">Compromissos informados por você para os próximos 7 dias.</p></div>
+          <span className="rounded-full bg-amber-300/10 px-2 py-1 text-xs text-amber-100">{upcomingAlerts.length} {upcomingAlerts.length === 1 ? "aviso" : "avisos"}</span>
+        </div>
+        <ul className="mt-3 space-y-2">{upcomingAlerts.map(item => (
+          <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-950/45 px-3 py-2 text-xs text-slate-200">
+            <span className="min-w-0"><strong className="text-white">{item.title}</strong> · {item.type} · {item.due.slice(8,10)}/{item.due.slice(5,7)}</span>
+            <span className="font-semibold text-amber-100">{brl(item.amount)}</span>
+          </li>
+        ))}</ul>
+        <p className="mt-2 text-xs text-slate-400">Avisos exibidos ao abrir esta área. Não são notificações push nem confirmam cobranças reais.</p>
+      </div>
+    )}
     <div className="grid gap-3 sm:grid-cols-3">
       <div className="rounded-xl border border-white/10 bg-slate-950/50 p-4"><p className="text-sm text-slate-400">Custo mensal equivalente</p><p className="mt-2 text-xl font-semibold text-white">{brl(monthlyCents)}</p></div>
       <div className="rounded-xl border border-white/10 bg-slate-950/50 p-4"><p className="text-sm text-slate-400">Custo anual estimado</p><p className="mt-2 text-xl font-semibold text-white">{brl(monthlyCents * 12)}</p></div>
