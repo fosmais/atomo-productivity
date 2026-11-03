@@ -15,6 +15,7 @@ export default function VyraWorkspace({
 }: VyraWorkspaceProps) {
   const [activeModule, setActiveModule] = useState("home");
   const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
+  const [quickAction, setQuickAction] = useState<string | null>(null);
 
   const validModules = [
     "home", "vyra-ai", "vyra-planner", "vyra-tasks", "vyra-calendar",
@@ -40,6 +41,11 @@ export default function VyraWorkspace({
     window.history.replaceState(window.history.state, "", url.toString());
   };
 
+  const navigateToQuickAction = (action: string) => {
+    setQuickAction(action);
+    navigateTo("vyra-tasks");
+  };
+
   const navigateToTask = (taskId: string) => {
     setFocusedTaskId(taskId);
     navigateTo("vyra-tasks");
@@ -58,7 +64,7 @@ export default function VyraWorkspace({
   };
 
   return (
-    <VyraNavigationContext.Provider value={{ activeModule, navigateTo, focusedTaskId, navigateToTask }}>
+    <VyraNavigationContext.Provider value={{ activeModule, navigateTo, focusedTaskId, navigateToTask, quickAction, navigateToQuickAction }}>
     <VyraModuleContext.Provider value={activeModule}>
     <div className="min-w-0 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0">
       <div className={activeModule === "home" ? "mb-3" : "mb-6"}><VyraHeader /></div>
