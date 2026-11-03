@@ -50,6 +50,7 @@ export default function FinanceSubscriptions() {
   const [alertSubscriptions, setAlertSubscriptions] = useState(true);
   const [alertExpenses, setAlertExpenses] = useState(true);
   const [alertSettingsOpen, setAlertSettingsOpen] = useState(false);
+  const [alertSettingsError, setAlertSettingsError] = useState("");
   const monthlyCents = useMemo(() => items.reduce((sum, item) => sum + (item.billing_cycle === "monthly" ? Number(item.amount_cents) : Number(item.amount_cents) / 12), 0), [items]);
   useEffect(() => {
     let active = true;
@@ -60,16 +61,16 @@ export default function FinanceSubscriptions() {
         const db = createClient();
         const { data: auth, error: authError } = await db.auth.getUser();
         if (authError || !auth.user) throw new Error("Sessão inválida");
+        if (active) setAlertUserId(auth.user.id);
+        const { data: savedAlerts, error: savedAlertsError } = await db.from("myryra_finance_alert_preferences")
+          .select("days,subscriptions,expenses").eq("user_id", auth.user.id).maybeSingle();
         if (active) {
-          setAlertUserId(auth.user.id);
-          try {
-            const saved = JSON.parse(localStorage.getItem("myryra:finance:alerts:" + auth.user.id) ?? "null");
-            if (saved && typeof saved === "object") {
-              if ([3, 7, 14].includes(saved.days)) setAlertDays(saved.days);
-              if (typeof saved.subscriptions === "boolean") setAlertSubscriptions(saved.subscriptions);
-              if (typeof saved.expenses === "boolean") setAlertExpenses(saved.expenses);
-            }
-          } catch { /* Storage is optional; keep safe defaults. */ }
+          if (savedAlertsError) setAlertSettingsError("Não foi possível carregar as preferências de alertas.");
+          else if (savedAlerts) {
+            if ([3, 7, 14].includes(savedAlerts.days)) setAlertDays(savedAlerts.days as 3 | 7 | 14);
+            setAlertSubscriptions(savedAlerts.subscriptions);
+            setAlertExpenses(savedAlerts.expenses);
+          }
         }
         const { data, error: queryError } = await db.from("myryra_finance_subscriptions").select("id,title,amount_cents,billing_cycle,next_due_date").eq("user_id", auth.user.id).order("next_due_date", { ascending: true }).limit(200);
         if (queryError) throw queryError;
@@ -92,13 +93,22 @@ export default function FinanceSubscriptions() {
     })();
     return () => { active = false; };
   }, []);
-  const saveAlertSettings = (days: 3 | 7 | 14, subscriptions: boolean, expenses: boolean) => {
-    setAlertDays(days);
-    setAlertSubscriptions(subscriptions);
-    setAlertExpenses(expenses);
-    if (alertUserId) {
-      try { localStorage.setItem("myryra:finance:alerts:" + alertUserId, JSON.stringify({ days, subscriptions, expenses })); }
-      catch { /* Preferences remain active for this session. */ }
+  const saveAlertSettings = async (days: 3 | 7 | 14, subscriptions: boolean, expenses: boolean) => {
+    if (!alertUserId) { setAlertSettingsError("Faça login para salvar suas preferências."); return; }
+    setAlertSettingsError("");
+    try {
+      const db = createClient();
+      const { data: auth, error: authError } = await db.auth.getUser();
+      if (authError || auth.user?.id !== alertUserId) throw new Error("Sessão inválida.");
+      const { error: saveError } = await db.from("myryra_finance_alert_preferences").upsert({
+        user_id: alertUserId, days, subscriptions, expenses, updated_at: new Date().toISOString()
+      }, { onConflict: "user_id" });
+      if (saveError) throw saveError;
+      setAlertDays(days);
+      setAlertSubscriptions(subscriptions);
+      setAlertExpenses(expenses);
+    } catch {
+      setAlertSettingsError("Não foi possível sincronizar as preferências. Tente novamente.");
     }
   };
   const upcomingAlerts = useMemo(() => {
@@ -262,9 +272,10 @@ export default function FinanceSubscriptions() {
         <label className="text-xs text-slate-200">Antecedência<select aria-label="Antecedência dos alertas" value={alertDays} onChange={e => saveAlertSettings(Number(e.target.value) as 3 | 7 | 14, alertSubscriptions, alertExpenses)} className="mt-1 block w-full rounded-lg border border-white/20 bg-slate-900 p-2 text-white"><option value={3}>3 dias</option><option value={7}>7 dias</option><option value={14}>14 dias</option></select></label>
         <label className="flex items-center gap-2 text-xs text-slate-200"><input type="checkbox" checked={alertSubscriptions} onChange={e => saveAlertSettings(alertDays, e.target.checked, alertExpenses)}/> Assinaturas</label>
         <label className="flex items-center gap-2 text-xs text-slate-200"><input type="checkbox" checked={alertExpenses} onChange={e => saveAlertSettings(alertDays, alertSubscriptions, e.target.checked)}/> Despesas planejadas</label>
-        <p className="text-xs text-slate-400 sm:col-span-3">Preferências salvas neste navegador para sua conta. Não enviamos notificações externas nesta fase.</p>
+        <p className="text-xs text-slate-400 sm:col-span-3">Preferências sincronizadas com sua conta para acesso em outros dispositivos. Não enviamos notificações externas nesta fase.</p>
       </div>
     )}
+    {alertSettingsError && <p role="alert" className="text-xs text-rose-300">{alertSettingsError}</p>}
     {!loading && !error && upcomingAlerts.length > 0 && (
       <div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-3 sm:p-4" role="status">
         <div className="flex flex-wrap items-center justify-between gap-2">
