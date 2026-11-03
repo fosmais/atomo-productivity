@@ -115,7 +115,6 @@ async function DashboardContent() {
           <FeatureAccordion id="plans" title="Meus planos" description="Acompanhe seus planos" userId={user.id}><CloudPlans /></FeatureAccordion>
           <FeatureAccordion id="capture" title="Captura Inteligente" description="Transforme ideias em tarefas" userId={user.id}><QuickCapture /></FeatureAccordion>
         </div>
-        <FeatureAccordion id="kanban" title="Quadro de tarefas" description="Acompanhe o andamento" userId={user.id} defaultOpen><TaskKanban /></FeatureAccordion>
       </section>
       <section id="planner-section" className="min-w-0 space-y-3 scroll-mt-8" aria-label="Planejamento">
         <div className="px-1"><h3 className="text-lg font-semibold text-white">Planejamento inteligente</h3><p className="text-sm text-slate-400">Prioridades, rotina e apoio da MYKA.</p></div>
@@ -130,6 +129,7 @@ async function DashboardContent() {
         <FeatureAccordion id="planning-settings" title="Preferências de planejamento" description="Horários e regras da rotina" userId={user.id}><PlanningSettings /></FeatureAccordion>
       </section>
     </div>
+    <div className="mt-5 min-w-0"><FeatureAccordion id="kanban" title="Quadro de tarefas" description="Visualize e edite tarefas por andamento" userId={user.id} defaultOpen><TaskKanban /></FeatureAccordion></div>
   </VyraSection>
 </VyraModule>
       <VyraModule id="vyra-calendar">
