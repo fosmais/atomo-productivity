@@ -218,7 +218,7 @@ export default function TaskKanban() {
     const proposed = window.prompt("Editar título da tarefa:", task.title);
     if (proposed === null) return;
     const title = proposed.trim();
-    if (!title || title.length > 200 || !/[\\p{L}\\p{N}]/u.test(title)) {
+    if (!title || title.length > 200 || !/[\p{L}\p{N}]/u.test(title)) {
       setError("Informe um título válido de até 200 caracteres.");
       return;
     }
