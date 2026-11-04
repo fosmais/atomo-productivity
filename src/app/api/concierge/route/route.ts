@@ -22,6 +22,9 @@ export async function POST(request: Request) {
   }
 
   // Keep the Google key server-side. No third-party call is made until explicitly configured.
+  if (process.env.MYRYRA_CONCIERGE_ROUTES_ENABLED !== "true") {
+    return NextResponse.json({ error: "Consulta de rotas ainda não habilitada.", code: "ROUTES_DISABLED" }, { status: 503 });
+  }
   const apiKey = process.env.GOOGLE_MAPS_ROUTES_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "Consulta de rotas ainda não habilitada.", code: "ROUTES_NOT_CONFIGURED" }, { status: 503 });
 
