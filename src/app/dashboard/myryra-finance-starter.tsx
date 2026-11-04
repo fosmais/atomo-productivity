@@ -151,10 +151,11 @@ export default function MyryraFinanceStarter() {
         <p className="mt-1 text-sm text-slate-400">Quanto você possui hoje? Informe seu saldo manualmente para iniciar o planejamento. Alterar esse valor recalcula a posição estimada.</p>
         <div className="mt-3 flex flex-wrap items-end gap-3">
           <label className="min-w-0 flex-1 text-sm text-slate-300">Saldo inicial (R$)
-            <input required inputMode="decimal" value={openingBalanceInput} onChange={event => setOpeningBalanceInput(event.target.value)} placeholder="Ex.: 2500,00" className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-3 text-white" />
+            <input required inputMode="decimal" value={openingBalanceInput} onChange={event => { setOpeningBalanceInput(event.target.value); setBalanceSaved(false); }} placeholder="Ex.: 2500,00" className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-3 text-white" />
           </label>
           <button type="submit" disabled={balanceSaving || loading} className="rounded-xl bg-violet-600 px-4 py-3 font-medium text-white disabled:opacity-50 hover:bg-violet-500">{balanceSaving ? "Salvando..." : "Salvar saldo inicial"}</button>
         </div>
+        {balanceSaved && <p role="status" className="mt-2 text-sm text-emerald-300">Saldo inicial salvo e confirmado.</p>}
       </form>
       <form onSubmit={addEntry} className="space-y-3 rounded-2xl border border-white/15 bg-slate-900/75 p-4 sm:p-5">
         <h3 className="font-semibold text-white">Novo lançamento manual</h3>
