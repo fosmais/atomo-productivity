@@ -715,6 +715,15 @@ export default function CalendarEvents() {
                 <div>
 
                   <p className="mt-1 text-xs font-semibold" style={{ color: EVENT_CATEGORIES[event.category].color }}>{EVENT_CATEGORIES[event.category].label}</p>
+                  <label className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-300">
+                    Categoria
+                    <select aria-label={`Categoria de ${event.title}`} value={event.category}
+                      disabled={categoryBusyId !== null}
+                      onChange={(e) => void handleCategoryChange(event.id, e.target.value as EventCategory)}
+                      className="rounded-lg border border-white/15 bg-slate-800 px-2 py-1.5 text-white disabled:opacity-50">
+                      {Object.entries(EVENT_CATEGORIES).map(([id, item]) => <option key={id} value={id}>{item.label}</option>)}
+                    </select>
+                  </label>
                   <p className="mt-1 text-xs text-violet-300">
                     {event.eventType === "unavailable"
                       ? "Indisponibilidade"
