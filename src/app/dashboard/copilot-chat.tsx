@@ -598,16 +598,17 @@ setConversationId(data.conversationId);
           <p className="text-sm text-violet-300">Carregando historico...</p>
         )}
         {!historyLoading && messages.length === 0 && (
-          <div className="space-y-3 text-sm text-slate-400">
-            <p>Olá! Sou a Myka.</p>
-            <p>Experimente perguntar:</p>
-
-            <ul className="list-disc space-y-2 pl-5">
-              <li>Quais são minhas prioridades hoje?</li>
-              <li>Tenho quatro horas. Como organizar meu dia?</li>
-              <li>Quais tarefas devo executar primeiro?</li>
-              <li>Como posso distribuir minhas atividades?</li>
-            </ul>
+          <div className="space-y-3 text-sm text-slate-300">
+            <p>Olá! Sou a MYKA. Como posso ajudar?</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {[
+                { label: "Planejar meu dia", prompt: "Ajude-me a organizar minhas prioridades e tarefas de hoje." },
+                { label: "Organizar compromissos", prompt: "Ajude-me a revisar meus compromissos e encontrar horários livres." },
+                { label: "Planejamento financeiro", prompt: "Quero organizar minhas receitas, despesas e metas financeiras. Por onde começar?" },
+                { label: "Objetivo de investimento", prompt: "Quero planejar investimentos para alcançar meu objetivo financeiro." },
+              ].map(suggestion => <button key={suggestion.label} type="button" onClick={() => setInput(suggestion.prompt)} className="rounded-xl border border-violet-400/25 bg-violet-500/10 px-3 py-3 text-left text-sm text-violet-100 transition hover:border-violet-300/70 focus-visible:outline-2 focus-visible:outline-violet-400">{suggestion.label} <span aria-hidden="true">↗</span></button>)}
+            </div>
+            <p className="text-xs text-slate-400">A MYKA sugere ações; confirme antes de salvar tarefas ou compromissos. Para decisões financeiras, confira os riscos e suas necessidades.</p>
           </div>
         )}
 
