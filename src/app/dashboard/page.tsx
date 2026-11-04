@@ -42,6 +42,7 @@ import FinancePlanning from "./finance-planning";
 import FinanceInvestments from "./finance-investments";
 import FinanceSubscriptions from "./finance-subscriptions";
 import FinanceWorkspace from "./finance-workspace";
+import ThemePreferences from "./theme-preferences";
 
 async function DashboardContent() {
   await connection();
@@ -185,6 +186,7 @@ async function DashboardContent() {
         description="Gerencie sua conta, conecte aplicativos e compartilhe sugestões."
       >
         <div className="grid min-w-0 items-start gap-3 md:grid-cols-2">
+          <FeatureAccordion id="appearance" title="Aparência" description="Personalize a cor do fundo" userId={user.id}><ThemePreferences /></FeatureAccordion>
           <FeatureAccordion id="mfa" title="Segurança da conta" description="Configure a autenticação em dois fatores" userId={user.id}><MfaSettings /><ChangePassword /></FeatureAccordion>
           <FeatureAccordion id="external-integrations" title="Integrações de produtividade" description="Google Calendar, Google Tasks, Todoist e Outlook" userId={user.id}>
             <div className="space-y-5">
