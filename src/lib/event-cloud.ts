@@ -136,7 +136,7 @@ export async function deleteCloudEvent(eventId: string): Promise<void> {
 export async function renameCloudEvent(eventId: string, nextTitle: string): Promise<void> {
   const { supabase, userId } = await getAuthenticatedUser();
   const title = nextTitle.trim();
-  if (!title || title.length > 200 || !/[\\p{L}\\p{N}]/u.test(title)) {
+  if (!title || title.length > 200 || !/[\p{L}\p{N}]/u.test(title)) {
     throw new Error("Informe um título de até 200 caracteres.");
   }
   if (!/^[0-9a-f-]{36}$/i.test(eventId)) {
