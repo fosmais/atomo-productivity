@@ -108,6 +108,25 @@ export async function POST(request: Request) {
 
     const bytes = Buffer.from(await file.arrayBuffer());
 
+    // Reject files whose bytes do not match the declared media type.
+    // This prevents disguised binary payloads from reaching the model.
+    const validSignature =
+      file.type === "application/pdf"
+        ? bytes.subarray(0, 5).toString("ascii") === "%PDF-"
+        : file.type === "image/png"
+        ? bytes.length >= 8 && bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+        : file.type === "image/jpeg"
+        ? bytes.length >= 4 && bytes[0] === 255 && bytes[1] === 216 && bytes[bytes.length - 2] === 255 && bytes[bytes.length - 1] === 217
+        : file.type === "text/plain"
+        ? !bytes.includes(0) && !new TextDecoder("utf-8", { fatal: true }).decode(bytes).includes("\uFFFD")
+        : false;
+    if (!validSignature) {
+      return NextResponse.json(
+        { error: "O conteúdo do arquivo não corresponde ao formato informado. Exporte novamente o arquivo e tente de novo." },
+        { status: 400 }
+      );
+    }
+
     const client = new OpenAI({
       apiKey,
       timeout: 30000,
