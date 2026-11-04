@@ -81,6 +81,7 @@ export default function FinancePlanning() {
       "MIKA, ajude-me a planejar minha meta financeira " + goal.title + ".",
       "Objetivo: " + money(goal.target_cents) + ". Valor reservado manualmente: " + money(goal.saved_cents) + ". Falta: " + money(remaining) + ".",
       "Prazo simulado: " + goalHorizonMonths + " meses. Aporte mensal estimado, sem juros: " + money(Math.ceil(remaining / goalHorizonMonths)) + ".",
+      "Prioridade definida pelo usuário: " + ({ essential: "essencial", important: "importante", optional: "opcional" }[goal.priority]) + ".",
       "Capacidade mensal informada: " + (parseCents(monthlyCapacityInput) === null ? "não informada" : money(parseCents(monthlyCapacityInput) ?? 0)) + ".",
       "Pergunte sobre meu prazo, capacidade mensal de poupança, reserva de emergência e prioridades antes de propor um plano.",
       "Trate os valores como informações manuais, não como saldo bancário verificado. Não faça alterações automaticamente nem prometa rentabilidade."
@@ -117,7 +118,7 @@ export default function FinancePlanning() {
       "Metas: " + goals.map(goal => goal.title + " (restante " + money(Math.max(0, goal.target_cents - goal.saved_cents)) + ", prioridade informada: " + ({essential:"essencial",important:"importante",optional:"opcional"}[goalPriorities[goal.id] ?? "important"]) + ")").join("; ") + ".",
       "Prazo ilustrativo comum: " + goalHorizonMonths + " meses. Total restante: " + money(totalRemaining) + ".",
       "Soma dos aportes mensais estimados: " + money(monthlyNeeded) + ". Capacidade mensal declarada: " + (capacity === null ? "não informada" : money(capacity)) + ".",
-      "Peça ao usuário para classificar cada meta como essencial, importante ou opcional e verificar despesas fixas, dívidas e reserva de emergência.",
+      "Respeite as prioridades já definidas pelo usuário; confirme se deseja revisá-las e verifique despesas fixas, dívidas e reserva de emergência.",
       "Sugira uma distribuição viável e ajuste de prazos; não presuma que todos os objetivos devem ser financiados simultaneamente.",
       "Os valores são manuais e a simulação não inclui rendimentos ou inflação. Não execute movimentações."
     ].join(" ");
@@ -253,7 +254,7 @@ export default function FinancePlanning() {
         <p className="mt-1 text-xs text-slate-300">Aporte mensal somado para todas as metas em {goalHorizonMonths} meses: <strong className="text-white">{money(goals.reduce((sum, goal) => sum + Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths), 0))}</strong>.</p>
         {parseCents(monthlyCapacityInput) !== null && <p className="mt-1 text-xs text-amber-200">{goals.reduce((sum, goal) => sum + Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths), 0) > (parseCents(monthlyCapacityInput) ?? 0) ? "A soma dos aportes ultrapassa sua capacidade mensal informada. Considere priorizar metas ou ampliar prazos." : "A soma dos aportes cabe na capacidade mensal informada, antes de considerar despesas e imprevistos."}</p>}
         <button type="button" onClick={askMykaAboutPortfolio} className="mt-3 rounded-lg border border-violet-400 px-3 py-2 text-xs font-semibold text-violet-200">Priorizar metas com a MIKA</button>
-        <p className="mt-2 text-xs text-slate-500">A MIKA perguntará quais objetivos são essenciais, importantes ou opcionais. Nenhuma prioridade é atribuída automaticamente.</p>
+        <p className="mt-2 text-xs text-slate-500">A MIKA considerará as prioridades salvas e poderá sugerir ajustes, sem alterá-las automaticamente.</p>
       </div>}
       <ul className="space-y-3">{[...goals].sort((a, b) => goalSort === "priority" ? ({essential:0,important:1,optional:2}[goalPriorities[a.id] ?? "important"] - {essential:0,important:1,optional:2}[goalPriorities[b.id] ?? "important"]) : goalSort === "name" ? a.title.localeCompare(b.title, "pt-BR") : goalSort === "progress" ? (b.saved_cents / Math.max(1,b.target_cents)) - (a.saved_cents / Math.max(1,a.target_cents)) : Math.max(0,a.target_cents-a.saved_cents) - Math.max(0,b.target_cents-b.saved_cents)).map(goal => <li key={goal.id} className="rounded-xl border border-white/10 p-3">
         <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-medium text-white">{goal.title}</p><p className="mt-1 text-xs text-slate-400">{money(goal.saved_cents)} reservados de {money(goal.target_cents)}</p></div><button type="button" disabled={busy} onClick={() => void remove("myryra_finance_goals", goal.id)} className="text-xs text-violet-300 disabled:opacity-50">Excluir</button></div>
