@@ -807,10 +807,7 @@ if (!rateLimit.allowed) {
     if (parsed.proposedEvent) {
       const prematureSuccess = /(?:todos? os? (?:seus? )?eventos?|compromissos?|agendamentos?).{0,100}(?:registrad[oa]s?|salv[oa]s?|agendad[oa]s?|confirmad[oa]s?)|(?:registrad[oa]s?|salv[oa]s?|agendad[oa]s?|confirmad[oa]s?).{0,100}(?:eventos?|compromissos?|agendamentos?)/i;
       if (prematureSuccess.test(parsed.reply)) {
-        parsed = {
-          ...parsed,
-          reply: "Preparei a sugestão de compromisso abaixo. Ela ainda não foi registrada na Agenda. Toque em Confirmar evento para salvá-la.",
-        };
+        parsed.reply = "Preparei a sugestão de compromisso abaixo. Ela ainda não foi registrada na Agenda. Toque em Confirmar evento para salvá-la.";
       }
     }
 
