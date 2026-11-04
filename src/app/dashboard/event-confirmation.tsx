@@ -97,7 +97,7 @@ export default function EventConfirmation({
       }
       setConflictWarning("");
       if (messageId) {
-        const response = await fetch("/api/myka/proposal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messageId }) });
+        const response = await fetch("/api/myka/proposal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messageId, acknowledgeConflict: conflictAcknowledged }) });
         if (!response.ok) { const data = await response.json().catch(() => null); throw new Error(data?.error || "Falha ao confirmar compromisso."); }
       } else {
         await saveCloudEvent(event);
