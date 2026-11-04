@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { getGoogleEventInterval } from "@/lib/google-event-time";
+import EventReminderControl from "./event-reminder-control";
 import {
   saveCloudEvent,
   getCloudEvents,
@@ -25,6 +26,7 @@ export default function EventConfirmation({
   const [saving, setSaving] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [savedEventId, setSavedEventId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [conflictWarning, setConflictWarning] = useState("");
   const [conflictAcknowledged, setConflictAcknowledged] = useState(false);
@@ -104,6 +106,8 @@ export default function EventConfirmation({
           }
           throw new Error(data?.error || "Falha ao confirmar compromisso.");
         }
+        const result = await response.json();
+        setSavedEventId(typeof result.eventId === "string" ? result.eventId : null);
       } else {
         await saveCloudEvent(event);
       }
@@ -197,6 +201,7 @@ export default function EventConfirmation({
         </p>
       )}
 
+      {saved && savedEventId && <EventReminderControl eventId={savedEventId} startsAt={event.startsAt} />}
       {saved ? (
         <p role="status" className="mt-4 text-sm text-green-400">
           Evento salvo com sucesso!
