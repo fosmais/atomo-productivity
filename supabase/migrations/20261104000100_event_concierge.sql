@@ -19,3 +19,5 @@ create policy "event_concierge_update_own" on public.event_concierge for update 
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 create policy "event_concierge_delete_own" on public.event_concierge for delete to authenticated
   using (user_id = (select auth.uid()));
+
+grant select, insert, update, delete on public.event_concierge to authenticated;
