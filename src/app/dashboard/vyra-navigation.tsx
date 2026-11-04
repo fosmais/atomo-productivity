@@ -4,14 +4,14 @@ import { useState } from "react";
 
 const primaryItems = [
   { id: "home", label: "Hoje", icon: "⌂" },
-  { id: "vyra-tasks", label: "Tarefas e Plano", icon: "✓" },
+  { id: "vyra-tasks", label: "Organizar", icon: "✓" },
   { id: "vyra-calendar", label: "Agenda", icon: "▦" },
-  { id: "vyra-ai", label: "Myka AI", icon: "✦" },
+  { id: "vyra-ai", label: "MIKA", icon: "✦" },
 ];
 
 const secondaryItems = [
-  { id: "vyra-finance", label: "Finance", icon: "◇" },
-  { id: "vyra-scheduling", label: "Agendamento", icon: "⚡" },
+  { id: "vyra-finance", label: "Finanças", icon: "◇" },
+  { id: "vyra-scheduling", label: "Agendamentos", icon: "⚡" },
   { id: "vyra-performance", label: "Evolução", icon: "◈" },
   { id: "vyra-settings", label: "Minha conta", icon: "⚙" },
 ];
