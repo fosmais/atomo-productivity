@@ -30,6 +30,7 @@ export default function CalendarEvents() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [favoriteEventIds, setFavoriteEventIds] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<EventCategory | "all">("all");
   const [favoriteBusyId, setFavoriteBusyId] = useState<string | null>(null);
   const [tasks, setTasks] = useState<CalendarTask[]>([]);
   const [tasksError, setTasksError] = useState("");
@@ -367,7 +368,7 @@ export default function CalendarEvents() {
     const date = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() + i);
     const key = date.toLocaleDateString("en-CA");
     const items = [
-      ...events.filter((e) => dateKey(e.startsAt) === key).map((e) => ({ key: `local-${e.id}`, title: e.title, at: timeLabel(e.startsAt), color: EVENT_CATEGORIES[e.category].color })),
+      ...events.filter((e) => dateKey(e.startsAt) === key && (categoryFilter === "all" || e.category === categoryFilter)).map((e) => ({ key: `local-${e.id}`, title: e.title, at: timeLabel(e.startsAt), color: EVENT_CATEGORIES[e.category].color })),
       ...googleEvents.filter((e) => dateKey(e.start) === key).map((e, j) => ({ key: `google-${e.id ?? j}`, title: e.title, at: timeLabel(e.start), color: "#64748B" })),
       ...tasks.filter((t) => dateKey(t.due_date) === key).map((t) => ({ key: `task-${t.id}`, title: `${t.completed ? "✓ " : "□ "}${t.title}`, at: "Tarefa", color: "#64748B" })),
     ].sort((a, b) => a.at.localeCompare(b.at));
@@ -413,7 +414,7 @@ export default function CalendarEvents() {
 
   const filteredGoogle = googleEvents.filter((event) => inPeriod(event.start))
     .sort((a, b) => (a.start ?? "").localeCompare(b.start ?? ""));
-  const filteredLocal = events.filter((event) => inPeriod(event.startsAt) && (!favoritesOnly || favoriteEventIds.includes(event.id)))
+  const filteredLocal = events.filter((event) => inPeriod(event.startsAt) && (categoryFilter === "all" || event.category === categoryFilter) && (!favoritesOnly || favoriteEventIds.includes(event.id)))
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
   const visibleGoogle = showAllGoogle ? filteredGoogle : filteredGoogle.slice(0, 5);
   const visibleLocal = showAllLocal ? filteredLocal : filteredLocal.slice(0, 5);
