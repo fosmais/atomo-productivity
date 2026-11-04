@@ -488,6 +488,13 @@ export default function CalendarEvents() {
         </label>
       </div>
 
+      <label className="mt-4 block space-y-2 text-sm">
+        <span className="block">Categoria do compromisso</span>
+        <select value={category} onChange={(event) => { setCategory(event.target.value as EventCategory); setCategoryChosen(true); }} className="w-full rounded-xl border border-white/10 bg-slate-800 p-3 text-white">
+          {Object.entries(EVENT_CATEGORIES).map(([id, item]) => <option key={id} value={id}>{item.label}</option>)}
+        </select>
+        <span className="block text-xs text-slate-400">A categoria é sugerida pelo título; você pode alterá-la.</span>
+      </label>
       <div className="mt-4 grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="min-w-0 space-y-2 text-sm">
           <span className="block">Tipo de evento</span>
