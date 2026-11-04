@@ -78,11 +78,15 @@ export async function getCloudEvents(): Promise<CalendarEvent[]> {
     if (batch.length < pageSize) break;
   }
   if (allEvents.length === 0) return allEvents;
-  const { data: preferences, error: preferencesError } = await supabase.from("event_concierge")
-    .select("event_id, departure_address, services, status")
-    .eq("user_id", userId).in("event_id", allEvents.map(event => event.id));
-  if (preferencesError) throw new Error("Não foi possível carregar as preferências do Concierge.");
-  const byEvent = new Map((preferences ?? []).map(item => [item.event_id, item]));
+  const byEvent = new Map<string, { departure_address: string | null; services: string[]; status: string }>();
+  for (let offset = 0; offset < allEvents.length; offset += 100) {
+    const ids = allEvents.slice(offset, offset + 100).map(event => event.id);
+    const { data: preferences, error: preferencesError } = await supabase.from("event_concierge")
+      .select("event_id, departure_address, services, status")
+      .eq("user_id", userId).in("event_id", ids);
+    if (preferencesError) throw new Error("Não foi possível carregar as preferências do Concierge.");
+    for (const item of preferences ?? []) byEvent.set(item.event_id, item);
+  }
   return allEvents.map(event => {
     const item = byEvent.get(event.id);
     return { ...event, concierge: item ? { departureAddress: item.departure_address, services: item.services ?? [], status: item.status } : null };
@@ -125,6 +129,13 @@ export async function saveCloudEvent(
     throw new Error("Tipo de evento inválido.");
   }
 
+  if (event.concierge) {
+    if (eventType !== "appointment") throw new Error("O Concierge só pode ser ativado em compromissos.");
+    if (!event.location?.trim()) throw new Error("Informe o destino do compromisso para ativar o Concierge.");
+    if (event.concierge.departureAddress.length > 300) throw new Error("O endereço de partida deve ter até 300 caracteres.");
+    if (event.concierge.services.some(service => !["transport", "parking", "restaurant", "hotel"].includes(service))) throw new Error("Serviço de Concierge inválido.");
+  }
+
   const { data: saved, error } = await supabase.from("events").insert({
     user_id: userId,
     title,
@@ -139,9 +150,7 @@ export async function saveCloudEvent(
 
   if (error) throw new Error(error.message);
   if (event.concierge && saved) {
-    const allowed = ["transport", "parking", "restaurant", "hotel"];
     const services = [...new Set(event.concierge.services)];
-    if (services.some(service => !allowed.includes(service))) throw new Error("Serviço de Concierge inválido.");
     const { error: conciergeError } = await supabase.from("event_concierge").insert({
       event_id: saved.id,
       user_id: userId,
