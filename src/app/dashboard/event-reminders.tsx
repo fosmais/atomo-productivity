@@ -6,7 +6,7 @@ import { getCloudEvents, type CalendarEvent } from "@/lib/event-cloud";
 const storageKey = "myryra:reminder-minutes:v1";
 const shownKey = "myryra:reminder-shown:v1";
 type Minutes = 0 | 10 | 15 | 30;
-export default function EventReminders() {
+export default function EventReminders({ showControls = false }: { showControls?: boolean }) {
   const [minutes, setMinutes] = useState<Minutes>(15);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [alerts, setAlerts] = useState<string[]>([]);
@@ -50,7 +50,7 @@ export default function EventReminders() {
     {alerts.length > 0 && <div role="status" aria-live="polite" className="fixed inset-x-3 top-4 z-[60] mx-auto max-w-md space-y-2">
       {alerts.map((alert, index) => <div key={index} className="flex items-start justify-between gap-3 rounded-xl border border-violet-400 bg-slate-900 p-3 text-sm text-white shadow-xl"><span>⏰ {alert}</span><button type="button" aria-label="Dispensar aviso" onClick={() => setAlerts(old => old.filter((_, i) => i !== index))}>✕</button></div>)}
     </div>}
-    <label className="flex flex-wrap items-center gap-3 text-sm text-slate-200">
+    {showControls && <label className="flex flex-wrap items-center gap-3 text-sm text-slate-200">
       Avisar antes de compromissos
       <select aria-label="Antecedência do lembrete" value={minutes} onChange={e => {
         const value = Number(e.target.value) as Minutes;
@@ -59,7 +59,7 @@ export default function EventReminders() {
       }} className="rounded-lg border border-white/20 bg-slate-950 px-3 py-2 text-white">
         <option value={0}>Desativado</option><option value={10}>10 minutos</option><option value={15}>15 minutos</option><option value={30}>30 minutos</option>
       </select>
-    </label>
-    <p className="mt-1 text-xs text-slate-400">Avisos dentro da MYRYRA enquanto esta página estiver aberta. Configuração salva neste navegador; não envia push com o aplicativo fechado.</p>
+    </label>}
+    {showControls && <p className="mt-1 text-xs text-slate-400">Avisos dentro da MYRYRA enquanto esta página estiver aberta. Configuração salva neste navegador; não envia push com o aplicativo fechado.</p>}
   </div>;
 }
