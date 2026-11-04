@@ -185,21 +185,32 @@ async function DashboardContent() {
         title="Uma experiência feita para você."
         description="Gerencie sua conta, conecte aplicativos e compartilhe sugestões."
       >
-        <div className="grid min-w-0 items-start gap-3 md:grid-cols-2">
-          <FeatureAccordion id="appearance" title="Aparência" description="Personalize a cor do fundo" userId={user.id}><ThemePreferences /></FeatureAccordion>
-          <FeatureAccordion id="mfa" title="Segurança da conta" description="Configure a autenticação em dois fatores" userId={user.id}><MfaSettings /><ChangePassword /></FeatureAccordion>
-          <FeatureAccordion id="external-integrations" title="Integrações de produtividade" description="Google Calendar, Google Tasks, Todoist e Outlook" userId={user.id}>
-            <div className="space-y-5">
-              <GoogleCalendarSettings />
-              <ExternalIntegrations />
+        <div className="mx-auto w-full max-w-4xl space-y-5">
+          <div>
+            <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-violet-300">Personalização</h3>
+            <FeatureAccordion id="appearance" title="Aparência" description="Escolha a cor do fundo da MYRYRA" userId={user.id}><ThemePreferences /></FeatureAccordion>
+          </div>
+          <div>
+            <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-violet-300">Conta e segurança</h3>
+            <FeatureAccordion id="mfa" title="Segurança da conta" description="Senha e autenticação em dois fatores" userId={user.id}><div className="space-y-4"><MfaSettings /><ChangePassword /></div></FeatureAccordion>
+          </div>
+          <div>
+            <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-violet-300">Agenda e integrações</h3>
+            <FeatureAccordion id="external-integrations" title="Aplicativos conectados" description="Google Calendar, Google Tasks, Todoist e Outlook" userId={user.id}>
+              <div className="min-w-0 space-y-4"><GoogleCalendarSettings /><ExternalIntegrations /></div>
+            </FeatureAccordion>
+          </div>
+          <div>
+            <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-violet-300">Dados e suporte</h3>
+            <div className="space-y-3">
+              <FeatureAccordion id="trash" title="Lixeira" description="Recupere tarefas e compromissos excluídos" userId={user.id}><MyryraTrash /></FeatureAccordion>
+              <FeatureAccordion id="feedback" title="Feedback" description="Sugestões e relatos sobre a plataforma" userId={user.id}><BetaFeedback /></FeatureAccordion>
             </div>
-          </FeatureAccordion>
-          <FeatureAccordion id="trash" title="Lixeira" description="Recupere tarefas e compromissos excluídos" userId={user.id}><MyryraTrash /></FeatureAccordion>
-          <FeatureAccordion id="feedback" title="Feedback" description="Envie sugestões e relatos sobre o beta" userId={user.id}><BetaFeedback /></FeatureAccordion>
+          </div>
         </div>
       </VyraSection>
 
-      <div className="mt-6 space-y-4 rounded-2xl border border-slate-800 p-5">
+      <div className="mx-auto mt-5 max-w-4xl space-y-3 rounded-2xl border border-slate-800 p-4 sm:p-5">
 <p className="text-slate-300">
         Conta autenticada: {user.email}
       </p>
