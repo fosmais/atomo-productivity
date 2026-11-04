@@ -141,7 +141,7 @@ export default function FinancePlanning() {
     </section>
     <section className="min-w-0 space-y-4 rounded-2xl border border-white/15 bg-slate-900/75 p-4 sm:p-5">
       <div><h3 className="text-lg font-semibold text-white">Despesas planejadas</h3><p className="mt-1 text-sm text-slate-400">Previsões futuras, não são descontadas do saldo estimado.</p></div>
-      <p className="text-xl font-semibold text-white">{money(plannedTotal)} <span className="text-xs font-normal text-slate-400">em contas pendentes · ${money(paidTotal)} pagas</span></p>
+      <p className="text-xl font-semibold text-white">{money(plannedTotal)} <span className="text-xs font-normal text-slate-400">em contas pendentes · {money(paidTotal)} pagas</span></p>
       <form onSubmit={addExpense} className="grid gap-2">
         <input required maxLength={100} aria-label="Descrição da despesa planejada" placeholder="Ex.: Aluguel" value={expenseTitle} onChange={e => setExpenseTitle(e.target.value)} className="rounded-xl border border-white/20 bg-slate-950 p-3 text-white" />
         <div className="grid grid-cols-2 gap-2"><input required inputMode="decimal" aria-label="Valor da despesa em reais" placeholder="Ex.: R$ 7.000,00" value={expenseAmount} onChange={e => setExpenseAmount(e.target.value)} className="min-w-0 rounded-xl border border-white/20 bg-slate-950 p-3 text-white" /><input required type="date" aria-label="Data prevista" value={expenseDate} onChange={e => setExpenseDate(e.target.value)} className="min-w-0 rounded-xl border border-white/20 bg-slate-950 p-3 text-white" /></div>
