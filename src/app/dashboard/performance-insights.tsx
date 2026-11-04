@@ -22,6 +22,8 @@ export default function PerformanceInsights() {
   const [metrics, setMetrics] = useState<VyraMetrics | null>(null);
   const [completionHistory, setCompletionHistory] = useState<TaskMetric[]>([]);
   const [period, setPeriod] = useState<VyraPeriod>("week");
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [distributionOpen, setDistributionOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -123,7 +125,7 @@ export default function PerformanceInsights() {
         </button>
       </div>
 
-      <details className="group rounded-2xl border border-violet-500/20 bg-slate-900/60">
+      <details onToggle={event => setDetailsOpen(event.currentTarget.open)} className="group rounded-2xl border border-violet-500/20 bg-slate-900/60">
         <summary className="cursor-pointer list-none rounded-2xl px-5 py-4 text-sm font-semibold text-violet-200 hover:bg-violet-500/10 focus-visible:outline-2 focus-visible:outline-violet-400">
           <span className="flex items-center justify-between gap-3">Análises, recomendações e evolução detalhada <span className="text-xs text-slate-400 group-open:hidden">Expandir +</span><span className="hidden text-xs text-slate-400 group-open:inline">Recolher −</span></span>
         </summary>
@@ -373,7 +375,7 @@ export default function PerformanceInsights() {
               <div className="flex h-full items-center justify-center text-sm text-slate-400">
                 {loading ? "Carregando evolução..." : "Dados indisponíveis."}
               </div>
-            ) : (
+            ) : detailsOpen ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={completionSeries}
@@ -427,7 +429,7 @@ export default function PerformanceInsights() {
                   />
                 </AreaChart>
               </ResponsiveContainer>
-            )}
+            ) : <p className="py-10 text-center text-sm text-slate-400">Expanda a análise para visualizar o gráfico.</p>}
           </div>
         </div>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -485,7 +487,7 @@ export default function PerformanceInsights() {
           />
         </div>
       </div>
-      <details className="group rounded-2xl border border-violet-500/20 bg-slate-900">
+      <details onToggle={event => setDistributionOpen(event.currentTarget.open)} className="group rounded-2xl border border-violet-500/20 bg-slate-900">
         <summary className="cursor-pointer list-none px-5 py-4 text-sm font-semibold text-violet-200 hover:bg-violet-500/10">Gráficos de distribuição e prioridade <span className="ml-2 text-slate-400 group-open:hidden">+</span><span className="ml-2 hidden text-slate-400 group-open:inline">−</span></summary>
         <div className="space-y-4 p-3 pt-0 sm:p-5 sm:pt-0">
       <div className="rounded-2xl border border-violet-500/20 bg-slate-900 p-5">
@@ -496,7 +498,7 @@ export default function PerformanceInsights() {
           Visualize como suas tarefas estão distribuídas por status.
         </p>
 
-        {!loading && metrics && metrics.total > 0 ? (
+        {!loading && metrics && metrics.total > 0 && distributionOpen ? (
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
