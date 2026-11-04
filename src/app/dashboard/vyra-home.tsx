@@ -22,6 +22,7 @@ export default function VyraHome() {
   const [metrics, setMetrics] = useState<VyraMetrics | null>(null);
   const [nextEvent, setNextEvent] = useState<{ title: string; start: string } | null>(null);
   const [agendaError, setAgendaError] = useState(false);
+  const [shareMessage, setShareMessage] = useState("");
 
   useEffect(() => {
     if (activeModule !== "home") return;
@@ -56,7 +57,6 @@ export default function VyraHome() {
 
   if (activeModule !== "home") return null;
   const progress = metrics ? getCompletionRate(metrics) : null;
-  const [shareMessage, setShareMessage] = useState("");
   const shareText = progress === null ? "" : "Meu score de produtividade na MYRYRA: " + progress + "% de tarefas concluídas. Organize seu dia com a MIKA! https://myryra.com";
   async function shareScore() {
     if (!shareText) return;
