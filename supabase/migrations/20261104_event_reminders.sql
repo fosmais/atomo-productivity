@@ -39,3 +39,23 @@ create policy "Users can cancel own event reminders"
   with check (user_id = (select auth.uid()) and status = 'cancelled');
 -- Delivery worker must use service role and perform idempotent status transitions.
 -- Do not expose direct client-side ability to mark reminders sent.
+
+-- Explicit Data API grants; RLS continues to enforce ownership.
+grant select, insert, update on public.event_reminders to authenticated;
+revoke all on public.event_reminders from anon;
+-- A deleted event must never leave a deliverable reminder.
+create or replace function public.cancel_reminders_for_deleted_event()
+returns trigger language plpgsql security invoker set search_path = '' as $$
+begin
+  if old.deleted_at is null and new.deleted_at is not null then
+    update public.event_reminders
+       set status = 'cancelled'
+     where event_id = new.id and status = 'pending';
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists cancel_reminders_on_event_delete on public.events;
+create trigger cancel_reminders_on_event_delete
+after update of deleted_at on public.events
+for each row execute function public.cancel_reminders_for_deleted_event();
