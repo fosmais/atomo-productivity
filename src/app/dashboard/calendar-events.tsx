@@ -41,11 +41,12 @@ export default function CalendarEvents() {
       setError("Não foi possível abrir a MIKA agora. Tente novamente.");
     }
   }
-  function downloadConciergeReminder(event: Pick<CalendarEvent, "title" | "startsAt" | "endsAt" | "location" | "concierge">) {
+  function downloadConciergeReminder(event: Pick<CalendarEvent, "title" | "startsAt" | "endsAt" | "location" | "concierge">, travelMinutes: number, bufferMinutes: number) {
     if (!event.concierge) return;
     const icsEscape = (value: string) => value.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
     const utc = (value: string) => new Date(value).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-    const notes = "MIKA Concierge: confira o trajeto e os serviços solicitados antes de sair. Horários de deslocamento não são estimados automaticamente.";
+    const departure = new Date(new Date(event.startsAt).getTime() - (travelMinutes + bufferMinutes) * 60000);
+    const notes = `MIKA Concierge: saída planejada para ${new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(departure)}. Tempo de trajeto informado manualmente: ${travelMinutes} min; margem: ${bufferMinutes} min. Confira o trânsito antes de sair. Não é uma estimativa em tempo real.`;
     const lines = [
       "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//MYRYRA//MIKA Concierge//PT",
       "BEGIN:VEVENT", "UID:" + crypto.randomUUID() + "@myryra.com",
@@ -54,8 +55,8 @@ export default function CalendarEvents() {
       "SUMMARY:" + icsEscape(event.title),
       "LOCATION:" + icsEscape(event.location || ""),
       "DESCRIPTION:" + icsEscape(notes),
-      "BEGIN:VALARM", "TRIGGER:-PT60M", "ACTION:DISPLAY",
-      "DESCRIPTION:" + icsEscape("MIKA Concierge: confira seu compromisso e o deslocamento"),
+      "BEGIN:VALARM", "TRIGGER:-PT" + (travelMinutes + bufferMinutes) + "M", "ACTION:DISPLAY",
+      "DESCRIPTION:" + icsEscape("MIKA Concierge: hora planejada de sair"),
       "END:VALARM", "END:VEVENT", "END:VCALENDAR"
     ];
     const blob = new Blob([lines.join("\r\n") + "\r\n"], { type: "text/calendar;charset=utf-8" });
@@ -68,6 +69,8 @@ export default function CalendarEvents() {
     link.remove();
     URL.revokeObjectURL(url);
   }
+  const [conciergeTravelMinutes, setConciergeTravelMinutes] = useState(30);
+  const [conciergeBufferMinutes, setConciergeBufferMinutes] = useState(15);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [favoriteEventIds, setFavoriteEventIds] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
@@ -839,8 +842,23 @@ export default function CalendarEvents() {
                     <p className="mt-1 text-xs text-slate-300">Serviços: {event.concierge.services.map(service => (({ transport: "Transporte", parking: "Estacionamento", restaurant: "Restaurante", hotel: "Hospedagem" } as Record<string, string>)[service] || service)).join(", ") || "Nenhum selecionado"}</p>
                     <p className="mt-2 text-xs text-slate-400">As opções ainda precisam ser planejadas. Reservas e pagamentos exigem confirmação.</p>
                     <button type="button" onClick={() => planWithMyka(event)} className="mt-3 rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500">Planejar com a MIKA</button>
-                    <button type="button" onClick={() => downloadConciergeReminder(event)} className="ml-2 mt-3 rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">Adicionar lembrete · 1h antes</button>
-                    <p className="mt-1 text-xs text-slate-400">Baixa um evento para importar no calendário. O alerta depende das notificações do seu calendário; não calcula trânsito.</p>
+                    <div className="mt-3 rounded-lg border border-violet-400/20 p-3">
+                      <p className="text-xs font-semibold text-violet-200">Planejar horário de saída</p>
+                      <p className="mt-1 text-xs text-slate-400">Informe a duração aproximada do trajeto. Não usamos trânsito em tempo real nesta etapa.</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-3">
+                        <label className="text-xs text-slate-300">Trajeto (min)
+                          <input type="number" min={1} max={480} step={5} value={conciergeTravelMinutes} onChange={(e) => setConciergeTravelMinutes(Math.min(480, Math.max(1, Number(e.target.value) || 1)))} className="ml-2 w-16 rounded-lg border border-white/15 bg-slate-800 px-2 py-1.5 text-white" />
+                        </label>
+                        <label className="text-xs text-slate-300">Margem (min)
+                          <select value={conciergeBufferMinutes} onChange={(e) => setConciergeBufferMinutes(Number(e.target.value))} className="ml-2 rounded-lg border border-white/15 bg-slate-800 px-2 py-1.5 text-white">
+                            <option value={0}>0</option><option value={10}>10</option><option value={15}>15</option><option value={30}>30</option><option value={45}>45</option>
+                          </select>
+                        </label>
+                      </div>
+                      <p className="mt-2 text-xs text-violet-200">Saída sugerida: {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(new Date(event.startsAt).getTime() - (conciergeTravelMinutes + conciergeBufferMinutes) * 60000))}</p>
+                      <button type="button" onClick={() => downloadConciergeReminder(event, conciergeTravelMinutes, conciergeBufferMinutes)} className="mt-2 rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">Adicionar alerta de saída ao calendário</button>
+                      <p className="mt-1 text-xs text-slate-400">Importe o arquivo no calendário para receber o alerta. O horário depende da duração informada por você.</p>
+                    </div>
                     <ConciergeRouteEstimate event={event} />
                     <details className="mt-3 rounded-lg border border-violet-400/20 p-3"><summary className="cursor-pointer text-xs font-semibold text-violet-200">Serviços do compromisso · Ver opções</summary>
                     {event.location && <div className="mt-2 flex flex-wrap gap-2">
