@@ -678,7 +678,7 @@ export default function CalendarEvents() {
             <div key={event.id} className="space-y-2">
               {(index === 0 || dateKey(visibleLocal[index - 1].startsAt) !== dateKey(event.startsAt)) && <h4 className="pt-2 text-xs font-semibold uppercase tracking-wider text-violet-300">{dateHeading(event.startsAt)}</h4>}
             <div
-              className="relative ml-2 rounded-lg border border-slate-700 border-l-2 border-l-violet-500 bg-slate-950/50 p-3"
+              className="relative ml-2 rounded-lg border border-slate-700 border-l-4 bg-slate-950/50 p-3" style={{ borderLeftColor: EVENT_CATEGORIES[event.category].color }}
             >
               <button type="button" onClick={() => void toggleFavoriteEvent(event)} disabled={favoriteBusyId !== null}
                 aria-pressed={favoriteEventIds.includes(event.id)}
@@ -697,6 +697,7 @@ export default function CalendarEvents() {
                 <div className="mt-3 flex items-start justify-between gap-3 border-t border-slate-800 pt-3">
                 <div>
 
+                  <p className="mt-1 text-xs font-semibold" style={{ color: EVENT_CATEGORIES[event.category].color }}>{EVENT_CATEGORIES[event.category].label}</p>
                   <p className="mt-1 text-xs text-violet-300">
                     {event.eventType === "unavailable"
                       ? "Indisponibilidade"
