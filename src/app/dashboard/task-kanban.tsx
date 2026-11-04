@@ -48,6 +48,7 @@ export default function TaskKanban() {
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [taskSearch, setTaskSearch] = useState("");
+  const [taskSort, setTaskSort] = useState<"priority" | "due" | "title" | "recent">("priority");
   const [favoriteSavingId, setFavoriteSavingId] = useState<string | null>(null);
 
   const loadTasks = useCallback(async () => {
@@ -378,6 +379,17 @@ export default function TaskKanban() {
           <input type="search" value={taskSearch} onChange={(event) => setTaskSearch(event.target.value)}
             placeholder="Buscar tarefas..." className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-violet-400" />
         </label>
+        <label className="flex items-center gap-2 text-sm text-slate-300">
+          Ordenar por
+          <select aria-label="Ordenar tarefas" value={taskSort}
+            onChange={(event) => setTaskSort(event.target.value as typeof taskSort)}
+            className="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white">
+            <option value="priority">Prioridade: Alta → Média → Normal</option>
+            <option value="due">Prazo: mais próximo</option>
+            <option value="title">Nome: A–Z</option>
+            <option value="recent">Mais recentes</option>
+          </select>
+        </label>
         <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-300">
           <input type="checkbox" checked={favoritesOnly} onChange={(event) => setFavoritesOnly(event.target.checked)}
             className="accent-violet-500" />
@@ -446,6 +458,19 @@ export default function TaskKanban() {
             const columnTasks = tasks.filter(
               (task) => task.status === column.status && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))
             );
+            const priorityOrder: Record<string, number> = { Alta: 0, "Média": 1, Normal: 2, Baixa: 2 };
+            columnTasks.sort((a, b) => {
+              if (taskSort === "priority") {
+                const diff = (priorityOrder[a.priority] ?? 3) - (priorityOrder[b.priority] ?? 3);
+                if (diff !== 0) return diff;
+              }
+              if (taskSort === "due" || taskSort === "priority") {
+                const diff = (a.due_date ?? "9999-12-31").localeCompare(b.due_date ?? "9999-12-31");
+                if (diff !== 0) return diff;
+              }
+              if (taskSort === "title") return a.title.localeCompare(b.title, "pt-BR");
+              return 0;
+            });
             const expanded = expandedColumns.includes(column.status);
             const visibleTasks = expanded ? columnTasks : columnTasks.filter((task) => task.id === focusedTaskId).concat(columnTasks.filter((task) => task.id !== focusedTaskId).slice(0, focusedTaskId && columnTasks.some((task) => task.id === focusedTaskId) ? 3 : 4));
 
