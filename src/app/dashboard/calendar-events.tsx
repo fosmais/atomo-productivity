@@ -859,7 +859,7 @@ export default function CalendarEvents() {
                       <button type="button" onClick={() => downloadConciergeReminder(event, conciergeTravelMinutes, conciergeBufferMinutes)} className="mt-2 rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">Adicionar alerta de saída ao calendário</button>
                       <p className="mt-1 text-xs text-slate-400">Importe o arquivo no calendário para receber o alerta. O horário depende da duração informada por você.</p>
                     </div>
-                    <ConciergeRouteEstimate event={event} />
+                    <ConciergeRouteEstimate event={event} onEstimate={(minutes) => setConciergeTravelMinutes(minutes)} />
                     <details className="mt-3 rounded-lg border border-violet-400/20 p-3"><summary className="cursor-pointer text-xs font-semibold text-violet-200">Serviços do compromisso · Ver opções</summary>
                     {event.location && <div className="mt-2 flex flex-wrap gap-2">
                       <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.location)}&travelmode=driving${event.concierge.departureAddress ? `&origin=${encodeURIComponent(event.concierge.departureAddress)}` : ""}`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">Ver trajeto de carro ↗</a>
@@ -910,7 +910,7 @@ export default function CalendarEvents() {
   );
 }
 
-function ConciergeRouteEstimate({ event }: { event: CalendarEvent }) {
+function ConciergeRouteEstimate({ event, onEstimate }: { event: CalendarEvent; onEstimate: (minutes: number) => void }) {
   const [result, setResult] = useState<{ durationSeconds: number; distanceMeters: number | null; calculatedAt: string } | null>(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -935,6 +935,7 @@ function ConciergeRouteEstimate({ event }: { event: CalendarEvent }) {
         return;
       }
       setResult({ durationSeconds: data.durationSeconds, distanceMeters: data.distanceMeters ?? null, calculatedAt: data.calculatedAt });
+      onEstimate(Math.min(480, Math.max(1, Math.ceil(data.durationSeconds / 60))));
     } catch {
       setMessage("Consulta indisponível. Você pode abrir o trajeto no Google Maps.");
     } finally {
@@ -949,7 +950,7 @@ function ConciergeRouteEstimate({ event }: { event: CalendarEvent }) {
     {message && <p role="status" className="mt-2 text-xs text-slate-400">{message}</p>}
     {result && <div role="status" className="mt-2 text-xs text-slate-200">
       <p>Tempo estimado: {Math.ceil(result.durationSeconds / 60)} min{result.distanceMeters !== null ? ` · ${(result.distanceMeters / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} km` : ""}</p>
-      <p className="mt-1 text-slate-400">Consulta realizada às {new Date(result.calculatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}. Estimativa sujeita a mudanças no trânsito.</p>
+      <p className="mt-1 text-slate-400">Consulta realizada às {new Date(result.calculatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}. Estimativa sujeita a mudanças no trânsito. A duração foi aplicada ao planejamento de saída acima; confira a margem de segurança.</p>
     </div>}
   </div>;
 }
