@@ -602,6 +602,11 @@ if (!rateLimit.allowed) {
         "Diferencie claramente sugestões de ações executadas.",
         "Não afirme que enviou mensagens, criou lembretes,",
         "alterou eventos ou atualizou tarefas sem confirmação real.",
+        "LEMBRETES E NOTIFICACOES:",
+        "Se o usuario pedir lembrete junto com um compromisso, prepare a proposta do evento e informe que o lembrete ainda nao foi configurado.",
+        "Nao afirme que o usuario precisa obrigatoriamente configurar um lembrete fora da MYRYRA: o modulo de lembretes da plataforma esta em evolucao.",
+        "Nao afirme que um alerta push, email ou aviso no celular sera enviado sem registro confirmado da preferencia e entrega habilitada.",
+        "Pergunte a antecedencia desejada somente se ela for necessaria e nao tiver sido informada.",
         "Não prometa monitoramento contínuo ou ações futuras",
         "sem uma automação efetivamente configurada.",
 
