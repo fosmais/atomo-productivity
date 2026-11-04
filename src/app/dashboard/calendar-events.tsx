@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import EventReminderControl from "./event-reminder-control";
+import { EVENT_CATEGORIES, suggestEventCategory, type EventCategory } from "@/lib/event-categories";
 import {
   getCloudEvents,
   saveCloudEvent,
@@ -115,6 +116,8 @@ export default function CalendarEvents() {
   const [endsAt, setEndsAt] = useState("");
   const [location, setLocation] = useState("");
   const [eventType, setEventType] = useState<EventType>("appointment");
+  const [category, setCategory] = useState<EventCategory>("personal");
+  const [categoryChosen, setCategoryChosen] = useState(false);
   const [blocksTime, setBlocksTime] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -237,6 +240,7 @@ export default function CalendarEvents() {
         endsAt,
         location,
         eventType,
+        category,
         blocksTime,
       });
 
@@ -249,6 +253,8 @@ export default function CalendarEvents() {
       setEndsAt("");
       setLocation("");
       setEventType("appointment");
+      setCategory("personal");
+      setCategoryChosen(false);
       setBlocksTime(false);
       setShowForm(false);
     } catch (err) {
@@ -445,7 +451,7 @@ export default function CalendarEvents() {
         <input
           type="text"
           value={title}
-          onChange={(event) => setTitle(event.target.value)}
+          onChange={(event) => { setTitle(event.target.value); if (!categoryChosen) setCategory(suggestEventCategory(event.target.value)); }}
           maxLength={200}
           placeholder="Nome do compromisso"
           aria-label="Nome do compromisso"
