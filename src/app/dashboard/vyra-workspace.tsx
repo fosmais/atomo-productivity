@@ -4,6 +4,7 @@ import { Children, isValidElement, ReactNode, useEffect, useState } from "react"
 import VyraNavigation from "./vyra-navigation";
 import VyraHeader from "./vyra-header";
 import MykaSupport from "./myka-support";
+import EventReminders from "./event-reminders";
 import { VyraModuleContext, VyraNavigationContext } from "./vyra-module-context";
 
 type VyraWorkspaceProps = {
@@ -88,6 +89,7 @@ export default function VyraWorkspace({
 
         <div className="min-w-0">{children}</div>
       </div>
+      <EventReminders showControls={activeModule === "vyra-calendar"} />
       <MykaSupport />
     </div>
     </VyraModuleContext.Provider>
