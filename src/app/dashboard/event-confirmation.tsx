@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import {
   saveCloudEvent,
+  getCloudEvents,
   type NewCalendarEvent,
 } from "@/lib/event-cloud";
 
@@ -24,6 +25,8 @@ export default function EventConfirmation({
   const [cancelling, setCancelling] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [conflictWarning, setConflictWarning] = useState("");
+  const [conflictAcknowledged, setConflictAcknowledged] = useState(false);
 
   async function handleConfirm() {
     if (inFlight.current || saved) return;
@@ -41,6 +44,18 @@ export default function EventConfirmation({
       if (start.getTime() < Date.now() - 60_000) {
         throw new Error("O horário sugerido já passou. Peça à MIKA um novo horário antes de confirmar.");
       }
+      const existing = await getCloudEvents();
+      const overlapping = existing.filter((savedEvent) => {
+        const savedStart = new Date(savedEvent.startsAt).getTime();
+        const savedEnd = new Date(savedEvent.endsAt).getTime();
+        return Number.isFinite(savedStart) && Number.isFinite(savedEnd) &&
+          start.getTime() < savedEnd && end.getTime() > savedStart;
+      });
+      if (overlapping.length > 0 && !conflictAcknowledged) {
+        setConflictWarning(`Este horário coincide com ${overlapping.length} compromisso(s) existente(s): ${overlapping.slice(0, 3).map(item => item.title).join(", ")}. Você pode pedir outro horário à MIKA ou confirmar mesmo assim.`);
+        return;
+      }
+      setConflictWarning("");
       if (messageId) {
         const response = await fetch("/api/myka/proposal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messageId }) });
         if (!response.ok) { const data = await response.json().catch(() => null); throw new Error(data?.error || "Falha ao confirmar compromisso."); }
@@ -120,6 +135,16 @@ export default function EventConfirmation({
           <p>Local: {event.location}</p>
         )}
       </div>
+
+      {conflictWarning && !saved && (
+        <div role="alert" className="mt-3 rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 text-sm text-amber-100">
+          <p>{conflictWarning}</p>
+          <label className="mt-2 flex items-center gap-2">
+            <input type="checkbox" checked={conflictAcknowledged} onChange={(e) => setConflictAcknowledged(e.target.checked)} />
+            Entendi o conflito e desejo continuar.
+          </label>
+        </div>
+      )}
 
       {error && (
         <p role="alert" className="mt-3 text-sm text-red-400">
