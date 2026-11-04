@@ -91,9 +91,12 @@ export default function VyraWorkspace({
           onModuleChange={navigateTo}
         />
 
-        <div className="min-w-0">{children}</div>
+        <div className="min-w-0">
+          {activeModule === "vyra-calendar" && <div className="mb-3 rounded-xl border border-white/10 bg-slate-900/70 p-3"><EventReminders showControls /></div>}
+          {activeModule !== "vyra-calendar" && <EventReminders />}
+          {children}
+        </div>
       </div>
-      <EventReminders showControls={activeModule === "vyra-calendar"} />
       <MykaSupport />
     </div>
     </VyraModuleContext.Provider>
