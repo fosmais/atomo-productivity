@@ -317,7 +317,7 @@ if (!rateLimit.allowed) {
 
     // Identifica eventos com horários sobrepostos.
     const sortedEvents = [...(events ?? [])]
-      .filter((event) => event.blocks_time === true)
+      .filter((event) => Number.isFinite(new Date(event.starts_at).getTime()) && Number.isFinite(new Date(event.ends_at).getTime()))
       .sort(
         (a, b) =>
           new Date(a.starts_at).getTime() -
