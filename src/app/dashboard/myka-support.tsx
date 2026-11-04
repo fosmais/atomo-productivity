@@ -161,8 +161,8 @@ export default function MykaSupport() {
         </div>
       </div>
     </section>}
-    <button type="button" onClick={() => setOpen(v => !v)} aria-expanded={open} aria-label={open ? "Fechar ajuda MYKA" : "Abrir ajuda MYKA"} className="flex items-center gap-2 rounded-full border border-violet-400/50 bg-violet-700 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-900/50 hover:bg-violet-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300">
-      <span aria-hidden="true">✦</span> {open ? "Fechar ajuda" : "Ajuda MYKA"}
+    <button type="button" onClick={() => setOpen(v => !v)} aria-expanded={open} aria-label={open ? "Fechar ajuda MYKA" : "Abrir ajuda MYKA"} className="flex h-11 w-11 items-center justify-center gap-2 rounded-full border border-violet-400/50 bg-violet-700 p-2 text-sm lg:h-auto lg:w-auto lg:px-4 lg:py-3 font-semibold text-white shadow-lg shadow-violet-900/50 hover:bg-violet-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300">
+      <span aria-hidden="true">✦</span> <span className="hidden lg:inline">{open ? "Fechar ajuda" : "Ajuda MYKA"}</span>
     </button>
   </div>;
 }
