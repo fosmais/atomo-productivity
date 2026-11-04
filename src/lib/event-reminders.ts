@@ -69,3 +69,13 @@ export async function listDueEventReminders(): Promise<DueEventReminder[]> {
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as DueEventReminder[];
 }
+
+export async function dismissEventReminder(id: string): Promise<void> {
+  const supabase = createClient();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) throw new Error("Faça login.");
+  const { error } = await supabase.from("event_reminders")
+    .update({ status: "cancelled" })
+    .eq("id", id).eq("user_id", auth.user.id).eq("status", "pending");
+  if (error) throw new Error(error.message);
+}
