@@ -80,7 +80,7 @@ export default function FinancePlanning() {
   }
 
   async function updateGoalSavings(goal: Goal) {
-    const cents = parseCents(savedAmountInput);
+    const cents = /^0(?:[,.]0{1,2})?$/.test(savedAmountInput.trim()) ? 0 : parseCents(savedAmountInput);
     if (cents === null || cents > goal.target_cents) {
       setError("Informe um valor reservado positivo que não ultrapasse o objetivo.");
       return;
