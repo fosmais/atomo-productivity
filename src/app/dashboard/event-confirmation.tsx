@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { getGoogleEventInterval } from "@/lib/google-event-time";
 import {
   saveCloudEvent,
   getCloudEvents,
@@ -51,6 +52,45 @@ export default function EventConfirmation({
         return Number.isFinite(savedStart) && Number.isFinite(savedEnd) &&
           start.getTime() < savedEnd && end.getTime() > savedStart;
       });
+      let googleOverlaps: string[] = [];
+      let googleUnavailable = false;
+      try {
+        const response = await fetch("/api/google/events", { cache: "no-store" });
+        if (!response.ok) throw new Error("Consulta Google indisponível");
+        const payload: {
+          connected: boolean;
+          events: Array<{
+            title: string;
+            start: string | null;
+            end: string | null;
+            calendarTimeZone?: string | null;
+            status: string | null;
+            transparency: string | null;
+            selfResponseStatus: string | null;
+          }>;
+        } = await response.json();
+        if (!Array.isArray(payload.events)) throw new Error("Resposta Google inválida");
+        if (payload.connected) {
+          googleOverlaps = payload.events
+            .filter((item) => item.status !== "cancelled" && item.transparency !== "transparent" && item.selfResponseStatus !== "declined")
+            .filter((item) => {
+              const interval = getGoogleEventInterval(item);
+              return interval !== null && start < interval.end && end > interval.start;
+            })
+            .map((item) => item.title || "Evento do Google");
+        }
+      } catch {
+        googleUnavailable = true;
+      }
+      if ((overlapping.length > 0 || googleOverlaps.length > 0 || googleUnavailable) && !conflictAcknowledged) {
+        const localTitles = overlapping.slice(0, 3).map(item => item.title);
+        const googleTitles = googleOverlaps.slice(0, 3);
+        const details = [...localTitles, ...googleTitles].join(", ");
+        setConflictWarning(googleUnavailable
+          ? "Não foi possível consultar o Google Calendar. Verifique sua agenda externa antes de continuar. " + (details ? "Conflitos identificados: " + details + "." : "")
+          : "Este horário coincide com compromisso(s): " + details + ". Peça outro horário à MIKA ou confirme mesmo assim.");
+        return;
+      }
       if (overlapping.length > 0 && !conflictAcknowledged) {
         setConflictWarning(`Este horário coincide com ${overlapping.length} compromisso(s) existente(s): ${overlapping.slice(0, 3).map(item => item.title).join(", ")}. Você pode pedir outro horário à MIKA ou confirmar mesmo assim.`);
         return;
