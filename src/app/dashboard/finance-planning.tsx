@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useVyraNavigation } from "./vyra-module-context";
 
 type Goal = { id: string; title: string; target_cents: number; saved_cents: number };
 type Expense = { id: string; title: string; amount_cents: number; due_date: string; paid_at: string | null };
@@ -28,6 +29,8 @@ function parseCents(input: string) {
 }
 
 export default function FinancePlanning() {
+  const { navigateTo } = useVyraNavigation();
+  const [handoffError, setHandoffError] = useState(false);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [goalTitle, setGoalTitle] = useState("");
@@ -62,6 +65,21 @@ export default function FinancePlanning() {
     void load();
     return () => { active = false; };
   }, []);
+
+  function askMykaAboutGoal(goal: Goal) {
+    const remaining = Math.max(0, goal.target_cents - goal.saved_cents);
+    const prompt = [
+      "MIKA, ajude-me a planejar minha meta financeira " + goal.title + ".",
+      "Objetivo: " + money(goal.target_cents) + ". Valor reservado manualmente: " + money(goal.saved_cents) + ". Falta: " + money(remaining) + ".",
+      "Pergunte sobre meu prazo, capacidade mensal de poupança, reserva de emergência e prioridades antes de propor um plano.",
+      "Trate os valores como informações manuais, não como saldo bancário verificado. Não faça alterações automaticamente nem prometa rentabilidade."
+    ].join(" ");
+    try {
+      sessionStorage.setItem("myryra:myka:investment-handoff", prompt);
+      setHandoffError(false);
+      navigateTo("vyra-ai");
+    } catch { setHandoffError(true); }
+  }
 
   async function addGoal(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -163,7 +181,7 @@ export default function FinancePlanning() {
       <ul className="space-y-3">{goals.map(goal => <li key={goal.id} className="rounded-xl border border-white/10 p-3">
         <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-medium text-white">{goal.title}</p><p className="mt-1 text-xs text-slate-400">{money(goal.saved_cents)} reservados de {money(goal.target_cents)}</p></div><button type="button" disabled={busy} onClick={() => void remove("myryra_finance_goals", goal.id)} className="text-xs text-violet-300 disabled:opacity-50">Excluir</button></div>
         <div role="progressbar" aria-label={`Progresso da meta ${goal.title}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, Math.round(goal.saved_cents / Math.max(1, goal.target_cents) * 100))} className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800"><div className="h-full rounded-full bg-violet-500" style={{ width: `${Math.min(100, goal.saved_cents / Math.max(1, goal.target_cents) * 100)}%` }} /></div>
-        <div className="mt-2 flex items-center justify-between gap-2"><span className="text-xs text-slate-400">{Math.round(goal.saved_cents / Math.max(1, goal.target_cents) * 100)}% do objetivo</span><button type="button" disabled={busy} onClick={() => { setEditingGoalId(goal.id); setSavedAmountInput((goal.saved_cents / 100).toFixed(2).replace(".", ",")); }} className="text-xs font-semibold text-violet-200 disabled:opacity-50">Atualizar valor reservado</button></div>
+        <div className="mt-2 flex items-center justify-between gap-2"><span className="text-xs text-slate-400">{Math.round(goal.saved_cents / Math.max(1, goal.target_cents) * 100)}% do objetivo</span><span className="flex flex-wrap items-center gap-3"><button type="button" onClick={() => askMykaAboutGoal(goal)} className="text-xs font-semibold text-emerald-300">Planejar com a MIKA</button><button type="button" disabled={busy} onClick={() => { setEditingGoalId(goal.id); setSavedAmountInput((goal.saved_cents / 100).toFixed(2).replace(".", ",")); }} className="text-xs font-semibold text-violet-200 disabled:opacity-50">Atualizar valor reservado</button></span></div>
         {editingGoalId === goal.id && <div className="mt-3 flex flex-wrap items-end gap-2"><label className="min-w-0 flex-1 text-xs text-slate-300">Total reservado (R$)<input value={savedAmountInput} onChange={e => setSavedAmountInput(e.target.value)} inputMode="decimal" placeholder="Ex.: 1.500,00" className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-2 text-sm text-white" /></label><button type="button" disabled={busy} onClick={() => void updateGoalSavings(goal)} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Salvar</button><button type="button" onClick={() => setEditingGoalId(null)} className="rounded-lg border border-white/20 px-3 py-2 text-xs text-slate-200">Cancelar</button></div>}
       </li>)}</ul>
       {!loading && goals.length === 0 && <p className="text-sm text-slate-400">Nenhuma meta cadastrada.</p>}
@@ -179,6 +197,7 @@ export default function FinancePlanning() {
       <ul className="space-y-2">{expenses.map(expense => <li key={expense.id} className="flex items-center justify-between gap-2 rounded-xl border border-white/10 p-3"><span className="min-w-0"><span className="block truncate text-sm text-white">{expense.title}</span><span className="text-xs text-slate-400">{expense.due_date.split("-").reverse().join("/")} · {money(expense.amount_cents)}</span></span><span className="flex shrink-0 items-center gap-3"><button type="button" disabled={busy} onClick={() => void togglePaid(expense)} className="text-xs text-emerald-300 disabled:opacity-50">{expense.paid_at ? "✓ Paga · Desfazer" : "Marcar paga"}</button><button type="button" onClick={() => void remove("myryra_finance_planned_expenses", expense.id)} className="text-xs text-violet-300">Excluir</button></span></li>)}</ul>
       {!loading && expenses.length === 0 && <p className="text-sm text-slate-400">Nenhuma despesa planejada.</p>}
     </section>
+    {handoffError && <p role="alert" className="text-sm text-rose-300 lg:col-span-2">Não foi possível abrir a MIKA. Tente novamente.</p>}
     {error && <p role="alert" className="text-sm text-rose-300 lg:col-span-2">{error}</p>}
   </div>;
 }
