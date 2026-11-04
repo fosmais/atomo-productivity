@@ -249,6 +249,25 @@ export default function FinancePlanning() {
         </select>
         <span className="mt-1 block text-slate-500">A ordenação muda apenas a visualização; não define qual meta é mais importante para você.</span>
       </label>}
+      {goals.length > 1 && parseCents(monthlyCapacityInput) !== null && (() => {
+        let available = parseCents(monthlyCapacityInput) ?? 0;
+        const ordered = [...goals].sort((a, b) => ({ essential: 0, important: 1, optional: 2 }[a.priority] - { essential: 0, important: 1, optional: 2 }[b.priority]) || a.title.localeCompare(b.title, "pt-BR"));
+        const allocations = ordered.map(goal => {
+          const needed = Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths);
+          const allocated = Math.min(needed, available);
+          available -= allocated;
+          return { goal, needed, allocated };
+        });
+        return <div className="rounded-xl border border-violet-400/20 bg-slate-950/60 p-3">
+          <p className="text-sm font-semibold text-white">Distribuição sugerida por prioridade</p>
+          <p className="mt-1 text-xs text-slate-400">Simulação mensal: primeiro metas essenciais, depois importantes e opcionais. Em caso de empate, ordem alfabética.</p>
+          <ul className="mt-3 space-y-2">{allocations.map(({ goal, needed, allocated }) => <li key={goal.id} className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-200">
+            <span>{goal.title} <span className="text-slate-500">({{ essential: "essencial", important: "importante", optional: "opcional" }[goal.priority]})</span></span>
+            <span className="font-semibold">{money(allocated)} <span className="font-normal text-slate-500">de {money(needed)}/mês</span></span>
+          </li>)}</ul>
+          <p className="mt-3 text-xs text-slate-400">Capacidade não alocada: {money(available)}. A distribuição não considera rendimentos, inflação, dívidas nem despesas não informadas e não cria lançamentos.</p>
+        </div>;
+      })()}
       {goals.length > 1 && <div className="rounded-xl border border-violet-400/20 bg-slate-950/60 p-3">
         <p className="text-sm font-semibold text-white">Suas metas em conjunto</p>
         <p className="mt-1 text-xs text-slate-300">Aporte mensal somado para todas as metas em {goalHorizonMonths} meses: <strong className="text-white">{money(goals.reduce((sum, goal) => sum + Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths), 0))}</strong>.</p>
