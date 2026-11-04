@@ -197,6 +197,9 @@ export default function FinancePlanning() {
         <div className="mt-3 rounded-lg bg-slate-950/60 p-3">
           <p className="text-xs text-slate-400">Faltam <strong className="text-white">{money(Math.max(0, goal.target_cents - goal.saved_cents))}</strong> para alcançar esta meta.</p>
           <p className="mt-1 text-xs text-slate-300">Para chegar lá em {goalHorizonMonths} meses, reserve aproximadamente <strong className="text-emerald-300">{money(Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths))} por mês</strong>.</p>
+          {parseCents(monthlyCapacityInput) !== null && Math.max(0, goal.target_cents - goal.saved_cents) > 0 && (parseCents(monthlyCapacityInput) ?? 0) > 0 && (parseCents(monthlyCapacityInput) ?? 0) < Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths) && <p className="mt-2 text-xs text-amber-200">
+            Mantendo essa capacidade mensal, você precisaria de aproximadamente {Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / (parseCents(monthlyCapacityInput) ?? 1))} meses para atingir a meta, sem considerar rendimentos ou inflação.
+          </p>}
           {parseCents(monthlyCapacityInput) !== null && <p className="mt-2 text-xs text-slate-300">
             {Math.max(0, goal.target_cents - goal.saved_cents) === 0 ? "Meta atingida." : (parseCents(monthlyCapacityInput) ?? 0) >= Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths) ? "Sua capacidade mensal informada cobre o aporte estimado." : "Sua capacidade mensal informada é inferior ao aporte estimado. A MIKA pode ajudar a rever prazo e prioridades."}
           </p>}
