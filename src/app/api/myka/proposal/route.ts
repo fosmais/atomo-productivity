@@ -212,7 +212,7 @@ export async function POST(request: Request) {
     if (outcome.status !== "saved") {
       return NextResponse.json({ error: "Proposta indisponível." }, { status: 409 });
     }
-    let categorySaved = categoryInput === undefined;
+    let categorySaved = categoryInput === undefined && typeof outcome.eventId === "string";
     if (isEventCategory(categoryInput) && typeof outcome.eventId === "string") {
       const { error: categoryError } = await admin.from("events")
         .update({ category: categoryInput })
