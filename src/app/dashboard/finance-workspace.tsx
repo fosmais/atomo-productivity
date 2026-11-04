@@ -20,6 +20,21 @@ export default function FinanceWorkspace() {
   const [active, setActive] = useState<Section>("overview");
   return (
     <div className="min-w-0 space-y-4">
+      <div className="rounded-2xl border border-violet-400/25 bg-gradient-to-r from-violet-950/40 to-slate-900/70 p-4 sm:p-5">
+        <p className="text-xs font-semibold uppercase tracking-widest text-violet-300">MYRYRA Finance · Fase 1</p>
+        <h3 className="mt-1 text-lg font-semibold text-white">Seu dinheiro, suas decisões.</h3>
+        <p className="mt-2 text-sm leading-6 text-slate-300">Organize saldos e movimentações manuais, acompanhe metas, planeje despesas e simule cenários. Comece por Visão geral para registrar sua situação atual.</p>
+        <details className="mt-3 text-sm text-slate-300">
+          <summary className="cursor-pointer font-medium text-violet-200">O que posso fazer em cada área?</summary>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <p><strong className="text-white">Visão geral:</strong> saldos, lançamentos e importação de extratos.</p>
+            <p><strong className="text-white">Planejamento:</strong> metas financeiras e despesas previstas.</p>
+            <p><strong className="text-white">Projeções:</strong> assinaturas recorrentes e cenários futuros.</p>
+            <p><strong className="text-white">Investimentos:</strong> simulações educativas de juros e aportes.</p>
+          </div>
+        </details>
+        <p className="mt-3 text-xs text-slate-400">A MYRYRA não é banco, não movimenta dinheiro nem executa investimentos nesta fase.</p>
+      </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="tablist" aria-label="Áreas financeiras">
         {sections.map(section => (
           <button key={section.id} type="button" role="tab" id={"finance-tab-"+section.id}
