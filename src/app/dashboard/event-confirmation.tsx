@@ -210,6 +210,7 @@ export default function EventConfirmation({
         </p>
       )}
 
+      {categoryWarning && <p role="status" className="mt-3 text-sm text-amber-300">{categoryWarning}</p>}
       {saved && savedEventId && <EventReminderControl eventId={savedEventId} startsAt={event.startsAt} />}
       {saved ? (
         <p role="status" className="mt-4 text-sm text-green-400">
