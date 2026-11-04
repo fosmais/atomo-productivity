@@ -4,6 +4,17 @@ import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useVyraNavigation } from "./vyra-module-context";
 
+function parseBRL(input: string): number | null {
+  let value = input.trim().replace(/R\$/gi, "").replace(/\s/g, "");
+  if (value.includes(",") && value.includes(".")) {
+    value = value.lastIndexOf(",") > value.lastIndexOf(".") ? value.replace(/\./g, "").replace(",", ".") : value.replace(/,/g, "");
+  } else if (value.includes(",")) value = value.replace(",", ".");
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(value)) value = value.replace(/\./g, "");
+  if (!/^-?\d+(?:\.\d{1,2})?$/.test(value)) return null;
+  const cents = Math.round(Number(value) * 100);
+  return Number.isSafeInteger(cents) && Math.abs(cents) <= 100000000000 ? cents : null;
+}
+
 type Entry = { id: string; description: string; amount_cents: number; kind: "income" | "expense"; created_at: string };
 
 export default function MyryraFinanceStarter() {
@@ -17,6 +28,8 @@ export default function MyryraFinanceStarter() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [balanceError, setBalanceError] = useState("");
+  const [entryError, setEntryError] = useState("");
   useEffect(() => {
     let mounted = true;
     const load = async () => {
@@ -66,14 +79,12 @@ export default function MyryraFinanceStarter() {
   };
   const addEntry = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const normalized = amount.trim().replace(",", ".");
-    if (!/^\\d{1,9}(?:\\.\\d{1,2})?$/.test(normalized) || !name.trim() || name.trim().length > 100) {
-      setError("Informe uma descrição e um valor positivo com até duas casas decimais.");
+    const cents = parseBRL(amount);
+    if (cents === null || cents <= 0 || !name.trim() || name.trim().length > 100) {
+      setEntryError("Informe uma descrição e um valor positivo com até duas casas decimais. Ex.: 3.999,00.");
       return;
     }
-    const cents = Math.round(Number(normalized) * 100);
-    if (!Number.isSafeInteger(cents) || cents <= 0) return;
-    setSaving(true); setError("");
+    setSaving(true); setEntryError("");
     try {
       const client = createClient();
       const { data: auth, error: authError } = await client.auth.getUser();
@@ -85,20 +96,18 @@ export default function MyryraFinanceStarter() {
       setEntries(previous => [data as Entry, ...previous]);
       setName(""); setAmount("");
       window.dispatchEvent(new Event("myryra:finance-updated"));
-    } catch { setError("Não foi possível salvar. Verifique sua conexão e tente novamente."); }
+    } catch (cause) { setEntryError(cause instanceof Error ? `Não foi possível salvar o lançamento: ${cause.message}` : "Não foi possível salvar o lançamento. Tente novamente."); }
     finally { setSaving(false); }
   };
 
   const saveOpeningBalance = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const normalized = openingBalanceInput.trim().replace(",", ".");
-    if (!/^-?\\d{1,9}(?:\\.\\d{1,2})?$/.test(normalized)) {
-      setError("Informe um saldo inicial válido, com até duas casas decimais.");
+    const cents = parseBRL(openingBalanceInput);
+    if (cents === null) {
+      setBalanceError("Informe um saldo inicial válido. Ex.: 39.999,00.");
       return;
     }
-    const cents = Math.round(Number(normalized) * 100);
-    if (!Number.isSafeInteger(cents)) return;
-    setBalanceSaving(true); setError(""); setBalanceSaved(false);
+    setBalanceSaving(true); setBalanceError(""); setBalanceSaved(false);
     try {
       const client = createClient();
       const { data: auth, error: authError } = await client.auth.getUser();
@@ -110,7 +119,7 @@ export default function MyryraFinanceStarter() {
       if (!savedBalance || Number(savedBalance.opening_balance_cents) !== cents) throw new Error("Saldo não confirmado pelo banco de dados.");
       setOpeningBalanceCents(cents);
       setBalanceSaved(true);
-    } catch (cause) { setError(cause instanceof Error ? `Não foi possível salvar o saldo inicial: ${cause.message}` : "Não foi possível salvar o saldo inicial."); }
+    } catch (cause) { setBalanceError(cause instanceof Error ? `Não foi possível salvar o saldo inicial: ${cause.message}` : "Não foi possível salvar o saldo inicial."); }
     finally { setBalanceSaving(false); }
   };
 
@@ -159,6 +168,7 @@ export default function MyryraFinanceStarter() {
           </label>
           <button type="submit" disabled={balanceSaving || loading} className="rounded-xl bg-violet-600 px-4 py-3 font-medium text-white disabled:opacity-50 hover:bg-violet-500">{balanceSaving ? "Salvando..." : "Salvar saldo inicial"}</button>
         </div>
+        {balanceError && <p role="alert" className="mt-2 text-sm text-rose-300">{balanceError}</p>}
         {balanceSaved && <p role="status" className="mt-2 text-sm text-emerald-300">Saldo inicial salvo e confirmado.</p>}
       </form>
       <form onSubmit={addEntry} className="space-y-3 rounded-2xl border border-white/15 bg-slate-900/75 p-4 sm:p-5">
@@ -177,6 +187,7 @@ export default function MyryraFinanceStarter() {
           </label>
         </div>
         <button type="submit" disabled={saving || loading} className="rounded-xl bg-violet-600 px-4 py-2 font-medium text-white hover:bg-violet-500">{saving ? "Salvando..." : "Adicionar lançamento"}</button>
+        {entryError && <p role="alert" className="text-sm text-rose-300">{entryError}</p>}
       </form>
       <div className="rounded-2xl border border-white/15 bg-slate-900/75 p-4 sm:p-5">
         <h3 className="mb-3 font-semibold text-white">Seus lançamentos</h3>
