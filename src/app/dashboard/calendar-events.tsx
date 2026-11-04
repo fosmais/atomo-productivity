@@ -276,6 +276,12 @@ export default function CalendarEvents() {
       window.dispatchEvent(new Event("myryra:events-updated"));
       setSelectedDay(null);
 
+      if (conciergeEnabled && eventType === "appointment") {
+        planWithMyka({
+          title, startsAt, endsAt, location,
+          concierge: { departureAddress: departureAddress.trim(), services: conciergeServices, status: "pending" },
+        });
+      }
       setTitle("");
       setStartsAt("");
       setEndsAt("");
@@ -288,12 +294,6 @@ export default function CalendarEvents() {
       setDepartureAddress("");
       setConciergeServices([]);
       setShowForm(false);
-      if (conciergeEnabled && eventType === "appointment") {
-        planWithMyka({
-          title, startsAt, endsAt, location,
-          concierge: { departureAddress: departureAddress.trim(), services: conciergeServices, status: "pending" },
-        });
-      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Erro ao salvar compromisso."
