@@ -438,6 +438,9 @@ export default function CalendarEvents() {
           </div>
         </div>
         <label className="mt-3 inline-flex flex-wrap items-center gap-2 text-xs text-slate-300">Categorias · Filtrar eventos MYRYRA por tema <select aria-label="Filtrar eventos MYRYRA no calendário por categoria" value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value as EventCategory | "all"); setShowAllLocal(false); }} className="rounded-lg border border-white/15 bg-slate-800 px-2 py-1.5 text-white"><option value="all">Todos</option>{Object.entries(EVENT_CATEGORIES).map(([id, item]) => <option key={id} value={id}>{item.label}</option>)}</select><span className="text-slate-500">Tarefas e Google Calendar não são filtrados</span></label>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {Object.entries(EVENT_CATEGORIES).map(([id, item]) => <button key={id} type="button" aria-pressed={categoryFilter === id} onClick={() => setCategoryFilter(id as EventCategory)} className={`flex items-center gap-2 rounded-lg border p-2 text-left text-xs ${categoryFilter === id ? "border-violet-400 bg-violet-500/15" : "border-white/10"}`}><span className="h-7 w-1 rounded-full" style={{backgroundColor:item.color}}/><span>{item.label}</span></button>)}
+        </div>
         <div className="mt-3 flex items-center gap-2">
           <button type="button" onClick={() => setCalendarOffset((n) => n - 1)} aria-label="Período anterior" className="rounded-lg border border-white/10 px-3 py-1.5 hover:bg-white/10">‹</button>
           <button type="button" onClick={() => { setCalendarOffset(0); setSelectedDay(null); }} className="rounded-lg border border-white/10 px-3 py-1.5 text-xs hover:bg-white/10">Hoje</button>
