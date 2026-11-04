@@ -38,6 +38,7 @@ export default function FinancePlanning() {
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [savedAmountInput, setSavedAmountInput] = useState("");
   const [goalHorizonMonths, setGoalHorizonMonths] = useState(12);
+  const [monthlyCapacityInput, setMonthlyCapacityInput] = useState("");
   const [expenseTitle, setExpenseTitle] = useState("");
   const [expenseAmount, setExpenseAmount] = useState("");
   const [expenseDate, setExpenseDate] = useState("");
@@ -72,6 +73,8 @@ export default function FinancePlanning() {
     const prompt = [
       "MIKA, ajude-me a planejar minha meta financeira " + goal.title + ".",
       "Objetivo: " + money(goal.target_cents) + ". Valor reservado manualmente: " + money(goal.saved_cents) + ". Falta: " + money(remaining) + ".",
+      "Prazo simulado: " + goalHorizonMonths + " meses. Aporte mensal estimado, sem juros: " + money(Math.ceil(remaining / goalHorizonMonths)) + ".",
+      "Capacidade mensal informada: " + (parseCents(monthlyCapacityInput) === null ? "não informada" : money(parseCents(monthlyCapacityInput) ?? 0)) + ".",
       "Pergunte sobre meu prazo, capacidade mensal de poupança, reserva de emergência e prioridades antes de propor um plano.",
       "Trate os valores como informações manuais, não como saldo bancário verificado. Não faça alterações automaticamente nem prometa rentabilidade."
     ].join(" ");
@@ -179,6 +182,10 @@ export default function FinancePlanning() {
         <input required inputMode="decimal" aria-label="Valor da meta em reais" placeholder="Ex.: R$ 10.000,00" value={goalAmount} onChange={e => setGoalAmount(e.target.value)} className="rounded-xl border border-white/20 bg-slate-950 p-3 text-white" />
         <button disabled={busy || loading} className="rounded-xl bg-violet-600 px-4 py-2 font-medium text-white disabled:opacity-50">Criar meta</button>
       </form>
+      {goals.length > 0 && <label className="block text-xs text-slate-300">Quanto você consegue reservar por mês? (opcional)
+        <input inputMode="decimal" value={monthlyCapacityInput} onChange={event => setMonthlyCapacityInput(event.target.value)} placeholder="Ex.: 350,00" className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-2 text-sm text-white" />
+        <span className="mt-1 block text-slate-500">Valor estimado por você. Não cria débito nem altera sua carteira.</span>
+      </label>}
       {goals.length > 0 && <label className="block text-xs text-slate-300">Prazo para simular o aporte mensal
         <select value={goalHorizonMonths} onChange={event => setGoalHorizonMonths(Number(event.target.value))} className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-2 text-sm text-white">
           <option value={3}>3 meses</option><option value={6}>6 meses</option><option value={12}>12 meses</option><option value={24}>24 meses</option><option value={36}>36 meses</option>
@@ -190,6 +197,9 @@ export default function FinancePlanning() {
         <div className="mt-3 rounded-lg bg-slate-950/60 p-3">
           <p className="text-xs text-slate-400">Faltam <strong className="text-white">{money(Math.max(0, goal.target_cents - goal.saved_cents))}</strong> para alcançar esta meta.</p>
           <p className="mt-1 text-xs text-slate-300">Para chegar lá em {goalHorizonMonths} meses, reserve aproximadamente <strong className="text-emerald-300">{money(Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths))} por mês</strong>.</p>
+          {parseCents(monthlyCapacityInput) !== null && <p className="mt-2 text-xs text-slate-300">
+            {Math.max(0, goal.target_cents - goal.saved_cents) === 0 ? "Meta atingida." : (parseCents(monthlyCapacityInput) ?? 0) >= Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths) ? "Sua capacidade mensal informada cobre o aporte estimado." : "Sua capacidade mensal informada é inferior ao aporte estimado. A MIKA pode ajudar a rever prazo e prioridades."}
+          </p>}
           <p className="mt-1 text-xs text-slate-500">Cálculo simples, sem juros, inflação ou rendimentos. Não representa transferência automática.</p>
         </div>
         <div className="mt-2 flex items-center justify-between gap-2"><span className="text-xs text-slate-400">{Math.round(goal.saved_cents / Math.max(1, goal.target_cents) * 100)}% do objetivo</span><span className="flex flex-wrap items-center gap-3"><button type="button" onClick={() => askMykaAboutGoal(goal)} className="text-xs font-semibold text-emerald-300">Planejar com a MIKA</button><button type="button" disabled={busy} onClick={() => { setEditingGoalId(goal.id); setSavedAmountInput((goal.saved_cents / 100).toFixed(2).replace(".", ",")); }} className="text-xs font-semibold text-violet-200 disabled:opacity-50">Atualizar valor reservado</button></span></div>
