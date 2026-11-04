@@ -121,6 +121,9 @@ export default function CalendarEvents() {
   const [category, setCategory] = useState<EventCategory>("personal");
   const [categoryChosen, setCategoryChosen] = useState(false);
   const [blocksTime, setBlocksTime] = useState(false);
+  const [conciergeEnabled, setConciergeEnabled] = useState(false);
+  const [departureAddress, setDepartureAddress] = useState("");
+  const [conciergeServices, setConciergeServices] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -233,6 +236,10 @@ export default function CalendarEvents() {
       return;
     }
 
+    if (conciergeEnabled && eventType === "appointment" && !location.trim()) {
+      setError("Informe o endereço do destino para ativar o Concierge.");
+      return;
+    }
     setSaving(true);
     setError("");
 
@@ -245,6 +252,10 @@ export default function CalendarEvents() {
         eventType,
         category,
         blocksTime,
+        concierge: conciergeEnabled && eventType === "appointment" ? {
+          departureAddress: departureAddress.trim(),
+          services: conciergeServices,
+        } : undefined,
       });
 
       await loadEvents();
@@ -259,6 +270,9 @@ export default function CalendarEvents() {
       setCategory("personal");
       setCategoryChosen(false);
       setBlocksTime(false);
+      setConciergeEnabled(false);
+      setDepartureAddress("");
+      setConciergeServices([]);
       setShowForm(false);
     } catch (err) {
       setError(
@@ -547,6 +561,30 @@ export default function CalendarEvents() {
         </label>
       </div>
 
+      {eventType === "appointment" && <div className="mt-4 rounded-2xl border border-violet-500/30 bg-slate-900/70 p-4">
+        <label className="flex cursor-pointer items-center gap-3 text-sm font-semibold">
+          <input type="checkbox" checked={conciergeEnabled} onChange={e => setConciergeEnabled(e.target.checked)} className="h-4 w-4 accent-violet-500" />
+          Ativar MIKA Concierge
+        </label>
+        <p className="mt-1 text-xs text-slate-400">Planeje o deslocamento e os serviços deste compromisso sem sair da Agenda.</p>
+        {conciergeEnabled && <div className="mt-4 space-y-3">
+          <label className="block space-y-1 text-sm"><span>Endereço de partida (opcional)</span>
+            <input value={departureAddress} onChange={e => setDepartureAddress(e.target.value)} maxLength={300} placeholder="Casa, trabalho ou outro endereço" className="w-full rounded-xl border border-white/10 bg-slate-800 p-3 text-white" />
+          </label>
+          <p className="text-xs text-slate-400">O destino será o endereço do campo Local do compromisso.</p>
+          <fieldset><legend className="mb-2 text-sm">Quais serviços você precisa?</legend>
+            <div className="grid grid-cols-2 gap-2">
+              {([["transport", "Transporte"], ["parking", "Estacionamento"], ["restaurant", "Restaurante"], ["hotel", "Hospedagem"]] as const).map(([id, label]) => (
+                <label key={id} className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-800/70 p-3 text-xs sm:text-sm">
+                  <input type="checkbox" checked={conciergeServices.includes(id)} onChange={e => setConciergeServices(current => e.target.checked ? [...current, id] : current.filter(item => item !== id))} className="accent-violet-500" />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <p className="text-xs text-violet-200">A MIKA poderá sugerir opções e horários. Nenhuma reserva ou pagamento será realizado automaticamente.</p>
+        </div>}
+      </div>}
       <div className="mt-4 flex flex-wrap items-center gap-3">
       <button type="button" onClick={() => setShowForm(false)} disabled={saving}
         className="rounded-xl border border-slate-600 px-4 py-3 text-sm text-slate-200 hover:bg-slate-800 disabled:opacity-50">Cancelar</button>
