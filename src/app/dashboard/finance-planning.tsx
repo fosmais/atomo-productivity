@@ -120,6 +120,7 @@ export default function FinancePlanning() {
       "Soma dos aportes mensais estimados: " + money(monthlyNeeded) + ". Capacidade mensal declarada: " + (capacity === null ? "não informada" : money(capacity)) + ".",
       "Déficit mensal estimado para cumprir todas as metas no prazo: " + (capacity === null ? "não calculado" : money(Math.max(0, monthlyNeeded - capacity))) + ".",
       "Cobertura mensal estimada: " + (capacity === null ? "não calculada" : (monthlyNeeded > 0 ? Math.min(100, Math.round(capacity / monthlyNeeded * 100)) : 100) + "%") + ".",
+      "Se o aporte mensal disponível não atender todas as metas, explique quais poderão ultrapassar o prazo e sugira alternativas de prazo ou redistribuição, respeitando a prioridade salva.",
 
       "Respeite as prioridades já definidas pelo usuário; confirme se deseja revisá-las e verifique despesas fixas, dívidas e reserva de emergência.",
       "Sugira uma distribuição viável e ajuste de prazos; não presuma que todos os objetivos devem ser financiados simultaneamente.",
