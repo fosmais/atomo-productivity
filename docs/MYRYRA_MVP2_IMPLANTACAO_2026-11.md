@@ -47,6 +47,33 @@ Aceite: go/no-go documentado. Google Play pode depender de revisão externa e ex
 ## Pós-lançamento — P3
 Teams, Google Tasks/Todoist/Outlook, viagens, Smart Commute/Maps Routes, internacionalização, relatórios avançados.
 
+## Backlog mestre consolidado — prioridade de execução (04/11/2026)
+Prioridades: **P0** = segurança/fluxo essencial; **P1** = valor direto no MVP2; **P2** = diferenciação com dependências controláveis; **P3** = integrações externas e expansão. Status inicial **PENDENTE DE HOMOLOGAÇÃO** quando já houver código, e **BACKLOG** nos demais casos. A ordem abaixo é a sequência recomendada, sem substituir as ondas acima.
+
+| Ordem | ID | Prioridade | Entrega / escopo | Dependência e aceite | Situação |
+|---|---|---|---|---|---|
+| 01 | AUTH-01 / OPS-01 | P0 | Login Google, identidade MYRYRA, MFA, RLS, segredos, monitoria e rollback | Dois usuários isolados, sem falhas críticas | Pendente de homologação |
+| 02 | AGENDA-01/02/03 | P0 | CRUD, títulos editáveis, horários livres, conflitos, fuso, Google Calendar opcional e validação de datas | Testes de sobreposição, dia inteiro, autorização e persistência | Pendente de homologação |
+| 03 | MIKA-01 / CONCIERGE-01 | P0 | Concierge existente: conversa, histórico, contexto, voz/arquivos, cotas, tarefas/eventos propostos e confirmação | /api/concierge auditada; nenhuma ação sem confirmação; dois usuários | Pendente de homologação |
+| 04 | UX-01 / UX-02 | P1 | Onboarding, tela de login, ajuda MIKA, favoritos embutidos, busca, lixeira, responsividade e acessibilidade | Fluxos reais web e mobile | Backlog |
+| 05 | BILL-01/02 | P1 | Asaas sandbox, PIX quando disponível, planos, assinaturas, webhook, conciliação e cancelamento | Sem cobranças reais até aprovação expressa | Pendente de homologação |
+| 06 | SUPPORT-01 / MAIL-01 | P1 | Tickets via MIKA, acompanhamento, admin, notificações, base de conhecimento, e-mail transacional | Testes de entrega e isolamento | Backlog |
+| 07 | ANDROID-01 / ALERT-01 | P1 | APK Expo, login/sessão, notificações opt-in com app fechado e revogação | Teste em aparelho e permissões | Backlog |
+| 08 | FIN-01 | P1 | MYRYRA Finance sem banco: saldos e lançamentos manuais, despesas, assinaturas, metas, projeção de investimentos e orientação educacional MIKA | Não conectar contas bancárias nem prometer retornos; testes financeiros | Backlog / validar código existente |
+| 09 | AI-01 / CONCIERGE-02 | P1 | What Now?, Daily Briefing, AutoPilot, contexto de Agenda/Finance, prioridades, follow-ups, lembretes consentidos | Confirmação antes de ações, deduplicação e controle de notificações | Backlog |
+| 10 | PRODUCTIVITY-01 | P2 | Focus Mode, Inbox Zero, Energy Planner, Kanban, planejamento semanal e Weekly Intelligence | Experiência simples sem sobrecarregar a Home | Backlog |
+| 11 | GOALS-01 | P2 | Goal-to-Action, metas adaptativas, Life Balance, score, gamificação e compartilhamento opcional/WhatsApp Status | Privacidade e opt-in | Backlog |
+| 12 | CONCIERGE-MOB-01 | P2 | Compromisso → origem/destino, rota, trânsito, duração, horário recomendado de saída, margem e alerta de atraso | API de rotas e tráfego habilitada (403 histórico), custos, fuso, consentimento; não alegar dados em tempo real sem consulta | Backlog dependente de integração |
+| 13 | CONCIERGE-MOB-02 | P3 | Estacionamento, preço, táxi/transporte e alternativas de deslocamento | Parceiros e dados verificáveis | Backlog |
+| 14 | CONCIERGE-DIN-01 | P2 | Restaurantes, almoço/jantar/happy hour, proximidade, preferências e consulta de reservas | Provedor com disponibilidade verificável; confirmação antes de reservar | Backlog dependente de parceiro |
+| 15 | CONCIERGE-TRAVEL-01 | P3 | Viagens, hotéis, hospedagem, deslocamentos e possível seguro viagem | Fontes/parceiros, preço e disponibilidade reais; consentimento | Backlog |
+| 16 | CONCIERGE-ACTIONS-01 | P3 | Reservar ou contratar serviços pelo Concierge mediante confirmação explícita | **Capacidade proposta, ainda não confirmada como escopo aprovado**; integrações, cancelamento e autorização | A definir |
+| 17 | INTEGRATIONS-01 | P3 | Google Tasks, Todoist, Outlook, Google Maps, WhatsApp opt-in e integrações futuras | APIs, permissões e limites de custo | Backlog |
+| 18 | PLATFORM-01 | P3 | MYRYRA Teams/Business, internacionalização pt-BR/en-US e relatórios avançados | Demanda e validação comercial | Backlog |
+| 19 | QA-01 / ANDROID-02 / WEB-01 | P0 para lançamento | Regressão, go/no-go, Play Store, QR code válido, backup e publicação controlada | Testes e aprovação de release; sem ativar checkout automaticamente | Backlog |
+
+**Regra de produto:** Concierge é parte da MIKA, não um segundo assistente. Consultar disponibilidade de reservas, calcular trânsito em tempo real, executar reservas, enviar WhatsApp ou realizar pagamentos exigem integração e autorização específicas. Ações externas nunca devem ser executadas silenciosamente.
+
 ## Concierge — critérios de aceite e dependências
 - P0 (Onda 1): endpoint existente auditado e funcional em homologação; histórico e propostas vinculados ao usuário; nenhuma tarefa/evento criada sem confirmação; erros de IA e limites tratados; testes de segurança e permissões.
 - P2 (Onda 3): Concierge proativo integrado à MIKA e à Agenda; lembretes e follow-ups opt-in, deduplicação, respeito ao fuso e opção de desativar. Não prometer WhatsApp sem integração e consentimento.
