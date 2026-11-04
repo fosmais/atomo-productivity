@@ -91,14 +91,19 @@ export default function EventConfirmation({
           : "Este horário coincide com compromisso(s): " + details + ". Peça outro horário à MIKA ou confirme mesmo assim.");
         return;
       }
-      if (overlapping.length > 0 && !conflictAcknowledged) {
-        setConflictWarning(`Este horário coincide com ${overlapping.length} compromisso(s) existente(s): ${overlapping.slice(0, 3).map(item => item.title).join(", ")}. Você pode pedir outro horário à MIKA ou confirmar mesmo assim.`);
-        return;
-      }
       setConflictWarning("");
       if (messageId) {
         const response = await fetch("/api/myka/proposal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messageId, acknowledgeConflict: conflictAcknowledged }) });
-        if (!response.ok) { const data = await response.json().catch(() => null); throw new Error(data?.error || "Falha ao confirmar compromisso."); }
+        if (!response.ok) {
+          const data = await response.json().catch(() => null);
+          if (response.status === 409 && data?.code === "EVENT_CONFLICT") {
+            setConflictAcknowledged(false);
+            const titles = Array.isArray(data.conflicts) ? data.conflicts.map((item: { title?: string }) => item.title).filter(Boolean).slice(0, 3).join(", ") : "";
+            setConflictWarning("A agenda mudou desde a última verificação. " + (titles ? "Conflito com: " + titles + ". " : "") + "Revise e confirme novamente se desejar manter o horário.");
+            return;
+          }
+          throw new Error(data?.error || "Falha ao confirmar compromisso.");
+        }
       } else {
         await saveCloudEvent(event);
       }
