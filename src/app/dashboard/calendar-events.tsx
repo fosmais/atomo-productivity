@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import EventReminderControl from "./event-reminder-control";
 import {
   getCloudEvents,
   saveCloudEvent,
@@ -704,6 +705,7 @@ export default function CalendarEvents() {
                   )}
                 </div>
 
+                <EventReminderControl eventId={event.id} startsAt={event.startsAt} />
                 <div className="flex flex-col gap-2">
                   {editingId === event.id ? (
                     <div className="flex flex-wrap items-center gap-2">
