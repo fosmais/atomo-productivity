@@ -29,6 +29,7 @@ type PanelData = {
     title: string;
   }[];
   timeZone: string;
+  googleWarning: string;
 };
 
 function formatDateTime(date: Date, timeZone: string) {
@@ -68,59 +69,47 @@ export default function SmartSchedulingPanel() {
         (day) => day.available
       );
 
-      const googleResponse = await fetch("/api/google/events", {
-        cache: "no-store",
-      });
-
-      if (!googleResponse.ok) {
-        throw new Error(
-          "Não foi possível consultar o Google Calendar."
-        );
-      }
-
-      const googleData: {
-        connected: boolean;
-        events: Array<{ calendarId: string;
-          start: string | null;
-          end: string | null;
-          calendarTimeZone?: string | null;
-          status: string | null;
-          transparency: string | null;
-          selfResponseStatus: string | null;
-        }>;
-      } = await googleResponse.json();
-
-      if (!Array.isArray(googleData.events)) {
-        throw new Error("Resposta inválida do Google Calendar.");
-      }
-
-      const calendarPreferences = await getGoogleCalendarPreferences();
-
-      const selectedCalendarIds = calendarPreferences.selectedCalendarIds;
-
-      const googleBlocked: TimeInterval[] = googleData.connected
-        ? filterEventsBySelectedCalendars(
-            googleData.events,
-            selectedCalendarIds
+      // Google Calendar is optional: local MYRYRA scheduling must work
+      // when Google is disconnected or its API is temporarily unavailable.
+      let googleBlocked: TimeInterval[] = [];
+      let googleWarning = "";
+      try {
+        const googleResponse = await fetch("/api/google/events", { cache: "no-store" });
+        if (!googleResponse.ok) throw new Error("Google Calendar indisponível");
+        const googleData: {
+          connected: boolean;
+          events: Array<{
+            calendarId: string;
+            start: string | null;
+            end: string | null;
+            calendarTimeZone?: string | null;
+            status: string | null;
+            transparency: string | null;
+            selfResponseStatus: string | null;
+          }>;
+        } = await googleResponse.json();
+        if (!Array.isArray(googleData.events)) throw new Error("Resposta inválida do Google Calendar");
+        if (googleData.connected) {
+          const calendarPreferences = await getGoogleCalendarPreferences();
+          googleBlocked = filterEventsBySelectedCalendars(
+            googleData.events, calendarPreferences.selectedCalendarIds
           )
-            .filter(
-              (event) =>
-                event.status !== "cancelled" &&
-                event.transparency !== "transparent" &&
-                event.selfResponseStatus !== "declined"
+            .filter(event =>
+              event.status !== "cancelled" &&
+              event.transparency !== "transparent" &&
+              event.selfResponseStatus !== "declined"
             )
-            .map((event) => getGoogleEventInterval(event))
-            .filter(
-              (interval): interval is TimeInterval =>
-                interval !== null
-            )
-            .filter(
-              (interval) =>
-                Number.isFinite(interval.start.getTime()) &&
-                Number.isFinite(interval.end.getTime()) &&
-                interval.start < interval.end
-            )
-        : [];
+            .map(event => getGoogleEventInterval(event))
+            .filter((interval): interval is TimeInterval =>
+              interval !== null &&
+              Number.isFinite(interval.start.getTime()) &&
+              Number.isFinite(interval.end.getTime()) &&
+              interval.start < interval.end
+            );
+        }
+      } catch {
+        googleWarning = "Google Calendar não pôde ser consultado. Sugestões calculadas apenas com a disponibilidade da MYRYRA; confira conflitos externos antes de confirmar.";
+      }
 
       const freeIntervals = availableIntervals.flatMap(
         (interval) =>
@@ -141,6 +130,7 @@ export default function SmartSchedulingPanel() {
           })
         ),
         timeZone: preferences.timeZone,
+        googleWarning,
       });
     } catch (err) {
       setError(
@@ -204,6 +194,8 @@ export default function SmartSchedulingPanel() {
           {loading ? "Calculando..." : "Atualizar"}
         </button>
       </div>
+
+      {data?.googleWarning && <p role="status" className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-200">{data.googleWarning}</p>}
 
       <details className="mt-4 rounded-xl border border-violet-400/25 bg-violet-500/5 p-3 text-sm text-slate-200">
         <summary className="cursor-pointer font-semibold text-violet-200">Como funciona o Smart Scheduling?</summary>
