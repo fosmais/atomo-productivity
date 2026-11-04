@@ -6,6 +6,7 @@ import {
   getCloudEvents,
   saveCloudEvent,
   deleteCloudEvent,
+  renameCloudEvent,
   type CalendarEvent,
   type EventType,
 } from "@/lib/event-cloud";
@@ -117,6 +118,9 @@ export default function CalendarEvents() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const [renaming, setRenaming] = useState(false);
   const [error, setError] = useState("");
 
   async function loadEvents() {
@@ -252,6 +256,23 @@ export default function CalendarEvents() {
       );
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleRename() {
+    if (!editingId || renaming) return;
+    setRenaming(true);
+    setError("");
+    try {
+      await renameCloudEvent(editingId, editingTitle);
+      await loadEvents();
+      window.dispatchEvent(new Event("myryra:events-updated"));
+      setEditingId(null);
+      setEditingTitle("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível renomear o compromisso.");
+    } finally {
+      setRenaming(false);
     }
   }
 
@@ -683,6 +704,22 @@ export default function CalendarEvents() {
                   )}
                 </div>
 
+                <div className="flex flex-col gap-2">
+                  {editingId === event.id ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input aria-label="Novo título do compromisso" value={editingTitle} maxLength={200}
+                        onChange={(e) => setEditingTitle(e.target.value)}
+                        className="min-w-0 flex-1 rounded-lg border border-violet-400/50 bg-slate-800 px-3 py-2 text-sm text-white" />
+                      <button type="button" onClick={() => void handleRename()} disabled={renaming || !editingTitle.trim()}
+                        className="rounded-lg bg-violet-600 px-3 py-2 text-sm disabled:opacity-50">{renaming ? "Salvando..." : "Salvar"}</button>
+                      <button type="button" onClick={() => setEditingId(null)} disabled={renaming}
+                        className="rounded-lg border border-white/20 px-3 py-2 text-sm">Cancelar</button>
+                    </div>
+                  ) : (
+                    <button type="button" onClick={() => { setEditingId(event.id); setEditingTitle(event.title); }}
+                      className="self-start rounded-lg border border-violet-400/40 px-3 py-2 text-sm text-violet-200">Editar título</button>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() => handleDelete(event.id)}
