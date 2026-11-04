@@ -9,6 +9,7 @@ import {
   saveCloudEvent,
   deleteCloudEvent,
   renameCloudEvent,
+  updateCloudEventCategory,
   type CalendarEvent,
   type EventType,
 } from "@/lib/event-cloud";
@@ -125,6 +126,7 @@ export default function CalendarEvents() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [renaming, setRenaming] = useState(false);
+  const [categoryBusyId, setCategoryBusyId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   async function loadEvents() {
@@ -280,6 +282,21 @@ export default function CalendarEvents() {
       setError(err instanceof Error ? err.message : "Não foi possível renomear o compromisso.");
     } finally {
       setRenaming(false);
+    }
+  }
+
+  async function handleCategoryChange(eventId: string, nextCategory: EventCategory) {
+    if (categoryBusyId) return;
+    setCategoryBusyId(eventId);
+    setError("");
+    try {
+      await updateCloudEventCategory(eventId, nextCategory);
+      setEvents((previous) => previous.map((event) => event.id === eventId ? { ...event, category: nextCategory } : event));
+      window.dispatchEvent(new Event("myryra:events-updated"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível atualizar a categoria.");
+    } finally {
+      setCategoryBusyId(null);
     }
   }
 
