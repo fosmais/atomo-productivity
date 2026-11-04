@@ -39,13 +39,23 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
   }, [activeModule, quickAction]);
   const panels: Record<View, ReactNode> = { tasks, today, intelligence, focus };
 
+  function selectSection(id: View) {
+    setActive(id);
+    if (id === "focus") {
+      window.requestAnimationFrame(() => {
+        const focusPanel = document.querySelector<HTMLDetailsElement>('[data-feature-id="planning-focus"]');
+        if (focusPanel) focusPanel.open = true;
+      });
+    }
+  }
+
   function onTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
     if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) return;
     event.preventDefault();
     const next = event.key === "Home" ? 0
       : event.key === "End" ? sections.length - 1
       : (index + (event.key === "ArrowRight" ? 1 : -1) + sections.length) % sections.length;
-    setActive(sections[next].id);
+    selectSection(sections[next].id);
     document.getElementById(`planning-tab-${sections[next].id}`)?.focus();
   }
 
@@ -62,7 +72,7 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
             tabIndex={active === section.id ? 0 : -1}
             onKeyDown={event => onTabKeyDown(event, index)}
             aria-controls={`planning-panel-${section.id}`}
-            onClick={() => setActive(section.id)}
+            onClick={() => selectSection(section.id)}
             className={`flex min-h-[116px] min-w-0 flex-col justify-center rounded-2xl border p-5 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 ${
               active === section.id
                 ? "border-violet-400/70 bg-violet-600/15 shadow-lg shadow-violet-950/20"
