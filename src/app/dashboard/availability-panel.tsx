@@ -99,6 +99,18 @@ export default function AvailabilityPanel() {
 
   useEffect(() => {
     void loadAvailability();
+    const refresh = () => { void loadAvailability(); };
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    window.addEventListener("myryra:events-updated", refresh);
+    window.addEventListener("myryra:tasks-updated", refresh);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.removeEventListener("myryra:events-updated", refresh);
+      window.removeEventListener("myryra:tasks-updated", refresh);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
   }, [loadAvailability]);
 
   return (
