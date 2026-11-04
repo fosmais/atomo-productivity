@@ -25,6 +25,7 @@ export type NewCalendarEvent = {
   blocksTime?: boolean;
   category?: EventCategory;
   /** Explicitly allow a historical record; never enabled by default. */
+  concierge?: { departureAddress: string; services: string[] };
   allowPast?: boolean;
 };
 
@@ -111,7 +112,7 @@ export async function saveCloudEvent(
     throw new Error("Tipo de evento inválido.");
   }
 
-  const { error } = await supabase.from("events").insert({
+  const { data: saved, error } = await supabase.from("events").insert({
     user_id: userId,
     title,
     starts_at: start.toISOString(),
@@ -121,9 +122,25 @@ export async function saveCloudEvent(
     event_type: eventType,
     blocks_time: blocksTime,
     category: event.category ?? "personal",
-  });
+  }).select("id").single();
 
   if (error) throw new Error(error.message);
+  if (event.concierge && saved) {
+    const allowed = ["transport", "parking", "restaurant", "hotel"];
+    const services = [...new Set(event.concierge.services)];
+    if (services.some(service => !allowed.includes(service))) throw new Error("Serviço de Concierge inválido.");
+    const { error: conciergeError } = await supabase.from("event_concierge").insert({
+      event_id: saved.id,
+      user_id: userId,
+      departure_address: event.concierge.departureAddress.slice(0, 300) || null,
+      services,
+    });
+    if (conciergeError) {
+      // Avoid leaving a seemingly successful event without its requested concierge setup.
+      await supabase.from("events").update({ deleted_at: new Date().toISOString() }).eq("id", saved.id).eq("user_id", userId);
+      throw new Error("Não foi possível ativar o Concierge. Verifique a configuração e tente novamente.");
+    }
+  }
 }
 
 export async function deleteCloudEvent(eventId: string): Promise<void> {
