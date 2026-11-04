@@ -86,6 +86,26 @@ export default function FinancePlanning() {
     } catch { setHandoffError(true); }
   }
 
+  function askMykaAboutPortfolio() {
+    const totalRemaining = goals.reduce((sum, goal) => sum + Math.max(0, goal.target_cents - goal.saved_cents), 0);
+    const monthlyNeeded = goals.reduce((sum, goal) => sum + Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths), 0);
+    const capacity = parseCents(monthlyCapacityInput);
+    const prompt = [
+      "MIKA, me ajude a priorizar minhas metas financeiras sem comprometer meu orçamento.",
+      "Metas: " + goals.map(goal => goal.title + " (restante " + money(Math.max(0, goal.target_cents - goal.saved_cents)) + ")").join("; ") + ".",
+      "Prazo ilustrativo comum: " + goalHorizonMonths + " meses. Total restante: " + money(totalRemaining) + ".",
+      "Soma dos aportes mensais estimados: " + money(monthlyNeeded) + ". Capacidade mensal declarada: " + (capacity === null ? "não informada" : money(capacity)) + ".",
+      "Peça ao usuário para classificar cada meta como essencial, importante ou opcional e verificar despesas fixas, dívidas e reserva de emergência.",
+      "Sugira uma distribuição viável e ajuste de prazos; não presuma que todos os objetivos devem ser financiados simultaneamente.",
+      "Os valores são manuais e a simulação não inclui rendimentos ou inflação. Não execute movimentações."
+    ].join(" ");
+    try {
+      sessionStorage.setItem("myryra:myka:investment-handoff", prompt);
+      setHandoffError(false);
+      navigateTo("vyra-ai");
+    } catch { setHandoffError(true); }
+  }
+
   async function addGoal(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const cents = parseCents(goalAmount);
@@ -200,6 +220,13 @@ export default function FinancePlanning() {
         </select>
         <span className="mt-1 block text-slate-500">A ordenação muda apenas a visualização; não define qual meta é mais importante para você.</span>
       </label>}
+      {goals.length > 1 && <div className="rounded-xl border border-violet-400/20 bg-slate-950/60 p-3">
+        <p className="text-sm font-semibold text-white">Suas metas em conjunto</p>
+        <p className="mt-1 text-xs text-slate-300">Aporte mensal somado para todas as metas em {goalHorizonMonths} meses: <strong className="text-white">{money(goals.reduce((sum, goal) => sum + Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths), 0))}</strong>.</p>
+        {parseCents(monthlyCapacityInput) !== null && <p className="mt-1 text-xs text-amber-200">{goals.reduce((sum, goal) => sum + Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths), 0) > (parseCents(monthlyCapacityInput) ?? 0) ? "A soma dos aportes ultrapassa sua capacidade mensal informada. Considere priorizar metas ou ampliar prazos." : "A soma dos aportes cabe na capacidade mensal informada, antes de considerar despesas e imprevistos."}</p>}
+        <button type="button" onClick={askMykaAboutPortfolio} className="mt-3 rounded-lg border border-violet-400 px-3 py-2 text-xs font-semibold text-violet-200">Priorizar metas com a MIKA</button>
+        <p className="mt-2 text-xs text-slate-500">A MIKA perguntará quais objetivos são essenciais, importantes ou opcionais. Nenhuma prioridade é atribuída automaticamente.</p>
+      </div>}
       <ul className="space-y-3">{[...goals].sort((a, b) => goalSort === "name" ? a.title.localeCompare(b.title, "pt-BR") : goalSort === "progress" ? (b.saved_cents / Math.max(1,b.target_cents)) - (a.saved_cents / Math.max(1,a.target_cents)) : Math.max(0,a.target_cents-a.saved_cents) - Math.max(0,b.target_cents-b.saved_cents)).map(goal => <li key={goal.id} className="rounded-xl border border-white/10 p-3">
         <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-medium text-white">{goal.title}</p><p className="mt-1 text-xs text-slate-400">{money(goal.saved_cents)} reservados de {money(goal.target_cents)}</p></div><button type="button" disabled={busy} onClick={() => void remove("myryra_finance_goals", goal.id)} className="text-xs text-violet-300 disabled:opacity-50">Excluir</button></div>
         <div role="progressbar" aria-label={`Progresso da meta ${goal.title}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, Math.round(goal.saved_cents / Math.max(1, goal.target_cents) * 100))} className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800"><div className="h-full rounded-full bg-violet-500" style={{ width: `${Math.min(100, goal.saved_cents / Math.max(1, goal.target_cents) * 100)}%` }} /></div>
