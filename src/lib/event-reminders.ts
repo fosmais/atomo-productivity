@@ -44,3 +44,28 @@ export async function listEventReminders(eventId: string) {
   if (error) throw new Error(error.message);
   return data ?? [];
 }
+
+export type DueEventReminder = {
+  id: string;
+  event_id: string;
+  remind_at: string;
+  minutes_before: number;
+  events: { title: string; starts_at: string; deleted_at: string | null } | null;
+};
+
+/** In-app due reminders only. Does not send push/email or mark delivery. */
+export async function listDueEventReminders(): Promise<DueEventReminder[]> {
+  const supabase = createClient();
+  const { data: auth, error: authError } = await supabase.auth.getUser();
+  if (authError || !auth.user) throw new Error("Faça login para consultar lembretes.");
+  const { data, error } = await supabase.from("event_reminders")
+    .select("id,event_id,remind_at,minutes_before,events!inner(title,starts_at,deleted_at)")
+    .eq("user_id", auth.user.id)
+    .eq("status", "pending")
+    .is("events.deleted_at", null)
+    .lte("remind_at", new Date().toISOString())
+    .order("remind_at", { ascending: false })
+    .limit(20);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as DueEventReminder[];
+}
