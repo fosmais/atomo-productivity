@@ -15,6 +15,10 @@ export default function VyraWorkspace({
   children,
 }: VyraWorkspaceProps) {
   const [activeModule, setActiveModule] = useState("home");
+  useEffect(() => {
+    const themes: Record<string, string> = { violet: "linear-gradient(160deg, #0b061e, #020617 65%)", navy: "linear-gradient(160deg, #071a32, #020617 65%)", graphite: "linear-gradient(160deg, #15151d, #020617 65%)" };
+    try { const theme = localStorage.getItem("myryra:background-theme:v1") || "violet"; const root = document.getElementById("dashboard-top")?.parentElement; if (root) root.style.background = themes[theme] || themes.violet; } catch { /* optional */ }
+  }, []);
   const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
   const [quickAction, setQuickAction] = useState<string | null>(null);
 
