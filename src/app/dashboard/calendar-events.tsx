@@ -812,9 +812,9 @@ export default function CalendarEvents() {
                       {event.concierge.services.includes("parking") && <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("estacionamento próximo de " + event.location)}`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">Buscar estacionamento ↗</a>}
                       {event.concierge.services.includes("restaurant") && <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("restaurantes próximos de " + event.location)}`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">Buscar restaurantes ↗</a>}
                       {event.concierge.services.includes("hotel") && <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("hotéis próximos de " + event.location)}`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">Buscar hotéis ↗</a>}
-                      </details>
-                  </div>}
-                    <p className="mt-2 text-xs text-slate-400">Os links abrem o Google Maps. Trajeto, trânsito, preços e disponibilidade são informados pelo serviço externo.</p>
+                    </div>}
+                    <p className="mt-2 text-xs text-slate-400">As opções abrem o Google Maps. Não há reserva ou pagamento automático.</p>
+                    </details>
                   </div>}
                 </div>
 
