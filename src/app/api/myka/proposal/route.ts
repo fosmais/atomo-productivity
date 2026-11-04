@@ -212,6 +212,13 @@ export async function POST(request: Request) {
     if (outcome.status !== "saved") {
       return NextResponse.json({ error: "Proposta indisponível." }, { status: 409 });
     }
+    if (isEventCategory(categoryInput) && typeof outcome.eventId === "string") {
+      const { error: categoryError } = await admin.from("events")
+        .update({ category: categoryInput })
+        .eq("id", outcome.eventId)
+        .eq("user_id", auth.user.id);
+      if (categoryError) console.error("Categoria do evento não atualizada:", categoryError.message);
+    }
     return NextResponse.json({ messageId, status: "saved", eventId: typeof outcome.eventId === "string" ? outcome.eventId : null }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("Erro ao confirmar evento Myka:", error);
