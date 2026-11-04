@@ -158,3 +158,17 @@ export async function renameCloudEvent(eventId: string, nextTitle: string): Prom
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Compromisso não encontrado ou sem permissão para editar.");
 }
+
+export async function updateCloudEventCategory(eventId: string, category: EventCategory): Promise<void> {
+  if (!isEventCategory(category)) throw new Error("Categoria inválida.");
+  const { supabase, userId } = await getAuthenticatedUser();
+  const { data, error } = await supabase.from("events")
+    .update({ category })
+    .eq("id", eventId)
+    .eq("user_id", userId)
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Compromisso não encontrado ou sem permissão.");
+}
