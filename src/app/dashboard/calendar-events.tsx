@@ -41,6 +41,33 @@ export default function CalendarEvents() {
       setError("Não foi possível abrir a MIKA agora. Tente novamente.");
     }
   }
+  function downloadConciergeReminder(event: Pick<CalendarEvent, "title" | "startsAt" | "endsAt" | "location" | "concierge">) {
+    if (!event.concierge) return;
+    const icsEscape = (value: string) => value.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
+    const utc = (value: string) => new Date(value).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+    const notes = "MIKA Concierge: confira o trajeto e os serviços solicitados antes de sair. Horários de deslocamento não são estimados automaticamente.";
+    const lines = [
+      "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//MYRYRA//MIKA Concierge//PT",
+      "BEGIN:VEVENT", "UID:" + crypto.randomUUID() + "@myryra.com",
+      "DTSTAMP:" + utc(new Date().toISOString()),
+      "DTSTART:" + utc(event.startsAt), "DTEND:" + utc(event.endsAt),
+      "SUMMARY:" + icsEscape(event.title),
+      "LOCATION:" + icsEscape(event.location || ""),
+      "DESCRIPTION:" + icsEscape(notes),
+      "BEGIN:VALARM", "TRIGGER:-PT60M", "ACTION:DISPLAY",
+      "DESCRIPTION:" + icsEscape("MIKA Concierge: confira seu compromisso e o deslocamento"),
+      "END:VALARM", "END:VEVENT", "END:VCALENDAR"
+    ];
+    const blob = new Blob([lines.join("\r\n") + "\r\n"], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "myryra-concierge-lembrete.ics";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [favoriteEventIds, setFavoriteEventIds] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
@@ -812,6 +839,8 @@ export default function CalendarEvents() {
                     <p className="mt-1 text-xs text-slate-300">Serviços: {event.concierge.services.map(service => (({ transport: "Transporte", parking: "Estacionamento", restaurant: "Restaurante", hotel: "Hospedagem" } as Record<string, string>)[service] || service)).join(", ") || "Nenhum selecionado"}</p>
                     <p className="mt-2 text-xs text-slate-400">As opções ainda precisam ser planejadas. Reservas e pagamentos exigem confirmação.</p>
                     <button type="button" onClick={() => planWithMyka(event)} className="mt-3 rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500">Planejar com a MIKA</button>
+                    <button type="button" onClick={() => downloadConciergeReminder(event)} className="ml-2 mt-3 rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">Adicionar lembrete · 1h antes</button>
+                    <p className="mt-1 text-xs text-slate-400">Baixa um evento para importar no calendário. O alerta depende das notificações do seu calendário; não calcula trânsito.</p>
                     <ConciergeRouteEstimate event={event} />
                     <details className="mt-3 rounded-lg border border-violet-400/20 p-3"><summary className="cursor-pointer text-xs font-semibold text-violet-200">Serviços do compromisso · Ver opções</summary>
                     {event.location && <div className="mt-2 flex flex-wrap gap-2">
