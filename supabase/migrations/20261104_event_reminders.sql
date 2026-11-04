@@ -45,7 +45,7 @@ grant select, insert, update on public.event_reminders to authenticated;
 revoke all on public.event_reminders from anon;
 -- A deleted event must never leave a deliverable reminder.
 create or replace function public.cancel_reminders_for_deleted_event()
-returns trigger language plpgsql security definer set search_path = '' as $
+returns trigger language plpgsql security definer set search_path = '' as $reminder_cleanup$
 begin
   if old.deleted_at is null and new.deleted_at is not null then
     update public.event_reminders
@@ -54,7 +54,7 @@ begin
   end if;
   return new;
 end;
-$$;
+$reminder_cleanup$;
 drop trigger if exists cancel_reminders_on_event_delete on public.events;
 create trigger cancel_reminders_on_event_delete
 after update of deleted_at on public.events
