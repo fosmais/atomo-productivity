@@ -176,6 +176,23 @@ export async function POST(request: Request) {
     if (eventType !== "appointment" && eventType !== "unavailable") {
       return NextResponse.json({ error: "Tipo inválido." }, { status: 422 });
     }
+    // Recheck local overlaps at confirmation time, not only in the browser.
+    const acknowledgeConflict = (input as Record<string, unknown>).acknowledgeConflict === true;
+    const { data: overlaps, error: overlapsError } = await admin.from("events")
+      .select("id, title")
+      .eq("user_id", auth.user.id)
+      .is("deleted_at", null)
+      .lt("starts_at", endsAt.toISOString())
+      .gt("ends_at", startsAt.toISOString())
+      .limit(5);
+    if (overlapsError) throw overlapsError;
+    if ((overlaps?.length ?? 0) > 0 && !acknowledgeConflict) {
+      return NextResponse.json({
+        error: "O horário coincide com outro compromisso. Revise o conflito e confirme novamente se desejar continuar.",
+        code: "EVENT_CONFLICT",
+        conflicts: (overlaps ?? []).map((item) => ({ title: item.title })),
+      }, { status: 409 });
+    }
     // A single database transaction serializes confirmation and cancellation.
     const { data: result, error: confirmError } = await admin.rpc("myka_confirm_event", {
       p_message_id: messageId,
