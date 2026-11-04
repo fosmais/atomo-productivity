@@ -13,7 +13,10 @@ export type CalendarEvent = {
   eventType: EventType;
   blocksTime: boolean;
   category: EventCategory;
+  concierge?: EventConcierge | null;
 };
+
+export type EventConcierge = { departureAddress: string | null; services: string[]; status: string };
 
 export type NewCalendarEvent = {
   title: string;
@@ -72,8 +75,18 @@ export async function getCloudEvents(): Promise<CalendarEvent[]> {
       blocksTime: event.blocks_time,
       category: isEventCategory(event.category) ? event.category : "personal",
     })));
-    if (batch.length < pageSize) return allEvents;
+    if (batch.length < pageSize) break;
   }
+  if (allEvents.length === 0) return allEvents;
+  const { data: preferences, error: preferencesError } = await supabase.from("event_concierge")
+    .select("event_id, departure_address, services, status")
+    .eq("user_id", userId).in("event_id", allEvents.map(event => event.id));
+  if (preferencesError) throw new Error("Não foi possível carregar as preferências do Concierge.");
+  const byEvent = new Map((preferences ?? []).map(item => [item.event_id, item]));
+  return allEvents.map(event => {
+    const item = byEvent.get(event.id);
+    return { ...event, concierge: item ? { departureAddress: item.departure_address, services: item.services ?? [], status: item.status } : null };
+  });
 }
 
 export async function saveCloudEvent(
