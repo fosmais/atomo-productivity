@@ -79,6 +79,27 @@ export async function getCloudAvailability(
     end: new Date(event.ends_at),
   }));
 
+  // Timed, unfinished tasks also reserve time on the MYRYRA calendar.
+  // A due date without a start/duration is only a deadline, not a busy slot.
+  const { data: timedTasks, error: tasksError } = await supabase
+    .from("tasks")
+    .select("due_date, duration_minutes, completed")
+    .eq("user_id", user.id)
+    .eq("completed", false)
+    .not("due_date", "is", null)
+    .gte("due_date", rangeStart.toISOString())
+    .lt("due_date", rangeEnd.toISOString());
+  if (tasksError) throw new Error(tasksError.message);
+
+  for (const task of timedTasks ?? []) {
+    const duration = task.duration_minutes;
+    if (!Number.isInteger(duration) || duration <= 0 || duration > 1440) continue;
+    const end = new Date(task.due_date);
+    if (!Number.isFinite(end.getTime())) continue;
+    const start = new Date(end.getTime() - duration * 60_000);
+    if (start < end) blockedIntervals.push({ start, end });
+  }
+
   return windows.map((window) => {
     const result = calculateAvailability(
       window,
