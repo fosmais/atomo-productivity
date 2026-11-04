@@ -31,6 +31,7 @@ export default function EventConfirmation({
   const [error, setError] = useState("");
   const [category, setCategory] = useState<EventCategory>(() => event.category ?? suggestEventCategory(event.title));
   const [conflictWarning, setConflictWarning] = useState("");
+  const [categoryWarning, setCategoryWarning] = useState("");
   const [conflictAcknowledged, setConflictAcknowledged] = useState(false);
 
   async function handleConfirm() {
@@ -110,6 +111,7 @@ export default function EventConfirmation({
         }
         const result = await response.json();
         setSavedEventId(typeof result.eventId === "string" ? result.eventId : null);
+        if (result.categorySaved === false) setCategoryWarning("Evento salvo, mas a categoria não foi atualizada. Ajuste-a na Agenda.");
       } else {
         await saveCloudEvent({ ...event, category });
       }
