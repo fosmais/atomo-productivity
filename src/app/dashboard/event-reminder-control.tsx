@@ -45,6 +45,7 @@ export default function EventReminderControl({ eventId, startsAt }: { eventId: s
         </button>
       </label>
       {success && <p role="status" className="mt-2 text-emerald-300">Lembrete registrado. O envio automático de notificações ainda não está disponível.</p>}
+      {!success && <p className="mt-2 text-xs text-slate-400">A configuração fica salva na MYRYRA, mas os alertas automáticos ainda não estão ativos.</p>}
       {error && <p role="alert" className="mt-2 text-rose-300">{error}</p>}
     </div>
   );
