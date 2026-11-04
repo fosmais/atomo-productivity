@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     }
     const data = await response.json() as { routes?: Array<{ duration?: string; distanceMeters?: number }> };
     const route = data.routes?.[0];
-    const seconds = route?.duration && /^\\d+(?:\\.\\d+)?s$/.test(route.duration)
+    const seconds = route?.duration && /^\d+(?:\.\d+)?s$/.test(route.duration)
       ? Math.ceil(Number(route.duration.slice(0, -1))) : null;
     if (seconds === null || !Number.isFinite(seconds)) {
       return NextResponse.json({ error: "Nenhuma rota encontrada." }, { status: 404 });
