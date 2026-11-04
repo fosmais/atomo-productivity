@@ -58,7 +58,7 @@ export default function VyraHome() {
   const progress = metrics ? getCompletionRate(metrics) : null;
 
   return (
-    <main className="flex min-w-0 flex-col gap-3 lg:max-h-[calc(100dvh-210px)] lg:overflow-y-auto" aria-label="Início MYRYRA">
+    <main className="flex min-w-0 flex-col gap-3 " aria-label="Início MYRYRA">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-300">MYRYRA · HOJE</p>
@@ -73,7 +73,7 @@ export default function VyraHome() {
           {[
             { label: "Nova tarefa", icon: "+", module: "vyra-tasks", action: "capture" },
             { label: "Agendar", icon: "▦", module: "vyra-calendar" },
-            { label: "Lembrete", icon: "◷", module: "vyra-tasks" },
+            { label: "Lembrete", icon: "◷", module: "vyra-tasks", action: "capture" },
           ].map((item) => (
             <button key={item.label} type="button" onClick={() => "action" in item && item.action ? navigateToQuickAction?.(item.action) : navigateTo(item.module)}
               className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-xs font-medium text-white transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
@@ -87,7 +87,7 @@ export default function VyraHome() {
         <h2 className="mb-3 text-sm font-semibold text-white">O que quer acessar?</h2>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
           {shortcuts.map((item) => (
-            <button key={item.label} type="button" onClick={() => navigateTo(item.module)}
+            <button key={item.label} type="button" onClick={() => "action" in item && item.action ? navigateToQuickAction?.(item.action) : navigateTo(item.module)}
               className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border border-white/10 bg-slate-950/60 px-2 py-2 text-xs font-medium text-slate-100 transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
               <span className="text-xl text-violet-300" aria-hidden="true">{item.icon}</span>{item.label}
             </button>
