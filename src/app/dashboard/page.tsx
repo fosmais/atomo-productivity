@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import CalendarEvents from "./calendar-events";
+import DueReminders from "./due-reminders";
 import CloudPlans from "./cloud-plans";
 import CopilotChat from "./copilot-chat";
 import DailyCopilot from "./daily-copilot";
@@ -141,6 +142,7 @@ async function DashboardContent() {
           description="Seus compromissos, tarefas e horários em um só lugar."
         >
           <div className="min-w-0 space-y-4">
+            <DueReminders />
             <CalendarEvents />
             <FeatureAccordion id="availability" title="Horários livres" description="Consulte disponibilidade e períodos ocupados" userId={user.id}>
               <AvailabilityPanel />
