@@ -786,6 +786,12 @@ export default function CalendarEvents() {
                       Local: {event.location}
                     </p>
                   )}
+                  {event.concierge && <div className="mt-3 rounded-xl border border-violet-500/30 bg-violet-500/10 p-3 text-sm">
+                    <p className="font-semibold text-violet-200">MIKA Concierge · Planejamento ativo</p>
+                    <p className="mt-1 text-xs text-slate-300">Partida: {event.concierge.departureAddress || "A definir com a MIKA"}</p>
+                    <p className="mt-1 text-xs text-slate-300">Serviços: {event.concierge.services.map(service => ({ transport: "Transporte", parking: "Estacionamento", restaurant: "Restaurante", hotel: "Hospedagem" }[service] || service)).join(", ") || "Nenhum selecionado"}</p>
+                    <p className="mt-2 text-xs text-slate-400">As opções ainda precisam ser planejadas. Reservas e pagamentos exigem confirmação.</p>
+                  </div>}
                 </div>
 
                 <EventReminderControl eventId={event.id} startsAt={event.startsAt} />
