@@ -2,10 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useVyraNavigation } from "./vyra-module-context";
 
 type Entry = { amount_cents: number; kind: "income" | "expense"; created_at: string };
 const money = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(value / 100);
 export default function FinanceMonthlySummary() {
+  const { navigateTo } = useVyraNavigation();
+  const [handoffError, setHandoffError] = useState(false);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [bills, setBills] = useState<{ amount_cents: number; due_date: string; paid_at: string | null }[]>([]);
   const [error, setError] = useState("");
@@ -44,11 +47,31 @@ export default function FinanceMonthlySummary() {
   const monthlyBills = bills.filter(bill => bill.due_date.slice(0, 7) === currentKey);
   const paidBills = monthlyBills.filter(bill => bill.paid_at).reduce((sum, bill) => sum + Number(bill.amount_cents), 0);
   const pendingBills = monthlyBills.filter(bill => !bill.paid_at).reduce((sum, bill) => sum + Number(bill.amount_cents), 0);
+  const overspending = current.income > 0 && current.expense > current.income;
+  function askMykaForBudget() {
+    const prompt = [
+      "MIKA, minhas despesas manuais deste mês superaram minhas receitas registradas.",
+      "Receitas: " + money(current.income) + ". Despesas: " + money(current.expense) + ".",
+      "Diferença: " + money(current.expense - current.income) + ".",
+      "Esses valores são registros manuais parciais, não um extrato bancário confirmado.",
+      "Ajude-me a revisar gastos essenciais e adiáveis, uma pergunta por vez, sem alterar meus registros automaticamente nem recomendar crédito."
+    ].join(" ");
+    try {
+      sessionStorage.setItem("myryra:myka:investment-handoff", prompt);
+      setHandoffError(false);
+      navigateTo("vyra-ai");
+    } catch { setHandoffError(true); }
+  }
   const max = Math.max(1, ...months.flatMap(m => [m.income, m.expense]));
   return <section className="rounded-2xl border border-violet-400/25 bg-slate-900/75 p-4 sm:p-5" aria-label="Resumo financeiro mensal">
     <h3 className="font-semibold text-white">Seu mês em números</h3>
     <p className="mt-1 text-xs text-slate-400">Receitas e despesas registradas manualmente. Os valores não comprovam pagamento e não incluem saldo inicial ou rendimentos de investimentos.</p>
     {loading ? <p className="mt-3 text-sm text-slate-400">Carregando gráfico...</p> : error ? <p role="alert" className="mt-3 text-sm text-red-300">{error}</p> : <>
+      {overspending && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-400/35 bg-amber-500/10 p-4">
+        <div className="min-w-0"><p className="font-semibold text-amber-100">Despesas acima das receitas registradas</p><p className="mt-1 text-sm text-amber-100/85">Diferença de {money(current.expense - current.income)} neste mês. Confira se todos os lançamentos estão completos antes de tomar decisões.</p></div>
+        <button type="button" onClick={askMykaForBudget} className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">Replanejar com a MIKA</button>
+      </div>}
+      {handoffError && <p role="alert" className="mt-2 text-sm text-rose-300">Não foi possível abrir a MIKA. Tente novamente.</p>}
       <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
         <div className="rounded-lg bg-emerald-500/10 p-3"><p className="text-emerald-200">Entradas do mês</p><strong className="text-white">{money(current.income)}</strong></div>
         <div className="rounded-lg bg-rose-500/10 p-3"><p className="text-rose-200">Saídas do mês</p><strong className="text-white">{money(current.expense)}</strong></div>
