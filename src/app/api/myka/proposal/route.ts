@@ -166,6 +166,12 @@ export async function POST(request: Request) {
         Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime()) || endsAt <= startsAt) {
       return NextResponse.json({ error: "Dados do compromisso inválidos." }, { status: 422 });
     }
+    if (startsAt.getTime() < Date.now() - 60_000) {
+      return NextResponse.json(
+        { error: "O horário sugerido já passou. Solicite um novo horário à MIKA." },
+        { status: 422 }
+      );
+    }
     const eventType = event.eventType ?? "appointment";
     if (eventType !== "appointment" && eventType !== "unavailable") {
       return NextResponse.json({ error: "Tipo inválido." }, { status: 422 });
