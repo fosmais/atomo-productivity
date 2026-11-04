@@ -214,11 +214,14 @@ export async function POST(request: Request) {
     }
     let categorySaved = categoryInput === undefined && typeof outcome.eventId === "string";
     if (isEventCategory(categoryInput) && typeof outcome.eventId === "string") {
-      const { error: categoryError } = await admin.from("events")
+      const { data: updatedEvent, error: categoryError } = await admin.from("events")
         .update({ category: categoryInput })
         .eq("id", outcome.eventId)
-        .eq("user_id", auth.user.id);
-      categorySaved = !categoryError;
+        .eq("user_id", auth.user.id)
+        .is("deleted_at", null)
+        .select("id")
+        .maybeSingle();
+      categorySaved = !categoryError && !!updatedEvent;
       if (categoryError) console.error("Categoria do evento não atualizada:", categoryError.message);
     }
     return NextResponse.json({ messageId, status: "saved", eventId: typeof outcome.eventId === "string" ? outcome.eventId : null, categorySaved }, { headers: { "Cache-Control": "private, no-store" } });
