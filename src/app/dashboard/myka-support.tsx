@@ -124,7 +124,7 @@ export default function MykaSupport() {
     finally { setSending(false); }
   }
 
-  return <div className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] right-3 z-30 lg:bottom-5 lg:right-6">
+  return <div className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] right-4 z-30 max-w-[calc(100vw-2rem)] lg:bottom-6 lg:right-8">
     {open && <section role="dialog" aria-label="Ajuda e suporte MYKA" className="mb-3 flex max-h-[min(75vh,620px)] w-[min(92vw,380px)] flex-col overflow-hidden rounded-2xl border border-violet-400/40 bg-slate-950 text-white shadow-2xl shadow-violet-950/60">
       <header className="flex items-center justify-between border-b border-white/10 px-4 py-3">
         <div><h3 className="font-semibold">MYKA · Ajuda e suporte</h3><p className="text-xs text-slate-400">Ajuda contextual · {context.title}</p></div>
