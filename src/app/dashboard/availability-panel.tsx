@@ -8,10 +8,15 @@ import {
 } from "@/lib/cloud-availability";
 
 import { getPlanningPreferences } from "@/lib/planning-preferences";
+import { calculateAvailability, type TimeInterval } from "@/lib/availability-engine";
+import { getGoogleCalendarPreferences } from "@/lib/google-calendar-preferences";
+import { filterEventsBySelectedCalendars } from "@/lib/google-calendar-filter";
+import { getGoogleEventInterval } from "@/lib/google-event-time";
 
 type ViewState = {
   days: DailyAvailability[];
   timeZone: string;
+  googleWarning: string;
 };
 
 function formatTime(date: Date, timeZone: string) {
@@ -44,10 +49,42 @@ export default function AvailabilityPanel() {
     try {
       const preferences = await getPlanningPreferences();
       const days = await getCloudAvailability(new Date(), 7);
-
+      let googleWarning = "";
+      let mergedDays = days;
+      try {
+        const response = await fetch("/api/google/events", { cache: "no-store" });
+        if (!response.ok) throw new Error("Consulta Google indisponível");
+        const payload: {
+          connected: boolean;
+          events: Array<{
+            calendarId: string;
+            start: string | null;
+            end: string | null;
+            calendarTimeZone?: string | null;
+            status: string | null;
+            transparency: string | null;
+            selfResponseStatus: string | null;
+          }>;
+        } = await response.json();
+        if (!Array.isArray(payload.events)) throw new Error("Resposta Google inválida");
+        if (payload.connected) {
+          const selected = (await getGoogleCalendarPreferences()).selectedCalendarIds;
+          const blocked: TimeInterval[] = filterEventsBySelectedCalendars(payload.events, selected)
+            .filter(e => e.status !== "cancelled" && e.transparency !== "transparent" && e.selfResponseStatus !== "declined")
+            .map(e => getGoogleEventInterval(e))
+            .filter((e): e is TimeInterval => e !== null);
+          mergedDays = days.map(day => {
+            const result = calculateAvailability(day.window, [...day.blocked, ...blocked]);
+            return { window: day.window, available: result.available, blocked: result.blocked };
+          });
+        }
+      } catch {
+        googleWarning = "Google Calendar não foi consultado. A disponibilidade abaixo considera somente os compromissos da MYRYRA.";
+      }
       setView({
-        days,
+        days: mergedDays,
         timeZone: preferences.timeZone,
+        googleWarning,
       });
     } catch (err) {
       setError(
@@ -108,6 +145,7 @@ export default function AvailabilityPanel() {
           <p className="text-xs text-slate-400">
             Fuso: {view.timeZone}
           </p>
+          {view.googleWarning && <p role="status" className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-200">{view.googleWarning}</p>}
 
           {view.days.length === 0 ? (
             <p className="text-sm text-slate-300">
@@ -170,9 +208,7 @@ export default function AvailabilityPanel() {
           )}
 
           <p className="text-xs text-slate-400">
-            Horários sem bloqueio são potencialmente
-            disponíveis. A MYRYRA ainda não considera
-            compromissos informativos como bloqueios.
+            Horários sem bloqueio são potencialmente disponíveis. Compromissos locais e eventos ocupados dos calendários Google selecionados são considerados quando a integração está disponível. Tarefas com apenas prazo de entrega não bloqueiam horários.
           </p>
         </div>
       )}
