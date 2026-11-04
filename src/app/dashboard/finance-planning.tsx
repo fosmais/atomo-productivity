@@ -280,10 +280,13 @@ export default function FinancePlanning() {
               <p className="mt-2 text-xs text-slate-400">{money(totalAllocated)} de {money(totalNeeded)} por mês cabem na capacidade declarada.</p>
             </div>;
           })()}
+          <details className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+            <summary className="cursor-pointer text-xs font-semibold text-violet-200">Ver distribuição e prazos de cada meta ({allocations.length})</summary>
           <ul className="mt-3 space-y-2">{allocations.map(({ goal, needed, allocated }) => <li key={goal.id} className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-200">
             <span>{goal.title} <span className="text-slate-500">({{ essential: "essencial", important: "importante", optional: "opcional" }[goal.priority]})</span></span>
             <span className="text-right font-semibold">{money(allocated)} <span className="font-normal text-slate-500">de {money(needed)}/mês</span><span className="block text-[11px] font-normal text-slate-400">{goal.target_cents <= goal.saved_cents ? "Meta concluída" : allocated === 0 ? "Sem aporte nesta simulação" : `Prazo estimado: ${Math.ceil((goal.target_cents - goal.saved_cents) / allocated)} meses${Math.ceil((goal.target_cents - goal.saved_cents) / allocated) > goalHorizonMonths ? ` · ${Math.ceil((goal.target_cents - goal.saved_cents) / allocated) - goalHorizonMonths} meses além do planejado` : " · dentro do prazo"}`}</span></span>
           </li>)}</ul>
+          </details>
           {allocations.some(item => item.allocated < item.needed) && <div className="mt-3 rounded-xl border border-amber-400/25 bg-amber-500/10 p-3">
             <p className="text-xs font-semibold text-amber-100">Seu orçamento não cobre todos os aportes planejados</p>
             <p className="mt-1 text-xs text-amber-100/80">Faltam {money(allocations.reduce((sum, item) => sum + item.needed - item.allocated, 0))} por mês para atender todas as metas no prazo escolhido. Metas de menor prioridade podem receber menos ou nenhum aporte nesta simulação.</p>
