@@ -31,7 +31,7 @@ export default function CalendarEvents() {
   const { navigateTo } = useVyraNavigation();
   function planWithMyka(event: CalendarEvent) {
     if (!event.concierge) return;
-    const services = event.concierge.services.map(service => ({ transport: "transporte", parking: "estacionamento", restaurant: "restaurante", hotel: "hospedagem" }[service] || service)).join(", ") || "orientações gerais";
+    const services = event.concierge.services.map(service => (({ transport: "transporte", parking: "estacionamento", restaurant: "restaurante", hotel: "hospedagem" } as Record<string, string>)[service] || service)).join(", ") || "orientações gerais";
     const prompt = `Ajude-me a planejar a logística deste compromisso já cadastrado na MYRYRA. Título: ${event.title}. Início: ${event.startsAt}. Término: ${event.endsAt}. Destino: ${event.location || "não informado"}. Partida: ${event.concierge.departureAddress || "pergunte meu ponto de partida"}. Preciso de: ${services}. Sugira uma antecedência de saída e opções para cada serviço. Antes de estimar deslocamento, peça os dados que faltarem; não invente trânsito, preços, disponibilidade ou reservas. Não efetue compras ou reservas sem minha confirmação.`;
     try {
       sessionStorage.setItem("myryra:myka:concierge-handoff", prompt.slice(0, 3500));
@@ -802,7 +802,7 @@ export default function CalendarEvents() {
                   {event.concierge && <div className="mt-3 rounded-xl border border-violet-500/30 bg-violet-500/10 p-3 text-sm">
                     <p className="font-semibold text-violet-200">MIKA Concierge · Planejamento ativo</p>
                     <p className="mt-1 text-xs text-slate-300">Partida: {event.concierge.departureAddress || "A definir com a MIKA"}</p>
-                    <p className="mt-1 text-xs text-slate-300">Serviços: {event.concierge.services.map(service => ({ transport: "Transporte", parking: "Estacionamento", restaurant: "Restaurante", hotel: "Hospedagem" }[service] || service)).join(", ") || "Nenhum selecionado"}</p>
+                    <p className="mt-1 text-xs text-slate-300">Serviços: {event.concierge.services.map(service => (({ transport: "Transporte", parking: "Estacionamento", restaurant: "Restaurante", hotel: "Hospedagem" } as Record<string, string>)[service] || service)).join(", ") || "Nenhum selecionado"}</p>
                     <p className="mt-2 text-xs text-slate-400">As opções ainda precisam ser planejadas. Reservas e pagamentos exigem confirmação.</p>
                     <button type="button" onClick={() => planWithMyka(event)} className="mt-3 rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500">Planejar com a MIKA</button>
                   </div>}
