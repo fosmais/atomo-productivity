@@ -300,6 +300,7 @@ if (!rateLimit.allowed) {
         "title, starts_at, ends_at, location, notes, event_type, blocks_time"
       )
       .eq("user_id", user.id)
+      .is("deleted_at", null)
       .lt("starts_at", periodEnd.toISOString())
       .gt("ends_at", periodStart.toISOString())
       .order("starts_at", { ascending: true })
