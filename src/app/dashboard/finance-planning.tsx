@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useVyraNavigation } from "./vyra-module-context";
 
-type Goal = { id: string; title: string; target_cents: number; saved_cents: number };
+type Goal = { id: string; title: string; target_cents: number; saved_cents: number; priority: "essential" | "important" | "optional" };
 type Expense = { id: string; title: string; amount_cents: number; due_date: string; paid_at: string | null };
 const money = (n: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n / 100);
 function parseCents(input: string) {
@@ -40,7 +40,7 @@ export default function FinancePlanning() {
   const [goalHorizonMonths, setGoalHorizonMonths] = useState(12);
   const [goalSort, setGoalSort] = useState<"remaining" | "progress" | "name" | "priority">("remaining");
   const [goalPriorities, setGoalPriorities] = useState<Record<string, "essential" | "important" | "optional">>({});
-  const [priorityStorageKey, setPriorityStorageKey] = useState("");
+
   const [monthlyCapacityInput, setMonthlyCapacityInput] = useState("");
   const [expenseTitle, setExpenseTitle] = useState("");
   const [expenseAmount, setExpenseAmount] = useState("");
@@ -59,19 +59,13 @@ export default function FinancePlanning() {
         const { data: auth, error: authError } = await client.auth.getUser();
         if (authError || !auth.user) throw new Error("Autenticação necessária");
         const [goalResult, expenseResult] = await Promise.all([
-          client.from("myryra_finance_goals").select("id,title,target_cents,saved_cents").eq("user_id", auth.user.id).order("created_at", { ascending: false }).limit(100),
+          client.from("myryra_finance_goals").select("id,title,target_cents,saved_cents,priority").eq("user_id", auth.user.id).order("created_at", { ascending: false }).limit(100),
           client.from("myryra_finance_planned_expenses").select("id,title,amount_cents,due_date,paid_at").eq("user_id", auth.user.id).order("due_date", { ascending: true }).limit(200)
         ]);
         if (goalResult.error || expenseResult.error) throw new Error("Falha na consulta");
         if (active) {
           setGoals((goalResult.data ?? []) as Goal[]); setExpenses((expenseResult.data ?? []) as Expense[]);
-          const storageKey = "myryra:finance-goal-priorities:" + auth.user.id;
-          setPriorityStorageKey(storageKey);
-          try {
-            const stored = JSON.parse(localStorage.getItem(storageKey) ?? "{}") as Record<string, unknown>;
-            const allowed = Object.fromEntries(Object.entries(stored).filter(([id, value]) => (goalResult.data ?? []).some(goal => goal.id === id) && ["essential", "important", "optional"].includes(String(value))));
-            setGoalPriorities(allowed as Record<string, "essential" | "important" | "optional">);
-          } catch { setGoalPriorities({}); }
+          setGoalPriorities(Object.fromEntries((goalResult.data ?? []).map(goal => [goal.id, goal.priority ?? "important"])) as Record<string, "essential" | "important" | "optional">);
         }
       } catch { if (active) setError("Não foi possível carregar seu planejamento."); }
       finally { if (active) setLoading(false); }
@@ -97,13 +91,20 @@ export default function FinancePlanning() {
     } catch { setHandoffError(true); }
   }
 
-  function setGoalPriority(id: string, priority: "essential" | "important" | "optional") {
-    const updated = { ...goalPriorities, [id]: priority };
-    setGoalPriorities(updated);
-    if (priorityStorageKey) {
-      try { localStorage.setItem(priorityStorageKey, JSON.stringify(updated)); }
-      catch { setError("Não foi possível salvar a prioridade neste navegador."); }
-    }
+  async function setGoalPriority(id: string, priority: "essential" | "important" | "optional") {
+    setBusy(true); setError("");
+    try {
+      const client = createClient();
+      const { data: auth, error: authError } = await client.auth.getUser();
+      if (authError || !auth.user) throw new Error("Faça login novamente.");
+      const { data, error: updateError } = await client.from("myryra_finance_goals")
+        .update({ priority }).eq("id", id).eq("user_id", auth.user.id)
+        .select("id,priority").single();
+      if (updateError || !data) throw new Error(updateError?.message ?? "Não foi possível atualizar a prioridade.");
+      setGoals(previous => previous.map(goal => goal.id === id ? { ...goal, priority } : goal));
+      setGoalPriorities(previous => ({ ...previous, [id]: priority }));
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Falha ao salvar a prioridade."); }
+    finally { setBusy(false); }
   }
 
   function askMykaAboutPortfolio() {
@@ -135,7 +136,7 @@ export default function FinancePlanning() {
       const client = createClient();
       const { data: auth, error: authError } = await client.auth.getUser();
       if (authError || !auth.user) throw new Error("Autenticação necessária");
-      const { data, error: insertError } = await client.from("myryra_finance_goals").insert({ user_id: auth.user.id, title: goalTitle.trim(), target_cents: cents }).select("id,title,target_cents,saved_cents").single();
+      const { data, error: insertError } = await client.from("myryra_finance_goals").insert({ user_id: auth.user.id, title: goalTitle.trim(), target_cents: cents }).select("id,title,target_cents,saved_cents,priority").single();
       if (insertError) throw insertError;
       setGoals(previous => [data as Goal, ...previous]); setGoalTitle(""); setGoalAmount("");
     } catch { setError("Não foi possível salvar a meta."); }
@@ -252,7 +253,7 @@ export default function FinancePlanning() {
         <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-medium text-white">{goal.title}</p><p className="mt-1 text-xs text-slate-400">{money(goal.saved_cents)} reservados de {money(goal.target_cents)}</p></div><button type="button" disabled={busy} onClick={() => void remove("myryra_finance_goals", goal.id)} className="text-xs text-violet-300 disabled:opacity-50">Excluir</button></div>
         <div role="progressbar" aria-label={`Progresso da meta ${goal.title}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, Math.round(goal.saved_cents / Math.max(1, goal.target_cents) * 100))} className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800"><div className="h-full rounded-full bg-violet-500" style={{ width: `${Math.min(100, goal.saved_cents / Math.max(1, goal.target_cents) * 100)}%` }} /></div>
         <label className="mt-3 block text-xs text-slate-300">Prioridade desta meta
-          <select value={goalPriorities[goal.id] ?? "important"} onChange={event => setGoalPriority(goal.id, event.target.value as "essential" | "important" | "optional")} className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-2 text-sm text-white">
+          <select value={goalPriorities[goal.id] ?? "important"} disabled={busy} onChange={event => void setGoalPriority(goal.id, event.target.value as "essential" | "important" | "optional")} className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-2 text-sm text-white">
             <option value="essential">Essencial</option><option value="important">Importante</option><option value="optional">Opcional</option>
           </select>
         </label>
