@@ -797,6 +797,18 @@ if (!rateLimit.allowed) {
       );
     }
 
+    // A proposed event is not persisted until the user confirms it.
+    // Never tell the user it was registered while its status is pending.
+    if (parsed.proposedEvent) {
+      const prematureSuccess = /(?:todos? os? (?:seus? )?eventos?|compromissos?|agendamentos?).{0,100}(?:registrad[oa]s?|salv[oa]s?|agendad[oa]s?|confirmad[oa]s?)|(?:registrad[oa]s?|salv[oa]s?|agendad[oa]s?|confirmad[oa]s?).{0,100}(?:eventos?|compromissos?|agendamentos?)/i;
+      if (prematureSuccess.test(parsed.reply)) {
+        parsed = {
+          ...parsed,
+          reply: "Preparei a sugestão de compromisso abaixo. Ela ainda não foi registrada na Agenda. Toque em Confirmar evento para salvá-la.",
+        };
+      }
+    }
+
     const mykaAdmin = createSupabaseAdmin();
     // Salvar a conversa somente depois de validar a resposta da IA.
     let conversationId: string;
