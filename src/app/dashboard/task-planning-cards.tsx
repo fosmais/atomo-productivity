@@ -75,6 +75,15 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
           </button>
         ))}
       </div>
+      <details className="rounded-xl border border-violet-400/20 bg-slate-900/60 p-4 text-sm text-slate-200">
+        <summary className="cursor-pointer font-semibold text-violet-200">Qual a diferença entre plano, compromisso e tarefa?</summary>
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <div><strong className="text-white">🎯 Plano</strong><p className="mt-1 text-slate-300">Um objetivo com várias etapas. Ex.: organizar uma viagem.</p></div>
+          <div><strong className="text-white">📅 Compromisso</strong><p className="mt-1 text-slate-300">Algo com data e horário definidos. Ex.: consulta às 15h.</p></div>
+          <div><strong className="text-white">☑ Tarefa</strong><p className="mt-1 text-slate-300">Uma ação para concluir. Ex.: comprar as passagens.</p></div>
+        </div>
+        <p className="mt-3 text-xs text-violet-200">Dica: um plano pode gerar tarefas e compromissos. Peça ajuda à MYKA para decidir por onde começar.</p>
+      </details>
       {sections.map(section => (
         <section
           key={section.id}
