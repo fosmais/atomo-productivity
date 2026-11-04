@@ -19,15 +19,18 @@ export async function scheduleEventReminder(eventId: string, minutesBefore: Remi
     throw new Error("Escolha uma antecedência que ainda esteja no futuro.");
   }
 
-  const { error } = await supabase.from("event_reminders").upsert({
+  const { error } = await supabase.from("event_reminders").insert({
     user_id: auth.user.id,
     event_id: eventId,
     minutes_before: minutesBefore,
     remind_at: new Date(remindAt).toISOString(),
     channel: "in_app",
     status: "pending",
-  }, { onConflict: "event_id,channel,minutes_before" });
-  if (error) throw new Error(error.message);
+  });
+  if (error) {
+    if (error.code === "23505") throw new Error("Este lembrete já está configurado para o compromisso.");
+    throw new Error(error.message);
+  }
 }
 
 export async function listEventReminders(eventId: string) {
