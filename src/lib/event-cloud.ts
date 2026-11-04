@@ -51,7 +51,7 @@ export async function getCloudEvents(): Promise<CalendarEvent[]> {
   for (let offset = 0; ; offset += pageSize) {
     const { data, error } = await supabase
       .from("events")
-      .select("id, title, starts_at, ends_at, location, notes, event_type, blocks_time")
+      .select("id, title, starts_at, ends_at, location, notes, event_type, blocks_time, category")
       .eq("user_id", userId)
       .is("deleted_at", null)
       .order("starts_at", { ascending: true })
@@ -69,6 +69,7 @@ export async function getCloudEvents(): Promise<CalendarEvent[]> {
       notes: event.notes,
       eventType: event.event_type as EventType,
       blocksTime: event.blocks_time,
+      category: isEventCategory(event.category) ? event.category : "personal",
     })));
     if (batch.length < pageSize) return allEvents;
   }
