@@ -806,6 +806,7 @@ export default function CalendarEvents() {
                     <p className="mt-1 text-xs text-slate-300">Serviços: {event.concierge.services.map(service => (({ transport: "Transporte", parking: "Estacionamento", restaurant: "Restaurante", hotel: "Hospedagem" } as Record<string, string>)[service] || service)).join(", ") || "Nenhum selecionado"}</p>
                     <p className="mt-2 text-xs text-slate-400">As opções ainda precisam ser planejadas. Reservas e pagamentos exigem confirmação.</p>
                     <button type="button" onClick={() => planWithMyka(event)} className="mt-3 rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500">Planejar com a MIKA</button>
+                    <ConciergeRouteEstimate event={event} />
                     <details className="mt-3 rounded-lg border border-violet-400/20 p-3"><summary className="cursor-pointer text-xs font-semibold text-violet-200">Serviços do compromisso · Ver opções</summary>
                     {event.location && <div className="mt-2 flex flex-wrap gap-2">
                       <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.location)}&travelmode=driving${event.concierge.departureAddress ? `&origin=${encodeURIComponent(event.concierge.departureAddress)}` : ""}`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">Ver trajeto de carro ↗</a>
@@ -854,4 +855,48 @@ export default function CalendarEvents() {
       </div>
     </section>
   );
+}
+
+function ConciergeRouteEstimate({ event }: { event: CalendarEvent }) {
+  const [result, setResult] = useState<{ durationSeconds: number; distanceMeters: number | null; calculatedAt: string } | null>(null);
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const origin = event.concierge?.departureAddress?.trim();
+  const destination = event.location?.trim();
+  if (!event.concierge?.services.includes("transport")) return null;
+
+  async function estimate() {
+    if (!origin || !destination || loading) return;
+    setLoading(true);
+    setResult(null);
+    setMessage("");
+    try {
+      const response = await fetch("/api/concierge/route", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ origin, destination }),
+      });
+      const data: { error?: string; durationSeconds?: number; distanceMeters?: number | null; calculatedAt?: string } = await response.json();
+      if (!response.ok || typeof data.durationSeconds !== "number" || !data.calculatedAt) {
+        setMessage(data.error || "Não foi possível estimar a rota.");
+        return;
+      }
+      setResult({ durationSeconds: data.durationSeconds, distanceMeters: data.distanceMeters ?? null, calculatedAt: data.calculatedAt });
+    } catch {
+      setMessage("Consulta indisponível. Você pode abrir o trajeto no Google Maps.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return <div className="mt-3 rounded-lg border border-violet-400/20 p-3">
+    <p className="text-xs font-semibold text-violet-200">Estimativa de deslocamento · Carro</p>
+    {!origin ? <p className="mt-1 text-xs text-slate-400">Informe o endereço de partida para calcular a rota.</p> :
+      <button type="button" onClick={estimate} disabled={loading || !destination} className="mt-2 rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 disabled:opacity-50">{loading ? "Consultando..." : "Consultar duração e distância"}</button>}
+    {message && <p role="status" className="mt-2 text-xs text-slate-400">{message}</p>}
+    {result && <div role="status" className="mt-2 text-xs text-slate-200">
+      <p>Tempo estimado: {Math.ceil(result.durationSeconds / 60)} min{result.distanceMeters !== null ? ` · ${(result.distanceMeters / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} km` : ""}</p>
+      <p className="mt-1 text-slate-400">Consulta realizada às {new Date(result.calculatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}. Estimativa sujeita a mudanças no trânsito.</p>
+    </div>}
+  </div>;
 }
