@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export const runtime = "nodejs";
-
 const MAX_ADDRESS_LENGTH = 300;
 const TIMEOUT_MS = 6500;
 
