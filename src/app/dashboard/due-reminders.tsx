@@ -1,12 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { listDueEventReminders, type DueEventReminder } from "@/lib/event-reminders";
+import { listDueEventReminders, dismissEventReminder, type DueEventReminder } from "@/lib/event-reminders";
 
 export default function DueReminders() {
   const [items, setItems] = useState<DueEventReminder[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [dismissing, setDismissing] = useState<string | null>(null);
+  async function dismiss(id: string) {
+    if (dismissing) return;
+    setDismissing(id);
+    setError("");
+    try {
+      await dismissEventReminder(id);
+      setItems((previous) => previous.filter((item) => item.id !== id));
+    } catch {
+      setError("Não foi possível dispensar este lembrete.");
+    } finally {
+      setDismissing(null);
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -44,6 +58,7 @@ export default function DueReminders() {
         <li key={item.id} className="rounded-lg border border-violet-400/20 p-3 text-sm">
           <strong>{item.events?.title ?? "Compromisso"}</strong>
           <span className="ml-2 text-slate-300">· {item.minutes_before} min antes · {new Date(item.events?.starts_at ?? item.remind_at).toLocaleString("pt-BR")}</span>
+          <button type="button" disabled={dismissing !== null} onClick={() => void dismiss(item.id)} className="ml-3 rounded border border-slate-500 px-2 py-1 text-xs disabled:opacity-50">{dismissing === item.id ? "Dispensando..." : "Dispensar"}</button>
         </li>
       )}</ul> : <p className="mt-3 text-sm text-slate-400">Nenhum lembrete atingiu o horário de aviso.</p>}
   </section>;
