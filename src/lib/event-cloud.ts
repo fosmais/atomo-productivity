@@ -21,6 +21,8 @@ export type NewCalendarEvent = {
   notes?: string;
   eventType?: EventType;
   blocksTime?: boolean;
+  /** Explicitly allow a historical record; never enabled by default. */
+  allowPast?: boolean;
 };
 
 async function getAuthenticatedUser() {
@@ -90,6 +92,10 @@ export async function saveCloudEvent(
     throw new Error("Informe um período válido para o evento.");
   }
 
+  if (start.getTime() < Date.now() - 60_000 && event.allowPast !== true) {
+    throw new Error("A data de início está no passado. Escolha um horário futuro ou registre explicitamente uma atividade histórica.");
+  }
+
   const eventType = event.eventType ?? "appointment";
   const blocksTime = event.blocksTime ?? false;
 
@@ -124,4 +130,25 @@ export async function deleteCloudEvent(eventId: string): Promise<void> {
     .eq("user_id", userId);
 
   if (error) throw new Error(error.message);
+}
+
+/** Rename an existing event without deleting or recreating it. */
+export async function renameCloudEvent(eventId: string, nextTitle: string): Promise<void> {
+  const { supabase, userId } = await getAuthenticatedUser();
+  const title = nextTitle.trim();
+  if (!title || title.length > 200 || !/[\\p{L}\\p{N}]/u.test(title)) {
+    throw new Error("Informe um título de até 200 caracteres.");
+  }
+  if (!/^[0-9a-f-]{36}$/i.test(eventId)) {
+    throw new Error("Identificador de compromisso inválido.");
+  }
+  const { data, error } = await supabase.from("events")
+    .update({ title })
+    .eq("id", eventId)
+    .eq("user_id", userId)
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Compromisso não encontrado ou sem permissão para editar.");
 }
