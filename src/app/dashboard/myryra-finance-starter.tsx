@@ -13,6 +13,7 @@ export default function MyryraFinanceStarter() {
   const [openingBalanceCents, setOpeningBalanceCents] = useState(0);
   const [openingBalanceInput, setOpeningBalanceInput] = useState("");
   const [balanceSaving, setBalanceSaving] = useState(false);
+  const [balanceSaved, setBalanceSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -94,17 +95,19 @@ export default function MyryraFinanceStarter() {
     }
     const cents = Math.round(Number(normalized) * 100);
     if (!Number.isSafeInteger(cents)) return;
-    setBalanceSaving(true); setError("");
+    setBalanceSaving(true); setError(""); setBalanceSaved(false);
     try {
       const client = createClient();
       const { data: auth, error: authError } = await client.auth.getUser();
       if (authError || !auth.user) throw new Error("Sessão expirada.");
-      const { error: balanceError } = await client.from("myryra_finance_balances").upsert({
+      const { data: savedBalance, error: balanceError } = await client.from("myryra_finance_balances").upsert({
         user_id: auth.user.id, opening_balance_cents: cents, updated_at: new Date().toISOString()
-      }, { onConflict: "user_id" });
+      }, { onConflict: "user_id" }).select("opening_balance_cents").single();
       if (balanceError) throw balanceError;
+      if (!savedBalance || Number(savedBalance.opening_balance_cents) !== cents) throw new Error("Saldo não confirmado pelo banco de dados.");
       setOpeningBalanceCents(cents);
-    } catch { setError("Não foi possível salvar o saldo inicial."); }
+      setBalanceSaved(true);
+    } catch (cause) { setError(cause instanceof Error ? `Não foi possível salvar o saldo inicial: ${cause.message}` : "Não foi possível salvar o saldo inicial."); }
     finally { setBalanceSaving(false); }
   };
 
