@@ -35,6 +35,7 @@ export default function FinancePlanning() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [goalTitle, setGoalTitle] = useState("");
   const [goalAmount, setGoalAmount] = useState("");
+  const [newGoalPriority, setNewGoalPriority] = useState<"essential" | "important" | "optional">("important");
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [savedAmountInput, setSavedAmountInput] = useState("");
   const [goalHorizonMonths, setGoalHorizonMonths] = useState(12);
@@ -136,9 +137,9 @@ export default function FinancePlanning() {
       const client = createClient();
       const { data: auth, error: authError } = await client.auth.getUser();
       if (authError || !auth.user) throw new Error("Autenticação necessária");
-      const { data, error: insertError } = await client.from("myryra_finance_goals").insert({ user_id: auth.user.id, title: goalTitle.trim(), target_cents: cents }).select("id,title,target_cents,saved_cents,priority").single();
+      const { data, error: insertError } = await client.from("myryra_finance_goals").insert({ user_id: auth.user.id, title: goalTitle.trim(), target_cents: cents, priority: newGoalPriority }).select("id,title,target_cents,saved_cents,priority").single();
       if (insertError) throw insertError;
-      setGoals(previous => [data as Goal, ...previous]); setGoalTitle(""); setGoalAmount("");
+      setGoals(previous => [data as Goal, ...previous]); setGoalPriorities(previous => ({ ...previous, [data.id]: data.priority })); setGoalTitle(""); setGoalAmount(""); setNewGoalPriority("important");
     } catch { setError("Não foi possível salvar a meta."); }
     finally { setBusy(false); }
   }
@@ -146,7 +147,7 @@ export default function FinancePlanning() {
   async function updateGoalSavings(goal: Goal) {
     const cents = /^0(?:[,.]0{1,2})?$/.test(savedAmountInput.trim()) ? 0 : parseCents(savedAmountInput);
     if (cents === null || cents > goal.target_cents) {
-      setError("Informe um valor reservado positivo que não ultrapasse o objetivo.");
+      setError("Informe um valor entre zero e o objetivo da meta.");
       return;
     }
     setBusy(true); setError("");
@@ -222,6 +223,11 @@ export default function FinancePlanning() {
       <form onSubmit={addGoal} className="grid gap-2">
         <input required maxLength={100} aria-label="Nome da meta financeira" placeholder="Ex.: Reserva de emergência" value={goalTitle} onChange={e => setGoalTitle(e.target.value)} className="rounded-xl border border-white/20 bg-slate-950 p-3 text-white" />
         <input required inputMode="decimal" aria-label="Valor da meta em reais" placeholder="Ex.: R$ 10.000,00" value={goalAmount} onChange={e => setGoalAmount(e.target.value)} className="rounded-xl border border-white/20 bg-slate-950 p-3 text-white" />
+        <label className="text-xs text-slate-300">Prioridade
+          <select value={newGoalPriority} onChange={event => setNewGoalPriority(event.target.value as "essential" | "important" | "optional")} className="mt-1 w-full rounded-xl border border-white/20 bg-slate-950 p-3 text-sm text-white">
+            <option value="essential">Essencial</option><option value="important">Importante</option><option value="optional">Opcional</option>
+          </select>
+        </label>
         <button disabled={busy || loading} className="rounded-xl bg-violet-600 px-4 py-2 font-medium text-white disabled:opacity-50">Criar meta</button>
       </form>
       {goals.length > 0 && <label className="block text-xs text-slate-300">Quanto você consegue reservar por mês? (opcional)
@@ -234,7 +240,7 @@ export default function FinancePlanning() {
         </select>
       </label>}
       {goals.length > 1 && <label className="block text-xs text-slate-300">Organizar metas por prioridade de visualização
-        <select value={goalSort} onChange={event => setGoalSort(event.target.value as "remaining" | "progress" | "name")} className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-2 text-sm text-white">
+        <select value={goalSort} onChange={event => setGoalSort(event.target.value as "remaining" | "progress" | "name" | "priority")} className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-2 text-sm text-white">
           <option value="remaining">Menor valor restante primeiro</option>
           <option value="progress">Maior progresso primeiro</option>
           <option value="name">Nome da meta (A–Z)</option>
