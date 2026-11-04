@@ -265,6 +265,11 @@ export default function FinancePlanning() {
             <span>{goal.title} <span className="text-slate-500">({{ essential: "essencial", important: "importante", optional: "opcional" }[goal.priority]})</span></span>
             <span className="font-semibold">{money(allocated)} <span className="font-normal text-slate-500">de {money(needed)}/mês</span></span>
           </li>)}</ul>
+          {allocations.some(item => item.allocated < item.needed) && <div className="mt-3 rounded-xl border border-amber-400/25 bg-amber-500/10 p-3">
+            <p className="text-xs font-semibold text-amber-100">Seu orçamento não cobre todos os aportes planejados</p>
+            <p className="mt-1 text-xs text-amber-100/80">Faltam {money(allocations.reduce((sum, item) => sum + item.needed - item.allocated, 0))} por mês para atender todas as metas no prazo escolhido. Metas de menor prioridade podem receber menos ou nenhum aporte nesta simulação.</p>
+            <button type="button" onClick={askMykaAboutPortfolio} className="mt-2 rounded-lg border border-amber-300/50 px-3 py-2 text-xs font-semibold text-amber-100 hover:bg-amber-400/10">Replanejar metas com a MIKA</button>
+          </div>}
           <p className="mt-3 text-xs text-slate-400">Capacidade não alocada: {money(available)}. A distribuição não considera rendimentos, inflação, dívidas nem despesas não informadas e não cria lançamentos.</p>
         </div>;
       })()}
