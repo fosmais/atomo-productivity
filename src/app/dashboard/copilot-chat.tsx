@@ -91,6 +91,7 @@ function isEventProposal(
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [input, setInput] = useState("");
+  const [pendingConciergePrompt, setPendingConciergePrompt] = useState<string | null>(null);
   useEffect(() => {
     if (activeModule !== "vyra-ai") return;
     const conciergePrompt = sessionStorage.getItem("myryra:myka:concierge-handoff");
@@ -99,7 +100,8 @@ function isEventProposal(
     if (!prompt) return;
     if (conciergePrompt) sessionStorage.removeItem("myryra:myka:concierge-handoff");
     else sessionStorage.removeItem("myryra:myka:investment-handoff");
-    setInput(prompt.slice(0, 3500));
+    if (conciergePrompt) setPendingConciergePrompt(prompt.slice(0, 1500));
+    else setInput(prompt.slice(0, 1500));
   }, [activeModule]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -465,6 +467,10 @@ async function startVoice() {
       return;
     }
 
+    await sendTextMessage(content);
+  }
+
+  async function sendTextMessage(content: string) {
     const nextMessages: ChatMessage[] = [
       ...messages,
       { role: "user" as const, content },
@@ -584,6 +590,15 @@ setConversationId(data.conversationId);
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (!pendingConciergePrompt || historyLoading || loading || error || dailyLimitReached || activeModule !== "vyra-ai") return;
+    const prompt = pendingConciergePrompt;
+    setPendingConciergePrompt(null);
+    void sendTextMessage(prompt);
+    // Only dispatch a saved Concierge handoff once when the chat becomes ready.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingConciergePrompt, historyLoading, loading, error, dailyLimitReached, activeModule]);
 
   return (
     <section className="min-w-0 rounded-2xl border border-violet-400/20 bg-gradient-to-b from-slate-900 to-slate-950 p-3 text-white shadow-xl shadow-violet-950/20 sm:p-7">
