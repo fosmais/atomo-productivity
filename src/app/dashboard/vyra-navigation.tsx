@@ -3,10 +3,10 @@
 import { useState } from "react";
 
 const primaryItems = [
-  { id: "home", label: "Hoje", icon: "⌂" },
-  { id: "vyra-tasks", label: "Organizar", icon: "✓" },
-  { id: "vyra-calendar", label: "Agenda", icon: "▦" },
-  { id: "vyra-ai", label: "MIKA", icon: "✦" },
+  { id: "home", label: "Hoje", icon: "⌂", hint: "Resumo e prioridades do dia" },
+  { id: "vyra-tasks", label: "Organizar", icon: "✓", hint: "Tarefas, planos e metas" },
+  { id: "vyra-calendar", label: "Agenda", icon: "▦", hint: "Compromissos e horários" },
+  { id: "vyra-ai", label: "MIKA", icon: "✦", hint: "Sua assistente inteligente" },
 ];
 
 const secondaryItems = [
@@ -48,7 +48,7 @@ export default function VyraNavigation({
   }
 
   function navigationButton(
-    item: { id: string; label: string; icon: string }
+    item: { id: string; label: string; icon: string; hint?: string }
   ) {
     const selected = current === item.id;
 
@@ -58,6 +58,7 @@ export default function VyraNavigation({
         type="button"
         onClick={() => navigateTo(item.id)}
         aria-current={selected ? "page" : undefined}
+        title={item.hint ?? item.label}
         className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl border border-transparent px-2 py-2 text-[11px] font-medium transition-colors lg:w-full lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:py-3 lg:text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 ${
           selected
             ? "border-violet-400/70 bg-violet-600/20 text-white shadow-sm shadow-violet-950/20"
