@@ -110,6 +110,11 @@ export async function POST(request: Request) {
 
     // Reject files whose bytes do not match the declared media type.
     // This prevents disguised binary payloads from reaching the model.
+    let validText = false;
+    if (file.type === "text/plain" && !bytes.includes(0)) {
+      try { new TextDecoder("utf-8", { fatal: true }).decode(bytes); validText = true; }
+      catch { validText = false; }
+    }
     const validSignature =
       file.type === "application/pdf"
         ? bytes.subarray(0, 5).toString("ascii") === "%PDF-"
@@ -118,7 +123,7 @@ export async function POST(request: Request) {
         : file.type === "image/jpeg"
         ? bytes.length >= 4 && bytes[0] === 255 && bytes[1] === 216 && bytes[bytes.length - 2] === 255 && bytes[bytes.length - 1] === 217
         : file.type === "text/plain"
-        ? !bytes.includes(0) && !new TextDecoder("utf-8", { fatal: true }).decode(bytes).includes("\uFFFD")
+        ? validText
         : false;
     if (!validSignature) {
       return NextResponse.json(
