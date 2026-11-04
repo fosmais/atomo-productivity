@@ -40,6 +40,7 @@ export default function MyDay() {
             const page = await supabase.from("tasks")
               .select("id,title,priority,due_date,completed")
               .eq("user_id", auth.user.id)
+              .is("deleted_at", null)
               .order("id", { ascending: true })
               .range(offset, offset + pageSize - 1);
             if (page.error) throw page.error;
@@ -55,6 +56,7 @@ export default function MyDay() {
             if (!active || requestId !== latestRequest) return allEvents;
             const page = await supabase.from("events")
               .select("title,starts_at,ends_at").eq("user_id", auth.user.id)
+              .is("deleted_at", null)
               .lt("starts_at", dayEnd.toISOString()).gt("ends_at", dayStart.toISOString())
               .order("starts_at", { ascending: true }).order("id", { ascending: true })
               .range(offset, offset + pageSize - 1);
@@ -94,7 +96,7 @@ export default function MyDay() {
   const todayTasks = tasks.filter(task => task.dueDate === today);
   const priorityRank: Record<string, number> = { Alta: 0, "Média": 1, Normal: 2 };
   const pending = tasks.filter(task => !task.completed && (!task.dueDate || task.dueDate <= today))
-    .sort((a, b) => (a.dueDate && a.dueDate < today ? -1 : 0) - (b.dueDate && b.dueDate < today ? -1 : 0) || (priorityRank[a.priority] ?? 3) - (priorityRank[b.priority] ?? 3));
+    .sort((a, b) => (priorityRank[a.priority] ?? 3) - (priorityRank[b.priority] ?? 3) || (a.dueDate ?? "9999-12-31").localeCompare(b.dueDate ?? "9999-12-31"));
   const appointments = events.filter(event => new Date(event.startsAt).getTime() < new Date(new Date().setHours(24, 0, 0, 0)).getTime() && new Date(event.endsAt).getTime() > new Date(new Date().setHours(0, 0, 0, 0)).getTime())
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
   const finished = todayTasks.filter(task => task.completed).length;
