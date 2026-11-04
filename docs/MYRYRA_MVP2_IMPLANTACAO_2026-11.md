@@ -52,6 +52,36 @@ Teams, Google Tasks/Todoist/Outlook, viagens, Smart Commute/Maps Routes, interna
 - P2 (Onda 3): Concierge proativo integrado à MIKA e à Agenda; lembretes e follow-ups opt-in, deduplicação, respeito ao fuso e opção de desativar. Não prometer WhatsApp sem integração e consentimento.
 - A implementação preexistente de /api/concierge NÃO comprova homologação nem publicação em produção.
 
+## Concierge completo — escopo recuperado da visão original (25/10/2026)
+O Concierge é uma capacidade da MIKA, não outro chatbot. A proposta vai além de agenda e chat.
+
+### Mobilidade / Smart Commute — fase posterior, integração pendente
+- Ler endereço e horário do compromisso na agenda, pedir origem e modal de transporte quando necessário.
+- Consultar rotas e trânsito com provedor autorizado; estimar duração e sugerir saída com margem configurável.
+- Alertar sobre deslocamentos conflitantes, mudanças de trânsito e hora de sair somente com consentimento.
+- Explorar estacionamento, custos e táxi/alternativas, condicionados a dados e parceiros disponíveis.
+- Dependência histórica: Google Maps Routes API foi adiada após erro 403/configuração de faturamento; não declarar cálculo de trânsito em tempo real até integração validada.
+
+### Restaurantes, reservas e experiências — fase posterior, parceiros pendentes
+- Buscar restaurantes por proximidade, preferências e contexto do compromisso; sugerir almoço, jantar e happy hour.
+- Consultar disponibilidade de reserva apenas com provedor de reservas integrado; apresentar opções verificadas.
+- Exigir confirmação explícita antes de qualquer reserva, pagamento ou alteração.
+
+### Viagens e hospedagem — fase posterior
+- Planejar viagens e estadias, pesquisar hotéis e conectar deslocamentos, compromissos e possíveis reservas.
+- Consultas de preço, disponibilidade e reserva dependem de integrações/parceiros e consentimento.
+
+### Inteligência contextual — evolução MIKA
+- Combinar agenda, tarefas, prioridades e preferências para antecipar necessidades, sugerir planos e follow-ups.
+- Exibir origem da informação, sinalizar dados indisponíveis e nunca afirmar ter consultado trânsito ou disponibilidade sem consulta real.
+- Opt-in para notificações, respeito ao fuso, privacidade, controle de frequência e opção de desativar.
+
+### Sequência e critérios de aceite
+1. Onda 1: homologar o Concierge existente, autenticação, contexto, propostas e confirmação.
+2. Onda 3: experiência contextual e proativa da MIKA, sem executar ações externas automaticamente.
+3. Pós-lançamento: Mobility/Smart Commute, Dining & Experiences e Travel, depois de integrar e testar provedores.
+4. Validar rotas reais, precisão de horário de saída, consentimento e reserva com parceiro antes de divulgar como funcionalidade ativa.
+
 ## Evidências de início
 - 2026-11-04: correção MIKA de arquivo vazio no cliente, commit 4d90b5c38b218be01a363e2e60c51813200122b3.
 - Itens sem evidência permanecem pendentes, mesmo quando há código existente.
