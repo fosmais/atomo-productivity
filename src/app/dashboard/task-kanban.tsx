@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { saveCloudPlan } from "@/lib/plan-cloud";
+import { EVENT_CATEGORIES, type EventCategory } from "@/lib/event-categories";
 import { useVyraNavigation } from "./vyra-module-context";
 
 type TaskStatus = "todo" | "in_progress" | "waiting" | "done";
@@ -11,6 +12,7 @@ type KanbanTask = {
   id: string;
   title: string;
   priority: string;
+  category: EventCategory;
   due_date: string | null;
   status: TaskStatus;
   completed_at: string | null;
@@ -37,6 +39,7 @@ export default function TaskKanban() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editPriority, setEditPriority] = useState("Normal");
+  const [editCategory, setEditCategory] = useState<EventCategory>("personal");
   const [editDueDate, setEditDueDate] = useState("");
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
@@ -68,7 +71,7 @@ export default function TaskKanban() {
 
       const { data, error: tasksError } = await supabase
         .from("tasks")
-        .select("id, title, priority, due_date, status, completed_at")
+        .select("id, title, priority, category, due_date, status, completed_at")
         .eq("user_id", auth.user.id)
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
@@ -81,7 +84,7 @@ export default function TaskKanban() {
       if (focusedTaskId && !loaded.some((task) => task.id === focusedTaskId)) {
         const { data: focusedTask, error: focusedError } = await supabase
           .from("tasks")
-          .select("id, title, priority, due_date, status, completed_at")
+          .select("id, title, priority, category, due_date, status, completed_at")
           .eq("user_id", auth.user.id)
           .is("deleted_at", null)
           .eq("id", focusedTaskId)
@@ -224,6 +227,7 @@ export default function TaskKanban() {
     setEditingId(task.id);
     setEditTitle(task.title);
     setEditPriority(task.priority);
+    setEditCategory(task.category ?? "personal");
     setEditDueDate(task.due_date ?? "");
     setError("");
   }
@@ -245,7 +249,7 @@ export default function TaskKanban() {
       const supabase = createClient();
       const { data: auth, error: authError } = await supabase.auth.getUser();
       if (authError || !auth.user) throw new Error("Usuário não autenticado.");
-      const changes = { title, priority: editPriority, due_date: editDueDate || null };
+      const changes = { title, priority: editPriority, category: editCategory, due_date: editDueDate || null };
       const { data, error: updateError } = await supabase.from("tasks")
         .update(changes).eq("id", task.id).eq("user_id", auth.user.id)
         .is("deleted_at", null).select("id").single();
@@ -507,7 +511,7 @@ export default function TaskKanban() {
                       </div>
 
                       <p className="mt-2 text-xs text-slate-300">
-                        Prioridade: {task.priority}
+                        <span className={task.priority === "Alta" ? "text-rose-300" : task.priority === "Média" ? "text-amber-300" : "text-emerald-300"}>● {task.priority}</span> <span className="ml-2 text-slate-400">· {EVENT_CATEGORIES[task.category ?? "personal"].label}</span>
                       </p>
 
                       {task.due_date && (
@@ -548,6 +552,7 @@ export default function TaskKanban() {
                       {editingId === task.id && <div className="mt-3 space-y-2 rounded-lg border border-violet-400/40 bg-slate-950/80 p-3">
                         <label className="block text-xs text-slate-300">Título<input aria-label="Editar título da tarefa" maxLength={200} value={editTitle} onChange={event => setEditTitle(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 p-2 text-sm text-white" /></label>
                         <label className="block text-xs text-slate-300">Prioridade<select aria-label="Editar prioridade" value={editPriority} onChange={event => setEditPriority(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 p-2 text-sm text-white"><option value="Normal">Normal</option><option value="Média">Média</option><option value="Alta">Alta</option></select></label>
+                        <label className="block text-xs text-slate-300">Categoria<select aria-label="Editar categoria" value={editCategory} onChange={event => setEditCategory(event.target.value as EventCategory)} className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 p-2 text-sm text-white">{Object.entries(EVENT_CATEGORIES).map(([key, value]) => <option key={key} value={key}>{value.label}</option>)}</select></label>
                         <label className="block text-xs text-slate-300">Prazo<input aria-label="Editar prazo" type="date" value={editDueDate} onChange={event => setEditDueDate(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 p-2 text-sm text-white" /></label>
                         <div className="flex justify-end gap-2"><button type="button" disabled={savingId !== null} onClick={() => setEditingId(null)} className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs">Cancelar</button><button type="button" disabled={savingId !== null} onClick={() => void saveTaskEdits(task)} className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">Salvar</button></div>
                       </div>}
