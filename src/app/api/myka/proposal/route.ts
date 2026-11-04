@@ -221,7 +221,7 @@ export async function POST(request: Request) {
       categorySaved = !categoryError;
       if (categoryError) console.error("Categoria do evento não atualizada:", categoryError.message);
     }
-    return NextResponse.json({ messageId, status: "saved", eventId: typeof outcome.eventId === "string" ? outcome.eventId : null }, { headers: { "Cache-Control": "private, no-store" } });
+    return NextResponse.json({ messageId, status: "saved", eventId: typeof outcome.eventId === "string" ? outcome.eventId : null, categorySaved }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("Erro ao confirmar evento Myka:", error);
     return NextResponse.json({ error: "Falha ao confirmar compromisso." }, { status: 500 });
