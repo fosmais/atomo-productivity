@@ -33,6 +33,14 @@ export default function EventConfirmation({
     setError("");
 
     try {
+      const start = new Date(event.startsAt);
+      const end = new Date(event.endsAt);
+      if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) {
+        throw new Error("O compromisso sugerido possui um período inválido. Peça à MIKA para corrigir os horários.");
+      }
+      if (start.getTime() < Date.now() - 60_000) {
+        throw new Error("O horário sugerido já passou. Peça à MIKA um novo horário antes de confirmar.");
+      }
       if (messageId) {
         const response = await fetch("/api/myka/proposal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messageId }) });
         if (!response.ok) { const data = await response.json().catch(() => null); throw new Error(data?.error || "Falha ao confirmar compromisso."); }
