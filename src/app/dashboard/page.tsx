@@ -128,7 +128,7 @@ async function DashboardContent() {
         <div className="lg:col-span-2"><FeatureAccordion id="planning-settings" title="Preferências de planejamento" description="Horários e regras da rotina" userId={user.id}><PlanningSettings /></FeatureAccordion></div>
       </div>}
       focus={<div className="grid min-w-0 gap-4 lg:grid-cols-2">
-        <FeatureAccordion id="planning-focus" title="Modo Foco" description="Concentre-se nas suas prioridades" userId={user.id}><FocusMode /></FeatureAccordion>
+        <FeatureAccordion id="planning-focus" title="Modo Foco" description="Concentre-se nas suas prioridades" userId={user.id} defaultOpen><FocusMode /></FeatureAccordion>
         <FeatureAccordion id="planning-performance" title="Evolução e resultados" description="Acompanhe seu progresso" userId={user.id}><PerformanceInsights /></FeatureAccordion>
       </div>}
     />
