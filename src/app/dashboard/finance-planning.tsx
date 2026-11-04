@@ -118,6 +118,9 @@ export default function FinancePlanning() {
       "Metas: " + goals.map(goal => goal.title + " (restante " + money(Math.max(0, goal.target_cents - goal.saved_cents)) + ", prioridade informada: " + ({essential:"essencial",important:"importante",optional:"opcional"}[goalPriorities[goal.id] ?? "important"]) + ")").join("; ") + ".",
       "Prazo ilustrativo comum: " + goalHorizonMonths + " meses. Total restante: " + money(totalRemaining) + ".",
       "Soma dos aportes mensais estimados: " + money(monthlyNeeded) + ". Capacidade mensal declarada: " + (capacity === null ? "não informada" : money(capacity)) + ".",
+      "Déficit mensal estimado para cumprir todas as metas no prazo: " + (capacity === null ? "não calculado" : money(Math.max(0, monthlyNeeded - capacity))) + ".",
+      "Cobertura mensal estimada: " + (capacity === null ? "não calculada" : (monthlyNeeded > 0 ? Math.min(100, Math.round(capacity / monthlyNeeded * 100)) : 100) + "%") + ".",
+
       "Respeite as prioridades já definidas pelo usuário; confirme se deseja revisá-las e verifique despesas fixas, dívidas e reserva de emergência.",
       "Sugira uma distribuição viável e ajuste de prazos; não presuma que todos os objetivos devem ser financiados simultaneamente.",
       "Os valores são manuais e a simulação não inclui rendimentos ou inflação. Não execute movimentações."
