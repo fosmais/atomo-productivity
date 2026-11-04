@@ -29,7 +29,7 @@ type GoogleCalendarEvent = {
 };
 export default function CalendarEvents() {
   const { navigateTo } = useVyraNavigation();
-  function planWithMyka(event: CalendarEvent) {
+  function planWithMyka(event: Pick<CalendarEvent, "title" | "startsAt" | "endsAt" | "location" | "concierge">) {
     if (!event.concierge) return;
     const services = event.concierge.services.map(service => (({ transport: "transporte", parking: "estacionamento", restaurant: "restaurante", hotel: "hospedagem" } as Record<string, string>)[service] || service)).join(", ") || "orientações gerais";
     const formatDate = (value: string) => new Intl.DateTimeFormat("pt-BR", { dateStyle: "full", timeStyle: "short" }).format(new Date(value));
@@ -288,6 +288,12 @@ export default function CalendarEvents() {
       setDepartureAddress("");
       setConciergeServices([]);
       setShowForm(false);
+      if (conciergeEnabled && eventType === "appointment") {
+        planWithMyka({
+          title, startsAt, endsAt, location,
+          concierge: { departureAddress: departureAddress.trim(), services: conciergeServices, status: "pending" },
+        });
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Erro ao salvar compromisso."
