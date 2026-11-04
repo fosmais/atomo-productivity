@@ -1,3 +1,4 @@
+import { isEventCategory, type EventCategory } from "./event-categories";
 import { createClient } from "@/lib/supabase/client";
 
 export type EventType = "appointment" | "unavailable";
@@ -11,6 +12,7 @@ export type CalendarEvent = {
   notes: string | null;
   eventType: EventType;
   blocksTime: boolean;
+  category: EventCategory;
 };
 
 export type NewCalendarEvent = {
@@ -21,6 +23,7 @@ export type NewCalendarEvent = {
   notes?: string;
   eventType?: EventType;
   blocksTime?: boolean;
+  category?: EventCategory;
   /** Explicitly allow a historical record; never enabled by default. */
   allowPast?: boolean;
 };
