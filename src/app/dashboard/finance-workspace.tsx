@@ -6,6 +6,7 @@ import FinancePlanning from "./finance-planning";
 import FinanceSubscriptions from "./finance-subscriptions";
 import FinanceInvestments from "./finance-investments";
 import FinanceCsvImport from "./finance-csv-import";
+import FinanceMonthlySummary from "./finance-monthly-summary";
 
 const sections = [
   { id: "overview", label: "Visão geral", description: "Saldo e movimentações" },
@@ -41,7 +42,7 @@ export default function FinanceWorkspace() {
         ))}
       </div>
       <div className="min-w-0 rounded-2xl border border-white/10 bg-slate-950/40 p-3 sm:p-5" role="tabpanel" id={"finance-panel-"+active} aria-labelledby={"finance-tab-"+active} tabIndex={0}>
-        {active === "overview" && <div className="space-y-4"><MyryraFinanceStarter /><FinanceCsvImport /></div>}
+        {active === "overview" && <div className="space-y-4"><FinanceMonthlySummary /><MyryraFinanceStarter /><FinanceCsvImport /></div>}
         {active === "planning" && <FinancePlanning />}
         {active === "forecast" && <FinanceSubscriptions />}
         {active === "investments" && <FinanceInvestments />}
