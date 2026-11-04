@@ -127,6 +127,11 @@ function handleAttachment(file?: File) {
     return;
   }
 
+  if (file.size === 0) {
+    setError("O arquivo está vazio. Selecione um documento com conteúdo.");
+    return;
+  }
+
   if (file.size > 5 * 1024 * 1024) {
     setError("O arquivo deve ter no máximo 5 MB.");
     return;
