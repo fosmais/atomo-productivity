@@ -261,6 +261,21 @@ export default function FinancePlanning() {
         return <div className="rounded-xl border border-violet-400/20 bg-slate-950/60 p-3">
           <p className="text-sm font-semibold text-white">Distribuição sugerida por prioridade</p>
           <p className="mt-1 text-xs text-slate-400">Simulação mensal: primeiro metas essenciais, depois importantes e opcionais. Em caso de empate, ordem alfabética.</p>
+          {(() => {
+            const totalNeeded = allocations.reduce((sum, item) => sum + item.needed, 0);
+            const totalAllocated = allocations.reduce((sum, item) => sum + item.allocated, 0);
+            const coverage = totalNeeded > 0 ? Math.min(100, Math.round(totalAllocated / totalNeeded * 100)) : 100;
+            return <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <span className="text-slate-300">Cobertura dos aportes mensais</span>
+                <strong className={coverage < 100 ? "text-amber-200" : "text-emerald-200"}>{coverage}%</strong>
+              </div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-label="Cobertura dos aportes mensais" aria-valuemin={0} aria-valuemax={100} aria-valuenow={coverage}>
+                <div className={coverage < 100 ? "h-full rounded-full bg-amber-400" : "h-full rounded-full bg-emerald-400"} style={{ width: `${coverage}%` }} />
+              </div>
+              <p className="mt-2 text-xs text-slate-400">{money(totalAllocated)} de {money(totalNeeded)} por mês cabem na capacidade declarada.</p>
+            </div>;
+          })()}
           <ul className="mt-3 space-y-2">{allocations.map(({ goal, needed, allocated }) => <li key={goal.id} className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-200">
             <span>{goal.title} <span className="text-slate-500">({{ essential: "essencial", important: "importante", optional: "opcional" }[goal.priority]})</span></span>
             <span className="font-semibold">{money(allocated)} <span className="font-normal text-slate-500">de {money(needed)}/mês</span></span>
