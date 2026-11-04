@@ -37,6 +37,7 @@ export default function FinancePlanning() {
   const [goalAmount, setGoalAmount] = useState("");
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [savedAmountInput, setSavedAmountInput] = useState("");
+  const [goalHorizonMonths, setGoalHorizonMonths] = useState(12);
   const [expenseTitle, setExpenseTitle] = useState("");
   const [expenseAmount, setExpenseAmount] = useState("");
   const [expenseDate, setExpenseDate] = useState("");
@@ -178,9 +179,19 @@ export default function FinancePlanning() {
         <input required inputMode="decimal" aria-label="Valor da meta em reais" placeholder="Ex.: R$ 10.000,00" value={goalAmount} onChange={e => setGoalAmount(e.target.value)} className="rounded-xl border border-white/20 bg-slate-950 p-3 text-white" />
         <button disabled={busy || loading} className="rounded-xl bg-violet-600 px-4 py-2 font-medium text-white disabled:opacity-50">Criar meta</button>
       </form>
+      {goals.length > 0 && <label className="block text-xs text-slate-300">Prazo para simular o aporte mensal
+        <select value={goalHorizonMonths} onChange={event => setGoalHorizonMonths(Number(event.target.value))} className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-2 text-sm text-white">
+          <option value={3}>3 meses</option><option value={6}>6 meses</option><option value={12}>12 meses</option><option value={24}>24 meses</option><option value={36}>36 meses</option>
+        </select>
+      </label>}
       <ul className="space-y-3">{goals.map(goal => <li key={goal.id} className="rounded-xl border border-white/10 p-3">
         <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-medium text-white">{goal.title}</p><p className="mt-1 text-xs text-slate-400">{money(goal.saved_cents)} reservados de {money(goal.target_cents)}</p></div><button type="button" disabled={busy} onClick={() => void remove("myryra_finance_goals", goal.id)} className="text-xs text-violet-300 disabled:opacity-50">Excluir</button></div>
         <div role="progressbar" aria-label={`Progresso da meta ${goal.title}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, Math.round(goal.saved_cents / Math.max(1, goal.target_cents) * 100))} className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800"><div className="h-full rounded-full bg-violet-500" style={{ width: `${Math.min(100, goal.saved_cents / Math.max(1, goal.target_cents) * 100)}%` }} /></div>
+        <div className="mt-3 rounded-lg bg-slate-950/60 p-3">
+          <p className="text-xs text-slate-400">Faltam <strong className="text-white">{money(Math.max(0, goal.target_cents - goal.saved_cents))}</strong> para alcançar esta meta.</p>
+          <p className="mt-1 text-xs text-slate-300">Para chegar lá em {goalHorizonMonths} meses, reserve aproximadamente <strong className="text-emerald-300">{money(Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths))} por mês</strong>.</p>
+          <p className="mt-1 text-xs text-slate-500">Cálculo simples, sem juros, inflação ou rendimentos. Não representa transferência automática.</p>
+        </div>
         <div className="mt-2 flex items-center justify-between gap-2"><span className="text-xs text-slate-400">{Math.round(goal.saved_cents / Math.max(1, goal.target_cents) * 100)}% do objetivo</span><span className="flex flex-wrap items-center gap-3"><button type="button" onClick={() => askMykaAboutGoal(goal)} className="text-xs font-semibold text-emerald-300">Planejar com a MIKA</button><button type="button" disabled={busy} onClick={() => { setEditingGoalId(goal.id); setSavedAmountInput((goal.saved_cents / 100).toFixed(2).replace(".", ",")); }} className="text-xs font-semibold text-violet-200 disabled:opacity-50">Atualizar valor reservado</button></span></div>
         {editingGoalId === goal.id && <div className="mt-3 flex flex-wrap items-end gap-2"><label className="min-w-0 flex-1 text-xs text-slate-300">Total reservado (R$)<input value={savedAmountInput} onChange={e => setSavedAmountInput(e.target.value)} inputMode="decimal" placeholder="Ex.: 1.500,00" className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-2 text-sm text-white" /></label><button type="button" disabled={busy} onClick={() => void updateGoalSavings(goal)} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Salvar</button><button type="button" onClick={() => setEditingGoalId(null)} className="rounded-lg border border-white/20 px-3 py-2 text-xs text-slate-200">Cancelar</button></div>}
       </li>)}</ul>
