@@ -100,6 +100,7 @@ export async function saveCloudEvent(
     throw new Error("A data de início está no passado. Escolha um horário futuro ou registre explicitamente uma atividade histórica.");
   }
 
+  if (event.category !== undefined && !isEventCategory(event.category)) throw new Error("Categoria inválida.");
   const eventType = event.eventType ?? "appointment";
   const blocksTime = event.blocksTime ?? false;
 
@@ -119,6 +120,7 @@ export async function saveCloudEvent(
     notes: event.notes?.trim() || null,
     event_type: eventType,
     blocks_time: blocksTime,
+    category: event.category ?? "personal",
   });
 
   if (error) throw new Error(error.message);
