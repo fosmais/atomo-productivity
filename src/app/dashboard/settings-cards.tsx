@@ -19,11 +19,11 @@ export default function SettingsCards({ appearance, security, integrations, data
     if (params.has("google_calendar")) setActive("integrations");
   }, []);
   const panels = { appearance, security, integrations, data };
-  return <div className="mx-auto w-full max-w-5xl space-y-4">
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Categorias de preferências">
+  return <div className="w-full min-w-0 space-y-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Categorias de preferências">
       {sections.map(section => <button key={section.id} type="button" aria-expanded={active === section.id} onClick={() => setActive(current => current === section.id ? null : section.id)}
-        className={`flex min-h-32 flex-col items-start justify-between gap-3 rounded-2xl border p-4 text-left transition focus-visible:outline-2 focus-visible:outline-violet-400 ${active === section.id ? "border-violet-400 bg-violet-500/15 shadow-lg shadow-violet-950/20" : "border-white/15 bg-slate-900/75 hover:border-violet-400/50"}`}>
-        <span className="text-2xl text-violet-300" aria-hidden="true">{section.icon}</span>
+        className={`flex min-h-36 flex-col items-start justify-between gap-3 rounded-2xl border p-4 text-left transition focus-visible:outline-2 focus-visible:outline-violet-400 ${active === section.id ? "border-violet-400 bg-violet-500/15 shadow-lg shadow-violet-950/20" : "border-white/15 bg-slate-900/75 hover:border-violet-400/50"}`}>
+        <span className="text-3xl text-violet-300" aria-hidden="true">{section.icon}</span>
         <span className="block"><span className="block text-sm font-semibold text-white">{section.title}</span><span className="mt-1 block text-xs leading-relaxed text-slate-400">{section.description}</span></span>
       </button>)}
     </div>
