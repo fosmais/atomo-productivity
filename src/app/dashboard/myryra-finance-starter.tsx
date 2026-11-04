@@ -41,7 +41,9 @@ export default function MyryraFinanceStarter() {
       } finally { if (mounted) setLoading(false); }
     };
     void load();
-    return () => { mounted = false; };
+    const refresh = () => void load();
+    window.addEventListener("myryra:finance-updated", refresh);
+    return () => { mounted = false; window.removeEventListener("myryra:finance-updated", refresh); };
   }, []);
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
@@ -82,6 +84,7 @@ export default function MyryraFinanceStarter() {
       if (insertError) throw insertError;
       setEntries(previous => [data as Entry, ...previous]);
       setName(""); setAmount("");
+      window.dispatchEvent(new Event("myryra:finance-updated"));
     } catch { setError("Não foi possível salvar. Verifique sua conexão e tente novamente."); }
     finally { setSaving(false); }
   };
@@ -121,6 +124,7 @@ export default function MyryraFinanceStarter() {
       if (deleteError) throw deleteError;
       if (!deleted?.length) throw new Error("Registro não encontrado.");
       setEntries(previous => previous.filter(item => item.id !== id));
+      window.dispatchEvent(new Event("myryra:finance-updated"));
     } catch { setError("Não foi possível excluir o lançamento."); }
   };
 
