@@ -683,7 +683,7 @@ export default function CalendarEvents() {
         )}
       </div>
       <div className="mt-6 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3"><h3 className="font-semibold">Eventos cadastrados</h3><label className="inline-flex items-center gap-2 text-xs text-slate-300"><input type="checkbox" checked={favoritesOnly} onChange={(event) => setFavoritesOnly(event.target.checked)} className="accent-violet-500" />★ Somente favoritos</label></div>
+        <div className="flex flex-wrap items-center justify-between gap-3"><h3 className="font-semibold">Eventos cadastrados</h3><label className="inline-flex items-center gap-2 text-xs text-slate-300">Tema <select aria-label="Filtrar eventos por categoria" value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value as EventCategory | "all"); setShowAllLocal(false); }} className="rounded-lg border border-white/15 bg-slate-800 px-2 py-1.5 text-white"><option value="all">Todos</option>{Object.entries(EVENT_CATEGORIES).map(([id, item]) => <option key={id} value={id}>{item.label}</option>)}</select></label><label className="inline-flex items-center gap-2 text-xs text-slate-300"><input type="checkbox" checked={favoritesOnly} onChange={(event) => setFavoritesOnly(event.target.checked)} className="accent-violet-500" />★ Somente favoritos</label></div>
 
         {loading ? (
           <p className="text-sm text-slate-400">Carregando eventos...</p>
