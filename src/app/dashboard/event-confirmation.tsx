@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { getGoogleEventInterval } from "@/lib/google-event-time";
 import EventReminderControl from "./event-reminder-control";
+import { EVENT_CATEGORIES, suggestEventCategory, type EventCategory } from "@/lib/event-categories";
 import {
   saveCloudEvent,
   getCloudEvents,
@@ -28,6 +29,7 @@ export default function EventConfirmation({
   const [saved, setSaved] = useState(false);
   const [savedEventId, setSavedEventId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [category, setCategory] = useState<EventCategory>(() => event.category ?? suggestEventCategory(event.title));
   const [conflictWarning, setConflictWarning] = useState("");
   const [conflictAcknowledged, setConflictAcknowledged] = useState(false);
 
@@ -95,7 +97,7 @@ export default function EventConfirmation({
       }
       setConflictWarning("");
       if (messageId) {
-        const response = await fetch("/api/myka/proposal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messageId, acknowledgeConflict: conflictAcknowledged }) });
+        const response = await fetch("/api/myka/proposal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messageId, acknowledgeConflict: conflictAcknowledged, category }) });
         if (!response.ok) {
           const data = await response.json().catch(() => null);
           if (response.status === 409 && data?.code === "EVENT_CONFLICT") {
@@ -109,7 +111,7 @@ export default function EventConfirmation({
         const result = await response.json();
         setSavedEventId(typeof result.eventId === "string" ? result.eventId : null);
       } else {
-        await saveCloudEvent(event);
+        await saveCloudEvent({ ...event, category });
       }
       setSaved(true);
       window.dispatchEvent(new Event("myryra:events-updated"));
@@ -165,6 +167,11 @@ export default function EventConfirmation({
       </h3>
 
       <div className="mt-3 space-y-1 text-sm text-slate-300">
+        <label className="flex items-center gap-2">Categoria sugerida
+          <select value={category} onChange={(e) => setCategory(e.target.value as EventCategory)} disabled={saved} className="rounded-lg bg-slate-900 px-2 py-1 text-white">
+            {Object.entries(EVENT_CATEGORIES).map(([id, item]) => <option key={id} value={id}>{item.label}</option>)}
+          </select>
+        </label>
         <p>Inicio: {formatDate(event.startsAt)}</p>
         <p>Fim: {formatDate(event.endsAt)}</p>
 
