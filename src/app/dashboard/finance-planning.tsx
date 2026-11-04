@@ -281,7 +281,7 @@ export default function FinancePlanning() {
           })()}
           <ul className="mt-3 space-y-2">{allocations.map(({ goal, needed, allocated }) => <li key={goal.id} className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-200">
             <span>{goal.title} <span className="text-slate-500">({{ essential: "essencial", important: "importante", optional: "opcional" }[goal.priority]})</span></span>
-            <span className="font-semibold">{money(allocated)} <span className="font-normal text-slate-500">de {money(needed)}/mês</span></span>
+            <span className="text-right font-semibold">{money(allocated)} <span className="font-normal text-slate-500">de {money(needed)}/mês</span><span className="block text-[11px] font-normal text-slate-400">{goal.target_cents <= goal.saved_cents ? "Meta concluída" : allocated === 0 ? "Sem aporte nesta simulação" : `Prazo estimado: ${Math.ceil((goal.target_cents - goal.saved_cents) / allocated)} meses`}</span></span>
           </li>)}</ul>
           {allocations.some(item => item.allocated < item.needed) && <div className="mt-3 rounded-xl border border-amber-400/25 bg-amber-500/10 p-3">
             <p className="text-xs font-semibold text-amber-100">Seu orçamento não cobre todos os aportes planejados</p>
