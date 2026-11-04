@@ -563,6 +563,10 @@ setConversationId(data.conversationId);
     },
   ]);
     } catch (err) {
+      // Keep the unsent draft and remove the optimistic user bubble on failure.
+      // Retrying must not duplicate a failed message in the conversation.
+      setMessages(previous => previous.slice(0, -1));
+      setInput(content);
       setError(
         err instanceof Error
           ? err.message
