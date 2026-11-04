@@ -1,3 +1,4 @@
+import { isEventCategory } from "@/lib/event-categories";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
@@ -147,6 +148,8 @@ export async function POST(request: Request) {
     try { input = JSON.parse(raw); } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
     if (!input || typeof input !== "object" || Array.isArray(input)) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
     const messageId = (input as Record<string, unknown>).messageId;
+    const categoryInput = (input as Record<string, unknown>).category;
+    if (categoryInput !== undefined && !isEventCategory(categoryInput)) return NextResponse.json({ error: "Categoria inválida." }, { status: 422 });
     if (typeof messageId !== "string" || !isUuid(messageId)) return NextResponse.json({ error: "Mensagem inválida." }, { status: 400 });
 
     const admin = createSupabaseAdmin();
