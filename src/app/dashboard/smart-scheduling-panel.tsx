@@ -205,6 +205,12 @@ export default function SmartSchedulingPanel() {
         </button>
       </div>
 
+      <details className="mt-4 rounded-xl border border-violet-400/25 bg-violet-500/5 p-3 text-sm text-slate-200">
+        <summary className="cursor-pointer font-semibold text-violet-200">Como funciona o Smart Scheduling?</summary>
+        <p className="mt-2 leading-relaxed">A MYRYRA analisa tarefas, prioridades, durações e os horários disponíveis nos próximos sete dias. Se houver integração com o Google Calendar, considera também os compromissos dos calendários selecionados. Revise as sugestões antes de reorganizar sua rotina.</p>
+        <p className="mt-2 text-slate-400">Para começar: cadastre tarefas, informe a duração estimada e configure seus horários em Preferências de planejamento. Depois clique em Atualizar.</p>
+      </details>
+
       {loading && (
         <div className="mt-5">
           <VyraLoading
