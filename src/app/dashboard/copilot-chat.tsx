@@ -96,10 +96,12 @@ function isEventProposal(
     if (activeModule !== "vyra-ai") return;
     const conciergePrompt = sessionStorage.getItem("myryra:myka:concierge-handoff");
     const investmentPrompt = sessionStorage.getItem("myryra:myka:investment-handoff");
-    const prompt = conciergePrompt || investmentPrompt;
+    const healthPrompt = sessionStorage.getItem("myryra:myka:health-handoff");
+    const prompt = conciergePrompt || investmentPrompt || healthPrompt;
     if (!prompt) return;
     if (conciergePrompt) sessionStorage.removeItem("myryra:myka:concierge-handoff");
-    else sessionStorage.removeItem("myryra:myka:investment-handoff");
+    else if (investmentPrompt) sessionStorage.removeItem("myryra:myka:investment-handoff");
+    else sessionStorage.removeItem("myryra:myka:health-handoff");
     if (conciergePrompt) setPendingConciergePrompt(prompt.slice(0, 1500));
     else setInput(prompt.slice(0, 1500));
   }, [activeModule]);
