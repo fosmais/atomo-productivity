@@ -47,7 +47,7 @@ export default function HealthDailyLog() {
     const { error } = await supabase.from("myryra_health_logs").insert({ user_id: user.id, category, occurred_on: date, value: number, unit: selected.unit, notes: notes.trim() });
     setBusy(false);
     if (error) { setMessage("Não foi possível salvar. Tente novamente."); return; }
-    setValue(""); setNotes(""); setMessage("Registro salvo."); await refresh();
+    setValue(""); setNotes(""); setMessage("Registro salvo."); await refresh(); window.dispatchEvent(new Event("myryra:health:changed"));
   }
   async function remove(id: string) {
     if (!window.confirm("Excluir este registro?")) return;
@@ -56,7 +56,7 @@ export default function HealthDailyLog() {
     if (!user) return;
     const { error } = await supabase.from("myryra_health_logs").delete().eq("id", id).eq("user_id", user.id);
     if (error) setMessage("Não foi possível excluir.");
-    else { setMessage("Registro excluído."); await refresh(); }
+    else { setMessage("Registro excluído."); await refresh(); window.dispatchEvent(new Event("myryra:health:changed")); }
   }
   return <section className="space-y-4 rounded-2xl border border-white/10 bg-slate-950/40 p-4 sm:p-5">
     <div><h3 className="text-lg font-semibold text-white">Diário de bem-estar</h3><p className="mt-1 text-sm text-slate-300">Registre seus hábitos no seu ritmo. Seu histórico é privado e você pode excluir qualquer lançamento.</p></div>
