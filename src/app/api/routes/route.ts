@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { Redis } from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
 
 type GoogleRouteResponse = {
   routes?: Array<{
@@ -9,10 +11,16 @@ type GoogleRouteResponse = {
 };
 
 const MAX_REQUESTS_PER_HOUR = 5;
-const WINDOW_MS = 60 * 60 * 1000;
-
-// Provisional local-development limit; use persistent storage in production.
-const usage = new Map<string, number[]>();
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
+const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+const routeLimiter = redisUrl && redisToken
+  ? new Ratelimit({
+      redis: new Redis({ url: redisUrl, token: redisToken }),
+      limiter: Ratelimit.slidingWindow(MAX_REQUESTS_PER_HOUR, "1 h"),
+      prefix: "myryra:routes:hour:v1",
+      analytics: false,
+    })
+  : null;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -93,20 +101,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const now = Date.now();
-    const recent = (usage.get(user.id) ?? []).filter(
-      (timestamp) => now - timestamp < WINDOW_MS
-    );
-
-    if (recent.length >= MAX_REQUESTS_PER_HOUR) {
-      usage.set(user.id, recent);
+    // Fail closed: do not bypass quota when the shared store is unavailable.
+    if (!routeLimiter) {
       return NextResponse.json(
-        { error: "Limite de 5 consultas por hora atingido." },
-        { status: 429 }
+        { error: "Consulta de rotas temporariamente indisponível." },
+        { status: 503 }
       );
     }
 
-    usage.set(user.id, [...recent, now]);
+    let quota;
+    try {
+      quota = await routeLimiter.limit(user.id);
+    } catch (error) {
+      console.error("Limite de rotas indisponível:", error);
+      return NextResponse.json(
+        { error: "Consulta de rotas temporariamente indisponível." },
+        { status: 503 }
+      );
+    }
+
+    if (!quota.success) {
+      return NextResponse.json(
+        { error: "Limite de 5 consultas por hora atingido." },
+        { status: 429, headers: { "Retry-After": String(Math.max(1, Math.ceil((quota.reset - Date.now()) / 1000))) } }
+      );
+    }
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
