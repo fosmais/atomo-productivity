@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 
 const MAX_ADDRESS_LENGTH = 300;
 const TIMEOUT_MS = 6500;
@@ -27,6 +28,33 @@ export async function POST(request: Request) {
   }
   const apiKey = process.env.GOOGLE_MAPS_ROUTES_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "Consulta de rotas ainda não habilitada.", code: "ROUTES_NOT_CONFIGURED" }, { status: 503 });
+
+  // Reserve quota atomically before any billable Google request. Fail closed if unavailable.
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const secretKey = process.env.SUPABASE_SECRET_KEY;
+  if (!supabaseUrl || !secretKey) {
+    return NextResponse.json({ error: "Controle de consumo indisponível.", code: "QUOTA_UNAVAILABLE" }, { status: 503 });
+  }
+  try {
+    const admin = createAdminClient(supabaseUrl, secretKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: reservation, error: quotaError } = await admin.rpc("reserve_concierge_route_request", {
+      p_user_id: user.id,
+    });
+    if (quotaError || typeof reservation !== "string") {
+      return NextResponse.json({ error: "Controle de consumo indisponível.", code: "QUOTA_UNAVAILABLE" }, { status: 503 });
+    }
+    if (reservation !== "OK") {
+      const limited = ["USER_DAILY_LIMIT", "GLOBAL_DAILY_LIMIT", "RATE_LIMIT"].includes(reservation);
+      return NextResponse.json({
+        error: limited ? "Limite de consultas atingido. Tente novamente mais tarde." : "Consulta indisponível.",
+        code: reservation,
+      }, { status: limited ? 429 : 503 });
+    }
+  } catch {
+    return NextResponse.json({ error: "Controle de consumo indisponível.", code: "QUOTA_UNAVAILABLE" }, { status: 503 });
+  }
 
   try {
     const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
