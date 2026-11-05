@@ -31,6 +31,7 @@ import TaskKanban from "./task-kanban";
 import TaskPlanningCards from "./task-planning-cards";
 import MyryraTrash from "./myryra-trash";
 import PerformanceInsights from "./performance-insights";
+import ProductivityScore from "./productivity-score";
 import VyraHeader from "./vyra-header";
 import VyraNavigation from "./vyra-navigation";
 import VyraWorkspace from "./vyra-workspace";
@@ -171,6 +172,7 @@ async function DashboardContent() {
         title="Sua evolução em números."
         description="Acompanhe suas conquistas, identifique oportunidades de melhoria e tome decisões com base em dados reais."
       >
+        <ProductivityScore />
         <div className="grid min-w-0 gap-3 md:grid-cols-2">
         <FeatureAccordion id="weekly" title="Weekly Intelligence" description="Indicadores de sua semana" userId={user.id} defaultOpen><WeeklyIntelligence /></FeatureAccordion>
         <FeatureAccordion id="performance" title="Performance & Insights" description="Explore seus indicadores de produtividade" userId={user.id}><PerformanceInsights /></FeatureAccordion>
