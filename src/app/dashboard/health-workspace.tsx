@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import HealthDailyLog from "./health-daily-log";
 import HealthProgress from "./health-progress";
 import HealthWorkoutPlanner from "./health-workout-planner";
+import HealthExerciseLibrary from "./health-exercise-library";
 import { useVyraNavigation } from "./vyra-module-context";
 
 type Goal = "lose" | "maintain" | "gain" | "fitness";
@@ -127,6 +128,7 @@ export default function HealthWorkspace() {
     </div>
     <button type="button" onClick={openMika} className="w-full rounded-xl bg-violet-600 px-4 py-3 font-semibold text-white hover:bg-violet-500 sm:w-auto">Continuar avaliação com a MIKA</button>
     <HealthWorkoutPlanner />
+    <HealthExerciseLibrary />
     <HealthProgress />
     <HealthDailyLog />
     <div className="rounded-xl border border-rose-400/20 p-3"><p className="text-xs text-slate-400">Privacidade: você controla seus registros de saúde.</p><button type="button" disabled={saving} onClick={() => void eraseHealthData()} className="mt-2 text-sm text-rose-300 underline disabled:opacity-50">Excluir todos os meus dados de saúde</button></div>
