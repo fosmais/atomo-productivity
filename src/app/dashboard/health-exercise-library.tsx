@@ -55,6 +55,7 @@ export default function HealthExerciseLibrary() {
   const [shareWithMika, setShareWithMika] = useState(false);
   const [instructionsOpen, setInstructionsOpen] = useState<string[]>([]);
   const [deletingEntry, setDeletingEntry] = useState<string | null>(null);
+  const [sessionDate, setSessionDate] = useState(() => new Date().toLocaleDateString("en-CA"));
   const [history, setHistory] = useState<{id:string;exercise_name:string;weight_kg:number|null;repetitions:number|null;performed_on:string}[]>([]);
   useEffect(() => { let active = true; async function load() { const supabase = createClient(); const {data:{user}} = await supabase.auth.getUser(); if (!user) return; const {data} = await supabase.from("myryra_health_exercise_entries").select("id,exercise_name,weight_kg,repetitions,performed_on").eq("user_id",user.id).order("created_at",{ascending:false}).limit(100); if(active && data) setHistory(data); } void load(); const refresh=()=>{setHistory([]);setDone([]);setLoads({});setReps({});setShareWithMika(false);setChartExercise("");void load();};window.addEventListener("myryra:health:changed",refresh);return ()=>{active=false;window.removeEventListener("myryra:health:changed",refresh);}; }, []);
   async function completeExercise(item: Exercise) {
@@ -62,11 +63,12 @@ export default function HealthExerciseLibrary() {
     const weightText = loads[item.name] ?? ""; const repsText = reps[item.name] ?? "";
     const weight = weightText.trim() === "" ? null : Number(weightText);
     const repetitions = repsText.trim() === "" ? null : Number(repsText);
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(sessionDate) || sessionDate > new Date().toLocaleDateString("en-CA")) {setFeedback("Selecione uma data válida, sem datas futuras.");return;}
     if ((weight !== null && (!Number.isFinite(weight) || weight < 0 || weight > 1000)) || (repetitions !== null && (!Number.isInteger(repetitions) || repetitions < 0 || repetitions > 100))) {setFeedback("Confira os valores de carga e repetições.");return;}
     setSavingExercise(item.name);setFeedback("");
     const supabase = createClient();const {data:{user}} = await supabase.auth.getUser();
     if(!user){setFeedback("Entre na sua conta para salvar o exercício.");setSavingExercise(null);return;}
-    const {data,error}=await supabase.from("myryra_health_exercise_entries").insert({user_id:user.id,exercise_name:item.name,muscle_group:item.group,routine,level,weight_kg:weight,repetitions}).select("id,exercise_name,weight_kg,repetitions,performed_on").single();
+    const {data,error}=await supabase.from("myryra_health_exercise_entries").insert({user_id:user.id,exercise_name:item.name,muscle_group:item.group,routine,level,weight_kg:weight,repetitions,performed_on:sessionDate}).select("id,exercise_name,weight_kg,repetitions,performed_on").single();
     setSavingExercise(null);
     if(error){setFeedback("Não foi possível salvar. Tente novamente.");return;}
     setDone(old=>old.includes(item.name)?old:[...old,item.name]);setHistory(old=>[data,...old].slice(0,100));setFeedback(item.name+" salvo no seu histórico.");
@@ -98,6 +100,7 @@ export default function HealthExerciseLibrary() {
   const prescription = level === "Iniciante" ? "2 séries · 8–12 repetições" : level === "Intermediário" ? "2–3 séries · 8–12 repetições" : "3 séries · 8–12 repetições";
   return <section className="space-y-4 rounded-2xl border border-violet-400/25 bg-slate-900/70 p-4 sm:p-5">
     <div><p className="text-xs font-semibold uppercase tracking-widest text-violet-300">Musculação · Biblioteca de exercícios</p><h3 className="mt-1 text-xl font-semibold text-white">Monte sua ficha de treino</h3><p className="mt-2 text-sm text-slate-300">Explore exercícios por grupo muscular e experiência. As sugestões são exemplos educativos, não uma prescrição individual.</p></div>
+    <label className="flex flex-wrap items-center gap-2 text-sm text-slate-200">Data do treino <input type="date" value={sessionDate} max={new Date().toLocaleDateString("en-CA")} onChange={e=>{setSessionDate(e.target.value);setDone([]);}} className="rounded-lg border border-white/20 bg-slate-950 p-2 text-white"/></label>
     <div className="flex flex-wrap gap-2" role="group" aria-label="Divisão de treino">{(["Livre", "A", "B", "C"] as const).map(value => <button key={value} type="button" aria-pressed={routine === value} onClick={() => {setRoutine(value);setDone([]);}} className={"rounded-lg border px-3 py-2 text-sm "+(routine === value ? "border-violet-400 bg-violet-700/40 text-white" : "border-white/20 text-slate-300")}>{value === "Livre" ? "Por músculo" : "Treino "+value}</button>)}</div>
     {routine !== "Livre" && <p className="text-sm text-violet-200">{routine === "A" ? "A · Peito e ombros" : routine === "B" ? "B · Costas e braços" : "C · Pernas e abdômen"} · Exemplo de divisão semanal, ajustável pela MIKA.</p>}
     <div className="grid gap-3 sm:grid-cols-2"><label className="space-y-1 text-sm text-slate-200">Grupo muscular<select disabled={routine !== "Livre"} aria-label="Grupo muscular" value={group} onChange={e => {setGroup(e.target.value as Group);setDone([]);}} className="block w-full rounded-xl border border-white/20 bg-slate-950 p-3 text-white">{groups.map(g=><option key={g} value={g}>{g}</option>)}</select></label><label className="space-y-1 text-sm text-slate-200">Nível<select aria-label="Nível do treino" value={level} onChange={e=>{setLevel(e.target.value as Level);setDone([]);}} className="block w-full rounded-xl border border-white/20 bg-slate-950 p-3 text-white">{levels.map(l=><option key={l} value={l}>{l}</option>)}</select></label></div>
