@@ -39,7 +39,7 @@ export default function HealthDailyLog() {
     if (category === "weight" && number !== null && number > 700) { setMessage("Confira o peso informado."); return; }
     if (category === "sleep" && number !== null && number > 24) { setMessage("Informe até 24 horas de sono."); return; }
     if (category === "meal" && !notes.trim()) { setMessage("Descreva a refeição."); return; }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today()) { setMessage("Escolha uma data válida, até hoje."); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date)) || date > today()) { setMessage("Escolha uma data válida, até hoje."); return; }
     setBusy(true); setMessage("");
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
