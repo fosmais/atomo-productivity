@@ -104,6 +104,18 @@ export default function VyraHome() {
         </button>
       </section>
 
+      <details className="group rounded-2xl border border-violet-400/35 bg-gradient-to-br from-violet-950/70 via-slate-900/85 to-slate-950 p-4 shadow-sm sm:p-5">
+        <summary className="flex cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden">
+          <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-700/45 text-2xl text-violet-200">✦</span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-white">Sugestão inteligente da MIKA</span>
+            <span className="mt-1 block text-xs leading-relaxed text-violet-200">{metrics?.pending ? `Você tem ${metrics.pending} tarefas pendentes. Vamos escolher a próxima prioridade?` : "Descubra uma ação prática para aproveitar melhor o seu dia."}</span>
+          </span>
+          <span aria-hidden="true" className="text-lg text-violet-200 transition-transform group-open:rotate-90">›</span>
+        </summary>
+        <div className="mt-4 border-t border-violet-400/15 pt-3"><WhatNowCard /></div>
+      </details>
+
       <section aria-label="Explore seu universo">
         <h2 className="mb-3 text-base font-semibold text-white">Explore seu universo</h2>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -114,8 +126,8 @@ export default function VyraHome() {
           </button>)}
         </div>
       </section>
-      <details className="rounded-xl border border-white/10 bg-slate-900/45 p-3">
-        <summary className="cursor-pointer text-sm font-semibold text-violet-200">Todas as ferramentas</summary>
+      <details className="group rounded-2xl border border-violet-400/20 bg-slate-900/65 p-4 sm:p-5">
+        <summary className="flex cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden"><span aria-hidden="true" className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-700/25 text-xl text-violet-200">▦</span><span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-white">Todas as ferramentas</span><span className="mt-1 block text-xs text-slate-400">Explore os recursos adicionais da MYRYRA</span></span><span aria-hidden="true" className="text-lg text-violet-200 transition-transform group-open:rotate-90">›</span></summary>
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
           {[
             {label:"Nova tarefa",module:"vyra-tasks",action:"capture"},
@@ -132,10 +144,7 @@ export default function VyraHome() {
         </div>
       </details>
 
-      <details className="rounded-xl border border-white/10 bg-slate-900/35 px-3 py-2">
-        <summary className="cursor-pointer text-xs font-semibold text-violet-200">✦ Sugestão inteligente · O que fazer agora?</summary>
-        <div className="mt-3"><WhatNowCard /></div>
-      </details>
+
     </main>
   );
 }
