@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import HealthDailyLog from "./health-daily-log";
 import HealthProgress from "./health-progress";
+import HealthWorkoutPlanner from "./health-workout-planner";
 import { useVyraNavigation } from "./vyra-module-context";
 
 type Goal = "lose" | "maintain" | "gain" | "fitness";
@@ -109,6 +110,7 @@ export default function HealthWorkspace() {
       {profileSaved && <button type="button" onClick={() => void deleteProfile()} className="rounded-xl border border-rose-400/30 px-4 py-3 text-sm text-rose-200 hover:bg-rose-500/10">Excluir perfil salvo</button>}
     </div>
     <button type="button" onClick={openMika} className="w-full rounded-xl bg-violet-600 px-4 py-3 font-semibold text-white hover:bg-violet-500 sm:w-auto">Continuar avaliação com a MIKA</button>
+    <HealthWorkoutPlanner />
     <HealthProgress />
     <HealthDailyLog />
     <p className="text-xs leading-5 text-slate-400">A MYRYRA não substitui orientação médica, nutricional ou de educação física. O diário registra peso, refeições, sono, meditação e treinos; planos avançados e compartilhamento de progresso serão adicionados em etapas posteriores.</p>
