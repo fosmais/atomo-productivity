@@ -111,7 +111,7 @@ export default function VyraNavigation({
         </div>
       </nav>
 
-      <div className="mb-4 lg:hidden">
+      <div className={current === "home" ? "hidden" : "mb-4 lg:hidden"}>
         <button
           type="button"
           onClick={() => setMoreOpen((value) => !value)}
