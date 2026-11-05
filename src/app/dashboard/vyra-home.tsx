@@ -40,7 +40,6 @@ export default function VyraHome() {
   const [metrics, setMetrics] = useState<VyraMetrics | null>(null);
   const [nextEvent, setNextEvent] = useState<{ title: string; start: string } | null>(null);
   const [agendaError, setAgendaError] = useState(false);
-  const [shareMessage, setShareMessage] = useState("");
   const [today, setToday] = useState<Date | null>(null);
 
   useEffect(() => { setToday(new Date()); }, []);
@@ -78,17 +77,6 @@ export default function VyraHome() {
 
   if (activeModule !== "home") return null;
   const progress = metrics ? getCompletionRate(metrics) : null;
-  const shareText = progress === null ? "" : "Meu score de produtividade na MYRYRA: " + progress + "% de tarefas concluídas. Organize seu dia com a MIKA! https://myryra.com";
-  async function shareScore() {
-    if (!shareText) return;
-    try {
-      if (navigator.share) await navigator.share({ title: "Meu score MYRYRA", text: shareText });
-      else { await navigator.clipboard.writeText(shareText); setShareMessage("Score copiado! Cole na sua rede social."); }
-    } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") return;
-      setShareMessage("Não foi possível compartilhar. Use o botão do WhatsApp.");
-    }
-  }
 
   return (
     <main className="flex min-w-0 flex-col gap-3 " aria-label="Início MYRYRA">
@@ -126,16 +114,6 @@ export default function VyraHome() {
           </button>)}
         </div>
       </section>
-      <details className="rounded-xl border border-violet-400/20 bg-slate-900/50 p-3">
-        <summary className="cursor-pointer text-sm font-semibold text-violet-100">Seu score e compartilhamento {progress===null?"":`· ${progress}%`}</summary>
-        <p className="mt-2 text-xs text-slate-400">Percentual de tarefas concluídas entre as cadastradas. Não representa uma avaliação pessoal.</p>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress??0} aria-label="Tarefas concluídas"><div className="h-full rounded-full bg-violet-400" style={{width:`${progress??0}%`}}/></div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <a href={shareText?`https://wa.me/?text=${encodeURIComponent(shareText)}`:undefined} target="_blank" rel="noopener noreferrer" aria-disabled={!shareText} onClick={event=>{if(!shareText)event.preventDefault();}} className={`rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100 ${!shareText?"pointer-events-none opacity-50":""}`}>Compartilhar no WhatsApp</a>
-          <button type="button" disabled={!shareText} onClick={()=>void shareScore()} className="rounded-lg border border-violet-400/30 px-3 py-2 text-xs text-violet-100 disabled:opacity-50">Outras redes</button>
-        </div>
-        {shareMessage&&<p role="status" className="mt-2 text-xs text-violet-200">{shareMessage}</p>}
-      </details>
       <details className="rounded-xl border border-white/10 bg-slate-900/45 p-3">
         <summary className="cursor-pointer text-sm font-semibold text-violet-200">Todas as ferramentas</summary>
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
