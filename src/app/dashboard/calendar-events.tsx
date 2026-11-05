@@ -41,12 +41,12 @@ export default function CalendarEvents() {
       setError("Não foi possível abrir a MIKA agora. Tente novamente.");
     }
   }
-  function downloadConciergeReminder(event: Pick<CalendarEvent, "title" | "startsAt" | "endsAt" | "location" | "concierge">, travelMinutes: number, bufferMinutes: number) {
+  function downloadConciergeReminder(event: Pick<CalendarEvent, "title" | "startsAt" | "endsAt" | "location" | "concierge">, travelMinutes: number, bufferMinutes: number, source: "manual" | "google") {
     if (!event.concierge) return;
     const icsEscape = (value: string) => value.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
     const utc = (value: string) => new Date(value).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
     const departure = new Date(new Date(event.startsAt).getTime() - (travelMinutes + bufferMinutes) * 60000);
-    const notes = `MIKA Concierge: saída planejada para ${new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(departure)}. Tempo de trajeto informado manualmente: ${travelMinutes} min; margem: ${bufferMinutes} min. Confira o trânsito antes de sair. Não é uma estimativa em tempo real.`;
+    const notes = `MIKA Concierge: saída planejada para ${new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(departure)}. Tempo de trajeto ${source === "google" ? "estimado pelo Google Routes" : "informado manualmente"}: ${travelMinutes} min; margem: ${bufferMinutes} min. Confira o trânsito antes de sair. Não é uma estimativa em tempo real.`;
     const lines = [
       "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//MYRYRA//MIKA Concierge//PT",
       "BEGIN:VEVENT", "UID:" + crypto.randomUUID() + "@myryra.com",
@@ -70,6 +70,7 @@ export default function CalendarEvents() {
     URL.revokeObjectURL(url);
   }
   const [conciergeTravelMinutes, setConciergeTravelMinutes] = useState(30);
+  const [routeEstimate, setRouteEstimate] = useState<{ eventId: string; minutes: number } | null>(null);
   const [conciergeBufferMinutes, setConciergeBufferMinutes] = useState(15);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [favoriteEventIds, setFavoriteEventIds] = useState<string[]>([]);
@@ -849,7 +850,7 @@ export default function CalendarEvents() {
                       <p className="mt-1 text-xs text-slate-400">Informe a duração aproximada do trajeto. Não usamos trânsito em tempo real nesta etapa.</p>
                       <div className="mt-2 flex flex-wrap items-center gap-3">
                         <label className="text-xs text-slate-300">Trajeto (min)
-                          <input type="number" min={1} max={480} step={5} value={conciergeTravelMinutes} onChange={(e) => setConciergeTravelMinutes(Math.min(480, Math.max(1, Number(e.target.value) || 1)))} className="ml-2 w-16 rounded-lg border border-white/15 bg-slate-800 px-2 py-1.5 text-white" />
+                          <input type="number" min={1} max={480} step={5} value={conciergeTravelMinutes} onChange={(e) => { setConciergeTravelMinutes(Math.min(480, Math.max(1, Number(e.target.value) || 1))); setRouteEstimate(null); }} className="ml-2 w-16 rounded-lg border border-white/15 bg-slate-800 px-2 py-1.5 text-white" />
                         </label>
                         <label className="text-xs text-slate-300">Margem (min)
                           <select value={conciergeBufferMinutes} onChange={(e) => setConciergeBufferMinutes(Number(e.target.value))} className="ml-2 rounded-lg border border-white/15 bg-slate-800 px-2 py-1.5 text-white">
@@ -858,10 +859,10 @@ export default function CalendarEvents() {
                         </label>
                       </div>
                       <p className="mt-2 text-xs text-violet-200">Saída sugerida: {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(new Date(event.startsAt).getTime() - (conciergeTravelMinutes + conciergeBufferMinutes) * 60000))}</p>
-                      <button type="button" onClick={() => downloadConciergeReminder(event, conciergeTravelMinutes, conciergeBufferMinutes)} className="mt-2 rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">Adicionar alerta de saída ao calendário</button>
+                      <button type="button" onClick={() => downloadConciergeReminder(event, conciergeTravelMinutes, conciergeBufferMinutes, routeEstimate?.eventId === event.id && routeEstimate.minutes === conciergeTravelMinutes ? "google" : "manual")} className="mt-2 rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">Adicionar alerta de saída ao calendário</button>
                       <p className="mt-1 text-xs text-slate-400">Importe o arquivo no calendário para receber o alerta. O horário depende da duração informada por você.</p>
                     </div>
-                    <ConciergeRouteEstimate event={event} onEstimate={(minutes) => setConciergeTravelMinutes(minutes)} />
+                    <ConciergeRouteEstimate event={event} onEstimate={(minutes) => { setConciergeTravelMinutes(minutes); setRouteEstimate({ eventId: event.id, minutes }); }} />
                     <details className="mt-3 rounded-lg border border-violet-400/20 p-3"><summary className="cursor-pointer text-xs font-semibold text-violet-200">Serviços do compromisso · Ver opções</summary>
                     {event.location && <div className="mt-2 flex flex-wrap gap-2">
                       <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.location)}&travelmode=driving${event.concierge.departureAddress ? `&origin=${encodeURIComponent(event.concierge.departureAddress)}` : ""}`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">Ver trajeto de carro ↗</a>
