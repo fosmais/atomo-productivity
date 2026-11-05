@@ -12,7 +12,7 @@ const options: { id: Category; title: string; unit: string | null; placeholder: 
   { id: "sleep", title: "Sono", unit: "hours", placeholder: "Horas dormidas" },
   { id: "meditation", title: "Meditação", unit: "minutes", placeholder: "Duração em minutos" }
 ];
-const today = () => new Date().toLocaleDateString("en-CA");
+const today = () => { const now = new Date(); return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, "0"), String(now.getDate()).padStart(2, "0")].join("-"); };
 export default function HealthDailyLog() {
   const [category, setCategory] = useState<Category>("weight");
   const [date, setDate] = useState(today);
