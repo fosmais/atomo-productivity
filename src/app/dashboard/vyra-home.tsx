@@ -7,14 +7,32 @@ import { getCompletionRate, type VyraMetrics } from "./vyra-metrics";
 import { getCloudEvents } from "@/lib/event-cloud";
 import WhatNowCard from "./what-now-card";
 
-const shortcuts = [
-  { label: "Agenda", icon: "▦", module: "vyra-calendar" },
-  { label: "Tarefas", icon: "✓", module: "vyra-tasks", action: "kanban" },
-  { label: "Lembretes", icon: "◷", module: "vyra-tasks", action: "capture" },
-  { label: "Financeiro", icon: "◇", module: "vyra-finance" },
-  { label: "Metas", icon: "◎", module: "vyra-tasks", action: "goals" },
-  { label: "MIKA", icon: "✦", module: "vyra-ai" },
+const portals = [
+  { label: "MIKA", subtitle: "Sua inteligência pessoal", icon: "✦", module: "vyra-ai" },
+  { label: "Seu dia e futuro", subtitle: "Agenda, planos e compromissos", icon: "▦", module: "vyra-calendar" },
+  { label: "Corpo e mente", subtitle: "Saúde, treino e bem-estar", icon: "♡", module: "vyra-health" },
+  { label: "Organização", subtitle: "Tarefas, foco e metas", icon: "✓", module: "vyra-tasks" },
+  { label: "Finanças e investimentos", subtitle: "Seu dinheiro e seus objetivos", icon: "◇", module: "vyra-finance" },
+  { label: "Sua evolução", subtitle: "Score, progresso e conquistas", icon: "◎", module: "vyra-performance" },
 ];
+const dailyMessages = [
+  "Um pequeno passo hoje pode transformar o seu amanhã.",
+  "Seu tempo é valioso. Escolha o que realmente importa.",
+  "Grandes conquistas começam com decisões simples.",
+  "Progresso não exige perfeição, exige constância.",
+  "Hoje é uma nova oportunidade de cuidar de você.",
+  "Organize suas prioridades e abra espaço para viver.",
+  "Você não precisa fazer tudo. Comece pelo essencial.",
+  "O futuro que você deseja começa nas escolhas de hoje.",
+  "Cada avanço merece ser reconhecido.",
+  "Faça do seu dia uma experiência com propósito.",
+  "Equilíbrio também é uma forma de progresso.",
+  "O melhor planejamento é aquele que cabe na sua vida.",
+];
+function dayOfYear(date: Date) {
+  const today = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  return Math.floor((today - Date.UTC(date.getFullYear(), 0, 1)) / 86400000);
+}
 
 export default function VyraHome() {
   const activeModule = useVyraActiveModule();
@@ -23,6 +41,9 @@ export default function VyraHome() {
   const [nextEvent, setNextEvent] = useState<{ title: string; start: string } | null>(null);
   const [agendaError, setAgendaError] = useState(false);
   const [shareMessage, setShareMessage] = useState("");
+  const [today, setToday] = useState<Date | null>(null);
+
+  useEffect(() => { setToday(new Date()); }, []);
 
   useEffect(() => {
     if (activeModule !== "home") return;
@@ -71,41 +92,40 @@ export default function VyraHome() {
 
   return (
     <main className="flex min-w-0 flex-col gap-3 " aria-label="Início MYRYRA">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-300">MYRYRA · HOJE</p>
-          <h1 className="text-xl font-semibold text-white sm:text-2xl">Seu dia, do seu jeito.</h1>
-        </div>
-        <button type="button" onClick={() => navigateTo("vyra-ai")} className="rounded-xl border border-violet-400/40 bg-violet-500/15 px-3 py-2 text-xs font-semibold text-violet-100 hover:bg-violet-500/25">✦ Pergunte à MIKA</button>
-      </div>
+      <section className="rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-950/65 via-slate-900/80 to-slate-950 p-4 sm:p-6" aria-label="Boas-vindas MYRYRA">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-300">{today ? new Intl.DateTimeFormat("pt-BR",{weekday:"long",day:"numeric",month:"long"}).format(today) : "MYRYRA · SEU ESPAÇO"}</p>
+        <h1 className="mt-2 max-w-xl text-2xl font-semibold leading-tight text-white sm:text-3xl">Como podemos tornar seu dia extraordinário?</h1>
+        <p className="mt-3 text-sm leading-relaxed text-violet-200" aria-label="Inspiração do dia">{today ? dailyMessages[dayOfYear(today)%dailyMessages.length] : "Um dia de cada vez. Grandes mudanças começam com pequenos passos."}</p>
+        <button type="button" onClick={() => navigateTo("vyra-ai")} className="mt-4 flex w-full items-center gap-3 rounded-xl border border-violet-400/30 bg-violet-500/15 p-3 text-left transition hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-700/60 text-xl text-violet-100" aria-hidden="true">✦</span>
+          <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-white">Sua MIKA está aqui</span><span className="block text-xs text-violet-200">Planeje, converse ou descubra seu próximo passo.</span></span>
+          <span className="text-violet-200" aria-hidden="true">↗</span>
+        </button>
+      </section>
 
-      <section className="rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-950/45 to-slate-900/70 p-3 sm:p-4" aria-label="O que precisa fazer">
-        <h2 className="mb-3 text-sm font-semibold text-white">O que precisa fazer?</h2>
-        <div className="grid grid-cols-3 gap-2">
+      <section aria-label="Explore seu universo">
+        <h2 className="mb-3 text-base font-semibold text-white">Explore seu universo</h2>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {portals.map(item => <button key={item.label} type="button" onClick={() => navigateTo(item.module)} className="flex min-h-32 flex-col items-start justify-center gap-2 rounded-xl border border-violet-400/15 bg-slate-900/65 p-3 text-left transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
+            <span className="text-2xl text-violet-300" aria-hidden="true">{item.icon}</span>
+            <span className="text-sm font-semibold leading-snug text-white">{item.label}</span>
+            <span className="text-xs leading-snug text-slate-400">{item.subtitle}</span>
+          </button>)}
+        </div>
+      </section>
+      <details className="rounded-xl border border-white/10 bg-slate-900/45 p-3">
+        <summary className="cursor-pointer text-sm font-semibold text-violet-200">Todas as ferramentas</summary>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
           {[
-            { label: "Nova tarefa", icon: "+", module: "vyra-tasks", action: "capture" },
-            { label: "Agendar", icon: "▦", module: "vyra-calendar" },
-            { label: "Lembrete", icon: "◷", module: "vyra-tasks", action: "capture" },
-          ].map((item) => (
-            <button key={item.label} type="button" onClick={() => "action" in item && item.action ? navigateToQuickAction?.(item.action) : navigateTo(item.module)}
-              className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-xs font-medium text-white transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
-              <span className="text-xl text-violet-200" aria-hidden="true">{item.icon}</span>{item.label}
-            </button>
-          ))}
+            {label:"Nova tarefa",module:"vyra-tasks",action:"capture"},
+            {label:"Agenda",module:"vyra-calendar"},
+            {label:"Lembretes",module:"vyra-tasks",action:"capture"},
+            {label:"Metas",module:"vyra-tasks",action:"goals"},
+            {label:"Planejamento",module:"vyra-tasks",action:"kanban"},
+            {label:"Configurações",module:"vyra-settings"}
+          ].map(item=><button key={item.label} type="button" onClick={()=>"action" in item && item.action ? navigateToQuickAction?.(item.action) : navigateTo(item.module)} className="rounded-lg border border-white/10 bg-slate-950/70 px-3 py-3 text-left text-xs font-medium text-white hover:border-violet-400/50">{item.label}</button>)}
         </div>
-      </section>
-
-      <section className="rounded-2xl border border-white/10 bg-slate-900/55 p-3 sm:p-4" aria-label="Menu rápido">
-        <h2 className="mb-3 text-sm font-semibold text-white">O que quer acessar?</h2>
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-          {shortcuts.map((item) => (
-            <button key={item.label} type="button" onClick={() => "action" in item && item.action ? navigateToQuickAction?.(item.action) : navigateTo(item.module)}
-              className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border border-white/10 bg-slate-950/60 px-2 py-2 text-xs font-medium text-slate-100 transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
-              <span className="text-xl text-violet-300" aria-hidden="true">{item.icon}</span>{item.label}
-            </button>
-          ))}
-        </div>
-      </section>
+      </details>
 
       <section className="grid grid-cols-2 gap-2 text-xs" aria-label="Resumo rápido">
         <button type="button" onClick={() => navigateTo("vyra-calendar")} className="min-w-0 rounded-xl border border-white/10 bg-slate-900/50 p-3 text-left hover:border-violet-400/50">
