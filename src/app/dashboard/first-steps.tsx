@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useVyraActiveModule } from "./vyra-module-context";
+import { useVyraActiveModule, useVyraNavigation } from "./vyra-module-context";
 
 const steps = [
   { label: "Criar sua primeira tarefa", target: "vyra-tasks" },
@@ -12,8 +12,10 @@ const steps = [
 
 export default function FirstSteps({ userId }: { userId: string }) {
   const activeModule = useVyraActiveModule();
+  const { navigateTo } = useVyraNavigation();
   const [done, setDone] = useState<number[]>([]);
   const [dismissed, setDismissed] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const storageKey = `myryra:onboarding:v1:${userId}`;
   useEffect(() => {
     try {
@@ -28,15 +30,14 @@ export default function FirstSteps({ userId }: { userId: string }) {
     try { localStorage.setItem(storageKey, JSON.stringify({ done: nextDone, dismissed: nextDismissed })); } catch { /* Browser storage may be disabled. */ }
   }
   if (activeModule !== "home" || dismissed || done.length === steps.length) return null;
-  return <section className="rounded-2xl border border-violet-500/30 bg-slate-900 p-5 text-white" aria-label="Primeiros passos">
-    <div className="flex items-start justify-between gap-3">
-      <div><p className="text-xs font-semibold uppercase tracking-widest text-violet-400">BEM-VINDO À MYRYRA</p><h3 className="mt-2 text-xl font-semibold">Sua rotina começa aqui.</h3><p className="mt-1 text-sm text-slate-300">{done.length} de {steps.length} passos explorados</p></div>
-      <button type="button" onClick={() => persist(done, true)} className="rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300">Dispensar</button>
+  return <section className="rounded-xl border border-violet-400/20 bg-slate-900/60 p-3 text-white" aria-label="Primeiros passos">
+    <div className="flex items-center justify-between gap-3">
+      <button type="button" aria-expanded={expanded} onClick={()=>setExpanded(old=>!old)} className="min-w-0 flex-1 text-left"><span className="block text-sm font-semibold text-violet-100">Primeiros passos · {done.length} de {steps.length}</span><span className="block text-xs text-slate-400">Seu guia para começar na MYRYRA {expanded?"▲":"▼"}</span></button>
+      <button type="button" onClick={()=>persist(done,true)} className="rounded-lg border border-white/15 px-2 py-2 text-xs text-slate-300">Dispensar</button>
     </div>
-    <ol className="mt-4 grid gap-2 sm:grid-cols-2">{steps.map((step, index) => <li key={step.target} className="flex items-center gap-3 rounded-xl border border-slate-700 p-3">
-      <input type="checkbox" aria-label={`Marcar ${step.label} como explorado`} checked={done.includes(index)} onChange={event => persist(event.target.checked ? [...done, index] : done.filter(i => i !== index), false)} />
-      <button type="button" onClick={() => document.getElementById(step.target)?.scrollIntoView({ behavior: "smooth" })} className="text-left text-sm text-violet-200 hover:underline">{step.label}</button>
-    </li>)}</ol>
-    <p className="mt-3 text-xs text-slate-400">Marque os passos conforme explorar. Este guia é salvo apenas neste navegador.</p>
+    {expanded&&<ol className="mt-3 grid gap-2 sm:grid-cols-2">{steps.map((step,index)=><li key={step.target} className="flex items-center gap-2 rounded-lg border border-white/10 p-2">
+      <input type="checkbox" aria-label={`Marcar ${step.label} como explorado`} checked={done.includes(index)} onChange={event=>persist(event.target.checked?[...done,index]:done.filter(i=>i!==index),false)}/>
+      <button type="button" onClick={()=>navigateTo(step.target)} className="text-left text-xs text-violet-200 hover:underline">{step.label}</button>
+    </li>)}</ol>}
   </section>;
 }
