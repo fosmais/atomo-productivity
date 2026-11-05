@@ -61,7 +61,7 @@ export default function HealthWorkspace() {
     }, { onConflict: "user_id" });
     setSaving(false);
     if (error) setMessage("Não foi possível salvar seu perfil. Tente novamente.");
-    else { setProfileSaved(true); setMessage("Perfil salvo com segurança."); }
+    else { setProfileSaved(true); setMessage("Perfil salvo com segurança."); window.dispatchEvent(new Event("myryra:health:profile-changed")); }
   }
   async function deleteProfile() {
     if (!window.confirm("Excluir seu perfil de saúde salvo? Esta ação não pode ser desfeita.")) return;
@@ -70,7 +70,7 @@ export default function HealthWorkspace() {
     if (!user) return;
     const { error } = await supabase.from("myryra_health_profiles").delete().eq("user_id", user.id);
     if (error) { setMessage("Não foi possível excluir o perfil."); return; }
-    setProfileSaved(false); setMessage("Perfil de saúde excluído.");
+    setProfileSaved(false); setMessage("Perfil de saúde excluído."); window.dispatchEvent(new Event("myryra:health:profile-changed"));
   }
   function openMika() {
     if (!consent) { setMessage("Confirme antes de enviar suas respostas à MIKA."); return; }
