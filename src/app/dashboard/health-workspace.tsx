@@ -79,13 +79,15 @@ export default function HealthWorkspace() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setMessage("Entre na sua conta para excluir os dados."); return; }
     setSaving(true);
+    const exerciseEntries = await supabase.from("myryra_health_exercise_entries").delete().eq("user_id", user.id);
+    if (exerciseEntries.error) { setSaving(false); setMessage("Não foi possível excluir o histórico de musculação."); return; }
     const logs = await supabase.from("myryra_health_logs").delete().eq("user_id", user.id);
     if (logs.error) { setSaving(false); setMessage("Não foi possível excluir o histórico."); return; }
     const profile = await supabase.from("myryra_health_profiles").delete().eq("user_id", user.id);
     setSaving(false);
     if (profile.error) { setMessage("Histórico excluído, mas não foi possível excluir o perfil."); window.dispatchEvent(new Event("myryra:health:changed")); return; }
     setProfileSaved(false); setGoal("fitness"); setSelected([]); setDays(3); setMinutes(30); setLimitations(""); setConsent(false);
-    setMessage("Seu perfil e histórico de saúde foram excluídos.");
+    setMessage("Seu perfil e históricos de saúde e musculação foram excluídos.");
     window.dispatchEvent(new Event("myryra:health:changed"));
     window.dispatchEvent(new Event("myryra:health:profile-changed"));
   }
