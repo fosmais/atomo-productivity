@@ -103,6 +103,19 @@ export default function VyraHome() {
         </button>
       </section>
 
+      <section className="grid grid-cols-2 gap-2 text-xs" aria-label="Resumo rápido">
+        <button type="button" onClick={() => navigateTo("vyra-calendar")} className="min-w-0 rounded-xl border border-white/10 bg-slate-900/50 p-3 text-left hover:border-violet-400/50">
+          <span className="block text-slate-400">Próximo compromisso</span>
+          <span className="mt-1 block truncate font-semibold text-white">{nextEvent ? nextEvent.title : agendaError ? "Agenda indisponível" : "Nenhum compromisso"}</span>
+          {nextEvent && <span className="mt-1 block text-violet-300">{new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(nextEvent.start))}</span>}
+        </button>
+        <button type="button" onClick={() => navigateTo("vyra-performance")} className="rounded-xl border border-white/10 bg-slate-900/50 p-3 text-left hover:border-violet-400/50">
+          <span className="block text-slate-400">Seu progresso</span>
+          <span className="mt-1 block text-lg font-semibold text-white">{progress === null ? "—" : `${progress}%`}</span>
+          <span className="block text-slate-400">{metrics?.pending ?? "—"} pendentes</span>
+        </button>
+      </section>
+
       <section aria-label="Explore seu universo">
         <h2 className="mb-3 text-base font-semibold text-white">Explore seu universo</h2>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -127,32 +140,6 @@ export default function VyraHome() {
         </div>
       </details>
 
-      <section className="grid grid-cols-2 gap-2 text-xs" aria-label="Resumo rápido">
-        <button type="button" onClick={() => navigateTo("vyra-calendar")} className="min-w-0 rounded-xl border border-white/10 bg-slate-900/50 p-3 text-left hover:border-violet-400/50">
-          <span className="block text-slate-400">Próximo compromisso</span>
-          <span className="mt-1 block truncate font-semibold text-white">{nextEvent ? nextEvent.title : agendaError ? "Agenda indisponível" : "Nenhum compromisso"}</span>
-          {nextEvent && <span className="mt-1 block text-violet-300">{new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(nextEvent.start))}</span>}
-        </button>
-        <button type="button" onClick={() => navigateTo("vyra-performance")} className="rounded-xl border border-white/10 bg-slate-900/50 p-3 text-left hover:border-violet-400/50">
-          <span className="block text-slate-400">Seu progresso</span>
-          <span className="mt-1 block text-lg font-semibold text-white">{progress === null ? "—" : `${progress}%`}</span>
-          <span className="block text-slate-400">{metrics?.pending ?? "—"} pendentes</span>
-        </button>
-      </section>
-
-      <section className="rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-950/55 via-slate-900/80 to-slate-950 p-4 sm:p-5" aria-label="Score de produtividade compartilhável">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-300">MYRYRA · SUA EVOLUÇÃO</p><h2 className="mt-1 text-base font-semibold text-white">Seu score de produtividade</h2><p className="mt-1 text-xs text-slate-400">Percentual de tarefas concluídas entre as cadastradas. Não é uma avaliação pessoal.</p></div>
-          <div className="rounded-2xl border border-violet-300/25 bg-violet-500/15 px-5 py-3 text-center"><span className="block text-3xl font-bold tabular-nums text-white">{progress === null ? "—" : `${progress}%`}</span><span className="text-[10px] text-violet-200">concluídas</span></div>
-        </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress ?? 0} aria-label="Score de tarefas concluídas"><div className="h-full rounded-full bg-violet-400 transition-all" style={{ width: `${progress ?? 0}%` }} /></div>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <a href={shareText ? `https://wa.me/?text=${encodeURIComponent(shareText)}` : undefined} target="_blank" rel="noopener noreferrer" aria-disabled={!shareText} onClick={event => { if (!shareText) event.preventDefault(); }} className={`rounded-xl border border-emerald-400/30 bg-emerald-500/15 px-3 py-2 text-xs font-semibold text-emerald-100 ${!shareText ? "pointer-events-none opacity-50" : "hover:bg-emerald-500/25"}`}>Compartilhar no WhatsApp</a>
-          <button type="button" disabled={!shareText} onClick={() => void shareScore()} className="rounded-xl border border-violet-400/30 bg-violet-500/15 px-3 py-2 text-xs font-semibold text-violet-100 hover:bg-violet-500/25 disabled:opacity-50">Compartilhar em outras redes</button>
-        </div>
-        {shareMessage && <p role="status" className="mt-2 text-xs text-violet-200">{shareMessage}</p>}
-        <p className="mt-2 text-[11px] text-slate-500">Compartilhamento opcional: apenas percentual e link da MYRYRA, sem nomes ou detalhes das tarefas.</p>
-      </section>
       <details className="rounded-xl border border-white/10 bg-slate-900/35 px-3 py-2">
         <summary className="cursor-pointer text-xs font-semibold text-violet-200">✦ Sugestão inteligente · O que fazer agora?</summary>
         <div className="mt-3"><WhatNowCard /></div>
