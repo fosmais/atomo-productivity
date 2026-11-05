@@ -22,7 +22,8 @@ export default function HealthProgress() {
       else { setLogs((data || []) as Log[]); setStatus(""); }
     }
     void load();
-    return () => { active = false; };
+    window.addEventListener("myryra:health:changed", load);
+    return () => { active = false; window.removeEventListener("myryra:health:changed", load); };
   }, []);
   const summary = useMemo(() => {
     const since = new Date(); since.setDate(since.getDate() - 6);
