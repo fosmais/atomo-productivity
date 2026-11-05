@@ -45,15 +45,17 @@ export default function HealthWorkoutPlanner() {
   }
   return <section className="space-y-3 rounded-2xl border border-violet-400/20 bg-slate-900/60 p-4 sm:p-5">
     <p className="text-xs font-semibold uppercase tracking-widest text-violet-300">MIKA · Planejamento personalizado</p>
-    <h3 className="text-lg font-semibold text-white">Sua rotina de atividades</h3>
-    <p className="text-sm text-slate-300">A MIKA usa suas preferências para conversar sobre uma rotina inicial. Primeiro ela confirma experiência e cuidados necessários; depois sugere uma semana adaptável.</p>
+    <h3 className="text-lg font-semibold text-white">Crie seu treino com a MIKA</h3>
+    <p className="text-sm text-slate-300">Escolha seu objetivo e a MIKA ajuda a montar uma rotina semanal de exercícios. Ela confirma sua experiência e cuidados necessários antes de sugerir o treino.</p>
     {profile && <div className="grid gap-2 sm:grid-cols-3">
       <div className="rounded-xl border border-white/10 bg-slate-950/50 p-3"><p className="text-xs text-slate-400">Objetivo</p><p className="mt-1 text-sm text-white">{goalLabels[profile.goal] || "Bem-estar"}</p></div>
       <div className="rounded-xl border border-white/10 bg-slate-950/50 p-3"><p className="text-xs text-slate-400">Disponibilidade</p><p className="mt-1 text-sm text-white">{profile.days_per_week} dias · {profile.minutes_per_session} min</p></div>
       <div className="rounded-xl border border-white/10 bg-slate-950/50 p-3"><p className="text-xs text-slate-400">Preferências</p><p className="mt-1 text-sm text-white">{profile.activities.join(", ") || "A definir"}</p></div>
     </div>}
+    {!profile && <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-3 text-sm text-amber-100">Para criar seu treino, preencha a avaliação inicial acima, autorize o armazenamento e toque em <strong>Salvar meu perfil</strong>.</div>}
     {profile && <label className="flex items-start gap-2 text-sm text-slate-300"><input type="checkbox" checked={reviewed} onChange={e => setReviewed(e.target.checked)} className="mt-1 accent-violet-500" />Quero compartilhar estas preferências com a MIKA para planejar minha rotina.</label>}
-    <button type="button" disabled={!profile || !reviewed} onClick={askMika} className="rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">Personalizar treino com a MIKA</button>
+    <button type="button" disabled={!profile || !reviewed} onClick={askMika} className="rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">Criar meu treino com a MIKA</button>
+    {profile && !reviewed && <p className="text-xs text-slate-400">Marque a autorização acima para ativar o botão Criar meu treino.</p>}
     {status && <p role="status" className="text-sm text-violet-200">{status}</p>}
     <p className="text-xs text-slate-400">O plano é uma sugestão geral. Nenhum treino é automaticamente agendado ou prescrito.</p>
   </section>;
