@@ -119,7 +119,7 @@ export default function VyraHome() {
       <section aria-label="Explore seu universo">
         <h2 className="mb-3 text-base font-semibold text-white">Explore seu universo</h2>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {portals.map(item => <button key={item.label} type="button" onClick={() => navigateTo(item.module)} className="flex min-h-32 flex-col items-start justify-center gap-2 rounded-xl border border-violet-400/15 bg-slate-900/65 p-3 text-left transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
+          {portals.map(item => <button key={item.label} type="button" onClick={() => navigateTo(item.module)} className="flex min-h-24 flex-col items-start justify-center gap-2 rounded-xl border border-violet-400/15 bg-slate-900/65 p-3 text-left transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
             <span className="text-2xl text-violet-300" aria-hidden="true">{item.icon}</span>
             <span className="text-sm font-semibold leading-snug text-white">{item.label}</span>
             <span className="text-xs leading-snug text-slate-400">{item.subtitle}</span>
@@ -145,8 +145,12 @@ export default function VyraHome() {
             {label:"Lembretes",module:"vyra-tasks",action:"capture"},
             {label:"Metas",module:"vyra-tasks",action:"goals"},
             {label:"Planejamento",module:"vyra-tasks",action:"kanban"},
-            {label:"Configurações",module:"vyra-settings"}
-          ].map(item=><button key={item.label} type="button" onClick={()=>"action" in item && item.action ? navigateToQuickAction?.(item.action) : navigateTo(item.module)} className="rounded-lg border border-white/10 bg-slate-950/70 px-3 py-3 text-left text-xs font-medium text-white hover:border-violet-400/50">{item.label}</button>)}
+            {label:"Configurações",module:"vyra-settings"},
+            {label:"Ajuda e suporte",module:"support"},
+            {label:"Saúde",module:"vyra-health"},
+            {label:"Finanças",module:"vyra-finance"},
+            {label:"Sua evolução",module:"vyra-performance"}
+          ].map(item=><button key={item.label} type="button" onClick={()=>item.module==="support"?window.dispatchEvent(new CustomEvent("myryra:open-support")):"action" in item && item.action ? navigateToQuickAction?.(item.action) : navigateTo(item.module)} className="rounded-lg border border-white/10 bg-slate-950/70 px-3 py-3 text-left text-xs font-medium text-white hover:border-violet-400/50">{item.label}</button>)}
         </div>
       </details>
 
