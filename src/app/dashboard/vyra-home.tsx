@@ -47,9 +47,13 @@ export default function VyraHome() {
   useEffect(() => {
     if (activeModule !== "home") return;
     let cancelled = false;
-    void loadVyraMetrics().then((value) => {
-      if (!cancelled) setMetrics(value);
-    }).catch(() => { if (!cancelled) setMetrics(null); });
+    const refreshMetrics = () => {
+      void loadVyraMetrics().then((value) => {
+        if (!cancelled) setMetrics(value);
+      }).catch(() => { if (!cancelled) setMetrics(null); });
+    };
+    refreshMetrics();
+    window.addEventListener("myryra:tasks-updated", refreshMetrics);
     async function loadAgenda() {
       try {
         const [localResult, googleResult] = await Promise.allSettled([
@@ -72,11 +76,23 @@ export default function VyraHome() {
       }
     }
     void loadAgenda();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      window.removeEventListener("myryra:tasks-updated", refreshMetrics);
+    };
   }, [activeModule]);
 
   if (activeModule !== "home") return null;
   const progress = metrics ? getCompletionRate(metrics) : null;
+  const smartSuggestion = !metrics
+    ? { message: "Confira suas prioridades e encontre a próxima ação.", action: "Ver prioridades", module: "vyra-tasks" }
+    : metrics.overdue > 0
+      ? { message: `Você tem ${metrics.overdue} tarefa(s) atrasada(s). Que tal reorganizar os prazos?`, action: "Revisar atrasos", module: "vyra-tasks" }
+      : metrics.openHighPriority > 0
+        ? { message: `Há ${metrics.openHighPriority} prioridade(s) alta(s) em aberto. Escolha por onde começar.`, action: "Ver prioridades", module: "vyra-tasks" }
+        : metrics.pending > 0
+          ? { message: `Você tem ${metrics.pending} tarefa(s) pendente(s). Vamos escolher o próximo passo?`, action: "Planejar meu dia", module: "vyra-tasks" }
+          : { message: "Suas tarefas estão em dia. Que tal planejar um novo objetivo?", action: "Criar objetivo", module: "vyra-tasks" };
 
   return (
     <main className="flex min-w-0 flex-col gap-3 " aria-label="Início MYRYRA">
@@ -109,11 +125,14 @@ export default function VyraHome() {
           <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-700/45 text-2xl text-violet-200">✦</span>
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-semibold text-white">Sugestão inteligente da MIKA</span>
-            <span className="mt-1 block text-xs leading-relaxed text-violet-200">{metrics?.pending ? `Você tem ${metrics.pending} tarefas pendentes. Vamos escolher a próxima prioridade?` : "Descubra uma ação prática para aproveitar melhor o seu dia."}</span>
+            <span className="mt-1 block text-xs leading-relaxed text-violet-200">{smartSuggestion.message}</span>
           </span>
           <span aria-hidden="true" className="text-lg text-violet-200 transition-transform group-open:rotate-90">›</span>
         </summary>
-        <div className="mt-4 border-t border-violet-400/15 pt-3"><WhatNowCard /></div>
+        <div className="mt-4 border-t border-violet-400/15 pt-3">
+          <button type="button" onClick={() => navigateTo(smartSuggestion.module)} className="mb-3 rounded-xl border border-violet-400/30 bg-violet-500/15 px-4 py-2 text-xs font-semibold text-violet-100 hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">{smartSuggestion.action} →</button>
+          <WhatNowCard />
+        </div>
       </details>
 
       <section aria-label="Explore seu universo">
