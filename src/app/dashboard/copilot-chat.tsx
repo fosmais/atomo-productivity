@@ -496,11 +496,28 @@ async function startVoice() {
       });
 
       let data: unknown;
+      const contentType = response.headers.get("content-type") ?? "";
+      const requestId = response.headers.get("x-vercel-id") ?? "unavailable";
+
+      // The platform may return HTML or an empty body on upstream failures.
+      // Never log response bodies or user messages.
+      if (!contentType.toLowerCase().includes("application/json")) {
+        console.error("[MYKA] Non-JSON API response", {
+          status: response.status,
+          contentType: contentType.slice(0, 100),
+          requestId,
+        });
+        throw new Error("A MIKA está temporariamente indisponível. Sua mensagem foi preservada; tente novamente em instantes.");
+      }
 
       try {
         data = await response.json();
       } catch {
-        throw new Error("O servidor retornou uma resposta inválida.");
+        console.error("[MYKA] Invalid JSON API response", {
+          status: response.status,
+          requestId,
+        });
+        throw new Error("A MIKA recebeu uma resposta incompleta. Sua mensagem foi preservada; tente novamente em instantes.");
       }
 
       if (!response.ok) {
