@@ -304,13 +304,15 @@ export default function CalendarEvents() {
 
       await loadEvents();
       window.dispatchEvent(new Event("myryra:events-updated"));
-      setSelectedDay(null);
-
+      // Keep the user in Agenda: route estimates and departure planning live on the event card.
+      // MIKA chat remains an explicit optional action ("Planejar com a MIKA").
       if (conciergeEnabled && eventType === "appointment") {
-        planWithMyka({
-          title, startsAt, endsAt, location,
-          concierge: { departureAddress: departureAddress.trim(), services: conciergeServices, status: "pending" },
-        });
+        const savedDate = new Date(startsAt);
+        const dayKey = `${savedDate.getFullYear()}-${String(savedDate.getMonth() + 1).padStart(2, "0")}-${String(savedDate.getDate()).padStart(2, "0")}`;
+        setSelectedDay(dayKey);
+        setPeriodFilter("all");
+      } else {
+        setSelectedDay(null);
       }
       setTitle("");
       setStartsAt("");
