@@ -24,7 +24,8 @@ export default function HealthWorkoutPlanner() {
       else { setProfile(data as Profile); setStatus(""); }
     }
     void load();
-    return () => { active = false; };
+    window.addEventListener("myryra:health:profile-changed", load);
+    return () => { active = false; window.removeEventListener("myryra:health:profile-changed", load); };
   }, []);
   function askMika() {
     if (!profile || !reviewed) { setStatus("Confirme que deseja enviar seu perfil à MIKA."); return; }
