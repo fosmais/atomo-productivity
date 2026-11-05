@@ -48,7 +48,10 @@ export async function POST(request: Request) {
     if (reservation !== "OK") {
       const limited = ["USER_DAILY_LIMIT", "GLOBAL_DAILY_LIMIT", "RATE_LIMIT"].includes(reservation);
       return NextResponse.json({
-        error: limited ? "Limite de consultas atingido. Tente novamente mais tarde." : "Consulta indisponível.",
+        error: reservation === "RATE_LIMIT" ? "Aguarde 60 segundos entre consultas de rota."
+          : reservation === "USER_DAILY_LIMIT" ? "Você atingiu o limite de 10 consultas de rota por dia."
+          : reservation === "GLOBAL_DAILY_LIMIT" ? "O limite diário de rotas da MYRYRA foi atingido. Tente amanhã."
+          : "Consulta indisponível.",
         code: reservation,
       }, { status: limited ? 429 : 503 });
     }
@@ -82,7 +85,16 @@ export async function POST(request: Request) {
         : response.status === 429 ? "GOOGLE_QUOTA_EXCEEDED"
         : response.status === 400 ? "GOOGLE_ROUTE_REQUEST_INVALID"
         : "GOOGLE_PROVIDER_ERROR";
-      console.error("[concierge/route] Google Routes request failed", { status: response.status, code });
+      // Google returns structured status reasons (e.g. API_KEY_SERVICE_BLOCKED,
+      // BILLING_DISABLED). Log only the reason, not request headers or credentials.
+      let providerReason = "UNKNOWN";
+      try {
+        const providerBody = await response.json() as { error?: { status?: string; details?: Array<{ reason?: string; metadata?: { reason?: string } }> } };
+        providerReason = providerBody.error?.details?.find(detail => detail.reason || detail.metadata?.reason)?.reason
+          || providerBody.error?.details?.find(detail => detail.metadata?.reason)?.metadata?.reason
+          || providerBody.error?.status || "UNKNOWN";
+      } catch { /* Avoid logging raw upstream responses. */ }
+      console.error("[concierge/route] Google Routes request failed", { status: response.status, code, providerReason });
       return NextResponse.json({
         error: response.status === 403 ? "Google Routes recusou o acesso. Verifique faturamento, API habilitada e restrições da chave no Google Cloud."
           : response.status === 401 ? "A chave da API Google Routes foi rejeitada. Verifique as credenciais."
