@@ -76,7 +76,21 @@ export async function POST(request: Request) {
       cache: "no-store",
     });
     if (!response.ok) {
-      return NextResponse.json({ error: "Não foi possível consultar a rota neste momento." }, { status: 502 });
+      // Return a safe diagnostic category, never the Google API key or raw provider response.
+      const code = response.status === 403 ? "GOOGLE_ACCESS_DENIED"
+        : response.status === 401 ? "GOOGLE_KEY_REJECTED"
+        : response.status === 429 ? "GOOGLE_QUOTA_EXCEEDED"
+        : response.status === 400 ? "GOOGLE_ROUTE_REQUEST_INVALID"
+        : "GOOGLE_PROVIDER_ERROR";
+      console.error("[concierge/route] Google Routes request failed", { status: response.status, code });
+      return NextResponse.json({
+        error: response.status === 403 ? "Google Routes recusou o acesso. Verifique faturamento, API habilitada e restrições da chave no Google Cloud."
+          : response.status === 401 ? "A chave da API Google Routes foi rejeitada. Verifique as credenciais."
+          : response.status === 429 ? "O Google Routes atingiu o limite de consultas. Tente novamente mais tarde."
+          : response.status === 400 ? "O Google Routes não aceitou a origem ou o destino. Verifique os endereços."
+          : "Não foi possível consultar a rota neste momento.",
+        code,
+      }, { status: 502 });
     }
     const data = await response.json() as { routes?: Array<{ duration?: string; distanceMeters?: number }> };
     const route = data.routes?.[0];
