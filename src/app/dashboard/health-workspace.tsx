@@ -72,6 +72,22 @@ export default function HealthWorkspace() {
     if (error) { setMessage("Não foi possível excluir o perfil."); return; }
     setProfileSaved(false); setMessage("Perfil de saúde excluído."); window.dispatchEvent(new Event("myryra:health:profile-changed"));
   }
+  async function eraseHealthData() {
+    if (!window.confirm("Excluir permanentemente seu perfil e todo o histórico de saúde? Esta ação não pode ser desfeita.")) return;
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setMessage("Entre na sua conta para excluir os dados."); return; }
+    setSaving(true);
+    const logs = await supabase.from("myryra_health_logs").delete().eq("user_id", user.id);
+    if (logs.error) { setSaving(false); setMessage("Não foi possível excluir o histórico."); return; }
+    const profile = await supabase.from("myryra_health_profiles").delete().eq("user_id", user.id);
+    setSaving(false);
+    if (profile.error) { setMessage("Histórico excluído, mas não foi possível excluir o perfil."); window.dispatchEvent(new Event("myryra:health:changed")); return; }
+    setProfileSaved(false); setGoal("fitness"); setSelected([]); setDays(3); setMinutes(30); setLimitations(""); setConsent(false);
+    setMessage("Seu perfil e histórico de saúde foram excluídos.");
+    window.dispatchEvent(new Event("myryra:health:changed"));
+    window.dispatchEvent(new Event("myryra:health:profile-changed"));
+  }
   function openMika() {
     if (!consent) { setMessage("Confirme antes de enviar suas respostas à MIKA."); return; }
     const objective = goals.find(item => item.id === goal)?.label ?? "";
@@ -113,6 +129,7 @@ export default function HealthWorkspace() {
     <HealthWorkoutPlanner />
     <HealthProgress />
     <HealthDailyLog />
+    <div className="rounded-xl border border-rose-400/20 p-3"><p className="text-xs text-slate-400">Privacidade: você controla seus registros de saúde.</p><button type="button" disabled={saving} onClick={() => void eraseHealthData()} className="mt-2 text-sm text-rose-300 underline disabled:opacity-50">Excluir todos os meus dados de saúde</button></div>
     <p className="text-xs leading-5 text-slate-400">A MYRYRA não substitui orientação médica, nutricional ou de educação física. O diário registra peso, refeições, sono, meditação e treinos; planos avançados e compartilhamento de progresso serão adicionados em etapas posteriores.</p>
   </div>;
 }
