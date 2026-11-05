@@ -38,6 +38,7 @@ const executionSteps: Record<string,[string,string,string]> = {
  "Prancha apoiada":["Apoie antebraços e joelhos ou pés em superfície estável.","Mantenha cabeça, tronco e quadril alinhados.","Respire normalmente e interrompa antes de perder a postura."],
  "Dead bug":["Deite-se com braços elevados e joelhos flexionados.","Afaste lentamente braço e perna opostos sem arquear a lombar.","Retorne ao centro e alterne os lados."]
 };
+function localToday() { const date=new Date();return [date.getFullYear(),String(date.getMonth()+1).padStart(2,"0"),String(date.getDate()).padStart(2,"0")].join("-"); }
 const groups: Group[] = ["Peito", "Costas", "Braços", "Ombros", "Pernas", "Abdômen"];
 const levels: Level[] = ["Iniciante", "Intermediário", "Avançado"];
 export default function HealthExerciseLibrary() {
@@ -55,7 +56,7 @@ export default function HealthExerciseLibrary() {
   const [shareWithMika, setShareWithMika] = useState(false);
   const [instructionsOpen, setInstructionsOpen] = useState<string[]>([]);
   const [deletingEntry, setDeletingEntry] = useState<string | null>(null);
-  const [sessionDate, setSessionDate] = useState(() => new Date().toLocaleDateString("en-CA"));
+  const [sessionDate, setSessionDate] = useState(() => localToday());
   const [history, setHistory] = useState<{id:string;exercise_name:string;weight_kg:number|null;repetitions:number|null;performed_on:string}[]>([]);
   useEffect(() => { let active = true; async function load() { const supabase = createClient(); const {data:{user}} = await supabase.auth.getUser(); if (!user) return; const {data} = await supabase.from("myryra_health_exercise_entries").select("id,exercise_name,weight_kg,repetitions,performed_on").eq("user_id",user.id).order("created_at",{ascending:false}).limit(100); if(active && data) setHistory(data); } void load(); const refresh=()=>{setHistory([]);setDone([]);setLoads({});setReps({});setShareWithMika(false);setChartExercise("");void load();};window.addEventListener("myryra:health:changed",refresh);return ()=>{active=false;window.removeEventListener("myryra:health:changed",refresh);}; }, []);
   async function completeExercise(item: Exercise) {
