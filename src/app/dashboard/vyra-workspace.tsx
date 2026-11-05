@@ -24,7 +24,7 @@ export default function VyraWorkspace({
 
   const validModules = [
     "home", "vyra-ai", "vyra-planner", "vyra-tasks", "vyra-calendar",
-    "vyra-scheduling", "vyra-performance", "vyra-finance", "vyra-settings",
+    "vyra-scheduling", "vyra-performance", "vyra-finance", "vyra-health", "vyra-settings",
   ];
 
   // Persist the active workspace section in the URL so refresh and browser
@@ -65,6 +65,7 @@ export default function VyraWorkspace({
     "vyra-scheduling": "Smart Scheduling",
     "vyra-performance": "Performance",
     "vyra-finance": "MYRYRA Finance",
+    "vyra-health": "MYRYRA Saúde",
     "vyra-settings": "Preferências",
   };
 
