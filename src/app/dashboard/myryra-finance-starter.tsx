@@ -85,6 +85,7 @@ export default function MyryraFinanceStarter() {
   };
   const addEntry = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (saving || loading) return;
     const cents = parseBRL(amount);
     if (cents === null || cents <= 0 || !name.trim() || name.trim().length > 100) {
       setEntryError("Informe uma descrição e um valor positivo com até duas casas decimais. Ex.: 3.999,00.");
@@ -109,6 +110,7 @@ export default function MyryraFinanceStarter() {
 
   const saveOpeningBalance = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (balanceSaving || loading) return;
     const cents = parseBRL(openingBalanceInput);
     if (cents === null) {
       setBalanceError("Informe um saldo inicial válido. Ex.: 39.999,00.");
