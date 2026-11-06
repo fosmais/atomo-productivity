@@ -180,7 +180,12 @@ export default function CalendarEvents() {
   async function loadEvents() {
     const result = await getCloudEvents();
     setEvents(result);
-    await loadFavoriteEvents();
+    // Favorites are optional metadata; a failed favorites query must not make a saved event appear to have failed.
+    try {
+      await loadFavoriteEvents();
+    } catch {
+      setFavoriteEventIds([]);
+    }
   }
 
   async function loadFavoriteEvents() {
