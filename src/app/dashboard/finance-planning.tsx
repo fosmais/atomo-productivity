@@ -230,8 +230,12 @@ export default function FinancePlanning() {
       const { data: deleted, error: deleteError } = await client.from(table).delete().eq("id", id).eq("user_id", auth.user.id).select("id");
       if (deleteError) throw deleteError;
       if (!deleted?.length) throw new Error("Registro não encontrado.");
-      if (table === "myryra_finance_goals") setGoals(previous => previous.filter(item => item.id !== id));
-      else setExpenses(previous => previous.filter(item => item.id !== id));
+      if (table === "myryra_finance_goals") {
+        setGoals(previous => previous.filter(item => item.id !== id));
+        setGoalPriorities(previous => { const next = { ...previous }; delete next[id]; return next; });
+        if (editingGoalId === id) { setEditingGoalId(null); setSavedAmountInput(""); }
+      } else setExpenses(previous => previous.filter(item => item.id !== id));
+      window.dispatchEvent(new Event("myryra:finance-updated"));
     } catch { setError("Não foi possível excluir o item."); }
     finally { setBusy(false); }
   }
