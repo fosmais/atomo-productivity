@@ -932,7 +932,7 @@ function ConciergeRouteEstimate({ event, onEstimate }: { event: CalendarEvent; o
         body: JSON.stringify({ origin, destination }),
       });
       const data: { error?: string; durationSeconds?: number; distanceMeters?: number | null; calculatedAt?: string } = await response.json();
-      if (!response.ok || typeof data.durationSeconds !== "number" || !data.calculatedAt) {
+      if (!response.ok || typeof data.durationSeconds !== "number" || !Number.isFinite(data.durationSeconds) || data.durationSeconds <= 0 || data.durationSeconds > 480 * 60 || typeof data.calculatedAt !== "string" || !Number.isFinite(Date.parse(data.calculatedAt))) {
         setMessage(data.error || "Não foi possível estimar a rota.");
         return;
       }
