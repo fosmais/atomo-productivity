@@ -41,6 +41,7 @@ export default function FinanceInvestments() {
       if (month % 12 === 0) checkpoints.push({ year: month / 12, balance });
     }
     const invested = principal + contribution * months;
+    if (!Number.isFinite(invested) || invested > 1e15) return null;
     return { balance, invested, gain: balance - invested, checkpoints };
   }, [initial, monthly, rate, years, ratePeriod]);
 
