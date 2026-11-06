@@ -709,7 +709,7 @@ export default function CalendarEvents() {
                 >
                   <details className="group">
                     <summary className="cursor-pointer list-none rounded-md py-1 pr-9 focus-visible:outline-2 focus-visible:outline-violet-400">
-                      <span className="flex min-w-0 items-center justify-between gap-3">
+                      <span className="flex min-w-0 flex-wrap items-center justify-between gap-2">
                         <span className="min-w-0 break-words font-medium"><span className="mr-2 text-xs font-semibold tabular-nums text-violet-300">{timeLabel(event.start)}</span>{event.title}</span>
                         <span className="shrink-0 text-xs text-slate-400 group-open:hidden">Detalhes +</span><span className="hidden shrink-0 text-xs text-slate-400 group-open:inline">Recolher −</span>
                       </span>
@@ -790,7 +790,7 @@ export default function CalendarEvents() {
             <div key={event.id} className="space-y-2">
               {(index === 0 || dateKey(visibleLocal[index - 1].startsAt) !== dateKey(event.startsAt)) && <h4 className="pt-2 text-xs font-semibold uppercase tracking-wider text-violet-300">{dateHeading(event.startsAt)}</h4>}
             <div
-              className="relative ml-2 rounded-lg border border-slate-700 border-l-4 bg-slate-950/50 p-3" style={{ borderLeftColor: EVENT_CATEGORIES[event.category].color }}
+              className="relative ml-0 min-w-0 rounded-lg border border-slate-700 border-l-4 bg-slate-950/50 p-3 sm:ml-2" style={{ borderLeftColor: EVENT_CATEGORIES[event.category].color }}
             >
               <button type="button" onClick={() => void toggleFavoriteEvent(event)} disabled={favoriteBusyId !== null}
                 aria-pressed={favoriteEventIds.includes(event.id)}
@@ -800,14 +800,14 @@ export default function CalendarEvents() {
                 {favoriteEventIds.includes(event.id) ? "★" : "☆"}
               </button>
               <details className="group">
-                <summary className="cursor-pointer list-none rounded-md py-1 focus-visible:outline-2 focus-visible:outline-violet-400">
+                <summary className="cursor-pointer list-none rounded-md py-1 pr-10 focus-visible:outline-2 focus-visible:outline-violet-400">
                   <span className="flex min-w-0 items-center justify-between gap-3">
                     <span className="min-w-0 break-words font-semibold"><span className="mr-2 text-xs font-semibold tabular-nums text-violet-300">{timeLabel(event.startsAt)}</span>{event.title}</span>
                     <span className="shrink-0 text-xs text-slate-400 group-open:hidden">Detalhes +</span><span className="hidden shrink-0 text-xs text-slate-400 group-open:inline">Recolher −</span>
                   </span>
                 </summary>
-                <div className="mt-3 flex items-start justify-between gap-3 border-t border-slate-800 pt-3">
-                <div>
+                <div className="mt-3 flex min-w-0 flex-col gap-3 border-t border-slate-800 pt-3 xl:flex-row xl:flex-wrap xl:items-start">
+                <div className="min-w-0 flex-1 break-words [overflow-wrap:anywhere]">
 
                   <p className="mt-1 text-xs font-semibold" style={{ color: EVENT_CATEGORIES[event.category].color }}>{EVENT_CATEGORIES[event.category].label}</p>
                   <label className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-300">
@@ -876,7 +876,7 @@ export default function CalendarEvents() {
                 </div>
 
                 <EventReminderControl eventId={event.id} startsAt={event.startsAt} />
-                <div className="flex flex-col gap-2">
+                <div className="flex min-w-0 flex-col gap-2">
                   {editingId === event.id ? (
                     <div className="flex flex-wrap items-center gap-2">
                       <input aria-label="Novo título do compromisso" value={editingTitle} maxLength={200}
@@ -896,7 +896,7 @@ export default function CalendarEvents() {
                   type="button"
                   onClick={() => handleDelete(event.id)}
                   disabled={deletingId !== null}
-                  className="rounded bg-red-900 px-3 py-2 text-sm disabled:opacity-50"
+                  className="min-h-11 self-start rounded-lg bg-red-900 px-3 py-2 text-sm disabled:opacity-50"
                 >
                   {deletingId === event.id ? "Excluindo..." : "Excluir"}
                 </button>
