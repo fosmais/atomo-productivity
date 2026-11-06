@@ -237,6 +237,15 @@ export default function FinancePlanning() {
           <p className="mt-1 text-xs text-slate-400">Aporte médio sem juros: {money(Math.ceil(goals.reduce((sum, goal) => sum + Math.max(0, goal.target_cents - goal.saved_cents), 0) / goalHorizonMonths))}/mês por {goalHorizonMonths} meses</p>
         </div>
       </div>}
+      {goals.length > 0 && parseCents(monthlyCapacityInput) !== null && (() => {
+        const remaining = goals.reduce((sum, goal) => sum + Math.max(0, goal.target_cents - goal.saved_cents), 0);
+        const needed = Math.ceil(remaining / goalHorizonMonths);
+        const capacity = parseCents(monthlyCapacityInput) ?? 0;
+        return <p role="status" className="rounded-xl border border-white/15 bg-slate-950/60 p-3 text-sm text-slate-200">
+          {capacity >= needed ? "Sua capacidade mensal informada cobre o aporte médio estimado." : "Sua capacidade mensal informada está abaixo do aporte médio estimado."}
+          {" "}Diferença mensal: {money(Math.abs(capacity - needed))}. Valores ilustrativos, sem juros ou movimentações.
+        </p>;
+      })()}
       <form onSubmit={addGoal} className="grid gap-2">
         <input required maxLength={100} aria-label="Nome da meta financeira" placeholder="Ex.: Reserva de emergência" value={goalTitle} onChange={e => setGoalTitle(e.target.value)} className="rounded-xl border border-white/20 bg-slate-950 p-3 text-white" />
         <input required inputMode="decimal" aria-label="Valor da meta em reais" placeholder="Ex.: R$ 10.000,00" value={goalAmount} onChange={e => setGoalAmount(e.target.value)} className="rounded-xl border border-white/20 bg-slate-950 p-3 text-white" />
