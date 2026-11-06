@@ -166,6 +166,7 @@ export default function MyryraFinanceStarter() {
         <div className="rounded-2xl border border-white/15 bg-slate-900/75 p-5">
           <p className="text-sm text-slate-300">Saldo estimado</p>
           <p className="mt-2 text-2xl font-semibold text-white">{currency(totals / 100)}</p>
+          {entries.length >= 200 && <p role="status" className="mt-2 text-xs text-amber-200">Exibindo apenas os 200 lançamentos mais recentes. O saldo estimado pode não incluir lançamentos anteriores.</p>}
         </div>
         <div className="rounded-2xl border border-white/15 bg-slate-900/75 p-5">
           <p className="text-sm text-slate-300">Lançamentos carregados</p>
