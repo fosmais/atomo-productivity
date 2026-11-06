@@ -938,6 +938,7 @@ function ConciergeRouteEstimate({ event, onEstimate }: { event: CalendarEvent; o
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ origin, destination }),
+        signal: AbortSignal.timeout(10000),
       });
       const data: { error?: string; durationSeconds?: number; distanceMeters?: number | null; calculatedAt?: string } = await response.json();
       if (!response.ok || typeof data.durationSeconds !== "number" || !Number.isFinite(data.durationSeconds) || data.durationSeconds <= 0 || data.durationSeconds > 480 * 60 || typeof data.calculatedAt !== "string" || !Number.isFinite(Date.parse(data.calculatedAt))) {
