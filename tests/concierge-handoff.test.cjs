@@ -26,3 +26,10 @@ test("departure reminder requires a measured or manually entered duration", () =
   assert.match(calendar, /if \(raw === ""\) \{ setTravelByEvent/);
   assert.doesNotMatch(calendar, /travelByEvent\[event\.id\]\?\.minutes \?\? 30/);
 });
+
+test("route estimates reject invalid duration and timestamp before scheduling", () => {
+  assert.match(calendar, /Number\.isFinite\(data\.durationSeconds\)/);
+  assert.match(calendar, /data\.durationSeconds <= 0/);
+  assert.match(calendar, /data\.durationSeconds > 480 \* 60/);
+  assert.match(calendar, /Number\.isFinite\(Date\.parse\(data\.calculatedAt\)\)/);
+});
