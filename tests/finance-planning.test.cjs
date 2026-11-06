@@ -96,3 +96,12 @@ test("planned expenses reject impossible calendar dates", () => {
   assert.equal(isValidDate("2026-11-06"), true);
   assert.ok(source.includes("!isValidDate(expenseDate)"));
 });
+
+test("successful goal and planned expense creation notify finance dashboard", () => {
+  const addGoal = source.slice(source.indexOf("async function addGoal("), source.indexOf("async function updateGoalSavings("));
+  const addExpense = source.slice(source.indexOf("async function addExpense("), source.indexOf("async function togglePaid("));
+  for (const operation of [addGoal, addExpense]) {
+    assert.ok(operation.includes('window.dispatchEvent(new Event("myryra:finance-updated"))'));
+    assert.ok(operation.indexOf('window.dispatchEvent(new Event("myryra:finance-updated"))') > operation.indexOf("if (insertError) throw insertError"));
+  }
+});
