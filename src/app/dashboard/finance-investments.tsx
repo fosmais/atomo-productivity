@@ -22,12 +22,14 @@ export default function FinanceInvestments() {
   const [monthly, setMonthly] = useState("200");
   const [rate, setRate] = useState("10");
   const [years, setYears] = useState("5");
+  const [target, setTarget] = useState("");
   const [ratePeriod, setRatePeriod] = useState<"annual" | "monthly">("annual");
   const result = useMemo(() => {
     const principal = number(initial);
     const contribution = number(monthly);
     const interest = number(rate);
     const duration = number(years);
+    const goal = target.trim() ? number(target) : null;
     if (![principal, contribution, interest, duration].every(Number.isFinite) ||
       principal < 0 || contribution < 0 || principal > 1e10 || contribution > 1e9 ||
       interest < 0 || interest > 100 || !Number.isInteger(duration) || duration < 1 || duration > 50) return null;
@@ -42,8 +44,10 @@ export default function FinanceInvestments() {
     }
     const invested = principal + contribution * months;
     if (!Number.isFinite(invested) || invested > 1e15) return null;
-    return { balance, invested, gain: balance - invested, checkpoints };
-  }, [initial, monthly, rate, years, ratePeriod]);
+    const goalValid = goal !== null && Number.isFinite(goal) && goal > 0 && goal <= 1e15;
+    const goalProgress = goalValid ? Math.min(100, balance / goal * 100) : null;
+    return { balance, invested, gain: balance - invested, checkpoints, goalProgress, goalRemaining: goalValid ? Math.max(0, goal - balance) : null };
+  }, [initial, monthly, rate, years, ratePeriod, target]);
 
   function askMyka() {
     if (!result) { setHandoffError(true); return; }
@@ -63,7 +67,7 @@ export default function FinanceInvestments() {
       <h3 className="mt-2 text-xl font-semibold text-white">Projete o crescimento do seu dinheiro</h3>
       <p className="mt-1 text-sm text-slate-400">Simulação de juros compostos com aportes no final de cada mês. Os valores não representam investimentos reais.</p>
     </div>
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       <label className="text-sm text-slate-300">Valor inicial (R$)
         <input aria-label="Valor inicial em reais" inputMode="decimal" value={initial} onChange={e => setInitial(e.target.value)} className="mt-1 w-full rounded-xl border border-white/20 bg-slate-950 p-3 text-white" />
       </label>
@@ -76,6 +80,9 @@ export default function FinanceInvestments() {
       <label className="text-sm text-slate-300">Período da taxa
         <select value={ratePeriod} onChange={e => setRatePeriod(e.target.value as "annual" | "monthly")} className="mt-1 w-full rounded-xl border border-white/20 bg-slate-950 p-3 text-white"><option value="annual">Ao ano (efetiva)</option><option value="monthly">Ao mês</option></select>
       </label>
+      <label className="text-sm text-slate-300">Meta de patrimônio (R$) · opcional
+        <input aria-label="Meta de patrimônio em reais" inputMode="decimal" placeholder="Ex.: 100.000,00" value={target} onChange={e => setTarget(e.target.value)} className="mt-1 w-full rounded-xl border border-white/20 bg-slate-950 p-3 text-white" />
+      </label>
       <label className="text-sm text-slate-300">Prazo (anos)
         <input aria-label="Prazo em anos" type="number" min="1" max="50" step="1" value={years} onChange={e => setYears(e.target.value)} className="mt-1 w-full rounded-xl border border-white/20 bg-slate-950 p-3 text-white" />
       </label>
@@ -86,6 +93,7 @@ export default function FinanceInvestments() {
         <div className="rounded-xl border border-emerald-400/20 bg-slate-950/60 p-4"><p className="text-sm text-slate-400">Rendimento projetado</p><p className="mt-2 break-words text-lg font-semibold tabular-nums text-emerald-300 sm:text-xl">{format(result.gain)}</p></div>
         <div className="rounded-xl border border-violet-400/30 bg-violet-950/30 p-4"><p className="text-sm text-slate-300">Patrimônio projetado</p><p className="mt-2 break-words text-lg font-semibold tabular-nums text-white sm:text-xl">{format(result.balance)}</p></div>
       </div>
+      {target.trim() && (result.goalProgress === null ? <p role="alert" className="text-sm text-rose-300">Informe uma meta de patrimônio válida.</p> : <div className="rounded-xl border border-violet-400/20 bg-slate-950/60 p-4"><div className="flex flex-wrap justify-between gap-2 text-sm"><span className="text-slate-300">Progresso projetado da meta</span><strong className="text-white">{result.goalProgress.toFixed(1)}%</strong></div><div role="progressbar" aria-label="Progresso projetado da meta" aria-valuenow={Math.round(result.goalProgress)} aria-valuemin={0} aria-valuemax={100} className="mt-3 h-2 overflow-hidden rounded-full bg-slate-700"><div className="h-full rounded-full bg-violet-500" style={{ width: `${result.goalProgress}%` }} /></div><p className="mt-2 text-sm text-slate-300">{result.goalRemaining === 0 ? "Meta atingida na simulação." : `Faltariam ${format(result.goalRemaining ?? 0)} para atingir a meta.`}</p></div>)}
       <div className="rounded-xl border border-white/10 bg-slate-950/40 p-4">
         <h4 className="mb-3 text-sm font-semibold text-white">Evolução estimada por ano</h4>
         <div className="flex h-36 items-end gap-1 overflow-x-auto" role="img" aria-label="Gráfico de evolução anual do patrimônio projetado">
