@@ -19,3 +19,10 @@ test("failed chat requests preserve the draft without duplicate messages", () =>
   assert.match(chat, /setInput\(content\)/);
   assert.match(chat, /if \(!pendingConciergePrompt \|\| historyLoading \|\| loading \|\| error/);
 });
+
+test("departure reminder requires a measured or manually entered duration", () => {
+  assert.match(calendar, /disabled=\{!travelByEvent\[event\.id\]\}/);
+  assert.match(calendar, /if \(travel\) downloadConciergeReminder\(event, travel\.minutes/);
+  assert.match(calendar, /if \(raw === ""\) \{ setTravelByEvent/);
+  assert.doesNotMatch(calendar, /travelByEvent\[event\.id\]\?\.minutes \?\? 30/);
+});
