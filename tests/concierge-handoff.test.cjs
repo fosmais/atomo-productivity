@@ -41,3 +41,10 @@ test("concierge persistence validates departure and selected services", () => {
   assert.match(cloud, /event\.concierge\.services\.length > 4/);
   assert.match(cloud, /event\.concierge\.services\.some\(service => !\["transport", "parking", "restaurant", "hotel"\]\.includes\(service\)\)/);
 });
+
+test("loaded concierge preferences are sanitized before display", () => {
+  const cloud = fs.readFileSync(path.join(__dirname, "../src/lib/event-cloud.ts"), "utf8");
+  assert.match(cloud, /Array\.isArray\(item\.services\)/);
+  assert.match(cloud, /item\.services\.filter\(/);
+  assert.match(cloud, /typeof item\.departure_address === "string"/);
+});
