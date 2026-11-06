@@ -36,6 +36,7 @@ export default function MyryraFinanceStarter() {
     let latestRequest = 0;
     const load = async () => {
       const requestId = ++latestRequest;
+      setLoading(true);
       try {
         const client = createClient();
         const { data: auth, error: authError } = await client.auth.getUser();
