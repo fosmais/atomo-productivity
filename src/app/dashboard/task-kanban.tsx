@@ -565,11 +565,11 @@ export default function TaskKanban() {
                         <label className="block text-xs text-slate-300">Prioridade<select aria-label="Editar prioridade" value={editPriority} onChange={event => setEditPriority(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 p-2 text-sm text-white"><option value="Normal">Normal</option><option value="Média">Média</option><option value="Alta">Alta</option></select></label>
                         <label className="block text-xs text-slate-300">Categoria<select aria-label="Editar categoria" value={editCategory} onChange={event => setEditCategory(event.target.value as EventCategory)} className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 p-2 text-sm text-white">{Object.entries(EVENT_CATEGORIES).map(([key, value]) => <option key={key} value={key}>{value.label}</option>)}</select></label>
                         <label className="block text-xs text-slate-300">Prazo<input aria-label="Editar prazo" type="date" value={editDueDate} onChange={event => setEditDueDate(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 p-2 text-sm text-white" /></label>
-                        <div className="flex justify-end gap-2"><button type="button" disabled={savingId !== null} onClick={() => setEditingId(null)} className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs">Cancelar</button><button type="button" disabled={savingId !== null} onClick={() => void saveTaskEdits(task)} className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">Salvar</button></div>
+                        <div className="flex flex-wrap justify-end gap-2"><button type="button" disabled={savingId !== null} onClick={() => setEditingId(null)} className="min-h-10 rounded-lg border border-slate-600 px-4 py-2 text-sm">Cancelar</button><button type="button" disabled={savingId !== null} onClick={() => void saveTaskEdits(task)} className="min-h-10 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Salvar</button></div>
                       </div>}
-                      <div className="mt-3 flex justify-end gap-2">
+                      <div className="mt-3 flex flex-wrap justify-end gap-2">
                         <button type="button" disabled={savingId !== null} onClick={() => editingId === task.id ? setEditingId(null) : beginEdit(task)} aria-label={`Editar tarefa: ${task.title}`} className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-violet-950/40 transition hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300 disabled:opacity-50">✎ Editar</button>
-                        <button type="button" disabled={savingId !== null} onClick={() => void deleteTask(task)} aria-label={`Excluir tarefa: ${task.title}`} className="rounded-lg border border-rose-400/35 px-3 py-1.5 text-xs font-medium text-rose-200 transition hover:bg-rose-500/10 disabled:opacity-50">Excluir tarefa</button>
+                        <button type="button" disabled={savingId !== null} onClick={() => void deleteTask(task)} aria-label={`Excluir tarefa: ${task.title}`} className="min-h-10 rounded-lg border border-rose-400/35 px-3 py-2 text-sm font-medium text-rose-200 transition hover:bg-rose-500/10 disabled:opacity-50">Excluir tarefa</button>
                       </div>
                     </article>
                   ))}
@@ -583,7 +583,7 @@ export default function TaskKanban() {
                   )}
                   {columnTasks.length === 0 && (
                     <p className="text-xs text-slate-400">
-                      Nenhuma tarefa nesta etapa.
+                      {taskSearch || favoritesOnly || priorityFilter !== "all" ? "Nenhuma tarefa corresponde aos filtros nesta etapa." : "Nenhuma tarefa nesta etapa."}
                     </p>
                   )}
                 </div>
