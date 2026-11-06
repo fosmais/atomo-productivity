@@ -28,6 +28,14 @@ function parseCents(input: string, allowZero = false) {
   return Number.isSafeInteger(cents) && (allowZero ? cents >= 0 : cents > 0) && cents <= 100000000000 ? cents : null;
 }
 
+
+function isValidDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
 export default function FinancePlanning() {
   const { navigateTo } = useVyraNavigation();
   const [handoffError, setHandoffError] = useState(false);
@@ -177,7 +185,7 @@ export default function FinancePlanning() {
   async function addExpense(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const cents = parseCents(expenseAmount);
-    if (!cents || !expenseTitle.trim() || expenseTitle.trim().length > 100 || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(expenseDate)) {
+    if (!cents || !expenseTitle.trim() || expenseTitle.trim().length > 100 || !isValidDate(expenseDate)) {
       setError("Informe despesa, valor e data válidos."); return;
     }
     setBusy(true); setError("");
