@@ -107,7 +107,7 @@ export default function VyraHome() {
         </button>
       </section>
 
-      <section className="grid grid-cols-2 gap-2 text-xs" aria-label="Resumo rápido">
+      <section className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2" aria-label="Resumo rápido">
         <button type="button" onClick={() => navigateTo("vyra-calendar")} className="min-w-0 rounded-xl border border-white/10 bg-slate-900/50 p-3 text-left hover:border-violet-400/50">
           <span className="block text-slate-400">Próximo compromisso</span>
           <span className="mt-1 block truncate font-semibold text-white">{nextEvent ? nextEvent.title : agendaError ? "Agenda indisponível" : "Nenhum compromisso"}</span>
@@ -137,11 +137,11 @@ export default function VyraHome() {
 
       <section aria-label="Explore seu universo">
         <h2 className="mb-3 text-base font-semibold text-white">Explore seu universo</h2>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {portals.map(item => <button key={item.label} type="button" onClick={() => navigateTo(item.module)} className="flex min-h-24 flex-col items-start justify-center gap-2 rounded-xl border border-violet-400/15 bg-slate-900/65 p-3 text-left transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
+        <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:grid-cols-3">
+          {portals.map(item => <button key={item.label} type="button" onClick={() => navigateTo(item.module)} className="flex min-h-24 min-w-0 flex-col items-start justify-center gap-2 rounded-xl border border-violet-400/15 bg-slate-900/65 p-3 text-left transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
             <span className="text-2xl text-violet-300" aria-hidden="true">{item.icon}</span>
-            <span className="text-sm font-semibold leading-snug text-white">{item.label}</span>
-            <span className="text-xs leading-snug text-slate-400">{item.subtitle}</span>
+            <span className="break-words text-sm font-semibold leading-snug text-white">{item.label}</span>
+            <span className="break-words text-xs leading-snug text-slate-400">{item.subtitle}</span>
           </button>)}
         </div>
       </section>
