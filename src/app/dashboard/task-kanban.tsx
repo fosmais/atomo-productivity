@@ -51,6 +51,7 @@ export default function TaskKanban() {
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [taskSearch, setTaskSearch] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("all");
   const [taskSort, setTaskSort] = useState<"priority" | "due" | "title" | "recent">("priority");
   const [favoriteSavingId, setFavoriteSavingId] = useState<string | null>(null);
 
@@ -384,6 +385,15 @@ export default function TaskKanban() {
             placeholder="Buscar tarefas..." className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-violet-400" />
         </label>
         <label className="flex items-center gap-2 text-sm text-slate-300">
+          Prioridade
+          <select aria-label="Filtrar tarefas por prioridade" value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value)} className="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white">
+            <option value="all">Todas</option>
+            <option value="Alta">Alta</option>
+            <option value="Média">Média</option>
+            <option value="Normal">Normal</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-2 text-sm text-slate-300">
           Ordenar por
           <select aria-label="Ordenar tarefas" value={taskSort}
             onChange={(event) => setTaskSort(event.target.value as typeof taskSort)}
@@ -399,7 +409,7 @@ export default function TaskKanban() {
             className="accent-violet-500" />
           ★ Somente favoritos
         </label>
-        {(taskSearch || favoritesOnly) && <button type="button" onClick={() => { setTaskSearch(""); setFavoritesOnly(false); }}
+        {(taskSearch || favoritesOnly || priorityFilter !== "all") && <button type="button" onClick={() => { setTaskSearch(""); setFavoritesOnly(false); setPriorityFilter("all"); }}
           className="rounded-lg border border-slate-600 px-3 py-2 text-xs text-slate-300 hover:bg-white/10">Limpar filtros</button>}
       </div>
 
@@ -460,7 +470,7 @@ export default function TaskKanban() {
         <div className="grid min-w-0 gap-4 md:grid-cols-2 2xl:grid-cols-4">
           {columns.map((column) => {
             const columnTasks = tasks.filter(
-              (task) => task.status === column.status && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))
+              (task) => task.status === column.status && (priorityFilter === "all" || task.priority === priorityFilter) && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))
             );
             const priorityOrder: Record<string, number> = { Alta: 0, "Média": 1, Normal: 2, Baixa: 2 };
             columnTasks.sort((a, b) => {
