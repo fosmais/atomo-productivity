@@ -806,8 +806,8 @@ export default function CalendarEvents() {
                     <span className="shrink-0 text-xs text-slate-400 group-open:hidden">Detalhes +</span><span className="hidden shrink-0 text-xs text-slate-400 group-open:inline">Recolher −</span>
                   </span>
                 </summary>
-                <div className="mt-3 flex min-w-0 flex-col gap-3 border-t border-slate-800 pt-3 xl:flex-row xl:flex-wrap xl:items-start">
-                <div className="min-w-0 flex-1 break-words [overflow-wrap:anywhere]">
+                <div className="mt-3 grid min-w-0 grid-cols-1 gap-3 border-t border-slate-800 pt-3 sm:grid-cols-2">
+                <div className="min-w-0 break-words [overflow-wrap:anywhere] sm:col-span-2">
 
                   <p className="mt-1 text-xs font-semibold" style={{ color: EVENT_CATEGORIES[event.category].color }}>{EVENT_CATEGORIES[event.category].label}</p>
                   <label className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-300">
@@ -875,7 +875,7 @@ export default function CalendarEvents() {
                   </div>}
                 </div>
 
-                <EventReminderControl eventId={event.id} startsAt={event.startsAt} />
+                <div className="min-w-0 sm:col-span-2"><EventReminderControl eventId={event.id} startsAt={event.startsAt} /></div>
                 <div className="flex min-w-0 flex-col gap-2">
                   {editingId === event.id ? (
                     <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -896,7 +896,7 @@ export default function CalendarEvents() {
                   type="button"
                   onClick={() => handleDelete(event.id)}
                   disabled={deletingId !== null}
-                  className="min-h-11 self-start rounded-lg bg-red-900 px-3 py-2 text-sm disabled:opacity-50"
+                  className="min-h-11 w-full rounded-lg bg-red-900 px-3 py-2 text-sm disabled:opacity-50 sm:w-auto sm:justify-self-start"
                 >
                   {deletingId === event.id ? "Excluindo..." : "Excluir"}
                 </button>
