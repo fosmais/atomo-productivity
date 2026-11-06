@@ -81,3 +81,18 @@ test("planned expense dates reject impossible days and accept leap years", () =>
   assert.equal(validate("2027-13-01"), false);
   assert.ok(source.includes("!isValidDate(expenseDate)"));
 });
+
+test("planned expenses reject impossible calendar dates", () => {
+  const vm = require("node:vm");
+  const start = source.indexOf("function isValidDate(");
+  const end = source.indexOf("\nexport default function", start);
+  assert.ok(start >= 0 && end > start);
+  const validator = source.slice(start, end).replace("value: string", "value");
+  const isValidDate = vm.runInNewContext(validator + "\nisValidDate");
+  assert.equal(isValidDate("2026-02-28"), true);
+  assert.equal(isValidDate("2026-02-30"), false);
+  assert.equal(isValidDate("2024-02-29"), true);
+  assert.equal(isValidDate("2026-13-01"), false);
+  assert.equal(isValidDate("2026-11-06"), true);
+  assert.ok(source.includes("!isValidDate(expenseDate)"));
+});
