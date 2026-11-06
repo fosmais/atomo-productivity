@@ -121,11 +121,14 @@ export default function MyryraFinanceStarter() {
       if (!savedBalance || Number(savedBalance.opening_balance_cents) !== cents) throw new Error("Saldo não confirmado pelo banco de dados.");
       setOpeningBalanceCents(cents);
       setBalanceSaved(true);
+      window.dispatchEvent(new Event("myryra:finance-updated"));
     } catch (cause) { setBalanceError(cause instanceof Error ? `Não foi possível salvar o saldo inicial: ${cause.message}` : "Não foi possível salvar o saldo inicial."); }
     finally { setBalanceSaving(false); }
   };
 
   const deleteEntry = async (id: string) => {
+    if (saving) return;
+    setSaving(true);
     setError("");
     try {
       const client = createClient();
@@ -137,6 +140,7 @@ export default function MyryraFinanceStarter() {
       setEntries(previous => previous.filter(item => item.id !== id));
       window.dispatchEvent(new Event("myryra:finance-updated"));
     } catch { setError("Não foi possível excluir o lançamento."); }
+    finally { setSaving(false); }
   };
 
   return (
