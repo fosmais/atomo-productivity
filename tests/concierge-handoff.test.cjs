@@ -76,3 +76,9 @@ test("route API rejects impossible provider durations before responding", () => 
   assert.match(route, /seconds <= 0 \|\| seconds > 480 \* 60/);
   assert.match(route, /Number\.isFinite\(seconds\)/);
 });
+
+test("route API does not expose malformed provider distance", () => {
+  const route = fs.readFileSync(path.join(__dirname, "../src/app/api/concierge/route/route.ts"), "utf8");
+  assert.match(route, /Number\.isFinite\(route\.distanceMeters\)/);
+  assert.match(route, /route\.distanceMeters >= 0 \? route\.distanceMeters : null/);
+});
