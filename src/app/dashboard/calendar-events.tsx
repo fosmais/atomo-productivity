@@ -881,15 +881,15 @@ export default function CalendarEvents() {
                     <div className="flex min-w-0 flex-wrap items-center gap-2">
                       <input aria-label="Novo título do compromisso" value={editingTitle} maxLength={200}
                         onChange={(e) => setEditingTitle(e.target.value)}
-                        className="min-w-0 flex-1 rounded-lg border border-violet-400/50 bg-slate-800 px-3 py-2 text-sm text-white" />
+                        className="min-h-11 min-w-0 basis-full rounded-lg border border-violet-400/50 bg-slate-800 px-3 py-2 text-base text-white sm:basis-auto sm:flex-1" />
                       <button type="button" onClick={() => void handleRename()} disabled={renaming || !editingTitle.trim()}
-                        className="rounded-lg bg-violet-600 px-3 py-2 text-sm disabled:opacity-50">{renaming ? "Salvando..." : "Salvar"}</button>
+                        className="min-h-11 flex-1 rounded-lg bg-violet-600 px-3 py-2 text-sm disabled:opacity-50 sm:flex-none">{renaming ? "Salvando..." : "Salvar"}</button>
                       <button type="button" onClick={() => setEditingId(null)} disabled={renaming}
-                        className="rounded-lg border border-white/20 px-3 py-2 text-sm">Cancelar</button>
+                        className="min-h-11 flex-1 rounded-lg border border-white/20 px-3 py-2 text-sm sm:flex-none">Cancelar</button>
                     </div>
                   ) : (
                     <button type="button" onClick={() => { setEditingId(event.id); setEditingTitle(event.title); }}
-                      className="self-start rounded-lg border border-violet-400/40 px-3 py-2 text-sm text-violet-200">Editar título</button>
+                      className="min-h-11 self-start rounded-lg border border-violet-400/40 px-3 py-2 text-sm text-violet-200">Editar título</button>
                   )}
                 </div>
                 <button
