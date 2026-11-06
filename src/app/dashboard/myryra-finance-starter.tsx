@@ -45,9 +45,11 @@ export default function MyryraFinanceStarter() {
         const { data: balance, error: balanceError } = await client.from("myryra_finance_balances")
           .select("opening_balance_cents").eq("user_id", auth.user.id).maybeSingle();
         if (balanceError) throw balanceError;
-        if (mounted && balance) {
-          setOpeningBalanceCents(Number(balance.opening_balance_cents));
-          setOpeningBalanceInput((Number(balance.opening_balance_cents) / 100).toFixed(2).replace(".", ","));
+        if (mounted) {
+          const nextBalance = Number(balance?.opening_balance_cents ?? 0);
+          setOpeningBalanceCents(nextBalance);
+          setOpeningBalanceInput((nextBalance / 100).toFixed(2).replace(".", ","));
+          setError("");
         }
       } catch {
         if (mounted) setError("Não foi possível carregar os lançamentos. Tente atualizar a página.");
