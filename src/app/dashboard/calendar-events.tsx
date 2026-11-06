@@ -933,13 +933,13 @@ function ConciergeRouteEstimate({ event, onEstimate }: { event: CalendarEvent; o
       });
       const data: { error?: string; durationSeconds?: number; distanceMeters?: number | null; calculatedAt?: string } = await response.json();
       if (!response.ok || typeof data.durationSeconds !== "number" || !Number.isFinite(data.durationSeconds) || data.durationSeconds <= 0 || data.durationSeconds > 480 * 60 || typeof data.calculatedAt !== "string" || !Number.isFinite(Date.parse(data.calculatedAt))) {
-        setMessage(data.error || "Não foi possível estimar a rota.");
+        setMessage("Não foi possível obter uma estimativa confiável. Informe o tempo de trajeto manualmente no campo acima ou consulte o Google Maps.");
         return;
       }
       setResult({ durationSeconds: data.durationSeconds, distanceMeters: data.distanceMeters ?? null, calculatedAt: data.calculatedAt });
       onEstimate(Math.min(480, Math.max(1, Math.ceil(data.durationSeconds / 60))));
     } catch {
-      setMessage("Consulta indisponível. Você pode abrir o trajeto no Google Maps.");
+      setMessage("Consulta indisponível. Informe o tempo de trajeto manualmente no campo acima ou consulte o Google Maps.");
     } finally {
       setLoading(false);
     }
