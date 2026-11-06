@@ -618,7 +618,7 @@ export default function CalendarEvents() {
           <input type="checkbox" checked={conciergeEnabled} onChange={e => setConciergeEnabled(e.target.checked)} className="h-4 w-4 accent-violet-500" />
           Ativar MIKA Concierge
         </label>
-        <p className="mt-1 text-xs text-slate-400">Planeje o deslocamento e os serviços deste compromisso sem sair da Agenda.</p>
+        <p className="mt-1 text-xs text-slate-400">Configure os serviços aqui. Ao solicitar o planejamento, a MIKA abrirá o chat com os dados deste compromisso.</p>
         {conciergeEnabled && <div className="mt-4 space-y-3">
           <label className="block space-y-1 text-sm"><span>Endereço de partida (opcional)</span>
             <input value={departureAddress} onChange={e => setDepartureAddress(e.target.value)} maxLength={300} placeholder="Casa, trabalho ou outro endereço" className="w-full rounded-xl border border-white/10 bg-slate-800 p-3 text-white" />
