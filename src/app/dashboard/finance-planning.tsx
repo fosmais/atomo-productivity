@@ -83,6 +83,7 @@ export default function FinancePlanning() {
       "Prazo simulado: " + goalHorizonMonths + " meses. Aporte mensal estimado, sem juros: " + money(Math.ceil(remaining / goalHorizonMonths)) + ".",
       "Prioridade definida pelo usuário: " + ({ essential: "essencial", important: "importante", optional: "opcional" }[goal.priority]) + ".",
       "Capacidade mensal informada: " + (parseCents(monthlyCapacityInput, true) === null ? "não informada" : money(parseCents(monthlyCapacityInput, true) ?? 0)) + ".",
+      remaining === 0 ? "Esta meta já está coberta pelo valor reservado informado. Não recomende novos aportes para ela sem confirmar um novo objetivo." : "",
       "Pergunte sobre meu prazo, capacidade mensal de poupança, reserva de emergência e prioridades antes de propor um plano.",
       "Trate os valores como informações manuais, não como saldo bancário verificado. Não faça alterações automaticamente nem prometa rentabilidade."
     ].join(" ");
