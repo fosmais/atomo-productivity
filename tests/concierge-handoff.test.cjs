@@ -82,3 +82,8 @@ test("route API does not expose malformed provider distance", () => {
   assert.match(route, /Number\.isFinite\(route\.distanceMeters\)/);
   assert.match(route, /route\.distanceMeters >= 0 \? route\.distanceMeters : null/);
 });
+
+test("route lookup times out and offers manual fallback", () => {
+  assert.match(calendar, /signal: AbortSignal\.timeout\(10000\)/);
+  assert.match(calendar, /Consulta indisponível\. Informe o tempo de trajeto manualmente/);
+});
