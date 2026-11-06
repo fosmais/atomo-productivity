@@ -87,3 +87,8 @@ test("route lookup times out and offers manual fallback", () => {
   assert.match(calendar, /signal: AbortSignal\.timeout\(10000\)/);
   assert.match(calendar, /Consulta indisponível\. Informe o tempo de trajeto manualmente/);
 });
+
+test("calendar renders only finite nonnegative route distances", () => {
+  assert.match(calendar, /Number\.isFinite\(data\.distanceMeters\)/);
+  assert.match(calendar, /data\.distanceMeters >= 0 \? data\.distanceMeters : null/);
+});
