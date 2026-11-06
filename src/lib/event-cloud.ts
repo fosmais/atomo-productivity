@@ -89,7 +89,7 @@ export async function getCloudEvents(): Promise<CalendarEvent[]> {
   }
   return allEvents.map(event => {
     const item = byEvent.get(event.id);
-    return { ...event, concierge: item ? { departureAddress: item.departure_address, services: item.services ?? [], status: item.status } : null };
+    return { ...event, concierge: item ? { departureAddress: typeof item.departure_address === "string" ? item.departure_address : null, services: Array.isArray(item.services) ? item.services.filter((service): service is string => typeof service === "string" && ["transport", "parking", "restaurant", "hotel"].includes(service)) : [], status: typeof item.status === "string" ? item.status : "pending" } : null };
   });
 }
 
