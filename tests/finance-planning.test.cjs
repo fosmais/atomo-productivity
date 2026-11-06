@@ -55,3 +55,8 @@ test("currency parser enforces zero capacity and positive goals", () => {
   assert.equal(parse("-1", true), null);
   assert.equal(parse("abc", true), null);
 });
+
+test("priority allocation explains independent contribution rounding", () => {
+  assert.ok(source.includes("Os aportes são arredondados para cima por meta"));
+  assert.ok(source.includes("const totalNeeded = allocations.reduce"));
+});
