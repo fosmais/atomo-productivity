@@ -27,11 +27,11 @@ export default function EventReminderControl({ eventId, startsAt }: { eventId: s
   }
 
   return (
-    <div className="rounded-lg border border-violet-400/20 p-3 text-sm">
-      <label className="flex flex-wrap items-center gap-2">
+    <div className="w-full min-w-0 rounded-lg border border-violet-400/20 p-3 text-sm xl:w-auto">
+      <label className="flex min-w-0 flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         Lembrar antes
         <select value={minutes} onChange={(event) => { setMinutes(Number(event.target.value) as ReminderLeadMinutes); setSuccess(false); }}
-          className="rounded-lg border border-slate-600 bg-slate-900 px-2 py-2 text-white">
+          className="min-h-11 min-w-0 max-w-full rounded-lg border border-slate-600 bg-slate-900 px-2 py-2 text-white">
           <option value={5}>5 minutos</option>
           <option value={10}>10 minutos</option>
           <option value={15}>15 minutos</option>
@@ -40,7 +40,7 @@ export default function EventReminderControl({ eventId, startsAt }: { eventId: s
           <option value={1440}>1 dia</option>
         </select>
         <button type="button" onClick={() => void handleSave()} disabled={saving}
-          className="rounded-lg bg-violet-600 px-3 py-2 font-semibold text-white disabled:opacity-50">
+          className="min-h-11 max-w-full rounded-lg bg-violet-600 px-3 py-2 font-semibold text-white disabled:opacity-50">
           {saving ? "Registrando..." : "Configurar lembrete"}
         </button>
       </label>
