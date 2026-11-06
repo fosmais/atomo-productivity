@@ -187,7 +187,7 @@ export default function TaskKanban() {
       const { data: auth, error: authError } = await supabase.auth.getUser();
       if (authError || !auth.user) throw new Error("Usuário não autenticado.");
       const { data, error: updateError } = await supabase.from("tasks")
-        .update({ due_date: dueDate }).eq("id", id).eq("user_id", auth.user.id)
+        .update({ due_date: dueDate }).eq("id", id).eq("user_id", auth.user.id).is("deleted_at", null)
         .select("id").single();
       if (updateError || !data) throw new Error(updateError?.message ?? "Não foi possível reagendar.");
       window.dispatchEvent(new Event("myryra:tasks-updated"));
