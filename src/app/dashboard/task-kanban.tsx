@@ -34,6 +34,7 @@ export default function TaskKanban() {
   const [tasks, setTasks] = useState<KanbanTask[]>([]);
   const latestLoadRef = useRef(0);
   const [expandedColumns, setExpandedColumns] = useState<TaskStatus[]>([]);
+  const [mobileColumn, setMobileColumn] = useState<TaskStatus>("todo");
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -99,6 +100,8 @@ export default function TaskKanban() {
       if (favoritesError) throw favoritesError;
       if (requestId === latestLoadRef.current) {
         setTasks(loaded);
+        const focused = loaded.find((task) => task.id === focusedTaskId);
+        if (focused) setMobileColumn(focused.status);
         setFavoriteIds((favoriteRows ?? []).flatMap((row) => row.task_id ? [row.task_id as string] : []));
       }
     } catch (err) {
@@ -134,7 +137,7 @@ export default function TaskKanban() {
       block: "center",
       inline: "nearest",
     });
-  }, [focusedTaskId, loading, tasks]);
+  }, [focusedTaskId, loading, tasks, mobileColumn]);
 
   async function createTask(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -469,7 +472,16 @@ export default function TaskKanban() {
       {loading ? (
         <p className="text-sm text-slate-400">Carregando tarefas...</p>
       ) : (
-        <div className="grid min-w-0 gap-3 sm:gap-4 lg:grid-cols-2 2xl:grid-cols-4">
+        <div className="min-w-0">
+          <div className="mb-3 flex gap-2 overflow-x-auto pb-2 lg:hidden" role="group" aria-label="Etapa do pipeline">
+            {columns.map((column) => (
+              <button key={column.status} type="button" aria-pressed={mobileColumn === column.status} onClick={() => setMobileColumn(column.status)}
+                className={`min-h-11 shrink-0 rounded-lg border px-3 py-2 text-sm font-medium ${mobileColumn === column.status ? "border-violet-400 bg-violet-600 text-white" : "border-slate-600 bg-slate-800 text-slate-300"}`}>
+                {column.label} ({tasks.filter((task) => task.status === column.status && (priorityFilter === "all" || task.priority === priorityFilter) && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))).length})
+              </button>
+            ))}
+          </div>
+          <div className="grid min-w-0 gap-3 sm:gap-4 lg:grid-cols-2 2xl:grid-cols-4">
           {columns.map((column) => {
             const columnTasks = tasks.filter(
               (task) => task.status === column.status && (priorityFilter === "all" || task.priority === priorityFilter) && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))
@@ -493,7 +505,7 @@ export default function TaskKanban() {
             return (
               <div
                 key={column.status}
-                className="min-w-0 rounded-xl border border-white/10 bg-slate-800/65 p-3 sm:p-4"
+                className={`min-w-0 rounded-xl border border-white/10 bg-slate-800/65 p-3 sm:p-4 ${mobileColumn === column.status ? "" : "hidden lg:block"}`}
               >
                 <h3 className="mb-3 flex items-center justify-between gap-2 text-sm font-semibold">
                   {column.label}
@@ -592,6 +604,7 @@ export default function TaskKanban() {
               </div>
             );
           })}
+          </div>
         </div>
       )}
     </section>
