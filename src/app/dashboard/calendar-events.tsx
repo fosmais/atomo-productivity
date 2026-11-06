@@ -232,7 +232,7 @@ export default function CalendarEvents() {
       const now = Date.now();
       if (now - lastRefresh < 2000) return;
       lastRefresh = now;
-      void loadEvents().then(() => setError("")).catch(() =>
+      void loadEvents().catch(() =>
         setError("Não foi possível atualizar os compromissos.")
       );
       void loadGoogleEvents();
