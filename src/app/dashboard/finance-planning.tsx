@@ -229,10 +229,12 @@ export default function FinancePlanning() {
         <div className="min-w-0 rounded-xl border border-white/15 bg-slate-950/60 p-3">
           <p className="text-xs text-slate-400">Total das metas</p>
           <p className="break-words text-lg font-semibold text-white">{money(goals.reduce((sum, goal) => sum + goal.target_cents, 0))}</p>
+          <p className="mt-1 text-xs text-slate-400">Já reservado: {money(goals.reduce((sum, goal) => sum + Math.min(goal.target_cents, Math.max(0, goal.saved_cents)), 0))}</p>
         </div>
         <div className="min-w-0 rounded-xl border border-violet-400/20 bg-slate-950/60 p-3">
           <p className="text-xs text-slate-400">Ainda necessário</p>
           <p className="break-words text-lg font-semibold text-white">{money(goals.reduce((sum, goal) => sum + Math.max(0, goal.target_cents - goal.saved_cents), 0))}</p>
+          <p className="mt-1 text-xs text-slate-400">Aporte médio sem juros: {money(Math.ceil(goals.reduce((sum, goal) => sum + Math.max(0, goal.target_cents - goal.saved_cents), 0) / goalHorizonMonths))}/mês por {goalHorizonMonths} meses</p>
         </div>
       </div>}
       <form onSubmit={addGoal} className="grid gap-2">
