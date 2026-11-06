@@ -711,7 +711,7 @@ export default function CalendarEvents() {
                     <summary className="cursor-pointer list-none rounded-md py-1 pr-9 focus-visible:outline-2 focus-visible:outline-violet-400">
                       <span className="flex min-w-0 flex-wrap items-center justify-between gap-2">
                         <span className="min-w-0 break-words font-medium"><span className="mr-2 text-xs font-semibold tabular-nums text-violet-300">{timeLabel(event.start)}</span>{event.title}</span>
-                        <span className="shrink-0 text-xs text-slate-400 group-open:hidden">Detalhes +</span><span className="hidden shrink-0 text-xs text-slate-400 group-open:inline">Recolher −</span>
+                        <span className="shrink-0 text-xs text-violet-300 group-open:hidden">Detalhes +</span><span className="hidden shrink-0 text-xs text-violet-300 group-open:inline">Recolher −</span>
                       </span>
                     </summary>
                     <div className="mt-3 flex min-w-0 flex-wrap items-start justify-between gap-3 border-t border-slate-800 pt-3">
@@ -800,8 +800,8 @@ export default function CalendarEvents() {
                 {favoriteEventIds.includes(event.id) ? "★" : "☆"}
               </button>
               <details className="group">
-                <summary className="cursor-pointer list-none rounded-md py-1 pr-10 focus-visible:outline-2 focus-visible:outline-violet-400">
-                  <span className="flex min-w-0 items-center justify-between gap-3">
+                <summary className="cursor-pointer list-none rounded-md py-1 pr-12 focus-visible:outline-2 focus-visible:outline-violet-400">
+                  <span className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <span className="min-w-0 break-words font-semibold"><span className="mr-2 text-xs font-semibold tabular-nums text-violet-300">{timeLabel(event.startsAt)}</span>{event.title}</span>
                     <span className="shrink-0 text-xs text-slate-400 group-open:hidden">Detalhes +</span><span className="hidden shrink-0 text-xs text-slate-400 group-open:inline">Recolher −</span>
                   </span>
@@ -878,7 +878,7 @@ export default function CalendarEvents() {
                 <EventReminderControl eventId={event.id} startsAt={event.startsAt} />
                 <div className="flex min-w-0 flex-col gap-2">
                   {editingId === event.id ? (
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
                       <input aria-label="Novo título do compromisso" value={editingTitle} maxLength={200}
                         onChange={(e) => setEditingTitle(e.target.value)}
                         className="min-w-0 flex-1 rounded-lg border border-violet-400/50 bg-slate-800 px-3 py-2 text-sm text-white" />
