@@ -63,3 +63,10 @@ test("background refresh does not erase unrelated calendar errors", () => {
   assert.match(calendar, /void loadEvents\(\)\.catch\(\(\) =>\s*setError\("Não foi possível atualizar os compromissos\."\)/);
   assert.doesNotMatch(calendar, /loadEvents\(\)\.then\(\(\) => setError\(""\)\)/);
 });
+
+test("calendar export refuses invalid travel time and event dates", () => {
+  assert.match(calendar, /!Number\.isFinite\(travelMinutes\)/);
+  assert.match(calendar, /travelMinutes <= 0 \|\| travelMinutes > 480/);
+  assert.match(calendar, /!Number\.isFinite\(Date\.parse\(event\.startsAt\)\)/);
+  assert.match(calendar, /Não foi possível criar o alerta: confira os horários/);
+});
