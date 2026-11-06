@@ -7,7 +7,7 @@ const vm = require("node:vm");
 const source = fs.readFileSync(path.join(__dirname, "../src/app/dashboard/finance-investments.tsx"), "utf8");
 const match = source.match(/const number = \(input: string\) => \{[\s\S]*?\n\};/);
 assert.ok(match, "Investment amount parser must exist");
-const parse = vm.runInNewContext(match[0].replace("(input: string)", "(input)") + "\nnumber");
+const parse = vm.runInNewContext(match[0].replace("(input: string)", "(input)").replace("let normalized: string;", "let normalized;") + "\nnumber");
 
 test("investment simulator accepts pt-BR amounts", () => {
   assert.equal(parse("1.000,50"), 1000.5);
