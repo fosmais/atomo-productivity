@@ -467,7 +467,7 @@ export default function TaskKanban() {
       {loading ? (
         <p className="text-sm text-slate-400">Carregando tarefas...</p>
       ) : (
-        <div className="grid min-w-0 gap-4 md:grid-cols-2 2xl:grid-cols-4">
+        <div className="grid min-w-0 gap-3 sm:gap-4 lg:grid-cols-2 2xl:grid-cols-4">
           {columns.map((column) => {
             const columnTasks = tasks.filter(
               (task) => task.status === column.status && (priorityFilter === "all" || task.priority === priorityFilter) && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))
@@ -491,14 +491,14 @@ export default function TaskKanban() {
             return (
               <div
                 key={column.status}
-                className="min-w-0 min-h-56 rounded-xl border border-white/10 bg-slate-800/65 p-3 sm:p-4"
+                className="min-w-0 rounded-xl border border-white/10 bg-slate-800/65 p-3 sm:p-4"
               >
-                <h3 className="mb-4 flex items-center justify-between gap-2 text-sm font-semibold">
+                <h3 className="mb-3 flex items-center justify-between gap-2 text-sm font-semibold">
                   {column.label}
                   <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2 py-0.5 text-xs tabular-nums text-violet-200">{columnTasks.length}</span>
                 </h3>
 
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {visibleTasks.map((task) => (
                     <article
                       key={task.id}
