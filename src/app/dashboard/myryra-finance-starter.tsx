@@ -32,7 +32,9 @@ export default function MyryraFinanceStarter() {
   const [entryError, setEntryError] = useState("");
   useEffect(() => {
     let mounted = true;
+    let latestRequest = 0;
     const load = async () => {
+      const requestId = ++latestRequest;
       try {
         const client = createClient();
         const { data: auth, error: authError } = await client.auth.getUser();
@@ -41,19 +43,19 @@ export default function MyryraFinanceStarter() {
           .select("id,description,amount_cents,kind,created_at")
           .eq("user_id", auth.user.id).order("created_at", { ascending: false }).limit(200);
         if (queryError) throw queryError;
-        if (mounted) setEntries((data ?? []) as Entry[]);
         const { data: balance, error: balanceError } = await client.from("myryra_finance_balances")
           .select("opening_balance_cents").eq("user_id", auth.user.id).maybeSingle();
         if (balanceError) throw balanceError;
-        if (mounted) {
+        if (mounted && requestId === latestRequest) {
+          setEntries((data ?? []) as Entry[]);
           const nextBalance = Number(balance?.opening_balance_cents ?? 0);
           setOpeningBalanceCents(nextBalance);
           setOpeningBalanceInput((nextBalance / 100).toFixed(2).replace(".", ","));
           setError("");
         }
       } catch {
-        if (mounted) setError("Não foi possível atualizar os dados financeiros. Os valores exibidos podem estar desatualizados; tente novamente.");
-      } finally { if (mounted) setLoading(false); }
+        if (mounted && requestId === latestRequest) setError("Não foi possível atualizar os dados financeiros. Os valores exibidos podem estar desatualizados; tente novamente.");
+      } finally { if (mounted && requestId === latestRequest) setLoading(false); }
     };
     void load();
     const refresh = () => void load();
