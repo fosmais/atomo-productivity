@@ -220,6 +220,8 @@ export default function FinancePlanning() {
   }
 
   async function remove(table: "myryra_finance_goals" | "myryra_finance_planned_expenses", id: string) {
+    if (busy) return;
+    setBusy(true);
     setError("");
     try {
       const client = createClient();
@@ -231,6 +233,7 @@ export default function FinancePlanning() {
       if (table === "myryra_finance_goals") setGoals(previous => previous.filter(item => item.id !== id));
       else setExpenses(previous => previous.filter(item => item.id !== id));
     } catch { setError("Não foi possível excluir o item."); }
+    finally { setBusy(false); }
   }
 
   return <div className="grid min-w-0 gap-4 lg:grid-cols-2">
