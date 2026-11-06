@@ -945,7 +945,7 @@ function ConciergeRouteEstimate({ event, onEstimate }: { event: CalendarEvent; o
         setMessage("Não foi possível obter uma estimativa confiável. Informe o tempo de trajeto manualmente no campo acima ou consulte o Google Maps.");
         return;
       }
-      setResult({ durationSeconds: data.durationSeconds, distanceMeters: data.distanceMeters ?? null, calculatedAt: data.calculatedAt });
+      setResult({ durationSeconds: data.durationSeconds, distanceMeters: typeof data.distanceMeters === "number" && Number.isFinite(data.distanceMeters) && data.distanceMeters >= 0 ? data.distanceMeters : null, calculatedAt: data.calculatedAt });
       onEstimate(Math.min(480, Math.max(1, Math.ceil(data.durationSeconds / 60))));
     } catch {
       setMessage("Consulta indisponível. Informe o tempo de trajeto manualmente no campo acima ou consulte o Google Maps.");
