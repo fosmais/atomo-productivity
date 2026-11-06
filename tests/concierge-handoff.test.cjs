@@ -33,3 +33,11 @@ test("route estimates reject invalid duration and timestamp before scheduling", 
   assert.match(calendar, /data\.durationSeconds > 480 \* 60/);
   assert.match(calendar, /Number\.isFinite\(Date\.parse\(data\.calculatedAt\)\)/);
 });
+
+test("concierge persistence validates departure and selected services", () => {
+  const cloud = fs.readFileSync(path.join(__dirname, "../src/lib/event-cloud.ts"), "utf8");
+  assert.match(cloud, /typeof event\.concierge\.departureAddress !== "string"/);
+  assert.match(cloud, /!Array\.isArray\(event\.concierge\.services\)/);
+  assert.match(cloud, /event\.concierge\.services\.length > 4/);
+  assert.match(cloud, /event\.concierge\.services\.some\(service => !\["transport", "parking", "restaurant", "hotel"\]\.includes\(service\)\)/);
+});
