@@ -849,7 +849,7 @@ export default function CalendarEvents() {
                       <p className="mt-1 text-xs text-slate-400">Informe a duração aproximada do trajeto ou consulte a estimativa de rota. O alerta só ficará disponível após definir um tempo de deslocamento.</p>
                       <div className="mt-2 flex flex-wrap items-center gap-3">
                         <label className="text-xs text-slate-300">Trajeto (min)
-                          <input type="number" min={1} max={480} step={5} value={travelByEvent[event.id]?.minutes ?? ""} placeholder="Min" onChange={(e) => { const minutes = Math.min(480, Math.max(1, Number(e.target.value) || 1)); setTravelByEvent(current => ({ ...current, [event.id]: { minutes, source: "manual" } })); }} className="ml-2 w-16 rounded-lg border border-white/15 bg-slate-800 px-2 py-1.5 text-white" />
+                          <input type="number" min={1} max={480} step={5} value={travelByEvent[event.id]?.minutes ?? ""} placeholder="Min" onChange={(e) => { const raw = e.target.value; if (raw === "") { setTravelByEvent(current => { const next = { ...current }; delete next[event.id]; return next; }); return; } const minutes = Math.min(480, Math.max(1, Number(raw) || 1)); setTravelByEvent(current => ({ ...current, [event.id]: { minutes, source: "manual" } })); }} className="ml-2 w-16 rounded-lg border border-white/15 bg-slate-800 px-2 py-1.5 text-white" />
                         </label>
                         <label className="text-xs text-slate-300">Margem (min)
                           <select value={conciergeBufferMinutes} onChange={(e) => setConciergeBufferMinutes(Number(e.target.value))} className="ml-2 rounded-lg border border-white/15 bg-slate-800 px-2 py-1.5 text-white">
