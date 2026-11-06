@@ -225,6 +225,16 @@ export default function FinancePlanning() {
   return <div className="grid min-w-0 gap-4 lg:grid-cols-2">
     <section className="min-w-0 space-y-4 rounded-2xl border border-white/15 bg-slate-900/75 p-4 sm:p-5">
       <div><h3 className="text-lg font-semibold text-white">Metas financeiras</h3><p className="mt-1 text-sm text-slate-400">Planeje objetivos. O valor reservado é informativo e não bloqueia dinheiro.</p></div>
+      {goals.length > 0 && <div className="grid gap-2 sm:grid-cols-2">
+        <div className="min-w-0 rounded-xl border border-white/15 bg-slate-950/60 p-3">
+          <p className="text-xs text-slate-400">Total das metas</p>
+          <p className="break-words text-lg font-semibold text-white">{money(goals.reduce((sum, goal) => sum + goal.target_cents, 0))}</p>
+        </div>
+        <div className="min-w-0 rounded-xl border border-violet-400/20 bg-slate-950/60 p-3">
+          <p className="text-xs text-slate-400">Ainda necessário</p>
+          <p className="break-words text-lg font-semibold text-white">{money(goals.reduce((sum, goal) => sum + Math.max(0, goal.target_cents - goal.saved_cents), 0))}</p>
+        </div>
+      </div>}
       <form onSubmit={addGoal} className="grid gap-2">
         <input required maxLength={100} aria-label="Nome da meta financeira" placeholder="Ex.: Reserva de emergência" value={goalTitle} onChange={e => setGoalTitle(e.target.value)} className="rounded-xl border border-white/20 bg-slate-950 p-3 text-white" />
         <input required inputMode="decimal" aria-label="Valor da meta em reais" placeholder="Ex.: R$ 10.000,00" value={goalAmount} onChange={e => setGoalAmount(e.target.value)} className="rounded-xl border border-white/20 bg-slate-950 p-3 text-white" />
