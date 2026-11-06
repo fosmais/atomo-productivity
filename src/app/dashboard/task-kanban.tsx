@@ -520,9 +520,10 @@ export default function TaskKanban() {
                         </button>
                       </div>
 
-                      <p className="mt-2 text-xs text-slate-300">
-                        <span className={task.priority === "Alta" ? "text-rose-300" : task.priority === "Média" ? "text-amber-300" : "text-emerald-300"}>● {task.priority}</span> <span className="ml-2 text-slate-400">· {EVENT_CATEGORIES[task.category ?? "personal"].label}</span>
-                      </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                        <span className={`rounded-full border px-2 py-1 font-medium ${task.priority === "Alta" ? "border-rose-400/40 bg-rose-500/15 text-rose-200" : task.priority === "Média" ? "border-amber-400/40 bg-amber-500/15 text-amber-200" : "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"}`} aria-label={`Prioridade ${task.priority}`}>● {task.priority}</span>
+                        <span className="rounded-full border border-slate-500/40 bg-slate-700/40 px-2 py-1 text-slate-200" aria-label={`Categoria ${EVENT_CATEGORIES[task.category ?? "personal"].label}`}>{EVENT_CATEGORIES[task.category ?? "personal"].label}</span>
+                      </div>
 
                       {task.due_date && (
                         <p className="mt-1 text-xs text-slate-400">
