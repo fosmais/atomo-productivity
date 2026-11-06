@@ -414,7 +414,7 @@ export default function TaskKanban() {
       </div>
 
       {showCreate && (
-        <form onSubmit={createTask} className="mb-5 grid min-w-0 gap-3 rounded-xl border border-violet-500/40 bg-slate-950 p-3 sm:grid-cols-2 sm:p-4">
+        <form onSubmit={createTask} aria-busy={creating} className="mb-5 grid min-w-0 gap-3 rounded-xl border border-violet-500/40 bg-slate-950 p-3 sm:grid-cols-2 sm:p-4">
           <label className="sm:col-span-2 text-sm">
             Título da tarefa
             <input
@@ -444,7 +444,7 @@ export default function TaskKanban() {
               type="date"
               value={newDueDate}
               onChange={(event) => setNewDueDate(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-800 p-3 text-white"
+              className="mt-1 min-h-11 w-full min-w-0 rounded-lg border border-slate-600 bg-slate-800 p-3 text-base text-white"
             />
           </label>
           <label className="flex items-center gap-2 text-sm text-slate-300 sm:col-span-2"><input type="checkbox" checked={favoriteOnCreate} onChange={(event) => setFavoriteOnCreate(event.target.checked)} className="accent-violet-500" />★ Adicionar aos favoritos</label>
