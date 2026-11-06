@@ -41,15 +41,22 @@ export default function MyryraFinanceStarter() {
         const client = createClient();
         const { data: auth, error: authError } = await client.auth.getUser();
         if (authError || !auth.user) throw new Error("Faça login para acessar sua carteira.");
-        const { data, error: queryError } = await client.from("myryra_finance_entries")
-          .select("id,description,amount_cents,kind,created_at")
-          .eq("user_id", auth.user.id).order("created_at", { ascending: false }).limit(200);
-        if (queryError) throw queryError;
+        const allEntries: Entry[] = [];
+        const pageSize = 500;
+        for (let offset = 0; ; offset += pageSize) {
+          const { data: page, error: queryError } = await client.from("myryra_finance_entries")
+            .select("id,description,amount_cents,kind,created_at")
+            .eq("user_id", auth.user.id).order("created_at", { ascending: false })
+            .order("id", { ascending: false }).range(offset, offset + pageSize - 1);
+          if (queryError) throw queryError;
+          allEntries.push(...((page ?? []) as Entry[]));
+          if (!page || page.length < pageSize) break;
+        }
         const { data: balance, error: balanceError } = await client.from("myryra_finance_balances")
           .select("opening_balance_cents").eq("user_id", auth.user.id).maybeSingle();
         if (balanceError) throw balanceError;
         if (mounted && requestId === latestRequest) {
-          setEntries((data ?? []) as Entry[]);
+          setEntries(allEntries);
           const nextBalance = Number(balance?.opening_balance_cents ?? 0);
           setOpeningBalanceCents(nextBalance);
           setOpeningBalanceInput((nextBalance / 100).toFixed(2).replace(".", ","));
@@ -166,10 +173,10 @@ export default function MyryraFinanceStarter() {
         <div className="rounded-2xl border border-white/15 bg-slate-900/75 p-5">
           <p className="text-sm text-slate-300">Saldo estimado</p>
           <p className="mt-2 text-2xl font-semibold text-white">{currency(totals / 100)}</p>
-          {entries.length >= 200 && <p role="status" className="mt-2 text-xs text-amber-200">Exibindo apenas os 200 lançamentos mais recentes. O saldo estimado pode não incluir lançamentos anteriores.</p>}
+          {entries.length > 200 && <p className="mt-2 text-xs text-slate-400">Saldo calculado com todo o histórico; exibindo os 200 lançamentos mais recentes abaixo.</p>}
         </div>
         <div className="rounded-2xl border border-white/15 bg-slate-900/75 p-5">
-          <p className="text-sm text-slate-300">Lançamentos carregados</p>
+          <p className="text-sm text-slate-300">Lançamentos no histórico</p>
           <p className="mt-2 text-2xl font-semibold text-white">{entries.length}</p>
         </div>
       </div>
@@ -205,7 +212,7 @@ export default function MyryraFinanceStarter() {
       </form>
       <div className="rounded-2xl border border-white/15 bg-slate-900/75 p-4 sm:p-5">
         <h3 className="mb-3 font-semibold text-white">Seus lançamentos</h3>
-        {entries.length === 0 ? <p className="text-sm text-slate-400">{loading ? "Carregando lançamentos..." : "Nenhum lançamento cadastrado."}</p> : <ul className="space-y-2">{entries.map(item => <li key={item.id} className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-white/10 py-2 text-sm"><span className="min-w-0 flex-1 break-words text-slate-200">{item.description}</span><span className={item.kind === "income" ? "shrink-0 text-emerald-300" : "shrink-0 text-rose-300"}>{item.kind === "income" ? "+" : "−"} {currency(item.amount_cents / 100)}</span><button type="button" disabled={saving || balanceSaving || loading} onClick={() => void deleteEntry(item.id)} className="text-slate-400 underline hover:text-white disabled:cursor-not-allowed disabled:opacity-50">Excluir</button></li>)}</ul>}
+        {entries.length === 0 ? <p className="text-sm text-slate-400">{loading ? "Carregando lançamentos..." : "Nenhum lançamento cadastrado."}</p> : <ul className="space-y-2">{entries.slice(0, 200).map(item => <li key={item.id} className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-white/10 py-2 text-sm"><span className="min-w-0 flex-1 break-words text-slate-200">{item.description}</span><span className={item.kind === "income" ? "shrink-0 text-emerald-300" : "shrink-0 text-rose-300"}>{item.kind === "income" ? "+" : "−"} {currency(item.amount_cents / 100)}</span><button type="button" disabled={saving || balanceSaving || loading} onClick={() => void deleteEntry(item.id)} className="text-slate-400 underline hover:text-white disabled:cursor-not-allowed disabled:opacity-50">Excluir</button></li>)}</ul>}
       </div>
       {error && <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-rose-300"><span>{error}</span><button type="button" onClick={() => { setLoading(true); setRefreshAttempt(previous => previous + 1); }} className="rounded-lg border border-rose-300/40 px-3 py-2 font-medium hover:bg-rose-300/10">Tentar novamente</button></div>}
       <p className="text-xs text-slate-400">Os valores são estimativas baseadas nos dados informados por você. A MYRYRA não consulta saldos bancários nem movimenta seu dinheiro.</p>
