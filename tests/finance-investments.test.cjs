@@ -26,3 +26,9 @@ test("MIKA handoff uses formatted numeric values", () => {
   assert.ok(source.includes("format(number(monthly))"));
   assert.ok(source.includes("disabled={!result}"));
 });
+
+test("investment goals are passed to MIKA when valid", () => {
+  assert.ok(source.includes("goalContext"));
+  assert.ok(source.includes("result.goalProgress !== null"));
+  assert.ok(source.includes("prompt + goalContext"));
+});
