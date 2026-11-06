@@ -13,7 +13,7 @@ const section = (start, end) => {
 
 test("wallet refresh commits entries and balance only after both queries succeed", () => {
   const refresh = section("const load = async () => {", "void load();");
-  assert.ok(refresh.indexOf("if (balanceError) throw balanceError") < refresh.indexOf("setEntries((data ?? []) as Entry[])"));
+  assert.ok(refresh.indexOf("if (balanceError) throw balanceError") < refresh.indexOf("setEntries(allEntries)"));
   assert.ok(refresh.includes("requestId === latestRequest"));
   assert.ok(refresh.includes("setError(\"\")"));
 });
@@ -43,4 +43,12 @@ test("wallet balance and entry controls share the same concurrency guard", () =>
   assert.ok(source.includes(`disabled={${guard}} onClick={() => void deleteEntry(item.id)}`));
   assert.ok(source.includes(`disabled={${guard}} className="rounded-xl bg-violet-600 px-4 py-3`));
   assert.ok(source.includes(`disabled={${guard}} className="rounded-xl bg-violet-600 px-4 py-2`));
+});
+
+test("wallet paginates all records for balance while limiting visible ledger", () => {
+  assert.ok(source.includes("const allEntries: Entry[] = []"));
+  assert.ok(source.includes(".range(offset, offset + pageSize - 1)"));
+  assert.ok(source.includes("if (!page || page.length < pageSize) break"));
+  assert.ok(source.includes("setEntries(allEntries)"));
+  assert.ok(source.includes("entries.slice(0, 200).map(item =>"));
 });
