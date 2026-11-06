@@ -114,7 +114,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       mode: "driving",
       durationSeconds: seconds,
-      distanceMeters: route?.distanceMeters ?? null,
+      distanceMeters: typeof route?.distanceMeters === "number" && Number.isFinite(route.distanceMeters) && route.distanceMeters >= 0 ? route.distanceMeters : null,
       provider: "google-routes",
       calculatedAt: new Date().toISOString(),
       liveTrafficGuarantee: false,
