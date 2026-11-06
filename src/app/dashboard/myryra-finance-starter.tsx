@@ -95,6 +95,7 @@ export default function MyryraFinanceStarter() {
         .insert({ user_id: auth.user.id, description: name.trim(), amount_cents: cents, kind })
         .select("id,description,amount_cents,kind,created_at").single();
       if (insertError) throw insertError;
+      if (!data) throw new Error("Lançamento não confirmado pelo banco de dados.");
       setEntries(previous => [data as Entry, ...previous]);
       setName(""); setAmount("");
       window.dispatchEvent(new Event("myryra:finance-updated"));
