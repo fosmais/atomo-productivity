@@ -37,3 +37,10 @@ test("wallet only publishes confirmed mutations", () => {
   const balance = section("const saveOpeningBalance = async", "const deleteEntry = async");
   assert.ok(balance.indexOf("if (!savedBalance") < balance.indexOf("setOpeningBalanceCents(cents)"));
 });
+
+test("wallet balance and entry controls share the same concurrency guard", () => {
+  const guard = "saving || balanceSaving || loading";
+  assert.ok(source.includes(`disabled={${guard}} onClick={() => void deleteEntry(item.id)}`));
+  assert.ok(source.includes(`disabled={${guard}} className="rounded-xl bg-violet-600 px-4 py-3`));
+  assert.ok(source.includes(`disabled={${guard}} className="rounded-xl bg-violet-600 px-4 py-2`));
+});
