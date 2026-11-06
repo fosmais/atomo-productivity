@@ -46,7 +46,7 @@ export default function FinanceInvestments() {
 
   function askMyka() {
     if (!result) { setHandoffError(true); return; }
-    const prompt = `MYKA, quero planejar meus investimentos para alcançar meu objetivo. Meu valor inicial simulado é R$ ${initial}, aporte mensal R$ ${monthly}, taxa hipotética ${rate}% ${ratePeriod === "annual" ? "ao ano" : "ao mês"} e prazo de ${years} anos. Antes de comparar opções como Tesouro Direto, CDB e fundos, pergunte meu objetivo, necessidade de liquidez, reserva de emergência, tolerância a perdas e experiência. Explique riscos, custos, impostos e diferenças, sem prometer ganhos ou indicar uma opção como a melhor sem conhecer meu perfil.`;
+    const prompt = `MYKA, quero planejar meus investimentos para alcançar meu objetivo. Meu valor inicial simulado é ${format(number(initial))}, aporte mensal ${format(number(monthly))}, taxa hipotética ${number(rate)}% ${ratePeriod === "annual" ? "ao ano" : "ao mês"} e prazo de ${number(years)} anos. Antes de comparar opções como Tesouro Direto, CDB e fundos, pergunte meu objetivo, necessidade de liquidez, reserva de emergência, tolerância a perdas e experiência. Explique riscos, custos, impostos e diferenças, sem prometer ganhos ou indicar uma opção como a melhor sem conhecer meu perfil.`;
     try {
       sessionStorage.setItem("myryra:myka:investment-handoff", prompt);
       setHandoffError(false);
