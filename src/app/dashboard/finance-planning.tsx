@@ -111,7 +111,7 @@ export default function FinancePlanning() {
 
   function askMykaAboutPortfolio() {
     const totalRemaining = goals.reduce((sum, goal) => sum + Math.max(0, goal.target_cents - goal.saved_cents), 0);
-    const monthlyNeeded = goals.reduce((sum, goal) => sum + Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths), 0);
+    const monthlyNeeded = Math.ceil(totalRemaining / goalHorizonMonths);
     const capacity = parseCents(monthlyCapacityInput, true);
     const prompt = [
       "MIKA, me ajude a priorizar minhas metas financeiras sem comprometer meu orçamento.",
