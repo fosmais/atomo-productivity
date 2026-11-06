@@ -48,3 +48,8 @@ test("loaded concierge preferences are sanitized before display", () => {
   assert.match(cloud, /item\.services\.filter\(/);
   assert.match(cloud, /typeof item\.departure_address === "string"/);
 });
+
+test("calendar event loading is not blocked by optional favorites", () => {
+  assert.match(calendar, /setEvents\(result\);\s*\/\/ Favorites are optional metadata/);
+  assert.match(calendar, /try \{\s*await loadFavoriteEvents\(\);\s*\} catch \{\s*setFavoriteEventIds\(\[\]\)/);
+});
