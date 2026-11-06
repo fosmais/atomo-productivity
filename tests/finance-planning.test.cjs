@@ -65,3 +65,19 @@ test("MIKA does not recommend additional contributions for completed individual 
   assert.ok(source.includes('remaining === 0 ? "Esta meta já está coberta'));
   assert.ok(source.includes("Não recomende novos aportes para ela"));
 });
+
+test("planned expense dates reject impossible days and accept leap years", () => {
+  const vm = require("node:vm");
+  const start = source.indexOf("function isValidDate(");
+  const end = source.indexOf("\nexport default function", start);
+  assert.ok(start >= 0 && end > start);
+  const fn = source.slice(start, end).replace("value: string", "value");
+  const validate = vm.runInNewContext(fn + "\nisValidDate");
+  assert.equal(validate("2028-02-29"), true);
+  assert.equal(validate("2027-02-29"), false);
+  assert.equal(validate("2027-02-31"), false);
+  assert.equal(validate("2027-04-31"), false);
+  assert.equal(validate("2027-12-31"), true);
+  assert.equal(validate("2027-13-01"), false);
+  assert.ok(source.includes("!isValidDate(expenseDate)"));
+});
