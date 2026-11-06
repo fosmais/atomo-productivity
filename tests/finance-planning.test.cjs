@@ -38,3 +38,20 @@ test("completed goals hide the irrelevant monthly difference", () => {
   assert.ok(source.includes('needed > 0 && <>'));
   assert.ok(source.includes('Diferença mensal:'));
 });
+
+test("currency parser enforces zero capacity and positive goals", () => {
+  const vm = require("node:vm");
+  const start = source.indexOf("function parseCents(");
+  const end = source.indexOf("\nexport default function", start);
+  assert.ok(start >= 0 && end > start);
+  const parserSource = source.slice(start, end)
+    .replace("input: string, allowZero = false", "input, allowZero = false")
+    .replace("let normalized: string;", "let normalized;");
+  const parse = vm.runInNewContext(parserSource + "\nparseCents");
+  assert.equal(parse("0"), null);
+  assert.equal(parse("0", true), 0);
+  assert.equal(parse("1.000,50"), 100050);
+  assert.equal(parse("R$ 1.000,50"), 100050);
+  assert.equal(parse("-1", true), null);
+  assert.equal(parse("abc", true), null);
+});
