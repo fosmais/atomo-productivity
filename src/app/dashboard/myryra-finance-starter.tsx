@@ -52,7 +52,7 @@ export default function MyryraFinanceStarter() {
           setError("");
         }
       } catch {
-        if (mounted) setError("Não foi possível carregar os lançamentos. Tente atualizar a página.");
+        if (mounted) setError("Não foi possível atualizar os dados financeiros. Os valores exibidos podem estar desatualizados; tente novamente.");
       } finally { if (mounted) setLoading(false); }
     };
     void load();
