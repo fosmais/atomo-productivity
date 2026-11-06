@@ -70,3 +70,9 @@ test("calendar export refuses invalid travel time and event dates", () => {
   assert.match(calendar, /!Number\.isFinite\(Date\.parse\(event\.startsAt\)\)/);
   assert.match(calendar, /Não foi possível criar o alerta: confira os horários/);
 });
+
+test("route API rejects impossible provider durations before responding", () => {
+  const route = fs.readFileSync(path.join(__dirname, "../src/app/api/concierge/route/route.ts"), "utf8");
+  assert.match(route, /seconds <= 0 \|\| seconds > 480 \* 60/);
+  assert.match(route, /Number\.isFinite\(seconds\)/);
+});
