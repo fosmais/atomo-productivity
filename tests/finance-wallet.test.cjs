@@ -19,10 +19,10 @@ test("wallet refresh commits entries and balance only after both queries succeed
 });
 
 test("wallet operations guard against pending mutations and refreshes", () => {
-  assert.ok(section("const addEntry = async", "const saveOpeningBalance = async").includes("if (saving || loading) return"));
-  assert.ok(section("const saveOpeningBalance = async", "const deleteEntry = async").includes("if (balanceSaving || loading) return"));
-  assert.ok(section("const deleteEntry = async", "return (").includes("if (saving || loading) return"));
-  assert.ok(source.includes("disabled={saving || loading} onClick={() => void deleteEntry(item.id)}"));
+  assert.ok(section("const addEntry = async", "const saveOpeningBalance = async").includes("if (saving || balanceSaving || loading) return"));
+  assert.ok(section("const saveOpeningBalance = async", "const deleteEntry = async").includes("if (saving || balanceSaving || loading) return"));
+  assert.ok(section("const deleteEntry = async", "return (").includes("if (saving || balanceSaving || loading) return"));
+  assert.ok(source.includes("disabled={saving || balanceSaving || loading} onClick={() => void deleteEntry(item.id)}"));
 });
 
 test("wallet retries failed refresh and preserves visible records", () => {
