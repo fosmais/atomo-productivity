@@ -60,3 +60,8 @@ test("priority allocation explains independent contribution rounding", () => {
   assert.ok(source.includes("Os aportes são arredondados para cima por meta"));
   assert.ok(source.includes("const totalNeeded = allocations.reduce"));
 });
+
+test("MIKA does not recommend additional contributions for completed individual goals", () => {
+  assert.ok(source.includes('remaining === 0 ? "Esta meta já está coberta'));
+  assert.ok(source.includes("Não recomende novos aportes para ela"));
+});
