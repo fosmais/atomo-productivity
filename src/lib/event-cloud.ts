@@ -132,7 +132,8 @@ export async function saveCloudEvent(
   if (event.concierge) {
     if (eventType !== "appointment") throw new Error("O Concierge só pode ser ativado em compromissos.");
     if (!event.location?.trim()) throw new Error("Informe o destino do compromisso para ativar o Concierge.");
-    if (event.concierge.departureAddress.length > 300) throw new Error("O endereço de partida deve ter até 300 caracteres.");
+    if (typeof event.concierge.departureAddress !== "string" || event.concierge.departureAddress.length > 300) throw new Error("O endereço de partida deve ter até 300 caracteres.");
+    if (!Array.isArray(event.concierge.services) || event.concierge.services.length > 4 || event.concierge.services.some(service => typeof service !== "string")) throw new Error("Seleção de serviços do Concierge inválida.");
     if (event.concierge.services.some(service => !["transport", "parking", "restaurant", "hotel"].includes(service))) throw new Error("Serviço de Concierge inválido.");
   }
 
