@@ -156,6 +156,7 @@ export default function FinancePlanning() {
       const { data, error: insertError } = await client.from("myryra_finance_goals").insert({ user_id: auth.user.id, title: goalTitle.trim(), target_cents: cents, priority: newGoalPriority }).select("id,title,target_cents,saved_cents,priority").single();
       if (insertError) throw insertError;
       setGoals(previous => [data as Goal, ...previous]); setGoalPriorities(previous => ({ ...previous, [data.id]: data.priority })); setGoalTitle(""); setGoalAmount(""); setNewGoalPriority("important");
+      window.dispatchEvent(new Event("myryra:finance-updated"));
     } catch { setError("Não foi possível salvar a meta."); }
     finally { setBusy(false); }
   }
@@ -197,6 +198,7 @@ export default function FinancePlanning() {
       if (insertError) throw insertError;
       setExpenses(previous => [...previous, data as Expense].sort((a, b) => a.due_date.localeCompare(b.due_date)));
       setExpenseTitle(""); setExpenseAmount(""); setExpenseDate("");
+      window.dispatchEvent(new Event("myryra:finance-updated"));
     } catch { setError("Não foi possível salvar a despesa planejada."); }
     finally { setBusy(false); }
   }
