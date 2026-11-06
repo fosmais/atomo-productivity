@@ -58,3 +58,8 @@ test("initial calendar load clears stale favorites if the optional lookup fails"
   assert.match(calendar, /getCloudEvents\(\)\s*\.then\(\(result\) => \{/);
   assert.match(calendar, /loadFavoriteEvents\(\)\.catch\(\(\) => \{ if \(active\) setFavoriteEventIds\(\[\]\); \}\)/);
 });
+
+test("background refresh does not erase unrelated calendar errors", () => {
+  assert.match(calendar, /void loadEvents\(\)\.catch\(\(\) =>\s*setError\("Não foi possível atualizar os compromissos\."\)/);
+  assert.doesNotMatch(calendar, /loadEvents\(\)\.then\(\(\) => setError\(""\)\)/);
+});
