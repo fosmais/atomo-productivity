@@ -108,7 +108,7 @@ export async function POST(request: Request) {
     const route = data.routes?.[0];
     const seconds = route?.duration && /^\d+(?:\.\d+)?s$/.test(route.duration)
       ? Math.ceil(Number(route.duration.slice(0, -1))) : null;
-    if (seconds === null || !Number.isFinite(seconds)) {
+    if (seconds === null || !Number.isFinite(seconds) || seconds <= 0 || seconds > 480 * 60) {
       return NextResponse.json({ error: "Nenhuma rota encontrada." }, { status: 404 });
     }
     return NextResponse.json({
