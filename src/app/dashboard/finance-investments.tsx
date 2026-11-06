@@ -81,9 +81,9 @@ export default function FinanceInvestments() {
     </div>
     {!result ? <p role="alert" className="text-sm text-rose-300">Confira os valores. O prazo deve ser de 1 a 50 anos e a taxa de 0% a 100% por período.</p> : <>
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-white/15 bg-slate-950/60 p-4"><p className="text-sm text-slate-400">Total investido</p><p className="mt-2 text-xl font-semibold text-white">{format(result.invested)}</p></div>
-        <div className="rounded-xl border border-emerald-400/20 bg-slate-950/60 p-4"><p className="text-sm text-slate-400">Rendimento projetado</p><p className="mt-2 text-xl font-semibold text-emerald-300">{format(result.gain)}</p></div>
-        <div className="rounded-xl border border-violet-400/30 bg-violet-950/30 p-4"><p className="text-sm text-slate-300">Patrimônio projetado</p><p className="mt-2 text-xl font-semibold text-white">{format(result.balance)}</p></div>
+        <div className="rounded-xl border border-white/15 bg-slate-950/60 p-4"><p className="text-sm text-slate-400">Total investido</p><p className="mt-2 break-words text-lg font-semibold tabular-nums text-white sm:text-xl">{format(result.invested)}</p></div>
+        <div className="rounded-xl border border-emerald-400/20 bg-slate-950/60 p-4"><p className="text-sm text-slate-400">Rendimento projetado</p><p className="mt-2 break-words text-lg font-semibold tabular-nums text-emerald-300 sm:text-xl">{format(result.gain)}</p></div>
+        <div className="rounded-xl border border-violet-400/30 bg-violet-950/30 p-4"><p className="text-sm text-slate-300">Patrimônio projetado</p><p className="mt-2 break-words text-lg font-semibold tabular-nums text-white sm:text-xl">{format(result.balance)}</p></div>
       </div>
       <div className="rounded-xl border border-white/10 bg-slate-950/40 p-4">
         <h4 className="mb-3 text-sm font-semibold text-white">Evolução estimada por ano</h4>
