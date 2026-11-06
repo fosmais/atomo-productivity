@@ -414,7 +414,7 @@ export default function TaskKanban() {
       </div>
 
       {showCreate && (
-        <form onSubmit={createTask} className="mb-5 grid gap-3 rounded-xl border border-violet-500/40 bg-slate-950 p-4 sm:grid-cols-2">
+        <form onSubmit={createTask} className="mb-5 grid min-w-0 gap-3 rounded-xl border border-violet-500/40 bg-slate-950 p-3 sm:grid-cols-2 sm:p-4">
           <label className="sm:col-span-2 text-sm">
             Título da tarefa
             <input
@@ -423,7 +423,7 @@ export default function TaskKanban() {
               maxLength={200}
               required
               placeholder="O que você precisa fazer?"
-              className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-800 p-3 text-white"
+              className="mt-1 min-h-11 w-full min-w-0 rounded-lg border border-slate-600 bg-slate-800 p-3 text-base text-white"
             />
           </label>
           <label className="text-sm">
@@ -431,7 +431,7 @@ export default function TaskKanban() {
             <select
               value={newPriority}
               onChange={(event) => setNewPriority(event.target.value as "Alta" | "Média" | "Normal")}
-              className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-800 p-3 text-white"
+              className="mt-1 min-h-11 w-full min-w-0 rounded-lg border border-slate-600 bg-slate-800 p-3 text-base text-white"
             >
               <option value="Normal">Normal</option>
               <option value="Média">Média</option>
@@ -449,10 +449,10 @@ export default function TaskKanban() {
           </label>
           <label className="flex items-center gap-2 text-sm text-slate-300 sm:col-span-2"><input type="checkbox" checked={favoriteOnCreate} onChange={(event) => setFavoriteOnCreate(event.target.checked)} className="accent-violet-500" />★ Adicionar aos favoritos</label>
           <div className="flex flex-wrap gap-2 sm:col-span-2">
-            <button type="submit" disabled={creating || !newTitle.trim()} className="rounded-lg bg-violet-600 px-5 py-2 font-semibold disabled:opacity-50">
+            <button type="submit" disabled={creating || !newTitle.trim()} className="min-h-11 flex-1 rounded-lg bg-violet-600 px-5 py-2 font-semibold disabled:opacity-50 sm:flex-none">
               {creating ? "Salvando..." : "Criar tarefa"}
             </button>
-            <button type="button" onClick={() => setShowCreate(false)} disabled={creating} className="rounded-lg border border-slate-600 px-5 py-2">
+            <button type="button" onClick={() => setShowCreate(false)} disabled={creating} className="min-h-11 flex-1 rounded-lg border border-slate-600 px-5 py-2 sm:flex-none">
               Cancelar
             </button>
           </div>
