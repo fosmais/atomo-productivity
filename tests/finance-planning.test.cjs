@@ -24,3 +24,8 @@ test("fully funded goals do not trigger extra contribution advice", () => {
   assert.ok(source.includes("totalRemaining === 0"));
   assert.ok(source.includes("Não sugira aportes adicionais"));
 });
+
+test("MIKA uses consolidated monthly goal contribution", () => {
+  assert.ok(source.includes("const monthlyNeeded = Math.ceil(totalRemaining / goalHorizonMonths);"));
+  assert.ok(source.includes("Math.ceil(goals.reduce((sum, goal) => sum + Math.max(0, goal.target_cents - goal.saved_cents), 0) / goalHorizonMonths)"));
+});
