@@ -53,3 +53,8 @@ test("calendar event loading is not blocked by optional favorites", () => {
   assert.match(calendar, /setEvents\(result\);\s*\/\/ Favorites are optional metadata/);
   assert.match(calendar, /try \{\s*await loadFavoriteEvents\(\);\s*\} catch \{\s*setFavoriteEventIds\(\[\]\)/);
 });
+
+test("initial calendar load clears stale favorites if the optional lookup fails", () => {
+  assert.match(calendar, /getCloudEvents\(\)\s*\.then\(\(result\) => \{/);
+  assert.match(calendar, /loadFavoriteEvents\(\)\.catch\(\(\) => \{ if \(active\) setFavoriteEventIds\(\[\]\); \}\)/);
+});
