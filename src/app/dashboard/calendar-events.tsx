@@ -250,7 +250,7 @@ export default function CalendarEvents() {
 
     getCloudEvents()
       .then((result) => {
-        if (active) { setEvents(result); void loadFavoriteEvents().catch(() => {}); }
+        if (active) { setEvents(result); void loadFavoriteEvents().catch(() => { if (active) setFavoriteEventIds([]); }); }
       })
       .catch((err: unknown) => {
         if (active) {
