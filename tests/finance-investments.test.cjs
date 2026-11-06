@@ -20,3 +20,9 @@ test("investment simulator rejects empty or malformed amounts", () => {
     assert.ok(Number.isNaN(parse(value)), value);
   }
 });
+
+test("MIKA handoff uses formatted numeric values", () => {
+  assert.ok(source.includes("format(number(initial))"));
+  assert.ok(source.includes("format(number(monthly))"));
+  assert.ok(source.includes("disabled={!result}"));
+});
