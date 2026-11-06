@@ -18,3 +18,9 @@ test("MIKA receives zero-capacity financial planning context", () => {
   assert.ok(source.includes("capacity === 0 && totalRemaining > 0"));
   assert.ok(source.includes("Priorize revisar despesas"));
 });
+
+test("fully funded goals do not trigger extra contribution advice", () => {
+  assert.ok(source.includes("needed === 0"));
+  assert.ok(source.includes("totalRemaining === 0"));
+  assert.ok(source.includes("Não sugira aportes adicionais"));
+});
