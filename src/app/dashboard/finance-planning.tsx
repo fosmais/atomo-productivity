@@ -290,7 +290,7 @@ export default function FinancePlanning() {
         });
         return <div className="rounded-xl border border-violet-400/20 bg-slate-950/60 p-3">
           <p className="text-sm font-semibold text-white">Distribuição sugerida por prioridade</p>
-          <p className="mt-1 text-xs text-slate-400">Simulação mensal: primeiro metas essenciais, depois importantes e opcionais. Em caso de empate, ordem alfabética.</p>
+          <p className="mt-1 text-xs text-slate-400">Simulação mensal: primeiro metas essenciais, depois importantes e opcionais. Em caso de empate, ordem alfabética. Os aportes são arredondados para cima por meta e a soma pode diferir alguns centavos do resumo consolidado.</p>
           {(() => {
             const totalNeeded = allocations.reduce((sum, item) => sum + item.needed, 0);
             const totalAllocated = allocations.reduce((sum, item) => sum + item.allocated, 0);
