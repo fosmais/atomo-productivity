@@ -846,10 +846,10 @@ export default function CalendarEvents() {
                     <button type="button" onClick={() => planWithMyka(event)} className="mt-3 rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500">Planejar com a MIKA</button>
                     <div className="mt-3 rounded-lg border border-violet-400/20 p-3">
                       <p className="text-xs font-semibold text-violet-200">Planejar horário de saída</p>
-                      <p className="mt-1 text-xs text-slate-400">Informe a duração aproximada do trajeto. Não usamos trânsito em tempo real nesta etapa.</p>
+                      <p className="mt-1 text-xs text-slate-400">Informe a duração aproximada do trajeto ou consulte a estimativa de rota. O alerta só ficará disponível após definir um tempo de deslocamento.</p>
                       <div className="mt-2 flex flex-wrap items-center gap-3">
                         <label className="text-xs text-slate-300">Trajeto (min)
-                          <input type="number" min={1} max={480} step={5} value={travelByEvent[event.id]?.minutes ?? 30} onChange={(e) => { const minutes = Math.min(480, Math.max(1, Number(e.target.value) || 1)); setTravelByEvent(current => ({ ...current, [event.id]: { minutes, source: "manual" } })); }} className="ml-2 w-16 rounded-lg border border-white/15 bg-slate-800 px-2 py-1.5 text-white" />
+                          <input type="number" min={1} max={480} step={5} value={travelByEvent[event.id]?.minutes ?? ""} placeholder="Min" onChange={(e) => { const minutes = Math.min(480, Math.max(1, Number(e.target.value) || 1)); setTravelByEvent(current => ({ ...current, [event.id]: { minutes, source: "manual" } })); }} className="ml-2 w-16 rounded-lg border border-white/15 bg-slate-800 px-2 py-1.5 text-white" />
                         </label>
                         <label className="text-xs text-slate-300">Margem (min)
                           <select value={conciergeBufferMinutes} onChange={(e) => setConciergeBufferMinutes(Number(e.target.value))} className="ml-2 rounded-lg border border-white/15 bg-slate-800 px-2 py-1.5 text-white">
@@ -857,8 +857,8 @@ export default function CalendarEvents() {
                           </select>
                         </label>
                       </div>
-                      <p className="mt-2 text-xs text-violet-200">Saída sugerida: {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(new Date(event.startsAt).getTime() - ((travelByEvent[event.id]?.minutes ?? 30) + conciergeBufferMinutes) * 60000))}</p>
-                      <button type="button" onClick={() => downloadConciergeReminder(event, travelByEvent[event.id]?.minutes ?? 30, conciergeBufferMinutes, travelByEvent[event.id]?.source ?? "manual")} className="mt-2 rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">Adicionar alerta de saída ao calendário</button>
+                      <p className="mt-2 text-xs text-violet-200">{travelByEvent[event.id] ? <>Saída sugerida: {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(new Date(event.startsAt).getTime() - (travelByEvent[event.id].minutes + conciergeBufferMinutes) * 60000))}</> : "Defina o tempo de trajeto para calcular o horário de saída."}</p>
+                      <button type="button" onClick={() => { const travel = travelByEvent[event.id]; if (travel) downloadConciergeReminder(event, travel.minutes, conciergeBufferMinutes, travel.source); }} disabled={!travelByEvent[event.id]} className="mt-2 rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10 disabled:cursor-not-allowed disabled:opacity-50">Adicionar alerta de saída ao calendário</button>
                       <p className="mt-1 text-xs text-slate-400">Importe o arquivo no calendário para receber o alerta. O horário depende da duração informada por você.</p>
                     </div>
                     <ConciergeRouteEstimate event={event} onEstimate={(minutes) => setTravelByEvent(current => ({ ...current, [event.id]: { minutes, source: "google" } }))} />
