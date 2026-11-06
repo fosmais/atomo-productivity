@@ -245,7 +245,7 @@ export default function FinancePlanning() {
         const capacity = parseCents(monthlyCapacityInput, true) ?? 0;
         return <p role="status" className="rounded-xl border border-white/15 bg-slate-950/60 p-3 text-sm text-slate-200">
           {needed === 0 ? "Nenhum aporte adicional é necessário para as metas atuais." : capacity >= needed ? "Sua capacidade mensal informada cobre o aporte médio estimado." : "Sua capacidade mensal informada está abaixo do aporte médio estimado."}
-          {" "}Diferença mensal: {money(Math.abs(capacity - needed))}. Valores ilustrativos, sem juros ou movimentações.
+          {needed > 0 && <>{" "}Diferença mensal: {money(Math.abs(capacity - needed))}.</>} Valores ilustrativos, sem juros ou movimentações.
           {needed === 0 && <span className="mt-1 block text-slate-300">Todas as metas cadastradas já estão cobertas pelos valores reservados informados.</span>}
           {capacity === 0 && needed > 0 && <span className="mt-1 block text-slate-300">Sem valor disponível para aportes, não é possível estimar um prazo de conclusão. Revise suas despesas e converse com a MIKA para reorganizar o planejamento.</span>}
           {capacity > 0 && capacity < needed && <span className="mt-1 block text-slate-300">Com essa capacidade, o prazo estimado sem juros seria de {Math.ceil(remaining / capacity)} meses. Considere ajustar o prazo ou conversar com a MIKA.</span>}
