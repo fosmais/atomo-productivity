@@ -33,3 +33,8 @@ test("MIKA uses consolidated monthly goal contribution", () => {
 test("fully funded goals show a clear no-contribution status", () => {
   assert.ok(source.includes('needed === 0 ? "Nenhum aporte adicional é necessário para as metas atuais."'));
 });
+
+test("completed goals hide the irrelevant monthly difference", () => {
+  assert.ok(source.includes('needed > 0 && <>'));
+  assert.ok(source.includes('Diferença mensal:'));
+});
