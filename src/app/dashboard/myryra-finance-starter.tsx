@@ -85,7 +85,7 @@ export default function MyryraFinanceStarter() {
   };
   const addEntry = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (saving || loading) return;
+    if (saving || balanceSaving || loading) return;
     const cents = parseBRL(amount);
     if (cents === null || cents <= 0 || !name.trim() || name.trim().length > 100) {
       setEntryError("Informe uma descrição e um valor positivo com até duas casas decimais. Ex.: 3.999,00.");
@@ -110,7 +110,7 @@ export default function MyryraFinanceStarter() {
 
   const saveOpeningBalance = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (balanceSaving || loading) return;
+    if (saving || balanceSaving || loading) return;
     const cents = parseBRL(openingBalanceInput);
     if (cents === null) {
       setBalanceError("Informe um saldo inicial válido. Ex.: 39.999,00.");
@@ -134,7 +134,7 @@ export default function MyryraFinanceStarter() {
   };
 
   const deleteEntry = async (id: string) => {
-    if (saving || loading) return;
+    if (saving || balanceSaving || loading) return;
     setSaving(true);
     setError("");
     try {
@@ -179,7 +179,7 @@ export default function MyryraFinanceStarter() {
           <label className="min-w-0 flex-1 text-sm text-slate-300">Saldo inicial (R$)
             <input required inputMode="decimal" value={openingBalanceInput} onChange={event => { setOpeningBalanceInput(event.target.value); setBalanceSaved(false); }} placeholder="Ex.: 2500,00" className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-3 text-white" />
           </label>
-          <button type="submit" disabled={balanceSaving || loading} className="rounded-xl bg-violet-600 px-4 py-3 font-medium text-white disabled:opacity-50 hover:bg-violet-500">{balanceSaving ? "Salvando..." : "Salvar saldo inicial"}</button>
+          <button type="submit" disabled={saving || balanceSaving || loading} className="rounded-xl bg-violet-600 px-4 py-3 font-medium text-white disabled:opacity-50 hover:bg-violet-500">{balanceSaving ? "Salvando..." : "Salvar saldo inicial"}</button>
         </div>
         {balanceError && <p role="alert" className="mt-2 text-sm text-rose-300">{balanceError}</p>}
         {balanceSaved && <p role="status" className="mt-2 text-sm text-emerald-300">Saldo inicial salvo e confirmado.</p>}
@@ -199,7 +199,7 @@ export default function MyryraFinanceStarter() {
             </select>
           </label>
         </div>
-        <button type="submit" disabled={saving || loading} className="rounded-xl bg-violet-600 px-4 py-2 font-medium text-white hover:bg-violet-500">{saving ? "Salvando..." : "Adicionar lançamento"}</button>
+        <button type="submit" disabled={saving || balanceSaving || loading} className="rounded-xl bg-violet-600 px-4 py-2 font-medium text-white hover:bg-violet-500">{saving ? "Salvando..." : "Adicionar lançamento"}</button>
         {entryError && <p role="alert" className="text-sm text-rose-300">{entryError}</p>}
       </form>
       <div className="rounded-2xl border border-white/15 bg-slate-900/75 p-4 sm:p-5">
