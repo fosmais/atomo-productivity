@@ -7,7 +7,7 @@ import { useVyraNavigation } from "./vyra-module-context";
 type Goal = { id: string; title: string; target_cents: number; saved_cents: number; priority: "essential" | "important" | "optional" };
 type Expense = { id: string; title: string; amount_cents: number; due_date: string; paid_at: string | null };
 const money = (n: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n / 100);
-function parseCents(input: string) {
+function parseCents(input: string, allowZero = false) {
   const raw = input.trim().replace(/^R\$\s*/i, "").replace(/\s/g, "");
   if (!raw) return null;
   // Accept pt-BR currency (7.000,00), plain digits (7000) and decimals (7000.00).
@@ -25,7 +25,7 @@ function parseCents(input: string) {
   }
   const [integer, fraction = ""] = normalized.split(".");
   const cents = Number(integer) * 100 + Number(fraction.padEnd(2, "0"));
-  return Number.isSafeInteger(cents) && cents > 0 && cents <= 100000000000 ? cents : null;
+  return Number.isSafeInteger(cents) && (allowZero ? cents >= 0 : cents > 0) && cents <= 100000000000 ? cents : null;
 }
 
 export default function FinancePlanning() {
@@ -82,7 +82,7 @@ export default function FinancePlanning() {
       "Objetivo: " + money(goal.target_cents) + ". Valor reservado manualmente: " + money(goal.saved_cents) + ". Falta: " + money(remaining) + ".",
       "Prazo simulado: " + goalHorizonMonths + " meses. Aporte mensal estimado, sem juros: " + money(Math.ceil(remaining / goalHorizonMonths)) + ".",
       "Prioridade definida pelo usuário: " + ({ essential: "essencial", important: "importante", optional: "opcional" }[goal.priority]) + ".",
-      "Capacidade mensal informada: " + (parseCents(monthlyCapacityInput) === null ? "não informada" : money(parseCents(monthlyCapacityInput) ?? 0)) + ".",
+      "Capacidade mensal informada: " + (parseCents(monthlyCapacityInput, true) === null ? "não informada" : money(parseCents(monthlyCapacityInput, true) ?? 0)) + ".",
       "Pergunte sobre meu prazo, capacidade mensal de poupança, reserva de emergência e prioridades antes de propor um plano.",
       "Trate os valores como informações manuais, não como saldo bancário verificado. Não faça alterações automaticamente nem prometa rentabilidade."
     ].join(" ");
@@ -112,7 +112,7 @@ export default function FinancePlanning() {
   function askMykaAboutPortfolio() {
     const totalRemaining = goals.reduce((sum, goal) => sum + Math.max(0, goal.target_cents - goal.saved_cents), 0);
     const monthlyNeeded = goals.reduce((sum, goal) => sum + Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths), 0);
-    const capacity = parseCents(monthlyCapacityInput);
+    const capacity = parseCents(monthlyCapacityInput, true);
     const prompt = [
       "MIKA, me ajude a priorizar minhas metas financeiras sem comprometer meu orçamento.",
       "Metas: " + goals.map(goal => goal.title + " (restante " + money(Math.max(0, goal.target_cents - goal.saved_cents)) + ", prioridade informada: " + ({essential:"essencial",important:"importante",optional:"opcional"}[goalPriorities[goal.id] ?? "important"]) + ")").join("; ") + ".",
@@ -237,10 +237,10 @@ export default function FinancePlanning() {
           <p className="mt-1 text-xs text-slate-400">Aporte médio sem juros: {money(Math.ceil(goals.reduce((sum, goal) => sum + Math.max(0, goal.target_cents - goal.saved_cents), 0) / goalHorizonMonths))}/mês por {goalHorizonMonths} meses</p>
         </div>
       </div>}
-      {goals.length > 0 && parseCents(monthlyCapacityInput) !== null && (() => {
+      {goals.length > 0 && parseCents(monthlyCapacityInput, true) !== null && (() => {
         const remaining = goals.reduce((sum, goal) => sum + Math.max(0, goal.target_cents - goal.saved_cents), 0);
         const needed = Math.ceil(remaining / goalHorizonMonths);
-        const capacity = parseCents(monthlyCapacityInput) ?? 0;
+        const capacity = parseCents(monthlyCapacityInput, true) ?? 0;
         return <p role="status" className="rounded-xl border border-white/15 bg-slate-950/60 p-3 text-sm text-slate-200">
           {capacity >= needed ? "Sua capacidade mensal informada cobre o aporte médio estimado." : "Sua capacidade mensal informada está abaixo do aporte médio estimado."}
           {" "}Diferença mensal: {money(Math.abs(capacity - needed))}. Valores ilustrativos, sem juros ou movimentações.
@@ -275,8 +275,8 @@ export default function FinancePlanning() {
         </select>
         <span className="mt-1 block text-slate-500">A ordenação muda apenas a visualização; não define qual meta é mais importante para você.</span>
       </label>}
-      {goals.length > 1 && parseCents(monthlyCapacityInput) !== null && (() => {
-        let available = parseCents(monthlyCapacityInput) ?? 0;
+      {goals.length > 1 && parseCents(monthlyCapacityInput, true) !== null && (() => {
+        let available = parseCents(monthlyCapacityInput, true) ?? 0;
         const ordered = [...goals].sort((a, b) => ({ essential: 0, important: 1, optional: 2 }[a.priority] - { essential: 0, important: 1, optional: 2 }[b.priority]) || a.title.localeCompare(b.title, "pt-BR"));
         const allocations = ordered.map(goal => {
           const needed = Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths);
@@ -320,7 +320,7 @@ export default function FinancePlanning() {
       {goals.length > 1 && <div className="rounded-xl border border-violet-400/20 bg-slate-950/60 p-3">
         <p className="text-sm font-semibold text-white">Suas metas em conjunto</p>
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3"><div className="rounded-lg bg-white/5 p-3"><span className="block text-[11px] text-slate-400">Metas cadastradas</span><strong className="text-lg text-white">{goals.length}</strong></div><div className="rounded-lg bg-white/5 p-3"><span className="block text-[11px] text-slate-400">Metas concluídas</span><strong className="text-lg text-white">{goals.filter(goal => goal.saved_cents >= goal.target_cents).length}</strong></div><div className="col-span-2 rounded-lg bg-white/5 p-3 sm:col-span-1"><span className="block text-[11px] text-slate-400">Aporte mensal necessário</span><strong className="text-lg text-white">{money(goals.reduce((sum, goal) => sum + Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths), 0))}</strong><span className="block text-[11px] text-slate-500">Prazo de {goalHorizonMonths} meses</span></div></div>
-        {parseCents(monthlyCapacityInput) !== null && <p className="mt-1 text-xs text-amber-200">{goals.reduce((sum, goal) => sum + Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths), 0) > (parseCents(monthlyCapacityInput) ?? 0) ? "A soma dos aportes ultrapassa sua capacidade mensal informada. Considere priorizar metas ou ampliar prazos." : "A soma dos aportes cabe na capacidade mensal informada, antes de considerar despesas e imprevistos."}</p>}
+        {parseCents(monthlyCapacityInput, true) !== null && <p className="mt-1 text-xs text-amber-200">{goals.reduce((sum, goal) => sum + Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths), 0) > (parseCents(monthlyCapacityInput, true) ?? 0) ? "A soma dos aportes ultrapassa sua capacidade mensal informada. Considere priorizar metas ou ampliar prazos." : "A soma dos aportes cabe na capacidade mensal informada, antes de considerar despesas e imprevistos."}</p>}
         <button type="button" onClick={askMykaAboutPortfolio} className="mt-3 rounded-lg border border-violet-400 px-3 py-2 text-xs font-semibold text-violet-200">Priorizar metas com a MIKA</button>
         <p className="mt-2 text-xs text-slate-500">A MIKA considerará as prioridades salvas e poderá sugerir ajustes, sem alterá-las automaticamente.</p>
       </div>}
@@ -335,11 +335,11 @@ export default function FinancePlanning() {
         <div className="mt-3 rounded-lg bg-slate-950/60 p-3">
           <p className="text-xs text-slate-400">Faltam <strong className="text-white">{money(Math.max(0, goal.target_cents - goal.saved_cents))}</strong> para alcançar esta meta.</p>
           <p className="mt-1 text-xs text-slate-300">Para chegar lá em {goalHorizonMonths} meses, reserve aproximadamente <strong className="text-emerald-300">{money(Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths))} por mês</strong>.</p>
-          {parseCents(monthlyCapacityInput) !== null && Math.max(0, goal.target_cents - goal.saved_cents) > 0 && (parseCents(monthlyCapacityInput) ?? 0) > 0 && (parseCents(monthlyCapacityInput) ?? 0) < Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths) && <p className="mt-2 text-xs text-amber-200">
-            Mantendo essa capacidade mensal, você precisaria de aproximadamente {Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / (parseCents(monthlyCapacityInput) ?? 1))} meses para atingir a meta, sem considerar rendimentos ou inflação.
+          {parseCents(monthlyCapacityInput, true) !== null && Math.max(0, goal.target_cents - goal.saved_cents) > 0 && (parseCents(monthlyCapacityInput, true) ?? 0) > 0 && (parseCents(monthlyCapacityInput, true) ?? 0) < Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths) && <p className="mt-2 text-xs text-amber-200">
+            Mantendo essa capacidade mensal, você precisaria de aproximadamente {Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / (parseCents(monthlyCapacityInput, true) ?? 1))} meses para atingir a meta, sem considerar rendimentos ou inflação.
           </p>}
-          {parseCents(monthlyCapacityInput) !== null && <p className="mt-2 text-xs text-slate-300">
-            {Math.max(0, goal.target_cents - goal.saved_cents) === 0 ? "Meta atingida." : (parseCents(monthlyCapacityInput) ?? 0) >= Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths) ? "Sua capacidade mensal informada cobre o aporte estimado." : "Sua capacidade mensal informada é inferior ao aporte estimado. A MIKA pode ajudar a rever prazo e prioridades."}
+          {parseCents(monthlyCapacityInput, true) !== null && <p className="mt-2 text-xs text-slate-300">
+            {Math.max(0, goal.target_cents - goal.saved_cents) === 0 ? "Meta atingida." : (parseCents(monthlyCapacityInput, true) ?? 0) >= Math.ceil(Math.max(0, goal.target_cents - goal.saved_cents) / goalHorizonMonths) ? "Sua capacidade mensal informada cobre o aporte estimado." : "Sua capacidade mensal informada é inferior ao aporte estimado. A MIKA pode ajudar a rever prazo e prioridades."}
           </p>}
           <p className="mt-1 text-xs text-slate-500">Cálculo simples, sem juros, inflação ou rendimentos. Não representa transferência automática.</p>
         </div>
