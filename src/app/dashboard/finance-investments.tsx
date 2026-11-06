@@ -5,12 +5,12 @@ import { useVyraNavigation } from "./vyra-module-context";
 
 const format = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 const number = (input: string) => {
-  const raw = input.trim().replace(/^R\\$\\s*/i, "").replace(/\\s/g, "");
+  const raw = input.trim().replace(/^R\$\s*/i, "").replace(/\s/g, "");
   if (!raw) return NaN;
   let normalized: string;
-  if (/^\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?$/.test(raw)) normalized = raw.replace(/\\./g, "").replace(",", ".");
-  else if (/^\\d{1,3}(?:,\\d{3})+(?:\\.\\d{1,2})?$/.test(raw)) normalized = raw.replace(/,/g, "");
-  else if (/^\\d+(?:[.,]\\d{1,2})?$/.test(raw)) normalized = raw.replace(",", ".");
+  if (/^\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?$/.test(raw)) normalized = raw.replace(/\./g, "").replace(",", ".");
+  else if (/^\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?$/.test(raw)) normalized = raw.replace(/,/g, "");
+  else if (/^\d+(?:[.,]\d{1,2})?$/.test(raw)) normalized = raw.replace(",", ".");
   else return NaN;
   return Number(normalized);
 };
