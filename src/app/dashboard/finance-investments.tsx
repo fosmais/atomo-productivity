@@ -101,8 +101,8 @@ export default function FinanceInvestments() {
         <h4 className="mt-1 text-lg font-semibold text-white">Qual investimento combina com seu objetivo?</h4>
         <p className="mt-1 max-w-xl text-sm text-slate-300">Converse com a MYKA para comparar alternativas, riscos, prazos e liquidez de acordo com suas necessidades.</p>
       </div>
-      <button type="button" onClick={askMyka} className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300">Perguntar à MYKA</button>
-      {handoffError && <p role="alert" className="w-full text-xs text-rose-300">Não foi possível transferir a simulação para a MYKA. Verifique as permissões de armazenamento do navegador.</p>}
+      <button type="button" onClick={askMyka} disabled={!result} className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300">Perguntar à MYKA</button>
+      {handoffError && <p role="alert" className="w-full text-xs text-rose-300">Não foi possível transferir a simulação para a MYKA. Confira os valores e as permissões de armazenamento do navegador.</p>}
     </div>
     <p className="text-xs leading-5 text-slate-400">A MYKA oferece informações educativas e comparações, não consultoria individualizada nem recomendação de compra. Consulte um profissional habilitado para decisões personalizadas.</p>
     <p className="text-xs leading-5 text-slate-400">Projeção matemática ilustrativa com taxa constante e capitalização mensal. Não considera impostos, inflação, tarifas, volatilidade ou risco de perda. Rentabilidade futura não é garantida. Nenhum dinheiro é investido pela MYRYRA.</p>
