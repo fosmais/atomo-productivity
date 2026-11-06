@@ -278,6 +278,7 @@ export default function TaskKanban() {
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", task.id)
         .eq("user_id", auth.user.id)
+        .is("deleted_at", null)
         .select("id")
         .single();
       if (deleteError || !data) throw new Error(deleteError?.message ?? "Não foi possível excluir a tarefa.");
@@ -330,6 +331,7 @@ export default function TaskKanban() {
         })
         .eq("id", id)
         .eq("user_id", auth.user.id)
+        .is("deleted_at", null)
         .select("id")
         .single();
 
