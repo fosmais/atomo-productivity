@@ -184,7 +184,9 @@ export default function VyraHome() {
           </button>)}
         </div>
       </section>
-      <section aria-label="Como a MYRYRA ajuda" className="rounded-2xl border border-violet-400/20 bg-slate-900/65 p-4 sm:p-5">
+      <details aria-label="Como a MYRYRA ajuda" className="rounded-2xl border border-violet-400/20 bg-slate-900/65 p-4 sm:p-5">
+        <summary className="cursor-pointer text-sm font-semibold text-violet-200">Primeira vez aqui? Veja como começar</summary>
+        <div className="mt-3">
         <h2 className="text-base font-semibold text-white">Três passos para começar</h2>
         <div className="mt-3 grid gap-2 sm:grid-cols-3">
           {[
@@ -203,7 +205,8 @@ export default function VyraHome() {
           <summary className="cursor-pointer text-xs font-semibold text-violet-200">Tarefa, compromisso ou plano?</summary>
           <p className="mt-2 text-xs leading-relaxed text-slate-300">Tarefa é algo para fazer. Compromisso tem dia e horário. Plano reúne passos para alcançar um objetivo.</p>
         </details>
-      </section>
+        </div>
+      </details>
 
       <div className="flex flex-wrap items-center justify-between gap-2 px-1">
         <span className="text-xs text-slate-400">Precisa de mais alguma coisa?</span>
