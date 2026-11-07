@@ -59,6 +59,7 @@ export default function HealthWorkspace() {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileSaved, setProfileSaved] = useState(false);
   const [openLibrary, setOpenLibrary] = useState<string | null>(null);
+  const [activityLevel, setActivityLevel] = useState<"iniciante" | "intermediario" | "avancado">("iniciante");
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -163,16 +164,35 @@ export default function HealthWorkspace() {
     <section className="space-y-3 rounded-2xl border border-white/10 bg-slate-950/40 p-4 sm:p-5" aria-label="Bibliotecas de atividades">
       <div><h3 className="text-lg font-semibold text-white">Suas bibliotecas de atividades</h3><p className="mt-1 text-sm text-slate-300">Selecione suas atividades acima para explorar conteúdos específicos. As orientações são educativas e não substituem acompanhamento profissional.</p></div>
       {selected.length === 0 ? <p className="rounded-xl border border-white/10 p-3 text-sm text-slate-400">Escolha uma ou mais atividades para abrir suas bibliotecas.</p> :
-        <div className="grid gap-3 sm:grid-cols-2">{selected.map(activity => {
-          const library = activityLibraries[activity];
-          if (!library) return null;
-          const expanded = openLibrary === activity;
-          return <article key={activity} className="min-w-0 rounded-xl border border-violet-400/20 bg-slate-900/70 p-3">
-            <h4 className="font-semibold text-white">{activity}</h4><p className="mt-1 text-xs text-slate-300">{library.description}</p>
-            <button type="button" aria-expanded={expanded} onClick={() => setOpenLibrary(expanded ? null : activity)} className="mt-3 rounded-lg border border-violet-400/50 px-3 py-2 text-sm font-semibold text-violet-100">{expanded ? "Fechar biblioteca" : "Abrir biblioteca"}</button>
-            {expanded && <div className="mt-3 space-y-2">{activity === "Academia" ? <HealthExerciseLibrary /> : library.entries.map(entry => <div key={entry.title} className="rounded-lg border border-white/10 bg-slate-950/60 p-3"><h5 className="text-sm font-semibold text-white">{entry.title}</h5><p className="mt-1 text-xs text-slate-300">{entry.detail}</p></div>)}</div>}
-          </article>;
-        })}</div>}
+        <>
+          <div className="grid gap-3 sm:grid-cols-2">{selected.map(activity => {
+            const library = activityLibraries[activity];
+            if (!library) return null;
+            const expanded = openLibrary === activity;
+            return <article key={activity} className="min-w-0 rounded-xl border border-violet-400/20 bg-slate-900/70 p-3">
+              <h4 className="font-semibold text-white">{activity}</h4><p className="mt-1 text-xs text-slate-300">{library.description}</p>
+              <button type="button" aria-expanded={expanded} aria-controls="health-active-library" onClick={() => setOpenLibrary(expanded ? null : activity)} className="mt-3 rounded-lg border border-violet-400/50 px-3 py-2 text-sm font-semibold text-violet-100">{expanded ? "Fechar biblioteca" : "Abrir biblioteca"}</button>
+            </article>;
+          })}</div>
+          {openLibrary && selected.includes(openLibrary) && activityLibraries[openLibrary] && <div id="health-active-library" className="min-w-0 space-y-3 rounded-xl border border-violet-400/25 bg-slate-900/70 p-3 sm:p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h4 className="text-base font-semibold text-white">{openLibrary} · Biblioteca</h4>
+              <button type="button" onClick={() => setOpenLibrary(null)} className="rounded-lg border border-white/20 px-3 py-2 text-xs text-slate-200">Fechar</button>
+            </div>
+            {openLibrary === "Academia" ? <HealthExerciseLibrary /> : <>
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-semibold text-white">Seu nível de experiência</legend>
+                <div className="flex flex-wrap gap-2">{([["iniciante", "Iniciante"], ["intermediario", "Intermediário"], ["avancado", "Avançado"]] as const).map(([value, label]) =>
+                  <label key={value} className={"cursor-pointer rounded-lg border px-3 py-2 text-sm " + (activityLevel === value ? "border-violet-400 bg-violet-600/20 text-white" : "border-white/15 text-slate-300")}>
+                    <input type="radio" name="health-activity-level" className="mr-2 accent-violet-500" checked={activityLevel === value} onChange={() => setActivityLevel(value)} />{label}
+                  </label>)}</div>
+              </fieldset>
+              <p className="text-xs text-slate-400">{activityLevel === "iniciante" ? "Comece com sessões leves e pausas frequentes." : activityLevel === "intermediario" ? "Ajuste a duração gradualmente conforme sua recuperação." : "Mantenha recuperação e segurança; evite aumentos bruscos de intensidade."} O nível informado não substitui avaliação profissional.</p>
+              <div className="grid gap-2 sm:grid-cols-3">{activityLibraries[openLibrary].entries.map(entry =>
+                <div key={entry.title} className="rounded-lg border border-white/10 bg-slate-950/60 p-3"><h5 className="text-sm font-semibold text-white">{entry.title}</h5><p className="mt-1 text-xs text-slate-300">{entry.detail}</p></div>)}</div>
+            </>}
+          </div>}
+        </>}
     </section>
     <HealthWorkoutPlanner />
     <HealthProgress />
