@@ -72,7 +72,7 @@ export default function EventReminders({ showControls = false }: { showControls?
     </label>}
     {showControls && currentTime > 0 && events.filter(event => new Date(event.startsAt).getTime() > currentTime).slice(0, 12).length > 0 && <div className="mt-3 space-y-2">
       <p className="text-xs font-semibold text-violet-200">Personalize o aviso dos próximos compromissos</p>
-      {events.filter(event => new Date(event.startsAt).getTime() > Date.now()).slice(0, 12).map(event => <div key={event.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 p-2">
+      {events.filter(event => new Date(event.startsAt).getTime() > currentTime).slice(0, 12).map(event => <div key={event.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 p-2">
         <span className="min-w-0 text-xs text-slate-200"><span className="block truncate font-semibold">{event.title}</span><span className="text-slate-400">{new Date(event.startsAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span></span>
         <select aria-label={`Aviso para ${event.title}`} value={overrides[event.id] ?? "default"} onChange={e => {
           const next = { ...overrides };
