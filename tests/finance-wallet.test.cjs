@@ -158,7 +158,15 @@ test("wallet confirms exact deleted record before removing it from visible histo
 
 test("wallet deletion errors do not falsely flag a stale balance", () => {
   const deletion = section("const deleteEntry = async", "return (");
-  assert.ok(deletion.includes('setDeleteError("Não foi possível excluir'));
+  assert.ok(deletion.includes('setDeleteError("Não foi possível confirmar a exclusão'));
   assert.ok(!deletion.includes('setError("Não foi possível excluir'));
   assert.ok(source.includes("{deleteError && <p role=\"alert\""));
+});
+
+test("wallet reconciles uncertain delete outcome with fresh server data", () => {
+  const deletion = section("const deleteEntry = async", "return (");
+  assert.ok(deletion.includes('window.dispatchEvent(new Event("myryra:finance-updated"))'));
+  const refresh = section("const load = async () => {", "void load();");
+  assert.ok(refresh.includes('setDeleteError("")'));
+  assert.ok(refresh.indexOf('setEntries(allEntries)') < refresh.indexOf('setDeleteError("")'));
 });
