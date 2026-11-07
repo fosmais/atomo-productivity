@@ -109,7 +109,7 @@ export default function MyryraFinanceStarter() {
   };
   const addEntry = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (saving || balanceSaving || loading) return;
+    if (saving || balanceSaving || loading || error) return;
     const cents = parseBRL(amount);
     if (cents === null || cents <= 0 || !name.trim() || name.trim().length > 100 || calculateBalanceCents(openingBalanceCents, [...entries, { id: "pending", description: name.trim(), amount_cents: cents, kind, created_at: "" }]) === null) {
       setEntryError("Informe uma descrição e um valor positivo que mantenha o saldo dentro do limite seguro. Ex.: 3.999,00.");
@@ -134,7 +134,7 @@ export default function MyryraFinanceStarter() {
 
   const saveOpeningBalance = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (saving || balanceSaving || loading) return;
+    if (saving || balanceSaving || loading || error) return;
     const cents = parseBRL(openingBalanceInput);
     if (cents === null || calculateBalanceCents(cents, entries) === null) {
       setBalanceError("Informe um saldo inicial válido que mantenha o total financeiro dentro do limite seguro. Ex.: 39.999,00.");
@@ -159,7 +159,7 @@ export default function MyryraFinanceStarter() {
   };
 
   const deleteEntry = async (id: string) => {
-    if (saving || balanceSaving || loading) return;
+    if (saving || balanceSaving || loading || error) return;
     const target = entries.find(item => item.id === id);
     if (!target || !window.confirm(`Excluir permanentemente o lançamento "${target.description}"? Esta ação não pode ser desfeita.`)) return;
     setSaving(true);
@@ -209,7 +209,7 @@ export default function MyryraFinanceStarter() {
           <label className="min-w-0 flex-1 text-sm text-slate-300">Saldo inicial (R$)
             <input required inputMode="decimal" value={openingBalanceInput} onChange={event => { openingBalanceDraftDirty.current = true; setOpeningBalanceInput(event.target.value); setBalanceSaved(false); }} placeholder="Ex.: 2500,00" className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-3 text-white" />
           </label>
-          <button type="submit" disabled={saving || balanceSaving || loading} className="rounded-xl bg-violet-600 px-4 py-3 font-medium text-white disabled:opacity-50 hover:bg-violet-500">{balanceSaving ? "Salvando..." : "Salvar saldo inicial"}</button>
+          <button type="submit" disabled={saving || balanceSaving || loading || Boolean(error)} className="rounded-xl bg-violet-600 px-4 py-3 font-medium text-white disabled:opacity-50 hover:bg-violet-500">{balanceSaving ? "Salvando..." : "Salvar saldo inicial"}</button>
         </div>
         {balanceError && <p role="alert" className="mt-2 text-sm text-rose-300">{balanceError}</p>}
         {balanceSaved && <p role="status" className="mt-2 text-sm text-emerald-300">Saldo inicial salvo e confirmado.</p>}
@@ -229,12 +229,12 @@ export default function MyryraFinanceStarter() {
             </select>
           </label>
         </div>
-        <button type="submit" disabled={saving || balanceSaving || loading} className="rounded-xl bg-violet-600 px-4 py-2 font-medium text-white hover:bg-violet-500">{saving ? "Salvando..." : "Adicionar lançamento"}</button>
+        <button type="submit" disabled={saving || balanceSaving || loading || Boolean(error)} className="rounded-xl bg-violet-600 px-4 py-2 font-medium text-white hover:bg-violet-500">{saving ? "Salvando..." : "Adicionar lançamento"}</button>
         {entryError && <p role="alert" className="text-sm text-rose-300">{entryError}</p>}
       </form>
       <div className="rounded-2xl border border-white/15 bg-slate-900/75 p-4 sm:p-5">
         <h3 className="mb-3 font-semibold text-white">Seus lançamentos</h3>
-        {entries.length === 0 ? <p className="text-sm text-slate-400">{loading ? "Carregando lançamentos..." : "Nenhum lançamento cadastrado."}</p> : <ul className="space-y-2">{entries.slice(0, 200).map(item => <li key={item.id} className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-white/10 py-2 text-sm"><span className="min-w-0 flex-1 break-words text-slate-200">{item.description}</span><span className={item.kind === "income" ? "shrink-0 text-emerald-300" : "shrink-0 text-rose-300"}>{item.kind === "income" ? "+" : "−"} {currency(item.amount_cents / 100)}</span><button type="button" disabled={saving || balanceSaving || loading} onClick={() => void deleteEntry(item.id)} className="text-slate-400 underline hover:text-white disabled:cursor-not-allowed disabled:opacity-50">Excluir</button></li>)}</ul>}
+        {entries.length === 0 ? <p className="text-sm text-slate-400">{loading ? "Carregando lançamentos..." : "Nenhum lançamento cadastrado."}</p> : <ul className="space-y-2">{entries.slice(0, 200).map(item => <li key={item.id} className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-white/10 py-2 text-sm"><span className="min-w-0 flex-1 break-words text-slate-200">{item.description}</span><span className={item.kind === "income" ? "shrink-0 text-emerald-300" : "shrink-0 text-rose-300"}>{item.kind === "income" ? "+" : "−"} {currency(item.amount_cents / 100)}</span><button type="button" disabled={saving || balanceSaving || loading || Boolean(error)} onClick={() => void deleteEntry(item.id)} className="text-slate-400 underline hover:text-white disabled:cursor-not-allowed disabled:opacity-50">Excluir</button></li>)}</ul>}
       </div>
       {error && <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-rose-300"><span>{error}</span><button type="button" onClick={() => { setLoading(true); setRefreshAttempt(previous => previous + 1); }} className="rounded-lg border border-rose-300/40 px-3 py-2 font-medium hover:bg-rose-300/10">Tentar novamente</button></div>}
       <p className="text-xs text-slate-400">Os valores são estimativas baseadas nos dados informados por você. A MYRYRA não consulta saldos bancários nem movimenta seu dinheiro.</p>
