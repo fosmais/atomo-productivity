@@ -9,7 +9,7 @@ import { VyraModuleContext, VyraNavigationContext } from "./vyra-module-context"
 
 const validModules = [
   "home", "vyra-ai", "vyra-planner", "vyra-tasks", "vyra-calendar",
-  "vyra-scheduling", "vyra-performance", "vyra-finance", "vyra-health", "vyra-settings",
+  "vyra-scheduling", "vyra-performance", "vyra-finance", "vyra-health", "vyra-settings", "vyra-guide",
 ];
 
 type VyraWorkspaceProps = {
@@ -67,6 +67,7 @@ export default function VyraWorkspace({
     "vyra-finance": "MYRYRA Finance",
     "vyra-health": "MYRYRA Saúde",
     "vyra-settings": "Preferências",
+    "vyra-guide": "Conheça a MYRYRA",
   };
 
   return (
