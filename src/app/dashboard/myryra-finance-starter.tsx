@@ -54,6 +54,7 @@ export default function MyryraFinanceStarter() {
         const { data: auth, error: authError } = await client.auth.getUser();
         if (authError || !auth.user) throw new Error("Faça login para acessar sua carteira.");
         const allEntries: Entry[] = [];
+        const seenEntryIds = new Set<string>();
         const pageSize = 500;
         for (let offset = 0; ; offset += pageSize) {
           const { data: page, error: queryError } = await client.from("myryra_finance_entries")
@@ -64,7 +65,11 @@ export default function MyryraFinanceStarter() {
           if ((page ?? []).some(item => !Number.isSafeInteger(item.amount_cents) || item.amount_cents <= 0 || !["income", "expense"].includes(item.kind))) throw new Error("Histórico financeiro inválido.");
           // Stop an obsolete pagination loop when a newer refresh takes precedence.
           if (!mounted || requestId !== latestRequest) return;
-          allEntries.push(...((page ?? []) as Entry[]));
+          for (const item of page ?? []) {
+            if (!item.id || seenEntryIds.has(item.id)) throw new Error("Histórico financeiro duplicado ou inválido.");
+            seenEntryIds.add(item.id);
+            allEntries.push(item as Entry);
+          }
           if (!page || page.length < pageSize) break;
         }
         const { data: balance, error: balanceError } = await client.from("myryra_finance_balances")
