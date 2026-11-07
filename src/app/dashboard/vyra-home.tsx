@@ -39,6 +39,7 @@ export default function VyraHome() {
   const { navigateTo, navigateToQuickAction } = useVyraNavigation();
   const [metrics, setMetrics] = useState<VyraMetrics | null>(null);
   const [nextEvent, setNextEvent] = useState<{ title: string; start: string } | null>(null);
+  const [dayEvents, setDayEvents] = useState<{ title: string; start: string }[]>([]);
   const [agendaError, setAgendaError] = useState(false);
   const [today, setToday] = useState<Date | null>(null);
 
@@ -70,9 +71,14 @@ export default function VyraHome() {
           ...(google.connected ? (google.events ?? []).filter((event: { start?: string | null; status?: string }) => event.start && event.status !== "cancelled").map((event: { title: string; start: string }) => ({ title: event.title, start: event.start })) : []),
         ].filter((event) => new Date(event.start).getTime() >= Date.now())
           .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
-        if (!cancelled) setNextEvent(events[0] ?? null);
+        if (!cancelled) {
+          setNextEvent(events[0] ?? null);
+          const todayKey = new Date().toLocaleDateString("en-CA");
+          setDayEvents(events.filter(event => new Date(event.start).toLocaleDateString("en-CA") === todayKey).slice(0, 5));
+          setAgendaError(false);
+        }
       } catch {
-        if (!cancelled) setAgendaError(true);
+        if (!cancelled) { setAgendaError(true); setDayEvents([]); setNextEvent(null); }
       }
     }
     void loadAgenda();
@@ -126,6 +132,20 @@ export default function VyraHome() {
             <span className="mt-1 block text-sm font-semibold text-white">{metrics ? metrics.pending + " tarefa(s) pendente(s)" : "Consultar minhas tarefas"}</span>
             <span className="mt-1 block text-xs text-slate-300">{smartSuggestion.message}</span>
           </button>
+        </div>
+        <div className="mt-3 rounded-xl border border-white/10 bg-slate-950/40 p-3" aria-label="Linha do tempo de hoje">
+          <h3 className="text-xs font-semibold text-violet-200">Linha do tempo de hoje</h3>
+          {dayEvents.length > 0 ? (
+            <ol className="mt-2 space-y-2">
+              {dayEvents.map((event, index) => (
+                <li key={event.start + "-" + index} className="flex items-start gap-3 border-l-2 border-violet-500/50 pl-3">
+                  <time className="shrink-0 text-xs font-semibold text-violet-300" dateTime={event.start}>{new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(event.start))}</time>
+                  <span className="min-w-0 flex-1 break-words text-xs text-white">{event.title}</span>
+                  <button type="button" onClick={() => navigateTo("vyra-calendar")} className="shrink-0 text-xs text-violet-300 underline underline-offset-2">Abrir</button>
+                </li>
+              ))}
+            </ol>
+          ) : <p className="mt-2 text-xs text-slate-400">{agendaError ? "Agenda indisponível. Tente novamente na Agenda." : "Nenhum compromisso restante para hoje."}</p>}
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
           <button type="button" onClick={() => navigateToQuickAction?.("capture")} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500">Adicionar tarefa</button>
