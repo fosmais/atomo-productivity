@@ -108,7 +108,8 @@ export default function VyraHome() {
     <main className="flex min-w-0 flex-col gap-3 " aria-label="Início MYRYRA">
       <section className="rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-950/65 via-slate-900/80 to-slate-950 p-4 sm:p-6" aria-label="Boas-vindas MYRYRA">
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-300">{today ? new Intl.DateTimeFormat("pt-BR",{weekday:"long",day:"numeric",month:"long"}).format(today) : "MYRYRA · SEU ESPAÇO"}</p>
-        <h1 className="mt-2 max-w-xl text-2xl font-semibold leading-tight text-white sm:text-3xl">Seu dia começa aqui</h1>
+        <h1 className="mt-2 max-w-xl text-2xl font-semibold leading-tight text-white sm:text-3xl">Menos coisas na cabeça. Mais tempo para viver.</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-200">A MYRYRA reúne suas tarefas, compromissos e dinheiro. Você vê o que importa agora e a MIKA ajuda a dar o próximo passo.</p>
         <p className="mt-3 text-sm leading-relaxed text-violet-200" aria-label="Inspiração do dia">{today ? dailyMessages[dayOfYear(today)%dailyMessages.length] : "Um dia de cada vez. Grandes mudanças começam com pequenos passos."}</p>
         <button type="button" onClick={() => navigateTo("vyra-ai")} className="mt-4 flex w-full items-center gap-3 rounded-xl border border-violet-400/30 bg-violet-500/15 p-3 text-left transition hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-700/60 text-xl text-violet-100" aria-hidden="true">✦</span>
@@ -120,8 +121,8 @@ export default function VyraHome() {
       <section aria-label="Seu dia interativo" className="rounded-2xl border border-violet-400/25 bg-slate-900/70 p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="text-base font-semibold text-white">Seu dia interativo</h2>
-            <p className="mt-1 text-xs text-slate-300">Acompanhe o próximo passo e escolha o que fazer agora.</p>
+            <h2 className="text-base font-semibold text-white">O que precisa da sua atenção hoje?</h2>
+            <p className="mt-1 text-xs text-slate-300">Veja seus próximos compromissos e escolha uma tarefa para começar.</p>
           </div>
           <button type="button" onClick={() => navigateTo("vyra-calendar")} className="rounded-lg border border-violet-400/35 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/15">Ver agenda</button>
         </div>
@@ -158,19 +159,6 @@ export default function VyraHome() {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2" aria-label="Resumo rápido">
-        <button type="button" onClick={() => navigateTo("vyra-calendar")} className="min-w-0 rounded-xl border border-white/10 bg-slate-900/50 p-3 text-left hover:border-violet-400/50">
-          <span className="block text-slate-400">Próximo compromisso</span>
-          <span className="mt-1 block truncate font-semibold text-white">{nextEvent ? nextEvent.title : agendaError ? "Agenda indisponível" : "Nenhum compromisso"}</span>
-          {nextEvent && <span className="mt-1 block text-violet-300">{new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(nextEvent.start))}</span>}
-        </button>
-        <button type="button" onClick={() => navigateTo("vyra-performance")} className="rounded-xl border border-white/10 bg-slate-900/50 p-3 text-left hover:border-violet-400/50">
-          <span className="block text-slate-400">Seu progresso</span>
-          <span className="mt-1 block text-lg font-semibold text-white">{progress === null ? "—" : `${progress}%`}</span>
-          <span className="block text-slate-400">{metrics?.pending ?? "—"} pendentes</span>
-        </button>
-      </section>
-
       <details className="group rounded-2xl border border-violet-400/35 bg-gradient-to-br from-violet-950/70 via-slate-900/85 to-slate-950 p-4 shadow-sm sm:p-5">
         <summary className="flex cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden">
           <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-700/45 text-2xl text-violet-200">✦</span>
@@ -196,23 +184,25 @@ export default function VyraHome() {
           </button>)}
         </div>
       </section>
-      <section aria-label="Conheça a MYRYRA" className="rounded-2xl border border-violet-400/20 bg-slate-900/65 p-4 sm:p-5">
-        <h2 className="text-base font-semibold text-white">Novo por aqui? Conheça a MYRYRA</h2>
-        <p className="mt-1 text-sm text-slate-300">Veja como cada ferramenta pode ajudar você. Sem complicação.</p>
-        <div className="mt-3 space-y-2">
+      <section aria-label="Como a MYRYRA ajuda" className="rounded-2xl border border-violet-400/20 bg-slate-900/65 p-4 sm:p-5">
+        <h2 className="text-base font-semibold text-white">Três passos para começar</h2>
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
           {[
-            { title: "Por onde começo?", answer: "Veja seus compromissos, escolha uma tarefa importante e comece por ela.", action: "Ver meu dia", module: "vyra-calendar" },
-            { title: "Qual é a diferença entre tarefa, compromisso e plano?", answer: "Tarefa é algo que você precisa fazer. Compromisso tem data e horário. Plano reúne passos para alcançar um objetivo.", action: "Organizar minhas tarefas", module: "vyra-tasks" },
-            { title: "Como cuido do meu dinheiro?", answer: "Anote quanto você tem, registre entradas e gastos e acompanhe seus objetivos. Não precisa conectar sua conta bancária.", action: "Ver meu dinheiro", module: "vyra-finance" },
-            { title: "Como a MIKA pode me ajudar?", answer: "Converse com a MIKA para organizar ideias, planejar seu dia e entender os próximos passos. Você decide o que fazer.", action: "Conversar com a MIKA", module: "vyra-ai" },
-          ].map((item) => (
-            <details key={item.title} className="group rounded-xl border border-white/10 bg-slate-950/50 p-3">
-              <summary className="cursor-pointer text-sm font-medium text-white focus-visible:outline-2 focus-visible:outline-violet-400">{item.title}</summary>
-              <p className="mt-2 text-sm leading-relaxed text-slate-300">{item.answer}</p>
-              <button type="button" onClick={() => navigateTo(item.module)} className="mt-3 rounded-lg border border-violet-400/40 px-3 py-2 text-sm font-medium text-violet-200 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">{item.action} →</button>
-            </details>
+            { title: "1. Anote", text: "Coloque suas tarefas e compromissos em um só lugar.", action: "Criar tarefa", module: "vyra-tasks", quick: true },
+            { title: "2. Escolha", text: "Veja o que é importante hoje e comece por uma coisa.", action: "Ver minhas tarefas", module: "vyra-tasks" },
+            { title: "3. Peça ajuda", text: "A MIKA ajuda a organizar ideias e encontrar o próximo passo.", action: "Falar com a MIKA", module: "vyra-ai" },
+          ].map(item => (
+            <div key={item.title} className="rounded-xl border border-white/10 bg-slate-950/50 p-3">
+              <h3 className="text-sm font-semibold text-white">{item.title}</h3>
+              <p className="mt-2 text-xs leading-relaxed text-slate-300">{item.text}</p>
+              <button type="button" onClick={() => item.quick ? navigateToQuickAction?.("capture") : navigateTo(item.module)} className="mt-3 rounded-lg border border-violet-400/35 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/15">{item.action}</button>
+            </div>
           ))}
         </div>
+        <details className="mt-3 rounded-xl border border-white/10 p-3">
+          <summary className="cursor-pointer text-xs font-semibold text-violet-200">Tarefa, compromisso ou plano?</summary>
+          <p className="mt-2 text-xs leading-relaxed text-slate-300">Tarefa é algo para fazer. Compromisso tem dia e horário. Plano reúne passos para alcançar um objetivo.</p>
+        </details>
       </section>
 
       <details className="group rounded-2xl border border-violet-400/20 bg-slate-900/65 p-4 sm:p-5">
