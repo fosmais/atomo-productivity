@@ -115,3 +115,9 @@ test("opening balance save rejects totals outside safe integer range before upse
   assert.ok(save.includes("calculateBalanceCents(cents, entries) === null"));
   assert.ok(save.indexOf("calculateBalanceCents(cents, entries) === null") < save.indexOf(".upsert("));
 });
+
+test("new transaction is checked against complete wallet before insert", () => {
+  const add = section("const addEntry = async", "const saveOpeningBalance = async");
+  assert.ok(add.includes("calculateBalanceCents(openingBalanceCents, [...entries,"));
+  assert.ok(add.indexOf("calculateBalanceCents(openingBalanceCents, [...entries,") < add.indexOf(".insert("));
+});
