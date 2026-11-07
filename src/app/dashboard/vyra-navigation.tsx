@@ -4,16 +4,16 @@ import { useState } from "react";
 
 const primaryItems = [
   { id: "home", label: "Hoje", icon: "⌂", hint: "Resumo e prioridades do dia" },
-  { id: "vyra-tasks", label: "Organizar", icon: "✓", hint: "Tarefas, planos e metas" },
+  { id: "vyra-tasks", label: "Tarefas", icon: "✓", hint: "O que você precisa fazer" },
   { id: "vyra-calendar", label: "Agenda", icon: "▦", hint: "Compromissos e horários" },
-  { id: "vyra-ai", label: "MIKA", icon: "✦", hint: "Sua assistente inteligente" },
+  { id: "vyra-ai", label: "MIKA", icon: "✦", hint: "Converse e peça ajuda" },
 ];
 
 const secondaryItems = [
-  { id: "vyra-finance", label: "Finanças", icon: "◇" },
-  { id: "vyra-health", label: "Saúde", icon: "♡" },
-  { id: "vyra-scheduling", label: "Agendamentos", icon: "⚡" },
-  { id: "vyra-performance", label: "Evolução", icon: "◈" },
+  { id: "vyra-finance", label: "Meu dinheiro", icon: "◇" },
+  { id: "vyra-health", label: "Bem-estar", icon: "♡" },
+  { id: "vyra-scheduling", label: "Horários livres", icon: "⚡" },
+  { id: "vyra-performance", label: "Meu progresso", icon: "◈" },
   { id: "vyra-settings", label: "Minha conta", icon: "⚙" },
 ];
 
@@ -92,7 +92,7 @@ export default function VyraNavigation({
             aria-controls="vyra-secondary-navigation"
             className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-medium text-slate-300 hover:bg-violet-500/10"
           >
-            <span>Mais ferramentas</span>
+            <span>Outras opções</span>
             <span aria-hidden="true">
               {moreOpen || secondaryActive ? "⌃" : "⌄"}
             </span>
