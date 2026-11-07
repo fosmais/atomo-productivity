@@ -108,11 +108,10 @@ export default function VyraHome() {
         <h1 className="mt-2 max-w-xl text-2xl font-semibold leading-tight text-white sm:text-3xl">Menos coisas na cabeça. Mais tempo para viver.</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-200">A MYRYRA reúne suas tarefas, compromissos e dinheiro. Você vê o que importa agora e a MIKA ajuda a dar o próximo passo.</p>
         <p className="mt-3 text-sm leading-relaxed text-violet-200" aria-label="Inspiração do dia">{today ? dailyMessages[dayOfYear(today)%dailyMessages.length] : "Um dia de cada vez. Grandes mudanças começam com pequenos passos."}</p>
-        <button type="button" onClick={() => navigateTo("vyra-ai")} className="mt-4 flex w-full items-center gap-3 rounded-xl border border-violet-400/30 bg-violet-500/15 p-3 text-left transition hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-700/60 text-xl text-violet-100" aria-hidden="true">✦</span>
-          <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-white">Sua MIKA está aqui</span><span className="block text-xs text-violet-200">Planeje, converse ou descubra seu próximo passo.</span></span>
-          <span className="text-violet-200" aria-hidden="true">↗</span>
-        </button>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button type="button" onClick={() => navigateToQuickAction?.("capture")} className="rounded-xl bg-violet-600 px-3 py-3 text-sm font-semibold text-white hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-violet-400">+ Criar tarefa</button>
+          <button type="button" onClick={() => navigateTo("vyra-ai")} className="rounded-xl border border-violet-400/35 bg-violet-500/15 px-3 py-3 text-sm font-semibold text-violet-100 hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">✦ Falar com a MIKA</button>
+        </div>
       </section>
 
       <section aria-label="Seu dia interativo" className="rounded-2xl border border-violet-400/25 bg-slate-900/70 p-4 sm:p-5">
