@@ -36,7 +36,8 @@ export function MykaHistory({ userId }: { userId: string }) {
         .from("myka_task_confirmations")
         .select("message_id, task_index, decision, task_id")
         .eq("user_id", userId)
-        .in("message_id", assistantIds);
+        .in("message_id", assistantIds)
+        .order("task_index", { ascending: true });
       if (decisionsError) throw decisionsError;
       const summaryByMessage = new Map<string, string[]>();
       for (const item of decisions ?? []) {
