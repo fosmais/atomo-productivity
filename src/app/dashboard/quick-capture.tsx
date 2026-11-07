@@ -93,7 +93,7 @@ export default function QuickCapture() {
       setSaving(false);
     }
   }
-  function prepare() {
+  async function prepare() {
     setError("");
     setSuccess("");
     const parsed = parseDrafts(input);
@@ -101,11 +101,16 @@ export default function QuickCapture() {
       setError("Escreva o que você precisa fazer. Para várias tarefas, use uma linha para cada uma.");
       return;
     }
+    // One clear task can be saved immediately; multiple tasks still require review.
+    if (parsed.length === 1) {
+      await confirm(parsed);
+      return;
+    }
     setDrafts(parsed);
   }
 
-  async function confirm() {
-    const selected = drafts.filter((draft) => draft.selected);
+  async function confirm(items: Draft[] = drafts) {
+    const selected = items.filter((draft) => draft.selected);
     if (selected.some((draft) => !draft.title.trim() || draft.title.trim().length > 200 || !/[\p{L}\p{N}]/u.test(draft.title))) {
       setError("Confira o nome das tarefas antes de salvar.");
       return;
@@ -152,9 +157,9 @@ export default function QuickCapture() {
         <label className="text-sm text-slate-300">Início<input type="datetime-local" value={eventStart} onChange={event => setEventStart(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-white" /></label>
         <label className="text-sm text-slate-300">Término<input type="datetime-local" value={eventEnd} onChange={event => setEventEnd(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-white" /></label>
       </div>}
-      <button type="button" onClick={captureType === "task" ? prepare : () => void saveQuickEvent()} disabled={!input.trim() || saving}
+      <button type="button" onClick={captureType === "task" ? () => void prepare() : () => void saveQuickEvent()} disabled={!input.trim() || saving}
         className="mt-3 rounded-xl border border-violet-500 px-4 py-2 font-semibold text-violet-200 hover:bg-violet-900/30 disabled:opacity-50">
-        {captureType === "task" ? "Revisar tarefas" : saving ? "Salvando..." : "Salvar compromisso"}
+        {saving ? "Salvando..." : captureType === "task" ? "Salvar tarefa" : "Salvar compromisso"}
       </button>
       {captureType === "task" && drafts.length > 0 && (
         <div className="mt-4 space-y-3">
