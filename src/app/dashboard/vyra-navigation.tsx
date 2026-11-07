@@ -12,7 +12,6 @@ const primaryItems = [
 const secondaryItems = [
   { id: "vyra-finance", label: "Meu dinheiro", icon: "◇" },
   { id: "vyra-health", label: "Bem-estar", icon: "♡" },
-  { id: "vyra-scheduling", label: "Horários livres", icon: "⚡" },
   { id: "vyra-performance", label: "Meu progresso", icon: "◈" },
   { id: "vyra-settings", label: "Minha conta", icon: "⚙" },
 ];
