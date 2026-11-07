@@ -87,3 +87,10 @@ test("invalid opening balance never partially commits refreshed ledger", () => {
   assert.ok(refresh.includes('if (!Number.isSafeInteger(nextBalance)) throw new Error("Saldo inicial inválido.")'));
   assert.ok(refresh.indexOf('if (!Number.isSafeInteger(nextBalance))') < refresh.indexOf("setEntries(allEntries)"));
 });
+
+test("wallet refuses unsafe aggregated balances before updating visible records", () => {
+  const refresh = section("const load = async () => {", "void load();");
+  assert.ok(refresh.includes("const transactionTotal = allEntries.reduce("));
+  assert.ok(refresh.includes("Number.isSafeInteger(nextBalance + transactionTotal)"));
+  assert.ok(refresh.indexOf("Number.isSafeInteger(nextBalance + transactionTotal)") < refresh.indexOf("setEntries(allEntries)"));
+});
