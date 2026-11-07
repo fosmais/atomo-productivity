@@ -52,3 +52,10 @@ test("wallet paginates all records for balance while limiting visible ledger", (
   assert.ok(source.includes("setEntries(allEntries)"));
   assert.ok(source.includes("entries.slice(0, 200).map(item =>"));
 });
+
+test("wallet refresh does not overwrite an unsaved opening balance draft", () => {
+  assert.ok(source.includes("const openingBalanceDraftDirty = useRef(false)"));
+  assert.ok(source.includes("if (!openingBalanceDraftDirty.current) setOpeningBalanceInput("));
+  assert.ok(source.includes("openingBalanceDraftDirty.current = true; setOpeningBalanceInput(event.target.value)"));
+  assert.ok(source.includes("openingBalanceDraftDirty.current = false;"));
+});
