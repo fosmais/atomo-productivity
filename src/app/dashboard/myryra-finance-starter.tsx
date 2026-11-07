@@ -42,6 +42,7 @@ export default function MyryraFinanceStarter() {
   const [error, setError] = useState("");
   const [balanceError, setBalanceError] = useState("");
   const [entryError, setEntryError] = useState("");
+  const [entrySuccess, setEntrySuccess] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [refreshAttempt, setRefreshAttempt] = useState(0);
   useEffect(() => {
@@ -122,7 +123,7 @@ export default function MyryraFinanceStarter() {
       setEntryError("Informe o que foi e um valor maior que zero. Exemplo: 39,90. Confira também se o total está dentro do limite permitido.");
       return;
     }
-    setSaving(true); setEntryError("");
+    setSaving(true); setEntryError(""); setEntrySuccess("");
     try {
       const client = createClient();
       const { data: auth, error: authError } = await client.auth.getUser();
@@ -135,6 +136,7 @@ export default function MyryraFinanceStarter() {
       if (calculateBalanceCents(openingBalanceCents, [data as Entry, ...entries]) === null) throw new Error("Lançamento confirmado, mas o saldo precisa ser atualizado.");
       setEntries(previous => [data as Entry, ...previous]);
       setName(""); setAmount("");
+      setEntrySuccess(`${kind === "income" ? "Entrada" : "Gasto"} de ${currency(cents / 100)} salvo com sucesso.`);
       window.dispatchEvent(new Event("myryra:finance-updated"));
     } catch (cause) { setEntryError(cause instanceof Error ? `Não foi possível salvar o lançamento: ${cause.message}` : "Não foi possível salvar o lançamento. Tente novamente."); }
     finally { setSaving(false); }
@@ -229,19 +231,20 @@ export default function MyryraFinanceStarter() {
         <h3 className="font-semibold text-white">Adicionar entrada ou gasto</h3>
         <div className="grid gap-3 sm:grid-cols-3">
           <label className="text-sm text-slate-300">O que foi?
-            <input required maxLength={100} value={name} onChange={event => setName(event.target.value)} placeholder="Ex.: Mercado" className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-3 text-white" />
+            <input required maxLength={100} value={name} onChange={event => { setName(event.target.value); setEntrySuccess(""); }} placeholder="Ex.: Mercado" className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-3 text-white" />
           </label>
           <label className="text-sm text-slate-300">Valor (R$)
-            <input required inputMode="decimal" value={amount} onChange={event => setAmount(event.target.value)} placeholder="0,00" className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-3 text-white" />
+            <input required inputMode="decimal" value={amount} onChange={event => { setAmount(event.target.value); setEntrySuccess(""); }} placeholder="0,00" className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-3 text-white" />
           </label>
           <label className="text-sm text-slate-300">Entrada ou gasto?
-            <select value={kind} onChange={event => setKind(event.target.value as "income" | "expense")} className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-3 text-white">
+            <select value={kind} onChange={event => { setKind(event.target.value as "income" | "expense"); setEntrySuccess(""); }} className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-3 text-white">
               <option value="expense">Gasto (saída)</option><option value="income">Entrada (recebimento)</option>
             </select>
           </label>
         </div>
         <button type="submit" disabled={saving || balanceSaving || loading || Boolean(error)} className="rounded-xl bg-violet-600 px-4 py-2 font-medium text-white hover:bg-violet-500">{saving ? "Salvando..." : "Salvar valor"}</button>
         {entryError && <p role="alert" className="text-sm text-rose-300">{entryError}</p>}
+        {entrySuccess && <p role="status" aria-live="polite" className="text-sm text-emerald-300">{entrySuccess}</p>}
       </form>
       <div className="rounded-2xl border border-white/15 bg-slate-900/75 p-4 sm:p-5">
         <h3 className="mb-3 font-semibold text-white">Histórico de entradas e gastos</h3>
