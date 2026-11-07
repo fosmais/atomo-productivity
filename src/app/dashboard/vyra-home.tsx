@@ -29,6 +29,10 @@ const dailyMessages = [
   "Equilíbrio também é uma forma de progresso.",
   "O melhor planejamento é aquele que cabe na sua vida.",
 ];
+function localDayKey(date: Date) {
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+}
+
 function dayOfYear(date: Date) {
   const today = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
   return Math.floor((today - Date.UTC(date.getFullYear(), 0, 1)) / 86400000);
@@ -73,8 +77,8 @@ export default function VyraHome() {
           .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
         if (!cancelled) {
           setNextEvent(events[0] ?? null);
-          const todayKey = new Date().toLocaleDateString("en-CA");
-          setDayEvents(events.filter(event => new Date(event.start).toLocaleDateString("en-CA") === todayKey).slice(0, 5));
+          const todayKey = localDayKey(new Date());
+          setDayEvents(events.filter(event => localDayKey(new Date(event.start)) === todayKey).slice(0, 5));
           setAgendaError(false);
         }
       } catch {
@@ -82,9 +86,11 @@ export default function VyraHome() {
       }
     }
     void loadAgenda();
+    window.addEventListener("myryra:events-updated", loadAgenda);
     return () => {
       cancelled = true;
       window.removeEventListener("myryra:tasks-updated", refreshMetrics);
+      window.removeEventListener("myryra:events-updated", loadAgenda);
     };
   }, [activeModule]);
 
