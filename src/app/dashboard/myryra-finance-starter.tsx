@@ -37,11 +37,23 @@ export default function MyryraFinanceStarter() {
         const client = createClient();
         const { data: auth, error: authError } = await client.auth.getUser();
         if (authError || !auth.user) throw new Error("Faça login para acessar sua carteira.");
-        const { data, error: queryError } = await client.from("myryra_finance_entries")
-          .select("id,description,amount_cents,kind,created_at")
-          .eq("user_id", auth.user.id).order("created_at", { ascending: false }).limit(200);
-        if (queryError) throw queryError;
-        if (mounted) setEntries((data ?? []) as Entry[]);
+        // Read all pages: limiting the query to the latest 200 entries made the balance incorrect.
+        // Keep page size below the Supabase/PostgREST row limit.
+        const pageSize = 500;
+        const allEntries: Entry[] = [];
+        for (let offset = 0; ; offset += pageSize) {
+          const { data, error: queryError } = await client.from("myryra_finance_entries")
+            .select("id,description,amount_cents,kind,created_at")
+            .eq("user_id", auth.user.id)
+            .order("created_at", { ascending: false })
+            .order("id", { ascending: false })
+            .range(offset, offset + pageSize - 1);
+          if (queryError) throw queryError;
+          const page = (data ?? []) as Entry[];
+          allEntries.push(...page);
+          if (page.length < pageSize) break;
+        }
+        if (mounted) setEntries(allEntries);
         const { data: balance, error: balanceError } = await client.from("myryra_finance_balances")
           .select("opening_balance_cents").eq("user_id", auth.user.id).maybeSingle();
         if (balanceError) throw balanceError;
