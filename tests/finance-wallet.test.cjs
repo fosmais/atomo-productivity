@@ -109,3 +109,9 @@ test("failed wallet refresh warns before presenting potentially stale balance", 
   assert.ok(source.includes("{!loading && error && <p role=\"alert\""));
   assert.ok(source.includes("Use “Tentar novamente”"));
 });
+
+test("opening balance save rejects totals outside safe integer range before upsert", () => {
+  const save = section("const saveOpeningBalance = async", "const deleteEntry = async");
+  assert.ok(save.includes("calculateBalanceCents(cents, entries) === null"));
+  assert.ok(save.indexOf("calculateBalanceCents(cents, entries) === null") < save.indexOf(".upsert("));
+});
