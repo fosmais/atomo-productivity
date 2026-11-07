@@ -11,8 +11,8 @@ import FinanceMonthlySummary from "./finance-monthly-summary";
 const sections = [
   { id: "overview", label: "Visão geral", description: "Saldo e movimentações" },
   { id: "planning", label: "Planejamento", description: "Metas e despesas" },
-  { id: "forecast", label: "Projeções", description: "Assinaturas e cenários" },
-  { id: "investments", label: "Investimentos", description: "Simulador educativo" },
+  { id: "forecast", label: "Gastos futuros", description: "Assinaturas e previsões" },
+  { id: "investments", label: "Simular ganhos", description: "Veja possíveis resultados" },
 ] as const;
 type Section = typeof sections[number]["id"];
 
@@ -23,14 +23,14 @@ export default function FinanceWorkspace() {
       <div className="rounded-2xl border border-violet-400/25 bg-gradient-to-r from-violet-950/40 to-slate-900/70 p-4 sm:p-5">
         <p className="text-xs font-semibold uppercase tracking-widest text-violet-300">MYRYRA Finance · Fase 1</p>
         <h3 className="mt-1 text-lg font-semibold text-white">Seu dinheiro, suas decisões.</h3>
-        <p className="mt-2 text-sm leading-6 text-slate-300">Organize saldos e movimentações manuais, acompanhe metas, planeje despesas e simule cenários. Comece por Visão geral para registrar sua situação atual.</p>
+        <p className="mt-2 text-sm leading-6 text-slate-300">Anote seu saldo e seus gastos, planeje seus objetivos e simule ganhos. Comece em Visão geral.</p>
         <details className="mt-3 text-sm text-slate-300">
           <summary className="cursor-pointer font-medium text-violet-200">O que posso fazer em cada área?</summary>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             <p><strong className="text-white">Visão geral:</strong> saldos, lançamentos e importação de extratos.</p>
             <p><strong className="text-white">Planejamento:</strong> metas financeiras e despesas previstas.</p>
-            <p><strong className="text-white">Projeções:</strong> assinaturas recorrentes e cenários futuros.</p>
-            <p><strong className="text-white">Investimentos:</strong> simulações educativas de juros e aportes.</p>
+            <p><strong className="text-white">Gastos futuros:</strong> assinaturas e despesas previstas.</p>
+            <p><strong className="text-white">Simular ganhos:</strong> veja como um valor poderia crescer com o tempo.</p>
           </div>
         </details>
         <p className="mt-3 text-xs text-slate-400">A MYRYRA não é banco, não movimenta dinheiro nem executa investimentos nesta fase.</p>
