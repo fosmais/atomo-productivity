@@ -12,8 +12,6 @@ export default function MyryraTrash() {
   const [error, setError] = useState("");
 
   const reload = useCallback(async () => {
-    setLoading(true);
-    setError("");
     try {
       const supabase = createClient();
       const { data: auth, error: authError } = await supabase.auth.getUser();
@@ -53,7 +51,7 @@ export default function MyryraTrash() {
   return <section className="rounded-2xl border border-violet-400/25 bg-slate-900/70 p-5 text-white" aria-label="Lixeira MYRYRA">
     <h3 className="text-lg font-semibold">Lixeira e recuperação</h3>
     <p className="mt-1 text-sm text-slate-300">Restaure tarefas e compromissos removidos. Nenhum item é apagado definitivamente nesta tela.</p>
-    <button type="button" onClick={() => void reload()} disabled={loading || busy !== null} className="mt-3 rounded-lg border border-violet-400/40 px-3 py-2 text-sm disabled:opacity-50">Atualizar lixeira</button>
+    <button type="button" onClick={() => { setLoading(true); setError(""); void reload(); }} disabled={loading || busy !== null} className="mt-3 rounded-lg border border-violet-400/40 px-3 py-2 text-sm disabled:opacity-50">Atualizar lixeira</button>
     {error && <p role="alert" className="mt-3 text-sm text-rose-300">{error}</p>}
     {loading ? <p className="mt-3 text-sm">Carregando...</p> : items.length === 0 ? <p className="mt-3 text-sm text-slate-400">Sua lixeira está vazia.</p> :
       <ul className="mt-4 space-y-2">{items.map(item => <li key={item.kind + item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-700 p-3">
