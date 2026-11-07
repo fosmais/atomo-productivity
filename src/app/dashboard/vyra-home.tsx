@@ -98,13 +98,39 @@ export default function VyraHome() {
     <main className="flex min-w-0 flex-col gap-3 " aria-label="Início MYRYRA">
       <section className="rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-950/65 via-slate-900/80 to-slate-950 p-4 sm:p-6" aria-label="Boas-vindas MYRYRA">
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-300">{today ? new Intl.DateTimeFormat("pt-BR",{weekday:"long",day:"numeric",month:"long"}).format(today) : "MYRYRA · SEU ESPAÇO"}</p>
-        <h1 className="mt-2 max-w-xl text-2xl font-semibold leading-tight text-white sm:text-3xl">Como podemos facilitar seu dia?</h1>
+        <h1 className="mt-2 max-w-xl text-2xl font-semibold leading-tight text-white sm:text-3xl">Seu dia começa aqui</h1>
         <p className="mt-3 text-sm leading-relaxed text-violet-200" aria-label="Inspiração do dia">{today ? dailyMessages[dayOfYear(today)%dailyMessages.length] : "Um dia de cada vez. Grandes mudanças começam com pequenos passos."}</p>
         <button type="button" onClick={() => navigateTo("vyra-ai")} className="mt-4 flex w-full items-center gap-3 rounded-xl border border-violet-400/30 bg-violet-500/15 p-3 text-left transition hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-700/60 text-xl text-violet-100" aria-hidden="true">✦</span>
           <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-white">Sua MIKA está aqui</span><span className="block text-xs text-violet-200">Planeje, converse ou descubra seu próximo passo.</span></span>
           <span className="text-violet-200" aria-hidden="true">↗</span>
         </button>
+      </section>
+
+      <section aria-label="Seu dia interativo" className="rounded-2xl border border-violet-400/25 bg-slate-900/70 p-4 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-base font-semibold text-white">Seu dia interativo</h2>
+            <p className="mt-1 text-xs text-slate-300">Acompanhe o próximo passo e escolha o que fazer agora.</p>
+          </div>
+          <button type="button" onClick={() => navigateTo("vyra-calendar")} className="rounded-lg border border-violet-400/35 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/15">Ver agenda</button>
+        </div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <button type="button" onClick={() => navigateTo("vyra-calendar")} className="rounded-xl border border-white/10 bg-slate-950/55 p-3 text-left hover:border-violet-400/50">
+            <span className="block text-xs text-violet-300">A seguir · Agenda</span>
+            <span className="mt-1 block truncate text-sm font-semibold text-white">{nextEvent ? nextEvent.title : agendaError ? "Não foi possível consultar sua agenda" : "Sem compromissos futuros"}</span>
+            {nextEvent && <span className="mt-1 block text-xs text-slate-300">{new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(nextEvent.start))}</span>}
+          </button>
+          <button type="button" onClick={() => navigateTo("vyra-tasks")} className="rounded-xl border border-white/10 bg-slate-950/55 p-3 text-left hover:border-violet-400/50">
+            <span className="block text-xs text-violet-300">A seguir · Prioridades</span>
+            <span className="mt-1 block text-sm font-semibold text-white">{metrics ? metrics.pending + " tarefa(s) pendente(s)" : "Consultar minhas tarefas"}</span>
+            <span className="mt-1 block text-xs text-slate-300">{smartSuggestion.message}</span>
+          </button>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button type="button" onClick={() => navigateToQuickAction?.("capture")} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500">Adicionar tarefa</button>
+          <button type="button" onClick={() => navigateTo("vyra-ai")} className="rounded-lg border border-violet-400/35 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/15">Planejar com a MIKA</button>
+        </div>
       </section>
 
       <section className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2" aria-label="Resumo rápido">
