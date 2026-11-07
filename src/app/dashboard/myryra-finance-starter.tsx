@@ -62,6 +62,8 @@ export default function MyryraFinanceStarter() {
         if (mounted && requestId === latestRequest) {
           const nextBalance = Number(balance?.opening_balance_cents ?? 0);
           if (!Number.isSafeInteger(nextBalance)) throw new Error("Saldo inicial inválido.");
+          const transactionTotal = allEntries.reduce((sum, item) => sum + (item.kind === "income" ? item.amount_cents : -item.amount_cents), 0);
+          if (!Number.isSafeInteger(nextBalance + transactionTotal)) throw new Error("Total financeiro fora do limite seguro.");
           setEntries(allEntries);
           setOpeningBalanceCents(nextBalance);
           if (!openingBalanceDraftDirty.current) setOpeningBalanceInput((nextBalance / 100).toFixed(2).replace(".", ","));
