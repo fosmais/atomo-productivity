@@ -136,8 +136,8 @@ export default function MyryraFinanceStarter() {
     event.preventDefault();
     if (saving || balanceSaving || loading) return;
     const cents = parseBRL(openingBalanceInput);
-    if (cents === null) {
-      setBalanceError("Informe um saldo inicial válido. Ex.: 39.999,00.");
+    if (cents === null || calculateBalanceCents(cents, entries) === null) {
+      setBalanceError("Informe um saldo inicial válido que mantenha o total financeiro dentro do limite seguro. Ex.: 39.999,00.");
       return;
     }
     setBalanceSaving(true); setBalanceError(""); setBalanceSaved(false);
