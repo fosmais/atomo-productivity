@@ -29,7 +29,10 @@ export default function MyryraTrash() {
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { void reload(); }, [reload]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void reload(); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [reload]);
 
   async function restore(item: TrashedItem) {
     setBusy(item.id);
