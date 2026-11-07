@@ -205,23 +205,13 @@ export default function VyraHome() {
         </details>
       </section>
 
-      <details className="group rounded-2xl border border-violet-400/20 bg-slate-900/65 p-4 sm:p-5">
-        <summary className="flex cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden"><span aria-hidden="true" className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-700/25 text-xl text-violet-200">▦</span><span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-white">Outras ferramentas</span><span className="mt-1 block text-xs text-slate-400">Explore os recursos adicionais da MYRYRA</span></span><span aria-hidden="true" className="text-lg text-violet-200 transition-transform group-open:rotate-90">›</span></summary>
-        <div className="mt-3 grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:grid-cols-3">
-          {[
-            {label:"Nova tarefa",module:"vyra-tasks",action:"capture"},
-            {label:"Agenda",module:"vyra-calendar"},
-            {label:"Lembretes",module:"vyra-tasks",action:"capture"},
-            {label:"Metas",module:"vyra-tasks",action:"goals"},
-            {label:"Planejamento",module:"vyra-tasks",action:"kanban"},
-            {label:"Configurações",module:"vyra-settings"},
-            {label:"Ajuda e suporte",module:"support"},
-            {label:"Saúde",module:"vyra-health"},
-            {label:"Finanças",module:"vyra-finance"},
-            {label:"Sua evolução",module:"vyra-performance"}
-          ].map(item=><button key={item.label} type="button" onClick={()=>item.module==="support"?window.dispatchEvent(new CustomEvent("myryra:open-support")):"action" in item && item.action ? navigateToQuickAction?.(item.action) : navigateTo(item.module)} className="min-w-0 break-words rounded-lg border border-white/10 bg-slate-950/70 px-3 py-3 text-left text-xs font-medium text-white transition hover:border-violet-400/50 focus-visible:outline-2 focus-visible:outline-violet-400">{item.label}</button>)}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+        <span className="text-xs text-slate-400">Precisa de mais alguma coisa?</span>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => navigateTo("vyra-settings")} className="rounded-lg border border-white/15 px-3 py-2 text-xs font-medium text-slate-300 hover:border-violet-400/50">Minha conta</button>
+          <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("myryra:open-support"))} className="rounded-lg border border-white/15 px-3 py-2 text-xs font-medium text-slate-300 hover:border-violet-400/50">Ajuda</button>
         </div>
-      </details>
+      </div>
 
 
     </main>
