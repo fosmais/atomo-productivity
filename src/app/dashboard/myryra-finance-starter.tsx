@@ -193,7 +193,7 @@ export default function MyryraFinanceStarter() {
       </div>
       <form onSubmit={saveOpeningBalance} className="rounded-2xl border border-violet-400/30 bg-slate-900/75 p-4 sm:p-5">
         <h3 className="font-semibold text-white">Saldo inicial informado</h3>
-        <p className="mt-1 text-sm text-slate-400">Quanto você possui hoje? Informe seu saldo manualmente para iniciar o planejamento. Alterar esse valor recalcula a posição estimada.</p>
+        <p className="mt-1 text-sm text-slate-400">Informe o saldo de partida, antes dos lançamentos registrados nesta carteira. Receitas e despesas cadastradas são somadas a esse valor. Não informe o saldo atual se ele já inclui essas movimentações, para evitar contagem duplicada.</p>
         <div className="mt-3 flex flex-wrap items-end gap-3">
           <label className="min-w-0 flex-1 text-sm text-slate-300">Saldo inicial (R$)
             <input required inputMode="decimal" value={openingBalanceInput} onChange={event => { openingBalanceDraftDirty.current = true; setOpeningBalanceInput(event.target.value); setBalanceSaved(false); }} placeholder="Ex.: 2500,00" className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-3 text-white" />
