@@ -111,8 +111,8 @@ export default function MyryraFinanceStarter() {
     event.preventDefault();
     if (saving || balanceSaving || loading) return;
     const cents = parseBRL(amount);
-    if (cents === null || cents <= 0 || !name.trim() || name.trim().length > 100) {
-      setEntryError("Informe uma descrição e um valor positivo com até duas casas decimais. Ex.: 3.999,00.");
+    if (cents === null || cents <= 0 || !name.trim() || name.trim().length > 100 || calculateBalanceCents(openingBalanceCents, [...entries, { id: "pending", description: name.trim(), amount_cents: cents, kind, created_at: "" }]) === null) {
+      setEntryError("Informe uma descrição e um valor positivo que mantenha o saldo dentro do limite seguro. Ex.: 3.999,00.");
       return;
     }
     setSaving(true); setEntryError("");
