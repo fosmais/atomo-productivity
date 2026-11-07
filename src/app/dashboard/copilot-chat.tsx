@@ -747,7 +747,9 @@ setConversationId(data.conversationId);
   )}
 {message.role === "assistant" && (!message.proposedTasks || message.proposedTasks.length === 0) && message.proposedTask && message.taskStatus === "saved" && (
   <p role="status" className="mt-3 text-sm text-green-400">
-    Tarefa salva com sucesso!
+    {message.taskDecisions?.some((item) => item.taskIndex === 0 && item.decision === "saved" && item.taskMissing === true)
+      ? "Tarefa confirmada anteriormente, mas não encontrada (possivelmente excluída)."
+      : "Tarefa salva com sucesso!"}
   </p>
 )}
 {message.role === "assistant" && (!message.proposedTasks || message.proposedTasks.length === 0) && message.proposedTask && message.taskStatus === "cancelled" && (
