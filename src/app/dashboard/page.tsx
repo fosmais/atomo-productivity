@@ -45,6 +45,7 @@ import FinanceInvestments from "./finance-investments";
 import FinanceSubscriptions from "./finance-subscriptions";
 import FinanceWorkspace from "./finance-workspace";
 import HealthWorkspace from "./health-workspace";
+import MyryraGuide from "./myryra-guide";
 import ThemePreferences from "./theme-preferences";
 
 async function DashboardContent() {
@@ -187,6 +188,11 @@ async function DashboardContent() {
       <VyraModule id="vyra-health">
         <VyraSection id="vyra-health" eyebrow="MYRYRA SAÚDE" title="Bem-estar com a MIKA." description="Comece com seus objetivos e preferências para construir uma rotina saudável.">
           <HealthWorkspace />
+        </VyraSection>
+      </VyraModule>
+      <VyraModule id="vyra-guide">
+        <VyraSection id="vyra-guide" eyebrow="COMO FUNCIONA" title="Conheça a MYRYRA" description="Descubra as ferramentas e encontre o melhor caminho para começar.">
+          <MyryraGuide />
         </VyraSection>
       </VyraModule>
       <VyraModule id="vyra-settings">
