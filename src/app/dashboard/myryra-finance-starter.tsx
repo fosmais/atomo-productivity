@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useVyraNavigation } from "./vyra-module-context";
 
@@ -23,6 +23,7 @@ export default function MyryraFinanceStarter() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [openingBalanceCents, setOpeningBalanceCents] = useState(0);
   const [openingBalanceInput, setOpeningBalanceInput] = useState("");
+  const openingBalanceDraftDirty = useRef(false);
   const [balanceSaving, setBalanceSaving] = useState(false);
   const [balanceSaved, setBalanceSaved] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -59,7 +60,7 @@ export default function MyryraFinanceStarter() {
           setEntries(allEntries);
           const nextBalance = Number(balance?.opening_balance_cents ?? 0);
           setOpeningBalanceCents(nextBalance);
-          setOpeningBalanceInput((nextBalance / 100).toFixed(2).replace(".", ","));
+          if (!openingBalanceDraftDirty.current) setOpeningBalanceInput((nextBalance / 100).toFixed(2).replace(".", ","));
           setError("");
         }
       } catch {
@@ -134,6 +135,7 @@ export default function MyryraFinanceStarter() {
       if (balanceError) throw balanceError;
       if (!savedBalance || Number(savedBalance.opening_balance_cents) !== cents) throw new Error("Saldo não confirmado pelo banco de dados.");
       setOpeningBalanceCents(cents);
+      openingBalanceDraftDirty.current = false;
       setBalanceSaved(true);
       window.dispatchEvent(new Event("myryra:finance-updated"));
     } catch (cause) { setBalanceError(cause instanceof Error ? `Não foi possível salvar o saldo inicial: ${cause.message}` : "Não foi possível salvar o saldo inicial."); }
@@ -185,7 +187,7 @@ export default function MyryraFinanceStarter() {
         <p className="mt-1 text-sm text-slate-400">Quanto você possui hoje? Informe seu saldo manualmente para iniciar o planejamento. Alterar esse valor recalcula a posição estimada.</p>
         <div className="mt-3 flex flex-wrap items-end gap-3">
           <label className="min-w-0 flex-1 text-sm text-slate-300">Saldo inicial (R$)
-            <input required inputMode="decimal" value={openingBalanceInput} onChange={event => { setOpeningBalanceInput(event.target.value); setBalanceSaved(false); }} placeholder="Ex.: 2500,00" className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-3 text-white" />
+            <input required inputMode="decimal" value={openingBalanceInput} onChange={event => { openingBalanceDraftDirty.current = true; setOpeningBalanceInput(event.target.value); setBalanceSaved(false); }} placeholder="Ex.: 2500,00" className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-3 text-white" />
           </label>
           <button type="submit" disabled={saving || balanceSaving || loading} className="rounded-xl bg-violet-600 px-4 py-3 font-medium text-white disabled:opacity-50 hover:bg-violet-500">{balanceSaving ? "Salvando..." : "Salvar saldo inicial"}</button>
         </div>
