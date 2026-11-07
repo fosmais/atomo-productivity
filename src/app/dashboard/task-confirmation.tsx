@@ -83,7 +83,8 @@ export default function TaskConfirmation({
   }
 
   async function handleCancel() {
-    if (working || decision) return;
+    if (inFlight.current || decision) return;
+    inFlight.current = true;
 
     setWorking(true);
     setError("");
@@ -112,6 +113,7 @@ export default function TaskConfirmation({
           : "Não foi possível descartar a sugestão."
       );
     } finally {
+      inFlight.current = false;
       setWorking(false);
     }
   }
