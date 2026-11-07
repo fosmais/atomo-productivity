@@ -59,3 +59,11 @@ test("wallet refresh does not overwrite an unsaved opening balance draft", () =>
   assert.ok(source.includes("openingBalanceDraftDirty.current = true; setOpeningBalanceInput(event.target.value)"));
   assert.ok(source.includes("openingBalanceDraftDirty.current = false;"));
 });
+
+test("obsolete paginated refresh stops before requesting further pages", () => {
+  const refresh = section("const load = async () => {", "void load();");
+  const staleGuard = "if (!mounted || requestId !== latestRequest) return;";
+  assert.ok(refresh.includes(staleGuard));
+  assert.ok(refresh.indexOf(staleGuard) < refresh.indexOf("allEntries.push("));
+  assert.ok(refresh.indexOf("allEntries.push(") < refresh.indexOf("if (!page || page.length < pageSize) break"));
+});
