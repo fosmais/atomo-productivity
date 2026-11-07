@@ -8,12 +8,9 @@ import { getCloudEvents } from "@/lib/event-cloud";
 import WhatNowCard from "./what-now-card";
 
 const portals = [
-  { label: "Falar com a MIKA", subtitle: "Peça ajuda para organizar seu dia", icon: "✦", module: "vyra-ai" },
-  { label: "Minha agenda", subtitle: "Veja seus compromissos", icon: "▦", module: "vyra-calendar" },
-  { label: "Meu bem-estar", subtitle: "Cuide de você", icon: "♡", module: "vyra-health" },
-  { label: "Minhas tarefas", subtitle: "Organize o que precisa fazer", icon: "✓", module: "vyra-tasks" },
-  { label: "Meu dinheiro", subtitle: "Acompanhe gastos e objetivos", icon: "◇", module: "vyra-finance" },
-  { label: "Meu progresso", subtitle: "Veja suas conquistas", icon: "◎", module: "vyra-performance" },
+  { label: "Meu dinheiro", subtitle: "Gastos e objetivos", icon: "◇", module: "vyra-finance" },
+  { label: "Bem-estar", subtitle: "Cuide de você", icon: "♡", module: "vyra-health" },
+  { label: "Meu progresso", subtitle: "Suas conquistas", icon: "◎", module: "vyra-performance" },
 ];
 const dailyMessages = [
   "Um pequeno passo hoje pode transformar o seu amanhã.",
@@ -175,12 +172,12 @@ export default function VyraHome() {
       </details>
 
       <section aria-label="O que você quer fazer?">
-        <h2 className="mb-3 text-base font-semibold text-white">O que você quer fazer?</h2>
-        <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:grid-cols-3">
-          {portals.map(item => <button key={item.label} type="button" onClick={() => navigateTo(item.module)} className="flex min-h-24 min-w-0 flex-col items-start justify-center gap-2 rounded-xl border border-violet-400/15 bg-slate-900/65 p-3 text-left transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
-            <span className="text-2xl text-violet-300" aria-hidden="true">{item.icon}</span>
-            <span className="break-words text-sm font-semibold leading-snug text-white">{item.label}</span>
-            <span className="break-words text-xs leading-snug text-slate-400">{item.subtitle}</span>
+        <h2 className="mb-3 text-base font-semibold text-white">Outras áreas da sua vida</h2>
+        <div className="grid grid-cols-3 gap-2">
+          {portals.map(item => <button key={item.label} type="button" onClick={() => navigateTo(item.module)} className="flex min-h-20 min-w-0 flex-col items-center justify-center gap-1 rounded-xl border border-violet-400/15 bg-slate-900/65 p-2 text-center transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
+            <span className="text-xl text-violet-300" aria-hidden="true">{item.icon}</span>
+            <span className="break-words text-xs font-semibold leading-snug text-white sm:text-sm">{item.label}</span>
+            <span className="hidden break-words text-xs leading-snug text-slate-400 sm:block">{item.subtitle}</span>
           </button>)}
         </div>
       </section>
