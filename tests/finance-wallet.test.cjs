@@ -67,3 +67,9 @@ test("obsolete paginated refresh stops before requesting further pages", () => {
   assert.ok(refresh.indexOf(staleGuard) < refresh.indexOf("allEntries.push("));
   assert.ok(refresh.indexOf("allEntries.push(") < refresh.indexOf("if (!page || page.length < pageSize) break"));
 });
+
+test("wallet warns when historical figures are refreshing", () => {
+  assert.ok(source.includes('role="status" aria-live="polite"'));
+  assert.ok(source.includes("Atualizando histórico e saldo estimado."));
+  assert.ok(source.includes("Os valores exibidos podem ser da consulta anterior."));
+});
