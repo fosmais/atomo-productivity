@@ -203,8 +203,9 @@ export default function MyryraFinanceStarter() {
       </form>
       <div className="rounded-2xl border border-white/15 bg-slate-900/75 p-4 sm:p-5">
         <h3 className="mb-3 font-semibold text-white">Seus lançamentos</h3>
-        {entries.length === 0 ? <p className="text-sm text-slate-400">{loading ? "Carregando lançamentos..." : "Nenhum lançamento cadastrado."}</p> : <ul className="space-y-2">{entries.map(item => <li key={item.id} className="flex items-center justify-between gap-3 border-b border-white/10 py-2 text-sm"><span className="min-w-0 truncate text-slate-200">{item.description}</span><span className={item.kind === "income" ? "text-emerald-300" : "text-rose-300"}>{item.kind === "income" ? "+" : "−"} {currency(item.amount_cents / 100)}</span><button type="button" onClick={() => void deleteEntry(item.id)} className="text-slate-400 underline hover:text-white">Excluir</button></li>)}</ul>}
+        {entries.length === 0 ? <p className="text-sm text-slate-400">{loading ? "Carregando lançamentos..." : "Nenhum lançamento cadastrado."}</p> : <ul className="space-y-2">{entries.slice(0, 200).map(item => <li key={item.id} className="flex items-center justify-between gap-3 border-b border-white/10 py-2 text-sm"><span className="min-w-0 truncate text-slate-200">{item.description}</span><span className={item.kind === "income" ? "text-emerald-300" : "text-rose-300"}>{item.kind === "income" ? "+" : "−"} {currency(item.amount_cents / 100)}</span><button type="button" onClick={() => void deleteEntry(item.id)} className="text-slate-400 underline hover:text-white">Excluir</button></li>)}</ul>}
       </div>
+      {entries.length > 200 && <p className="text-xs text-slate-400">Exibindo os 200 lançamentos mais recentes. O saldo estimado considera todos os {entries.length} lançamentos carregados.</p>}
       {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
       <p className="text-xs text-slate-400">Os valores são estimativas baseadas nos dados informados por você. A MYRYRA não consulta saldos bancários nem movimenta seu dinheiro.</p>
     </div>
