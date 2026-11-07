@@ -9,7 +9,7 @@ const start = source.indexOf("function calculateBalanceCents(");
 const end = source.indexOf("\nexport default function", start);
 assert.ok(start >= 0 && end > start, "Shared wallet calculator must exist");
 const javascript = source.slice(start, end)
-  .replace("openingBalanceCents: number, entries: Entry[]): number | null", "openingBalanceCents, entries");
+  .replace("openingBalanceCents: number, entries: Entry[]): number | null", "openingBalanceCents, entries)");
 const calculateBalanceCents = vm.runInNewContext(javascript + "\ncalculateBalanceCents;", {});
 
 const entry = (kind, amount_cents) => ({ kind, amount_cents });
