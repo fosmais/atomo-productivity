@@ -8,12 +8,12 @@ import { getCloudEvents } from "@/lib/event-cloud";
 import WhatNowCard from "./what-now-card";
 
 const portals = [
-  { label: "MIKA", subtitle: "Sua inteligência pessoal", icon: "✦", module: "vyra-ai" },
-  { label: "Seu dia e futuro", subtitle: "Agenda, planos e compromissos", icon: "▦", module: "vyra-calendar" },
-  { label: "Corpo e mente", subtitle: "Saúde, treino e bem-estar", icon: "♡", module: "vyra-health" },
-  { label: "Organização", subtitle: "Tarefas, foco e metas", icon: "✓", module: "vyra-tasks" },
-  { label: "Finanças e investimentos", subtitle: "Seu dinheiro e seus objetivos", icon: "◇", module: "vyra-finance" },
-  { label: "Sua evolução", subtitle: "Score, progresso e conquistas", icon: "◎", module: "vyra-performance" },
+  { label: "Falar com a MIKA", subtitle: "Peça ajuda para organizar seu dia", icon: "✦", module: "vyra-ai" },
+  { label: "Minha agenda", subtitle: "Veja seus compromissos", icon: "▦", module: "vyra-calendar" },
+  { label: "Meu bem-estar", subtitle: "Cuide de você", icon: "♡", module: "vyra-health" },
+  { label: "Minhas tarefas", subtitle: "Organize o que precisa fazer", icon: "✓", module: "vyra-tasks" },
+  { label: "Meu dinheiro", subtitle: "Acompanhe gastos e objetivos", icon: "◇", module: "vyra-finance" },
+  { label: "Meu progresso", subtitle: "Veja suas conquistas", icon: "◎", module: "vyra-performance" },
 ];
 const dailyMessages = [
   "Um pequeno passo hoje pode transformar o seu amanhã.",
@@ -98,7 +98,7 @@ export default function VyraHome() {
     <main className="flex min-w-0 flex-col gap-3 " aria-label="Início MYRYRA">
       <section className="rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-950/65 via-slate-900/80 to-slate-950 p-4 sm:p-6" aria-label="Boas-vindas MYRYRA">
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-300">{today ? new Intl.DateTimeFormat("pt-BR",{weekday:"long",day:"numeric",month:"long"}).format(today) : "MYRYRA · SEU ESPAÇO"}</p>
-        <h1 className="mt-2 max-w-xl text-2xl font-semibold leading-tight text-white sm:text-3xl">Como podemos tornar seu dia extraordinário?</h1>
+        <h1 className="mt-2 max-w-xl text-2xl font-semibold leading-tight text-white sm:text-3xl">Como podemos facilitar seu dia?</h1>
         <p className="mt-3 text-sm leading-relaxed text-violet-200" aria-label="Inspiração do dia">{today ? dailyMessages[dayOfYear(today)%dailyMessages.length] : "Um dia de cada vez. Grandes mudanças começam com pequenos passos."}</p>
         <button type="button" onClick={() => navigateTo("vyra-ai")} className="mt-4 flex w-full items-center gap-3 rounded-xl border border-violet-400/30 bg-violet-500/15 p-3 text-left transition hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-700/60 text-xl text-violet-100" aria-hidden="true">✦</span>
@@ -124,7 +124,7 @@ export default function VyraHome() {
         <summary className="flex cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden">
           <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-700/45 text-2xl text-violet-200">✦</span>
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold text-white">Sugestão inteligente da MIKA</span>
+            <span className="block text-sm font-semibold text-white">Uma dica para você</span>
             <span className="mt-1 block text-xs leading-relaxed text-violet-200">{smartSuggestion.message}</span>
           </span>
           <span aria-hidden="true" className="text-lg text-violet-200 transition-transform group-open:rotate-90">›</span>
@@ -135,7 +135,7 @@ export default function VyraHome() {
         </div>
       </details>
 
-      <section aria-label="Explore seu universo">
+      <section aria-label="O que você quer fazer?">
         <h2 className="mb-3 text-base font-semibold text-white">Explore seu universo</h2>
         <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:grid-cols-3">
           {portals.map(item => <button key={item.label} type="button" onClick={() => navigateTo(item.module)} className="flex min-h-24 min-w-0 flex-col items-start justify-center gap-2 rounded-xl border border-violet-400/15 bg-slate-900/65 p-3 text-left transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
@@ -145,8 +145,27 @@ export default function VyraHome() {
           </button>)}
         </div>
       </section>
+      <section aria-label="Conheça a MYRYRA" className="rounded-2xl border border-violet-400/20 bg-slate-900/65 p-4 sm:p-5">
+        <h2 className="text-base font-semibold text-white">Novo por aqui? Conheça a MYRYRA</h2>
+        <p className="mt-1 text-sm text-slate-300">Veja como cada ferramenta pode ajudar você. Sem complicação.</p>
+        <div className="mt-3 space-y-2">
+          {[
+            { title: "Por onde começo?", answer: "Veja seus compromissos, escolha uma tarefa importante e comece por ela.", action: "Ver meu dia", module: "vyra-calendar" },
+            { title: "Qual é a diferença entre tarefa, compromisso e plano?", answer: "Tarefa é algo que você precisa fazer. Compromisso tem data e horário. Plano reúne passos para alcançar um objetivo.", action: "Organizar minhas tarefas", module: "vyra-tasks" },
+            { title: "Como cuido do meu dinheiro?", answer: "Anote quanto você tem, registre entradas e gastos e acompanhe seus objetivos. Não precisa conectar sua conta bancária.", action: "Ver meu dinheiro", module: "vyra-finance" },
+            { title: "Como a MIKA pode me ajudar?", answer: "Converse com a MIKA para organizar ideias, planejar seu dia e entender os próximos passos. Você decide o que fazer.", action: "Conversar com a MIKA", module: "vyra-ai" },
+          ].map((item) => (
+            <details key={item.title} className="group rounded-xl border border-white/10 bg-slate-950/50 p-3">
+              <summary className="cursor-pointer text-sm font-medium text-white focus-visible:outline-2 focus-visible:outline-violet-400">{item.title}</summary>
+              <p className="mt-2 text-sm leading-relaxed text-slate-300">{item.answer}</p>
+              <button type="button" onClick={() => navigateTo(item.module)} className="mt-3 rounded-lg border border-violet-400/40 px-3 py-2 text-sm font-medium text-violet-200 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">{item.action} →</button>
+            </details>
+          ))}
+        </div>
+      </section>
+
       <details className="group rounded-2xl border border-violet-400/20 bg-slate-900/65 p-4 sm:p-5">
-        <summary className="flex cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden"><span aria-hidden="true" className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-700/25 text-xl text-violet-200">▦</span><span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-white">Todas as ferramentas</span><span className="mt-1 block text-xs text-slate-400">Explore os recursos adicionais da MYRYRA</span></span><span aria-hidden="true" className="text-lg text-violet-200 transition-transform group-open:rotate-90">›</span></summary>
+        <summary className="flex cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden"><span aria-hidden="true" className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-700/25 text-xl text-violet-200">▦</span><span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-white">Outras ferramentas</span><span className="mt-1 block text-xs text-slate-400">Explore os recursos adicionais da MYRYRA</span></span><span aria-hidden="true" className="text-lg text-violet-200 transition-transform group-open:rotate-90">›</span></summary>
         <div className="mt-3 grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:grid-cols-3">
           {[
             {label:"Nova tarefa",module:"vyra-tasks",action:"capture"},
