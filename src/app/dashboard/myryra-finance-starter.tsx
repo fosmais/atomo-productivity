@@ -50,6 +50,8 @@ export default function MyryraFinanceStarter() {
             .eq("user_id", auth.user.id).order("created_at", { ascending: false })
             .order("id", { ascending: false }).range(offset, offset + pageSize - 1);
           if (queryError) throw queryError;
+          // Stop an obsolete pagination loop when a newer refresh takes precedence.
+          if (!mounted || requestId !== latestRequest) return;
           allEntries.push(...((page ?? []) as Entry[]));
           if (!page || page.length < pageSize) break;
         }
