@@ -27,6 +27,10 @@ function formatTime(date: Date, timeZone: string) {
   }).format(date);
 }
 
+function isExpiredSlot(start: number, end: number, now: number) {
+  return start <= now || end <= start;
+}
+
 export default function AutoPilot() {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);
@@ -128,7 +132,7 @@ export default function AutoPilot() {
         : [];
       const start = item.start.getTime();
       const end = item.end.getTime();
-      if (start <= Date.now() || end <= start) throw new Error("Horário expirado. Gere uma nova prévia.");
+      if (isExpiredSlot(start, end, new Date().getTime())) throw new Error("Horário expirado. Gere uma nova prévia.");
       if (existing.some((event) =>
         event.title === `AutoPilot · ${item.title}` &&
         new Date(event.startsAt).getTime() === start
