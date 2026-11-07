@@ -155,3 +155,10 @@ test("wallet confirms exact deleted record before removing it from visible histo
   assert.ok(deletion.includes("deleted[0]?.id !== id"));
   assert.ok(deletion.indexOf("deleted[0]?.id !== id") < deletion.indexOf("setEntries(previous => previous.filter"));
 });
+
+test("wallet deletion errors do not falsely flag a stale balance", () => {
+  const deletion = section("const deleteEntry = async", "return (");
+  assert.ok(deletion.includes('setDeleteError("Não foi possível excluir'));
+  assert.ok(!deletion.includes('setError("Não foi possível excluir'));
+  assert.ok(source.includes("{deleteError && <p role=\"alert\""));
+});
