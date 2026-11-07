@@ -72,7 +72,7 @@ export default function QuickCapture() {
     const startTime = new Date(eventStart).getTime();
     const endTime = new Date(eventEnd).getTime();
     if (!input.trim() || !/[\p{L}\p{N}]/u.test(input) || input.trim().length > 200 || !eventStart || !eventEnd || !Number.isFinite(startTime) || !Number.isFinite(endTime) || endTime <= startTime) {
-      setError("Informe título, início e término válidos para o compromisso.");
+      setError("Confira o nome, a data e os horários. O término precisa ser depois do início.");
       return;
     }
     savingRef.current = true;
@@ -98,7 +98,7 @@ export default function QuickCapture() {
     setSuccess("");
     const parsed = parseDrafts(input);
     if (!parsed.length) {
-      setError("Escreva uma tarefa por linha ou separe por ponto e vírgula (máximo de 200 caracteres por tarefa).");
+      setError("Escreva o que você precisa fazer. Para várias tarefas, use uma linha para cada uma.");
       return;
     }
     setDrafts(parsed);
@@ -107,7 +107,7 @@ export default function QuickCapture() {
   async function confirm() {
     const selected = drafts.filter((draft) => draft.selected);
     if (selected.some((draft) => !draft.title.trim() || draft.title.trim().length > 200 || !/[\p{L}\p{N}]/u.test(draft.title))) {
-      setError("Revise os títulos selecionados: cada tarefa precisa conter letras ou números.");
+      setError("Confira o nome das tarefas antes de salvar.");
       return;
     }
     if (!selected.length || savingRef.current) return;
@@ -138,12 +138,12 @@ export default function QuickCapture() {
   return (
     <section className="rounded-2xl border border-violet-500/30 bg-slate-900 p-5 text-white" aria-label="Captura rápida">
       <FeatureHint label="MYRYRA · CAPTURA RÁPIDA" title="Tire as ideias da cabeça" description="Transforma anotações em tarefas, reconhecendo datas como hoje, amanhã ou 31/10/2026." tip="Revise os dados e confirme antes de salvar." />
-      <h3 className="mt-2 text-xl font-semibold">Tire as ideias da cabeça.</h3>
+      <h3 className="mt-2 text-xl font-semibold">O que você precisa fazer?</h3>
       <div className="mt-3 flex gap-2" role="group" aria-label="Tipo de captura">
-        <button type="button" onClick={() => { setCaptureType("task"); setInput(""); setDrafts([]); setError(""); setSuccess(""); }} className={`rounded-lg px-4 py-2 text-sm font-medium ${captureType === "task" ? "bg-violet-600 text-white" : "border border-slate-600 text-slate-300"}`}>Tarefa</button>
-        <button type="button" onClick={() => { setCaptureType("event"); setInput(""); setDrafts([]); setError(""); setSuccess(""); }} className={`rounded-lg px-4 py-2 text-sm font-medium ${captureType === "event" ? "bg-violet-600 text-white" : "border border-slate-600 text-slate-300"}`}>Compromisso</button>
+        <button type="button" onClick={() => { setCaptureType("task"); setDrafts([]); setError(""); setSuccess(""); }} className={`rounded-lg px-4 py-2 text-sm font-medium ${captureType === "task" ? "bg-violet-600 text-white" : "border border-slate-600 text-slate-300"}`}>Tarefa</button>
+        <button type="button" onClick={() => { setCaptureType("event"); setDrafts([]); setError(""); setSuccess(""); }} className={`rounded-lg px-4 py-2 text-sm font-medium ${captureType === "event" ? "bg-violet-600 text-white" : "border border-slate-600 text-slate-300"}`}>Compromisso</button>
       </div>
-      <p className="mt-2 text-sm text-slate-300">{captureType === "task" ? "Uma tarefa por linha. Reconhece hoje, amanhã e DD/MM/AAAA." : "Registre um compromisso diretamente na agenda MYRYRA."}</p>
+      <p className="mt-2 text-sm text-slate-300">{captureType === "task" ? "Escreva uma tarefa por linha. Você pode usar datas como hoje ou amanhã." : "Registre um compromisso diretamente na agenda MYRYRA."}</p>
       <label htmlFor="quick-capture-input" className="sr-only">{captureType === "task" ? "Tarefas para organizar" : "Título do compromisso"}</label>
       <textarea id="quick-capture-input" value={input} onChange={(event) => { setInput(event.target.value); setDrafts([]); setSuccess(""); }}
         maxLength={captureType === "task" ? 2200 : 200} rows={captureType === "task" ? 4 : 2} placeholder={captureType === "task" ? "Preparar reunião de terça\nPagar escola\nMarcar dentista" : "Ex.: Reunião de planejamento"}
@@ -177,13 +177,13 @@ export default function QuickCapture() {
           <button type="button" disabled={saving || !drafts.some((draft) => draft.selected)}
             onClick={() => void confirm()}
             className="rounded-xl bg-violet-600 px-5 py-3 font-semibold text-white hover:bg-violet-500 disabled:opacity-50">
-            {saving ? "Salvando..." : "Confirmar e salvar selecionadas"}
+            {saving ? "Salvando..." : "Salvar tarefas"}
           </button>
         </div>
       )}
       {error && <p role="alert" className="mt-3 text-sm text-rose-300">{error}</p>}
       {success && <p role="status" className="mt-3 text-sm text-emerald-300">{success}</p>}
-      <p className="mt-3 text-xs text-slate-400">Até 10 tarefas por captura. Reconhecimento local de datas, sem chamada adicional à IA.</p>
+      <p className="mt-3 text-xs text-slate-400">Você pode adicionar até 10 tarefas de uma vez.</p>
     </section>
   );
 }
