@@ -101,3 +101,11 @@ test("finance deletion requires explicit confirmation before database mutation",
   assert.ok(deletion.indexOf("window.confirm(") < deletion.indexOf("setSaving(true)"));
   assert.ok(deletion.indexOf("window.confirm(") < deletion.indexOf('.delete().eq("id", id)'));
 });
+
+test("failed wallet refresh warns before presenting potentially stale balance", () => {
+  const warning = source.indexOf("Atenção: não foi possível confirmar o saldo atual.");
+  const balance = source.indexOf("Saldo estimado</p>");
+  assert.ok(warning >= 0 && balance > warning);
+  assert.ok(source.includes("{!loading && error && <p role=\"alert\""));
+  assert.ok(source.includes("Use “Tentar novamente”"));
+});
