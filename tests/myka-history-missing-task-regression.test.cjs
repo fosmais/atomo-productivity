@@ -18,3 +18,7 @@ test("chat restores the missing task flag from server response", () => {
 test("chat does not claim a missing task was definitely deleted", () => {
   assert.match(chat, /possivelmente excluída/);
 });
+
+test("legacy single-task history also checks missing task reference", () => {
+  assert.match(chat, /item\.taskIndex === 0 && item\.decision === "saved" && item\.taskMissing === true/);
+});
