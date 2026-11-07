@@ -44,6 +44,7 @@ export default function MyryraFinanceStarter() {
   const [entryError, setEntryError] = useState("");
   const [entrySuccess, setEntrySuccess] = useState("");
   const [deleteError, setDeleteError] = useState("");
+  const [deleteSuccess, setDeleteSuccess] = useState("");
   const [refreshAttempt, setRefreshAttempt] = useState(0);
   useEffect(() => {
     let mounted = true;
@@ -171,9 +172,10 @@ export default function MyryraFinanceStarter() {
   const deleteEntry = async (id: string) => {
     if (saving || balanceSaving || loading || error) return;
     const target = entries.find(item => item.id === id);
-    if (!target || !window.confirm(`Excluir permanentemente o lançamento "${target.description}"? Esta ação não pode ser desfeita.`)) return;
+    if (!target || !window.confirm(`Excluir "${target.description}" (${currency(target.amount_cents / 100)})? A exclusão é definitiva e não pode ser desfeita.`)) return;
     setSaving(true);
     setDeleteError("");
+    setDeleteSuccess("");
     try {
       const client = createClient();
       const { data: auth, error: authError } = await client.auth.getUser();
@@ -182,9 +184,10 @@ export default function MyryraFinanceStarter() {
       if (deleteError) throw deleteError;
       if (!deleted || deleted.length !== 1 || deleted[0]?.id !== id) throw new Error("Exclusão não confirmada para o lançamento solicitado.");
       setEntries(previous => previous.filter(item => item.id !== id));
+      setDeleteSuccess(`"${target.description}" foi excluído. O saldo será atualizado.`);
       window.dispatchEvent(new Event("myryra:finance-updated"));
     } catch {
-      setDeleteError("Não foi possível confirmar a exclusão. Atualizando o histórico para conferir os dados.");
+      setDeleteError("Não foi possível confirmar a exclusão. Confira o histórico atualizado antes de tentar novamente.");
       window.dispatchEvent(new Event("myryra:finance-updated"));
     }
     finally { setSaving(false); }
@@ -251,6 +254,7 @@ export default function MyryraFinanceStarter() {
         {entries.length === 0 ? <p className="text-sm text-slate-400">{loading ? "Carregando lançamentos..." : "Você ainda não adicionou entradas ou gastos."}</p> : <ul className="space-y-2">{entries.slice(0, 200).map(item => <li key={item.id} className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-white/10 py-2 text-sm"><span className="min-w-0 flex-1 break-words text-slate-200">{item.description}</span><span className={item.kind === "income" ? "shrink-0 text-emerald-300" : "shrink-0 text-rose-300"}>{item.kind === "income" ? "+" : "−"} {currency(item.amount_cents / 100)}</span><button type="button" disabled={saving || balanceSaving || loading || Boolean(error)} onClick={() => void deleteEntry(item.id)} className="text-slate-400 underline hover:text-white disabled:cursor-not-allowed disabled:opacity-50">Excluir</button></li>)}</ul>}
       </div>
       {deleteError && <p role="alert" className="text-sm text-rose-300">{deleteError}</p>}
+      {deleteSuccess && <p role="status" aria-live="polite" className="text-sm text-emerald-300">{deleteSuccess}</p>}
       {error && <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-rose-300"><span>{error}</span><button type="button" onClick={() => { setLoading(true); setRefreshAttempt(previous => previous + 1); }} className="rounded-lg border border-rose-300/40 px-3 py-2 font-medium hover:bg-rose-300/10">Tentar novamente</button></div>}
       <p className="text-xs text-slate-400">Os valores são estimativas baseadas nos dados informados por você. A MYRYRA não consulta saldos bancários nem movimenta seu dinheiro.</p>
     </div>
