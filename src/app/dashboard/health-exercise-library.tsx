@@ -41,6 +41,7 @@ const executionSteps: Record<string,[string,string,string]> = {
 function localToday() { const date=new Date();return [date.getFullYear(),String(date.getMonth()+1).padStart(2,"0"),String(date.getDate()).padStart(2,"0")].join("-"); }
 const groups: Group[] = ["Peito", "Costas", "Braços", "Ombros", "Pernas", "Abdômen"];
 const levels: Level[] = ["Iniciante", "Intermediário", "Avançado"];
+const routineGroups: Record<"A" | "B" | "C", Group[]> = { A: ["Peito", "Ombros"], B: ["Costas", "Braços"], C: ["Pernas", "Abdômen"] };
 export default function HealthExerciseLibrary() {
   const { navigateTo } = useVyraNavigation();
   const [group, setGroup] = useState<Group>("Peito");
@@ -86,7 +87,6 @@ export default function HealthExerciseLibrary() {
     if(deleted && !history.some(item=>item.id!==id && item.exercise_name===deleted.exercise_name)){setDone(old=>old.filter(name=>name!==deleted.exercise_name));}
     setFeedback("Registro excluído do histórico.");
   }
-  const routineGroups: Record<"A" | "B" | "C", Group[]> = { A: ["Peito", "Ombros"], B: ["Costas", "Braços"], C: ["Pernas", "Abdômen"] };
   const filtered = useMemo(() => exercises.filter(item => routine === "Livre" ? item.group === group : routineGroups[routine].includes(item.group)), [group, routine]);
   const exerciseSummary = useMemo(() => { const totals = new Map<string,{count:number;maxWeight:number|null;latest:string}>(); for (const item of history) { const prev=totals.get(item.exercise_name); totals.set(item.exercise_name,{count:(prev?.count??0)+1,maxWeight:item.weight_kg===null?(prev?.maxWeight??null):Math.max(prev?.maxWeight??0,item.weight_kg),latest:prev?.latest??item.performed_on}); } return Array.from(totals.entries()).map(([name,stats])=>({name,...stats})); },[history]);
   const selectedChartExercise = exerciseSummary.some(item=>item.name===chartExercise) ? chartExercise : (exerciseSummary[0]?.name ?? "");
