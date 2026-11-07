@@ -17,7 +17,7 @@ export default function GlobalSearch() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (query.trim().length < 2) { setResults([]); setCompletedQuery(""); setError(""); setLoading(false); return; }
+    if (query.trim().length < 2) return;
     let active = true;
     const controller = new AbortController();
     const timeout = setTimeout(async () => {
@@ -83,8 +83,8 @@ export default function GlobalSearch() {
     {isOpen && <div id="myryra-global-search-panel" className="absolute right-0 top-full z-50 mt-3 w-[min(88vw,420px)] max-h-[70dvh] overflow-y-auto rounded-2xl border border-violet-400/30 bg-slate-950 p-4 shadow-2xl shadow-black/60">
       <div className="mb-3 flex items-center justify-between gap-3"><label htmlFor="myryra-global-search" className="text-sm font-semibold text-violet-100">Busca global</label><button type="button" onClick={() => { setExpanded(false); setQuery(""); }} className="rounded-lg px-2 py-1 text-xs text-slate-300 hover:bg-white/10" aria-label="Fechar busca">Fechar</button></div>
     <input id="myryra-global-search" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Busque tarefas, planos, metas e compromissos..." className="mt-3 w-full rounded-xl border border-slate-600 bg-slate-950 p-3 text-sm text-white placeholder:text-slate-500 focus:border-violet-400 focus:outline-none" />
-    {(loading || (query.trim().length >= 2 && completedQuery !== query.trim() && !error)) && <p role="status" className="mt-3 text-xs text-slate-400">Pesquisando...</p>}
-    {error && <p role="alert" className="mt-3 text-sm text-rose-300">{error}</p>}
+    {query.trim().length >= 2 && (loading || (completedQuery !== query.trim() && !error)) && <p role="status" className="mt-3 text-xs text-slate-400">Pesquisando...</p>}
+    {query.trim().length >= 2 && error && <p role="alert" className="mt-3 text-sm text-rose-300">{error}</p>}
     {!loading && completedQuery === query.trim() && query.trim().length >= 2 && !error && <div className="mt-3 space-y-2" aria-live="polite">
       <p className="text-xs text-slate-400">{results.length} resultado(s) encontrado(s){results.length === 30 ? " (exibindo os primeiros 30)" : ""}</p>
       {results.map(item => <button type="button" key={`${item.kind}-${item.id}`} onClick={() => { setExpanded(false); setQuery(""); if (item.kind === "Tarefa" && navigateToTask) navigateToTask(item.id); else navigateTo(item.kind === "Compromisso" ? "vyra-calendar" : "vyra-planner"); }} className="block w-full rounded-lg border border-slate-700 bg-slate-950/60 p-3 text-left transition-colors hover:border-violet-400/50 hover:bg-violet-500/10 focus-visible:outline-2 focus-visible:outline-violet-400">
