@@ -21,3 +21,7 @@ test("mobile renders decision summaries without mutating tasks", () => {
   assert.match(source, /message\.taskSummary \? <Text/);
   assert.doesNotMatch(source, /\.from\("myka_task_confirmations"\)\s*\.insert\(/);
 });
+
+test("mobile orders task decisions by original proposal index", () => {
+  assert.match(source, /\.order\("task_index", \{ ascending: true \}\)/);
+});
