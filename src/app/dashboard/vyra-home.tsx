@@ -45,9 +45,7 @@ export default function VyraHome() {
   const [nextEvent, setNextEvent] = useState<{ title: string; start: string } | null>(null);
   const [dayEvents, setDayEvents] = useState<{ title: string; start: string }[]>([]);
   const [agendaError, setAgendaError] = useState(false);
-  const [today, setToday] = useState<Date | null>(null);
-
-  useEffect(() => { setToday(new Date()); }, []);
+  const [today] = useState<Date | null>(() => new Date());
 
   useEffect(() => {
     if (activeModule !== "home") return;
