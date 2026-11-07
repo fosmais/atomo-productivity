@@ -94,3 +94,11 @@ test("wallet refuses unsafe aggregated balances before updating visible records"
   assert.ok(refresh.includes("Number.isSafeInteger(nextBalance + transactionTotal)"));
   assert.ok(refresh.indexOf("Number.isSafeInteger(nextBalance + transactionTotal)") < refresh.indexOf("setEntries(allEntries)"));
 });
+
+test("finance deletion requires explicit confirmation before database mutation", () => {
+  const deletion = section("const deleteEntry = async (id: string) => {", "return (");
+  assert.ok(deletion.includes("window.confirm("));
+  assert.ok(deletion.includes("Esta ação não pode ser desfeita."));
+  assert.ok(deletion.indexOf("window.confirm(") < deletion.indexOf("setSaving(true)"));
+  assert.ok(deletion.indexOf("window.confirm(") < deletion.indexOf('.delete().eq("id", id)'));
+});
