@@ -105,12 +105,12 @@ export default function VyraNavigation({
                 : "hidden"
             }
           >
-            <div className="space-y-1">{secondaryItems.map(navigationButton)}            </div>
+            <div className="space-y-1">{secondaryItems.map(navigationButton)}</div>
           </div>
         </div>
       </nav>
 
-      <div className={current === "home" ? "hidden" : "mb-4 lg:hidden"}>
+      <div className="mb-4 lg:hidden">
         <button
           type="button"
           onClick={() => setMoreOpen((value) => !value)}
@@ -118,7 +118,7 @@ export default function VyraNavigation({
           aria-controls="vyra-mobile-tools"
           className="flex w-full items-center justify-between rounded-xl border border-white/15 bg-slate-900/75 px-4 py-3 text-sm font-medium text-violet-200"
         >
-          <span>Mais ferramentas</span>
+          <span>Mais opções</span>
           <span aria-hidden="true">
             {moreOpen || secondaryActive ? "⌃" : "⌄"}
           </span>
