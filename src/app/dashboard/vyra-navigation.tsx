@@ -14,6 +14,7 @@ const secondaryItems = [
   { id: "vyra-health", label: "Bem-estar", icon: "♡" },
   { id: "vyra-performance", label: "Meu progresso", icon: "◈" },
   { id: "vyra-settings", label: "Minha conta", icon: "⚙" },
+  { id: "vyra-guide", label: "Como funciona", icon: "?" },
 ];
 
 type VyraNavigationProps = {
