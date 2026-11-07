@@ -21,6 +21,7 @@ type ChatMessage = {
   taskDecisions?: Array<{
     taskIndex: number;
     decision: "saved" | "cancelled";
+    taskMissing?: boolean;
   }>;
   proposedEvent?: NewCalendarEvent | null;
 
@@ -250,6 +251,7 @@ async function startVoice() {
                   .map((decision) => ({
                     taskIndex: decision.taskIndex as number,
                     decision: decision.decision as "saved" | "cancelled",
+                    taskMissing: decision.taskMissing === true,
                   }))
               : [],
             proposedTasks: Array.isArray(item.proposedTasks)
@@ -661,7 +663,9 @@ setConversationId(data.conversationId);
             <div role="status" className="rounded-xl border border-green-500/30 bg-slate-800 p-4">
               <p className="font-semibold text-white">{task.title}</p>
               <p className="mt-2 text-sm text-green-400">
-                Tarefa salva com sucesso!
+                {message.taskDecisions?.some((item) => item.taskIndex === taskIndex && item.taskMissing === true)
+                  ? "Tarefa confirmada anteriormente, mas não encontrada (possivelmente excluída)."
+                  : "Tarefa salva com sucesso!"}
               </p>
             </div>
           ) : message.taskDecisions?.some(
