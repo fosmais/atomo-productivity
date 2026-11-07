@@ -140,3 +140,11 @@ test("wallet verifies persisted entry matches request before updating local hist
   assert.ok(add.includes("data.description !== name.trim()"));
   assert.ok(add.indexOf("data.amount_cents !== cents") < add.indexOf("setEntries(previous => [data as Entry"));
 });
+
+test("wallet detects duplicate entry identifiers across pagination pages", () => {
+  const load = section("useEffect(() =>", "const [name, setName]");
+  assert.ok(load.includes("const seenEntryIds = new Set<string>()"));
+  assert.ok(load.includes("seenEntryIds.has(item.id)"));
+  assert.ok(load.includes("seenEntryIds.add(item.id)"));
+  assert.ok(load.indexOf("seenEntryIds.has(item.id)") < load.indexOf("allEntries.push(item as Entry)"));
+});
