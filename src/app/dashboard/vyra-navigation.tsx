@@ -133,7 +133,7 @@ export default function VyraNavigation({
               : "hidden"
           }
         >
-          <div className="space-y-1">{secondaryItems.map(navigationButton)}            </div>
+          <div className="col-span-3 grid grid-cols-3 gap-2">{secondaryItems.map(navigationButton)}</div>
         </div>
       </div>
     </>
