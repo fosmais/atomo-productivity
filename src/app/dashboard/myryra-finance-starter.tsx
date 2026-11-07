@@ -166,6 +166,7 @@ export default function MyryraFinanceStarter() {
       <div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-3 text-sm text-amber-100">
         Planejamento financeiro manual: o saldo estimado depende dos valores que você informa. Não há conexão bancária, atualização em tempo real ou movimentação de dinheiro.
       </div>
+      {loading && <p role="status" aria-live="polite" className="rounded-xl border border-white/15 bg-slate-900/60 p-3 text-sm text-slate-200">Atualizando histórico e saldo estimado. Os valores exibidos podem ser da consulta anterior.</p>}
       {!loading && !error && totals < 0 && (
         <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-400/40 bg-rose-500/10 p-4">
           <div className="min-w-0"><p className="font-semibold text-rose-100">Seu saldo estimado está negativo</p><p className="mt-1 text-sm text-rose-100/85">Converse com a MIKA para rever gastos e construir um plano de recuperação. Os valores são informados manualmente.</p></div>
