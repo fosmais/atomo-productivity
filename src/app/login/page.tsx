@@ -32,11 +32,11 @@ export default function LoginPage() {
     // Keep Preview on its own hostname for isolated email/password homologation.
     // Google OAuth remains canonicalized separately until Preview redirect URIs are configured.
     const params = new URLSearchParams(window.location.search);
+    const requestedReturn = params.get("next");
     const applyInitialParams = () => {
       if (!active) return;
       if (params.get("mode") === "signup") setMode("signup");
     const errorCode = params.get("error");
-    const requestedReturn = params.get("next");
     if (requestedReturn === "/suporte-admin") setReturnTo(requestedReturn);
     if (params.get("mfa") === "required") { setMessage("Acesso Google concluído. Aguarde a verificação do autenticador para finalizar o login."); setIsError(false); }
     if (errorCode === "recovery") {
