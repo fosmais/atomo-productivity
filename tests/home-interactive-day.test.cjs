@@ -51,3 +51,14 @@ test("timeline limits results and handles unavailable agenda", () => {
   assert.ok(source.includes('setDayEvents([])'));
   assert.ok(source.includes('Agenda indisponível. Tente novamente na Agenda.'));
 });
+
+test("timeline compares dates in local timezone without locale-format assumptions", () => {
+  assert.ok(source.includes("function localDayKey(date: Date)"));
+  assert.ok(source.includes("localDayKey(new Date(event.start)) === todayKey"));
+  assert.ok(!source.includes('toLocaleDateString("en-CA")'));
+});
+
+test("timeline refreshes on calendar update and cleans up listener", () => {
+  assert.ok(source.includes('window.addEventListener("myryra:events-updated", loadAgenda)'));
+  assert.ok(source.includes('window.removeEventListener("myryra:events-updated", loadAgenda)'));
+});
