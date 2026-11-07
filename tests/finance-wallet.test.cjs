@@ -121,3 +121,14 @@ test("new transaction is checked against complete wallet before insert", () => {
   assert.ok(add.includes("calculateBalanceCents(openingBalanceCents, [...entries,"));
   assert.ok(add.indexOf("calculateBalanceCents(openingBalanceCents, [...entries,") < add.indexOf(".insert("));
 });
+
+test("wallet prevents mutations while financial data is stale", () => {
+  for (const [start, end] of [
+    ["const addEntry = async", "const saveOpeningBalance = async"],
+    ["const saveOpeningBalance = async", "const deleteEntry = async"],
+    ["const deleteEntry = async", "  return ("],
+  ]) {
+    assert.ok(section(start, end).includes("if (saving || balanceSaving || loading || error) return;"));
+  }
+  assert.equal((source.match(/disabled=\{saving \|\| balanceSaving \|\| loading \|\| Boolean\(error\)\}/g) ?? []).length, 3);
+});
