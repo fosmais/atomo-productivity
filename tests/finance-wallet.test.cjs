@@ -90,9 +90,8 @@ test("invalid opening balance never partially commits refreshed ledger", () => {
 
 test("wallet refuses unsafe aggregated balances before updating visible records", () => {
   const refresh = section("const load = async () => {", "void load();");
-  assert.ok(refresh.includes("const transactionTotal = allEntries.reduce("));
-  assert.ok(refresh.includes("Number.isSafeInteger(nextBalance + transactionTotal)"));
-  assert.ok(refresh.indexOf("Number.isSafeInteger(nextBalance + transactionTotal)") < refresh.indexOf("setEntries(allEntries)"));
+  assert.ok(refresh.includes("calculateBalanceCents(nextBalance, allEntries) === null"));
+  assert.ok(refresh.indexOf("calculateBalanceCents(nextBalance, allEntries) === null") < refresh.indexOf("setEntries(allEntries)"));
 });
 
 test("finance deletion requires explicit confirmation before database mutation", () => {
