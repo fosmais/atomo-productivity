@@ -24,3 +24,9 @@ test("finance estimated balance includes every fetched entry and opening balance
   assert.match(source, /item\.kind === "income" \? item\.amount_cents : -item\.amount_cents/);
   assert.doesNotMatch(source, /\.limit\(200\)/);
 });
+
+test("finance renders only 200 recent entries while retaining the complete balance history", () => {
+  assert.match(source, /entries\.slice\(0, 200\)\.map\(item =>/);
+  assert.match(source, /saldo estimado considera todos os \{entries\.length\} lançamentos carregados/);
+  assert.match(source, /setEntries\(allEntries\)/);
+});
