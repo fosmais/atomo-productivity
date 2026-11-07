@@ -42,7 +42,7 @@ export default function CalendarEvents() {
     }
   }
   function downloadConciergeReminder(event: Pick<CalendarEvent, "title" | "startsAt" | "endsAt" | "location" | "concierge">, travelMinutes: number, bufferMinutes: number, source: "manual" | "google") {
-    if (!event.concierge || !Number.isFinite(travelMinutes) || travelMinutes <= 0 || travelMinutes > 480 || !Number.isFinite(bufferMinutes) || bufferMinutes < 0 || !Number.isFinite(Date.parse(event.startsAt)) || !Number.isFinite(Date.parse(event.endsAt))) {
+    if (!event.concierge || !Number.isInteger(travelMinutes) || travelMinutes <= 0 || travelMinutes > 480 || !Number.isInteger(bufferMinutes) || bufferMinutes < 0 || bufferMinutes > 180 || !Number.isFinite(Date.parse(event.startsAt)) || !Number.isFinite(Date.parse(event.endsAt)) || Date.parse(event.endsAt) <= Date.parse(event.startsAt)) {
       setError("Não foi possível criar o alerta: confira os horários e o tempo de deslocamento.");
       return;
     }
