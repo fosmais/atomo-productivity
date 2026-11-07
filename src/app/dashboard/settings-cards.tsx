@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 type Section = "appearance" | "security" | "integrations" | "data";
 const sections: { id: Section; icon: string; title: string; description: string }[] = [
@@ -13,11 +13,10 @@ const sections: { id: Section; icon: string; title: string; description: string 
 export default function SettingsCards({ appearance, security, integrations, data, footer }: {
   appearance: ReactNode; security: ReactNode; integrations: ReactNode; data: ReactNode; footer: ReactNode;
 }) {
-  const [active, setActive] = useState<Section | null>(null);
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.has("google_calendar")) setActive("integrations");
-  }, []);
+  const [active, setActive] = useState<Section | null>(() => {
+    if (typeof window === "undefined") return null;
+    return new URLSearchParams(window.location.search).has("google_calendar") ? "integrations" : null;
+  });
   const panels = { appearance, security, integrations, data };
   return <div className="w-full min-w-0 space-y-4">
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Categorias de preferências">
