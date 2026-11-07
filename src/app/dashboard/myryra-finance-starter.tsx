@@ -124,7 +124,8 @@ export default function MyryraFinanceStarter() {
         .insert({ user_id: auth.user.id, description: name.trim(), amount_cents: cents, kind })
         .select("id,description,amount_cents,kind,created_at").single();
       if (insertError) throw insertError;
-      if (!data) throw new Error("Lançamento não confirmado pelo banco de dados.");
+      if (!data || data.amount_cents !== cents || data.kind !== kind || data.description !== name.trim() || !data.id || !data.created_at) throw new Error("Lançamento retornado pelo banco de dados não corresponde ao solicitado.");
+      if (calculateBalanceCents(openingBalanceCents, [data as Entry, ...entries]) === null) throw new Error("Lançamento confirmado, mas o saldo precisa ser atualizado.");
       setEntries(previous => [data as Entry, ...previous]);
       setName(""); setAmount("");
       window.dispatchEvent(new Event("myryra:finance-updated"));
