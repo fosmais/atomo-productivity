@@ -4,7 +4,7 @@ import { supabase } from "../lib/supabase";
 import * as DocumentPicker from "expo-document-picker";
 import { MykaVoiceRecorder } from "./MykaVoiceRecorder";
 
-type Message = { id: string; role: string; content: string; created_at: string };
+type Message = { id: string; role: string; content: string; created_at: string; taskSummary?: string };
 
 export function MykaHistory({ userId }: { userId: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -29,7 +29,31 @@ export function MykaHistory({ userId }: { userId: string }) {
         .select("id,role,content,created_at").eq("user_id", userId).eq("conversation_id", conversation.id)
         .order("created_at", { ascending: false }).limit(30);
       if (queryError) throw queryError;
-      setMessages(((data ?? []) as Message[]).reverse());
+      const loaded = ((data ?? []) as Message[]).reverse();
+      const assistantIds = loaded.filter((message) => message.role === "assistant").map((message) => message.id);
+      if (assistantIds.length === 0) { setMessages(loaded); return; }
+      const { data: decisions, error: decisionsError } = await supabase
+        .from("myka_task_confirmations")
+        .select("message_id, task_index, decision, task_id")
+        .eq("user_id", userId)
+        .in("message_id", assistantIds);
+      if (decisionsError) throw decisionsError;
+      const summaryByMessage = new Map<string, string[]>();
+      for (const item of decisions ?? []) {
+        if (item.decision !== "saved" && item.decision !== "cancelled") continue;
+        const summary = item.decision === "cancelled"
+          ? "Sugestão descartada"
+          : item.task_id === null
+            ? "Tarefa confirmada, mas não encontrada (possivelmente excluída)"
+            : "Tarefa salva";
+        const current = summaryByMessage.get(item.message_id) ?? [];
+        current.push(`Tarefa ${item.task_index + 1}: ${summary}`);
+        summaryByMessage.set(item.message_id, current);
+      }
+      setMessages(loaded.map((message) => ({
+        ...message,
+        taskSummary: summaryByMessage.get(message.id)?.join(" · "),
+      })));
     } catch {
       setError("Histórico indisponível. Confira as permissões e tente novamente.");
     } finally { setLoading(false); }
@@ -134,6 +158,7 @@ export function MykaHistory({ userId }: { userId: string }) {
       : messages.map(message => <View key={message.id} style={styles.message}>
           <Text style={styles.role}>{message.role === "assistant" ? "MYKA" : "Você"}</Text>
           <Text style={styles.content}>{message.content}</Text>
+          {message.taskSummary ? <Text style={styles.caption}>{message.taskSummary}</Text> : null}
         </View>)}
   </View>;
 }
