@@ -6,10 +6,10 @@ import { useVyraNavigation } from "./vyra-module-context";
 type View = "tasks" | "today" | "intelligence" | "focus";
 
 const sections: { id: View; icon: string; title: string; description: string }[] = [
-  { id: "tasks", icon: "☑", title: "Minhas tarefas", description: "Metas, planos e quadro" },
-  { id: "today", icon: "☼", title: "Meu dia", description: "Prioridades e rotina" },
-  { id: "intelligence", icon: "✧", title: "Ajuda para planejar", description: "Organize seu dia e ajuste seus planos" },
-  { id: "focus", icon: "◎", title: "Foco e progresso", description: "Concentre-se e veja suas conquistas" },
+  { id: "tasks", icon: "☑", title: "Tarefas", description: "Faça o que importa" },
+  { id: "today", icon: "☼", title: "Hoje", description: "Veja suas prioridades" },
+  { id: "intelligence", icon: "✧", title: "Organizar", description: "Ajuste seus planos" },
+  { id: "focus", icon: "◎", title: "Foco", description: "Avance sem distrações" },
 ];
 
 export default function TaskPlanningCards({ tasks, today, intelligence, focus }: {
@@ -61,7 +61,7 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
 
   return (
     <div className="min-w-0 space-y-5">
-      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2" role="tablist" aria-label="Áreas de tarefas e planejamento">
+      <div className="grid min-w-0 grid-cols-4 gap-1.5 sm:gap-2" role="tablist" aria-label="Áreas de tarefas e planejamento">
         {sections.map((section, index) => (
           <button
             key={section.id}
@@ -73,15 +73,15 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
             onKeyDown={event => onTabKeyDown(event, index)}
             aria-controls={`planning-panel-${section.id}`}
             onClick={() => selectSection(section.id)}
-            className={`flex min-h-[88px] min-w-0 flex-col justify-center rounded-2xl border p-3 text-left sm:p-4 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 ${
+            className={`flex min-h-14 min-w-0 flex-col items-center justify-center rounded-xl border px-1 py-2 text-center sm:min-h-16 sm:px-3 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 ${
               active === section.id
                 ? "border-violet-400/70 bg-violet-600/15 shadow-lg shadow-violet-950/20"
                 : "border-white/15 bg-slate-900/75 hover:border-violet-400/50 hover:bg-slate-800/80"
             }`}
           >
-            <span aria-hidden="true" className="mb-3 block text-2xl text-violet-300">{section.icon}</span>
-            <span className="block text-base font-semibold text-white">{section.title}</span>
-            <span className="mt-1 block text-xs text-slate-300">{section.description}</span>
+            <span aria-hidden="true" className="mb-1 block text-lg text-violet-300">{section.icon}</span>
+            <span className="block text-xs font-semibold text-white sm:text-sm">{section.title}</span>
+            <span className="mt-1 hidden text-xs text-slate-300 sm:block">{section.description}</span>
           </button>
         ))}
       </div>
