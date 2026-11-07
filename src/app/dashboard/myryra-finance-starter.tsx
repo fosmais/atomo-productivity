@@ -62,6 +62,7 @@ export default function MyryraFinanceStarter() {
         if (mounted && requestId === latestRequest) {
           setEntries(allEntries);
           const nextBalance = Number(balance?.opening_balance_cents ?? 0);
+          if (!Number.isSafeInteger(nextBalance)) throw new Error("Saldo inicial inválido.");
           setOpeningBalanceCents(nextBalance);
           if (!openingBalanceDraftDirty.current) setOpeningBalanceInput((nextBalance / 100).toFixed(2).replace(".", ","));
           setError("");
