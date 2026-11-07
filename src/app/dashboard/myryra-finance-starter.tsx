@@ -84,6 +84,7 @@ export default function MyryraFinanceStarter() {
           setOpeningBalanceCents(nextBalance);
           if (!openingBalanceDraftDirty.current) setOpeningBalanceInput((nextBalance / 100).toFixed(2).replace(".", ","));
           setError("");
+          setDeleteError("");
         }
       } catch {
         if (mounted && requestId === latestRequest) setError("Não foi possível atualizar os dados financeiros. Os valores exibidos podem estar desatualizados; tente novamente.");
@@ -180,7 +181,10 @@ export default function MyryraFinanceStarter() {
       if (!deleted || deleted.length !== 1 || deleted[0]?.id !== id) throw new Error("Exclusão não confirmada para o lançamento solicitado.");
       setEntries(previous => previous.filter(item => item.id !== id));
       window.dispatchEvent(new Event("myryra:finance-updated"));
-    } catch { setDeleteError("Não foi possível excluir o lançamento. Verifique o histórico antes de tentar novamente."); }
+    } catch {
+      setDeleteError("Não foi possível confirmar a exclusão. Atualizando o histórico para conferir os dados.");
+      window.dispatchEvent(new Event("myryra:finance-updated"));
+    }
     finally { setSaving(false); }
   };
 
