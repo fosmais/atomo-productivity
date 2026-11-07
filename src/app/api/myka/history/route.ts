@@ -95,7 +95,7 @@ export async function GET() {
 
     const taskDecisionsByMessage = new Map<
       string,
-      Array<{ taskIndex: number; decision: "saved" | "cancelled" }>
+      Array<{ taskIndex: number; decision: "saved" | "cancelled"; taskMissing: boolean }>
     >();
 
     if (statusEnabled && messages && messages.length > 0) {
@@ -106,7 +106,7 @@ export async function GET() {
       if (messageIds.length > 0) {
         const { data: decisions, error: decisionsError } = await supabase
           .from("myka_task_confirmations")
-          .select("message_id, task_index, decision")
+          .select("message_id, task_index, decision, task_id")
           .eq("user_id", userId)
           .in("message_id", messageIds);
 
@@ -126,6 +126,7 @@ export async function GET() {
           existing.push({
             taskIndex: item.task_index,
             decision: item.decision,
+            taskMissing: item.decision === "saved" && item.task_id === null,
           });
           taskDecisionsByMessage.set(item.message_id, existing);
         }
