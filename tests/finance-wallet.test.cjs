@@ -132,3 +132,11 @@ test("wallet prevents mutations while financial data is stale", () => {
   }
   assert.equal((source.match(/disabled=\{saving \|\| balanceSaving \|\| loading \|\| Boolean\(error\)\}/g) ?? []).length, 3);
 });
+
+test("wallet verifies persisted entry matches request before updating local history", () => {
+  const add = section("const addEntry = async", "const saveOpeningBalance = async");
+  assert.ok(add.includes("data.amount_cents !== cents"));
+  assert.ok(add.includes("data.kind !== kind"));
+  assert.ok(add.includes("data.description !== name.trim()"));
+  assert.ok(add.indexOf("data.amount_cents !== cents") < add.indexOf("setEntries(previous => [data as Entry"));
+});
