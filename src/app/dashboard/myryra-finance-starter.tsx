@@ -16,6 +16,7 @@ function parseBRL(input: string): number | null {
 }
 
 type Entry = { id: string; description: string; amount_cents: number; kind: "income" | "expense"; created_at: string };
+const trashEnabled = process.env.NEXT_PUBLIC_MYRYRA_FINANCE_TRASH_ENABLED === "true";
 
 function calculateBalanceCents(openingBalanceCents: number, entries: Entry[]): number | null {
   if (!Number.isSafeInteger(openingBalanceCents)) return null;
@@ -32,6 +33,8 @@ export default function MyryraFinanceStarter() {
   const { navigateTo } = useVyraNavigation();
   const [handoffError, setHandoffError] = useState(false);
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [trashedEntries, setTrashedEntries] = useState<Entry[]>([]);
+  const [showTrash, setShowTrash] = useState(false);
   const [openingBalanceCents, setOpeningBalanceCents] = useState(0);
   const [openingBalanceInput, setOpeningBalanceInput] = useState("");
   const openingBalanceDraftDirty = useRef(false);
@@ -60,9 +63,11 @@ export default function MyryraFinanceStarter() {
         const seenEntryIds = new Set<string>();
         const pageSize = 500;
         for (let offset = 0; ; offset += pageSize) {
-          const { data: page, error: queryError } = await client.from("myryra_finance_entries")
+          let query = client.from("myryra_finance_entries")
             .select("id,description,amount_cents,kind,created_at")
-            .eq("user_id", auth.user.id).order("created_at", { ascending: false })
+            .eq("user_id", auth.user.id);
+          if (trashEnabled) query = query.is("deleted_at", null);
+          const { data: page, error: queryError } = await query.order("created_at", { ascending: false })
             .order("id", { ascending: false }).range(offset, offset + pageSize - 1);
           if (queryError) throw queryError;
           if ((page ?? []).some(item => !Number.isSafeInteger(item.amount_cents) || item.amount_cents <= 0 || !["income", "expense"].includes(item.kind))) throw new Error("Histórico financeiro inválido.");
@@ -74,6 +79,14 @@ export default function MyryraFinanceStarter() {
             allEntries.push(item as Entry);
           }
           if (!page || page.length < pageSize) break;
+        }
+        if (trashEnabled) {
+          const { data: trashed, error: trashError } = await client.from("myryra_finance_entries")
+            .select("id,description,amount_cents,kind,created_at")
+            .eq("user_id", auth.user.id).not("deleted_at", "is", null)
+            .order("created_at", { ascending: false }).limit(100);
+          if (trashError) throw trashError;
+          if (mounted && requestId === latestRequest) setTrashedEntries((trashed ?? []) as Entry[]);
         }
         const { data: balance, error: balanceError } = await client.from("myryra_finance_balances")
           .select("opening_balance_cents").eq("user_id", auth.user.id).maybeSingle();
@@ -172,7 +185,7 @@ export default function MyryraFinanceStarter() {
   const deleteEntry = async (id: string) => {
     if (saving || balanceSaving || loading || error) return;
     const target = entries.find(item => item.id === id);
-    if (!target || !window.confirm(`Excluir "${target.description}" (${currency(target.amount_cents / 100)})? A exclusão é definitiva e não pode ser desfeita.`)) return;
+    if (!target || !window.confirm(`Excluir "${target.description}" (${currency(target.amount_cents / 100)})? ${trashEnabled ? "Você poderá restaurá-lo na lixeira." : "A exclusão é definitiva e não pode ser desfeita."}`)) return;
     setSaving(true);
     setDeleteError("");
     setDeleteSuccess("");
@@ -180,17 +193,45 @@ export default function MyryraFinanceStarter() {
       const client = createClient();
       const { data: auth, error: authError } = await client.auth.getUser();
       if (authError || !auth.user) throw new Error("Sessão expirada.");
-      const { data: deleted, error: deleteError } = await client.from("myryra_finance_entries").delete().eq("id", id).eq("user_id", auth.user.id).select("id");
+      const baseQuery = client.from("myryra_finance_entries");
+      const { data: deleted, error: deleteError } = trashEnabled
+        ? await baseQuery.update({ deleted_at: new Date().toISOString() }).eq("id", id).eq("user_id", auth.user.id).is("deleted_at", null).select("id")
+        : await baseQuery.delete().eq("id", id).eq("user_id", auth.user.id).select("id");
       if (deleteError) throw deleteError;
       if (!deleted || deleted.length !== 1 || deleted[0]?.id !== id) throw new Error("Exclusão não confirmada para o lançamento solicitado.");
       setEntries(previous => previous.filter(item => item.id !== id));
-      setDeleteSuccess(`"${target.description}" foi excluído. O saldo será atualizado.`);
+      setDeleteSuccess(`"${target.description}" foi ${trashEnabled ? "movido para a lixeira" : "excluído"}. O saldo será atualizado.`);
       window.dispatchEvent(new Event("myryra:finance-updated"));
     } catch {
       setDeleteError("Não foi possível confirmar a exclusão. Confira o histórico atualizado antes de tentar novamente.");
       window.dispatchEvent(new Event("myryra:finance-updated"));
     }
     finally { setSaving(false); }
+  };
+
+  const restoreEntry = async (id: string) => {
+    if (!trashEnabled || saving || balanceSaving || loading || error) return;
+    const target = trashedEntries.find(item => item.id === id);
+    if (!target) return;
+    if (calculateBalanceCents(openingBalanceCents, [...entries, target]) === null) {
+      setDeleteError("Não é possível restaurar: o saldo ultrapassaria o limite seguro.");
+      return;
+    }
+    setSaving(true); setDeleteError(""); setDeleteSuccess("");
+    try {
+      const client = createClient();
+      const { data: auth, error: authError } = await client.auth.getUser();
+      if (authError || !auth.user) throw new Error("Sessão expirada.");
+      const { data, error: restoreError } = await client.from("myryra_finance_entries")
+        .update({ deleted_at: null }).eq("id", id).eq("user_id", auth.user.id)
+        .not("deleted_at", "is", null).select("id");
+      if (restoreError || !data || data.length !== 1 || data[0]?.id !== id) throw new Error("Restauração não confirmada.");
+      setDeleteSuccess(`"${target.description}" restaurado com sucesso.`);
+      window.dispatchEvent(new Event("myryra:finance-updated"));
+    } catch {
+      setDeleteError("Não foi possível confirmar a restauração. Confira o histórico atualizado.");
+      window.dispatchEvent(new Event("myryra:finance-updated"));
+    } finally { setSaving(false); }
   };
 
   return (
@@ -253,6 +294,23 @@ export default function MyryraFinanceStarter() {
         <h3 className="mb-3 font-semibold text-white">Histórico de entradas e gastos</h3>
         {entries.length === 0 ? <p className="text-sm text-slate-400">{loading ? "Carregando lançamentos..." : "Você ainda não adicionou entradas ou gastos."}</p> : <ul className="space-y-2">{entries.slice(0, 200).map(item => <li key={item.id} className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-white/10 py-2 text-sm"><span className="min-w-0 flex-1 break-words text-slate-200">{item.description}</span><span className={item.kind === "income" ? "shrink-0 text-emerald-300" : "shrink-0 text-rose-300"}>{item.kind === "income" ? "+" : "−"} {currency(item.amount_cents / 100)}</span><button type="button" disabled={saving || balanceSaving || loading || Boolean(error)} onClick={() => void deleteEntry(item.id)} className="text-slate-400 underline hover:text-white disabled:cursor-not-allowed disabled:opacity-50">Excluir</button></li>)}</ul>}
       </div>
+      {trashEnabled && (
+        <section className="rounded-2xl border border-white/15 bg-slate-900/75 p-4 sm:p-5">
+          <button type="button" aria-expanded={showTrash} onClick={() => setShowTrash(value => !value)}
+            className="font-semibold text-white underline underline-offset-4">
+            Lixeira financeira ({trashedEntries.length}{trashedEntries.length === 100 ? "+" : ""}) — {showTrash ? "ocultar" : "mostrar"}
+          </button>
+          {showTrash && (trashedEntries.length === 0
+            ? <p className="mt-3 text-sm text-slate-400">Nenhum lançamento na lixeira.</p>
+            : <ul className="mt-3 space-y-2">{trashedEntries.map(item => (
+                <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 py-2 text-sm">
+                  <span className="min-w-0 flex-1 break-words text-slate-200">{item.description} — {currency(item.amount_cents / 100)}</span>
+                  <button type="button" disabled={saving || balanceSaving || loading || Boolean(error)}
+                    onClick={() => void restoreEntry(item.id)} className="text-violet-200 underline disabled:opacity-50">Restaurar</button>
+                </li>
+              ))}</ul>)}
+        </section>
+      )}
       {deleteError && <p role="alert" className="text-sm text-rose-300">{deleteError}</p>}
       {deleteSuccess && <p role="status" aria-live="polite" className="text-sm text-emerald-300">{deleteSuccess}</p>}
       {error && <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-rose-300"><span>{error}</span><button type="button" onClick={() => { setLoading(true); setRefreshAttempt(previous => previous + 1); }} className="rounded-lg border border-rose-300/40 px-3 py-2 font-medium hover:bg-rose-300/10">Tentar novamente</button></div>}
