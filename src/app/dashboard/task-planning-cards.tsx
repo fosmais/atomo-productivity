@@ -8,8 +8,8 @@ type View = "tasks" | "today" | "intelligence" | "focus";
 const sections: { id: View; icon: string; title: string; description: string }[] = [
   { id: "tasks", icon: "☑", title: "Minhas tarefas", description: "Metas, planos e quadro" },
   { id: "today", icon: "☼", title: "Meu dia", description: "Prioridades e rotina" },
-  { id: "intelligence", icon: "✧", title: "Planejamento inteligente", description: "Copiloto e replanejamento" },
-  { id: "focus", icon: "◎", title: "Foco e evolução", description: "Produtividade e progresso" },
+  { id: "intelligence", icon: "✧", title: "Ajuda para planejar", description: "Organize seu dia e ajuste seus planos" },
+  { id: "focus", icon: "◎", title: "Foco e progresso", description: "Concentre-se e veja suas conquistas" },
 ];
 
 export default function TaskPlanningCards({ tasks, today, intelligence, focus }: {
@@ -73,7 +73,7 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
             onKeyDown={event => onTabKeyDown(event, index)}
             aria-controls={`planning-panel-${section.id}`}
             onClick={() => selectSection(section.id)}
-            className={`flex min-h-[116px] min-w-0 flex-col justify-center rounded-2xl border p-5 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 ${
+            className={`flex min-h-[88px] min-w-0 flex-col justify-center rounded-2xl border p-3 text-left sm:p-4 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 ${
               active === section.id
                 ? "border-violet-400/70 bg-violet-600/15 shadow-lg shadow-violet-950/20"
                 : "border-white/15 bg-slate-900/75 hover:border-violet-400/50 hover:bg-slate-800/80"
@@ -92,7 +92,7 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
           <div><strong className="text-white">📅 Compromisso</strong><p className="mt-1 text-slate-300">Algo com data e horário definidos. Ex.: consulta às 15h.</p></div>
           <div><strong className="text-white">☑ Tarefa</strong><p className="mt-1 text-slate-300">Uma ação para concluir. Ex.: comprar as passagens.</p></div>
         </div>
-        <p className="mt-3 text-xs text-violet-200">Dica: um plano pode gerar tarefas e compromissos. Peça ajuda à MYKA para decidir por onde começar.</p>
+        <p className="mt-3 text-xs text-violet-200">Dica: um plano pode gerar tarefas e compromissos. Peça ajuda à MIKA para decidir por onde começar.</p>
       </details>
       {sections.map(section => (
         <section
