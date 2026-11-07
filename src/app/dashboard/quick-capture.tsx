@@ -151,7 +151,8 @@ export default function QuickCapture() {
       <p className="mt-2 text-sm text-slate-300">{captureType === "task" ? "Escreva uma tarefa por linha. Você pode usar datas como hoje ou amanhã." : "Registre um compromisso diretamente na agenda MYRYRA."}</p>
       <label htmlFor="quick-capture-input" className="sr-only">{captureType === "task" ? "Tarefas para organizar" : "Título do compromisso"}</label>
       <textarea id="quick-capture-input" value={input} onChange={(event) => { setInput(event.target.value); setDrafts([]); setSuccess(""); }}
-        maxLength={captureType === "task" ? 2200 : 200} rows={captureType === "task" ? 4 : 2} placeholder={captureType === "task" ? "Preparar reunião de terça\nPagar escola\nMarcar dentista" : "Ex.: Reunião de planejamento"}
+        onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter" && input.trim() && !saving) { event.preventDefault(); if (captureType === "task") void prepare(); else void saveQuickEvent(); } }}
+        maxLength={captureType === "task" ? 2200 : 200} rows={captureType === "task" ? 2 : 2} placeholder={captureType === "task" ? "Preparar reunião de terça\nPagar escola\nMarcar dentista" : "Ex.: Reunião de planejamento"}
         className="mt-4 w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white placeholder:text-slate-500" />
       {captureType === "event" && <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <label className="text-sm text-slate-300">Início<input type="datetime-local" value={eventStart} onChange={event => setEventStart(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-white" /></label>
@@ -161,6 +162,7 @@ export default function QuickCapture() {
         className="mt-3 rounded-xl border border-violet-500 px-4 py-2 font-semibold text-violet-200 hover:bg-violet-900/30 disabled:opacity-50">
         {saving ? "Salvando..." : captureType === "task" ? "Salvar tarefa" : "Salvar compromisso"}
       </button>
+      <p className="mt-1 text-xs text-slate-400">Dica: Ctrl + Enter também salva. Para várias tarefas, você pode revisar antes.</p>
       {captureType === "task" && drafts.length > 0 && (
         <div className="mt-4 space-y-3">
           <p className="text-sm font-medium text-violet-200">Confira e escolha o que salvar:</p>
