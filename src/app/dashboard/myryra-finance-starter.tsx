@@ -50,6 +50,7 @@ export default function MyryraFinanceStarter() {
             .eq("user_id", auth.user.id).order("created_at", { ascending: false })
             .order("id", { ascending: false }).range(offset, offset + pageSize - 1);
           if (queryError) throw queryError;
+          if ((page ?? []).some(item => !Number.isSafeInteger(item.amount_cents) || item.amount_cents <= 0 || !["income", "expense"].includes(item.kind))) throw new Error("Histórico financeiro inválido.");
           // Stop an obsolete pagination loop when a newer refresh takes precedence.
           if (!mounted || requestId !== latestRequest) return;
           allEntries.push(...((page ?? []) as Entry[]));
