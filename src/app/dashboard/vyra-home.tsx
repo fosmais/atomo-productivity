@@ -136,7 +136,7 @@ export default function VyraHome() {
       </details>
 
       <section aria-label="O que você quer fazer?">
-        <h2 className="mb-3 text-base font-semibold text-white">Explore seu universo</h2>
+        <h2 className="mb-3 text-base font-semibold text-white">O que você quer fazer?</h2>
         <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:grid-cols-3">
           {portals.map(item => <button key={item.label} type="button" onClick={() => navigateTo(item.module)} className="flex min-h-24 min-w-0 flex-col items-start justify-center gap-2 rounded-xl border border-violet-400/15 bg-slate-900/65 p-3 text-left transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
             <span className="text-2xl text-violet-300" aria-hidden="true">{item.icon}</span>
