@@ -141,12 +141,14 @@ async function DashboardContent() {
           title="Minha agenda"
           description="Seus compromissos, tarefas e horários em um só lugar."
         >
-          <div className="min-w-0 space-y-4">
-            <DueReminders />
-            <CalendarEvents />
-            <FeatureAccordion id="availability" title="Horários livres" description="Consulte disponibilidade e períodos ocupados" userId={user.id}>
-              <AvailabilityPanel />
-            </FeatureAccordion>
+          <div className="min-w-0 space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <FeatureAccordion id="agenda-reminders" title="Lembretes" description="Veja os próximos avisos" userId={user.id}><DueReminders /></FeatureAccordion>
+              <FeatureAccordion id="availability" title="Minha disponibilidade" description="Horários livres e bloqueios" userId={user.id}><AvailabilityPanel /></FeatureAccordion>
+            </div>
+            <section className="min-w-0 rounded-2xl border border-white/10 bg-slate-900/60 p-3 sm:p-4" aria-label="Calendário e compromissos">
+              <CalendarEvents />
+            </section>
           </div>
         </VyraSection>
       </VyraModule>
