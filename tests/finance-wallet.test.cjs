@@ -148,3 +148,10 @@ test("wallet detects duplicate entry identifiers across pagination pages", () =>
   assert.ok(load.includes("seenEntryIds.add(item.id)"));
   assert.ok(load.indexOf("seenEntryIds.has(item.id)") < load.indexOf("allEntries.push(item as Entry)"));
 });
+
+test("wallet confirms exact deleted record before removing it from visible history", () => {
+  const deletion = section("const deleteEntry = async", "return (");
+  assert.ok(deletion.includes("deleted.length !== 1"));
+  assert.ok(deletion.includes("deleted[0]?.id !== id"));
+  assert.ok(deletion.indexOf("deleted[0]?.id !== id") < deletion.indexOf("setEntries(previous => previous.filter"));
+});
