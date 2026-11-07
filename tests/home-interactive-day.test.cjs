@@ -72,6 +72,6 @@ test("home provides safe task completion entry without direct mutation", () => {
 test("each timeline event offers an accessible reschedule entry", () => {
   const day = section('aria-label="Seu dia interativo"', 'aria-label="Resumo rápido"');
   assert.ok(day.includes("Ver / reagendar"));
-  assert.ok(day.includes('aria-label={\`Ver ou reagendar ${event.title} na Agenda\`}'));
+  assert.ok(day.includes('aria-label={`Ver ou reagendar ${event.title} na Agenda`}'));
   assert.ok(day.includes('onClick={() => navigateTo("vyra-calendar")}'));
 });
