@@ -148,10 +148,8 @@ export default function VyraHome() {
             </ol>
           ) : <p className="mt-2 text-xs text-slate-400">{agendaError ? "Agenda indisponível. Tente novamente na Agenda." : "Nenhum compromisso restante para hoje."}</p>}
         </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <button type="button" onClick={() => navigateToQuickAction?.("capture")} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500">Adicionar tarefa</button>
+        <div className="mt-3 flex justify-end">
           <button type="button" onClick={() => navigateTo("vyra-tasks")} className="rounded-lg border border-violet-400/35 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/15">Concluir tarefas</button>
-          <button type="button" onClick={() => navigateTo("vyra-ai")} className="rounded-lg border border-violet-400/35 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/15">Planejar com a MIKA</button>
         </div>
       </section>
 
