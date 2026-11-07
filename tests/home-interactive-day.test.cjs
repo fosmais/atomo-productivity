@@ -37,3 +37,17 @@ test("interactive day does not create new financial or calendar mutations", () =
   assert.ok(!day.includes(".update("));
   assert.ok(!day.includes(".delete("));
 });
+
+test("timeline shows today's events with accessible agenda navigation", () => {
+  const day = section('aria-label="Seu dia interativo"', 'aria-label="Resumo rápido"');
+  assert.ok(day.includes('aria-label="Linha do tempo de hoje"'));
+  assert.ok(day.includes('dayEvents.map('));
+  assert.ok(day.includes('dateTime={event.start}'));
+  assert.ok(day.includes('navigateTo("vyra-calendar")'));
+});
+
+test("timeline limits results and handles unavailable agenda", () => {
+  assert.ok(source.includes('.slice(0, 5)'));
+  assert.ok(source.includes('setDayEvents([])'));
+  assert.ok(source.includes('Agenda indisponível. Tente novamente na Agenda.'));
+});
