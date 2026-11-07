@@ -190,7 +190,9 @@ export default function FinanceSubscriptions() {
     const key = JSON.stringify({ user: alertUserId, date: asOf, days: alertDays, subscriptions: alertSubscriptions, expenses: alertExpenses, alerts: upcomingAlerts.map(item => item.id + ":" + item.due) });
     if (lastAutoSyncKey.current === key) return;
     lastAutoSyncKey.current = key;
-    if (upcomingAlerts.length > 0) void syncNotifications();
+    if (upcomingAlerts.length === 0) return;
+    const timer = window.setTimeout(() => { void syncNotifications(); }, 0);
+    return () => window.clearTimeout(timer);
   }, [loading, error, alertUserId, asOf, alertDays, alertSubscriptions, alertExpenses, upcomingAlerts]);
   const markNotificationRead = async (id: string) => {
     if (!alertUserId) return;
