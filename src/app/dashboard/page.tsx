@@ -82,8 +82,8 @@ async function DashboardContent() {
       <VyraModule id="vyra-ai">
         <VyraSection
           id="vyra-ai"
-          eyebrow="MYRYRA INTELLIGENCE"
-          title="Converse com a MYKA."
+          eyebrow="SUA ASSISTENTE"
+          title="Converse com a MIKA"
           description="Sua assistente pessoal para transformar ideias em decisões e próximos passos."
         >
           <div className="min-w-0 space-y-4">
@@ -106,8 +106,8 @@ async function DashboardContent() {
       <VyraModule id="vyra-tasks">
   <VyraSection
     id="vyra-tasks"
-    eyebrow="MYRYRA WORKSPACE"
-    title="Tarefas e Planejamento"
+    eyebrow="ORGANIZAÇÃO"
+    title="Minhas tarefas e planos"
     description="Organize suas tarefas, planeje seu dia e evolua com a MYKA."
   >
     <TaskPlanningCards
@@ -115,15 +115,15 @@ async function DashboardContent() {
         <div className="grid min-w-0 gap-3 md:grid-cols-2">
           <FeatureAccordion id="goals" title="Metas rápidas" description="Acompanhe pequenas conquistas" userId={user.id}><QuickGoals userId={user.id} /></FeatureAccordion>
           <FeatureAccordion id="plans" title="Meus planos" description="Acompanhe seus planos" userId={user.id}><CloudPlans /></FeatureAccordion>
-          <FeatureAccordion id="capture" title="Captura Inteligente" description="Transforme ideias em tarefas" userId={user.id}><QuickCapture /></FeatureAccordion>
+          <FeatureAccordion id="capture" title="Anotar uma ideia" description="Transforme suas ideias em tarefas" userId={user.id}><QuickCapture /></FeatureAccordion>
         </div>
-        <FeatureAccordion id="kanban" title="Quadro de tarefas" description="Visualize e edite tarefas por andamento" userId={user.id} defaultOpen><TaskKanban /></FeatureAccordion>
+        <FeatureAccordion id="kanban" title="Minhas tarefas" description="Veja e atualize o que precisa fazer" userId={user.id} defaultOpen><TaskKanban /></FeatureAccordion>
       </div>}
       today={<div id="planner-today" className="min-w-0 scroll-mt-8">
         <MyDay />
       </div>}
       intelligence={<div id="planner-intelligence" className="grid min-w-0 gap-4 scroll-mt-8 lg:grid-cols-2">
-        <FeatureAccordion id="daily-copilot" title="Copiloto diário" description="Planeje com a MYKA" userId={user.id}><DailyCopilot /></FeatureAccordion>
+        <FeatureAccordion id="daily-copilot" title="Ajuda para planejar" description="Organize seu dia com a MIKA" userId={user.id}><DailyCopilot /></FeatureAccordion>
         <FeatureAccordion id="replan" title="Replanejamento" description="Reorganize tarefas atrasadas" userId={user.id}><SmartReplan /></FeatureAccordion>
         <div className="lg:col-span-2"><FeatureAccordion id="planning-settings" title="Preferências de planejamento" description="Horários e regras da rotina" userId={user.id}><PlanningSettings /></FeatureAccordion></div>
       </div>}
@@ -153,27 +153,27 @@ async function DashboardContent() {
       <VyraModule id="vyra-scheduling">
 <VyraSection
         id="vyra-scheduling"
-        eyebrow="MYRYRA INTELLIGENCE"
+        eyebrow="SUA ASSISTENTE"
         title="Seu tempo, melhor aproveitado."
         description="Descubra os melhores horários para suas tarefas com base nas prioridades, durações e compromissos da sua agenda."
       >
         <div className="grid min-w-0 gap-3 md:grid-cols-2">
-        <FeatureAccordion id="autopilot" title="AutoPilot" description="Encontre horários para executar tarefas" userId={user.id}><AutoPilot /></FeatureAccordion>
-        <FeatureAccordion id="scheduling" title="Smart Scheduling" description="Sugestões inteligentes para sua agenda" userId={user.id}><SmartSchedulingPanel /></FeatureAccordion>
+        <FeatureAccordion id="autopilot" title="Organizar meu dia" description="Encontre tempo para suas tarefas" userId={user.id}><AutoPilot /></FeatureAccordion>
+        <FeatureAccordion id="scheduling" title="Encontrar um horário" description="Veja sugestões de horários livres" userId={user.id}><SmartSchedulingPanel /></FeatureAccordion>
         </div>
       </VyraSection>
 </VyraModule>
       <VyraModule id="vyra-performance">
 <VyraSection
         id="vyra-performance"
-        eyebrow="MYRYRA PERFORMANCE"
-        title="Sua evolução em números."
+        eyebrow="SEU PROGRESSO"
+        title="Veja seu progresso"
         description="Acompanhe suas conquistas, identifique oportunidades de melhoria e tome decisões com base em dados reais."
       >
         <ProductivityScore />
         <div className="grid min-w-0 gap-3 md:grid-cols-2">
-        <FeatureAccordion id="weekly" title="Weekly Intelligence" description="Indicadores de sua semana" userId={user.id} defaultOpen><WeeklyIntelligence /></FeatureAccordion>
-        <FeatureAccordion id="performance" title="Performance & Insights" description="Explore seus indicadores de produtividade" userId={user.id}><PerformanceInsights /></FeatureAccordion>
+        <FeatureAccordion id="weekly" title="Resumo da semana" description="Veja como foi sua semana" userId={user.id} defaultOpen><WeeklyIntelligence /></FeatureAccordion>
+        <FeatureAccordion id="performance" title="Minha evolução" description="Acompanhe suas conquistas" userId={user.id}><PerformanceInsights /></FeatureAccordion>
         </div>
       </VyraSection>
 </VyraModule>
@@ -190,7 +190,7 @@ async function DashboardContent() {
       <VyraModule id="vyra-settings">
 <VyraSection
         id="vyra-settings"
-        eyebrow="MYRYRA SETTINGS"
+        eyebrow="SUA CONTA"
         title="Uma experiência feita para você."
         description="Gerencie sua conta, conecte aplicativos e compartilhe sugestões."
       >
@@ -200,7 +200,7 @@ async function DashboardContent() {
           integrations={<FeatureAccordion id="external-integrations" title="Aplicativos conectados" description="Google Calendar, Google Tasks, Todoist e Outlook" userId={user.id}><div className="min-w-0 space-y-4"><GoogleCalendarSettings /><ExternalIntegrations /></div></FeatureAccordion>}
           data={<div className="space-y-3">
             <FeatureAccordion id="trash" title="Lixeira" description="Recupere tarefas e compromissos excluídos" userId={user.id}><MyryraTrash /></FeatureAccordion>
-            <FeatureAccordion id="feedback" title="Feedback" description="Sugestões e relatos sobre a plataforma" userId={user.id}><BetaFeedback /></FeatureAccordion>
+            <FeatureAccordion id="feedback" title="Enviar sugestão" description="Conte o que podemos melhorar" userId={user.id}><BetaFeedback /></FeatureAccordion>
           </div>}
           footer={<div className="flex flex-wrap items-center justify-between gap-3">
             <p className="min-w-0 break-all text-sm text-slate-400">Conta: {user.email}</p>
