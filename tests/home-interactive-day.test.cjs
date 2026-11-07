@@ -16,12 +16,14 @@ test("MVP2 home introduces approved heading and interactive day", () => {
   assert.ok(source.includes('aria-label="Seu dia interativo"'));
 });
 
-test("interactive day reuses agenda, tasks, MIKA and capture navigation", () => {
+test("interactive day keeps agenda and completion navigation without repeating primary actions", () => {
   const day = section('aria-label="Seu dia interativo"', '      <details className="group rounded-2xl border border-violet-400/35');
   assert.ok(day.includes('navigateTo("vyra-calendar")'));
   assert.ok(day.includes('navigateTo("vyra-tasks")'));
-  assert.ok(day.includes('navigateTo("vyra-ai")'));
-  assert.ok(day.includes('navigateToQuickAction?.("capture")'));
+  assert.ok(!day.includes('navigateTo("vyra-ai")'));
+  assert.ok(!day.includes('navigateToQuickAction?.("capture")'));
+  assert.ok(source.includes('✦ Falar com a MIKA'));
+  assert.ok(source.includes('+ Criar tarefa'));
 });
 
 test("interactive day handles missing agenda and metrics without fabricated data", () => {
