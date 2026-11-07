@@ -16,6 +16,36 @@ const goals: { id: Goal; label: string }[] = [
   { id: "fitness", label: "Melhorar condicionamento" },
 ];
 const activities = ["Academia", "Corrida", "Caminhada", "Ciclismo", "Exercícios em casa", "Meditação"];
+
+const activityLibraries: Record<string, { description: string; entries: { title: string; detail: string }[] }> = {
+  "Academia": { description: "Musculação por grupo muscular, nível e divisão A/B/C.", entries: [] },
+  "Corrida": { description: "Referências educativas para organizar sua corrida.", entries: [
+    { title: "Caminhada e trote", detail: "Alterne trechos leves conforme seu condicionamento; respeite pausas." },
+    { title: "Corrida confortável", detail: "Use um ritmo em que consiga conversar e aumente gradualmente a duração." },
+    { title: "Recuperação", detail: "Intercale sessões com descanso e observe sinais de fadiga." }
+  ] },
+  "Caminhada": { description: "Percursos e progressão de caminhada.", entries: [
+    { title: "Caminhada leve", detail: "Comece em terreno seguro e plano, no ritmo mais confortável." },
+    { title: "Caminhada contínua", detail: "Aumente a duração gradualmente, conforme sua tolerância." },
+    { title: "Percursos variados", detail: "Considere sombra, hidratação, calçado e segurança do trajeto." }
+  ] },
+  "Ciclismo": { description: "Atividades de pedal para diferentes contextos.", entries: [
+    { title: "Pedal leve", detail: "Escolha um trajeto seguro e mantenha cadência confortável." },
+    { title: "Resistência", detail: "Progrida a duração com pausas e atenção à hidratação." },
+    { title: "Mobilidade e segurança", detail: "Confira freios, capacete, visibilidade e condições da via." }
+  ] },
+  "Exercícios em casa": { description: "Movimentos sem máquinas, adaptáveis ao espaço disponível.", entries: [
+    { title: "Sentar e levantar", detail: "Use uma cadeira estável e controle o movimento." },
+    { title: "Flexão na parede", detail: "Mantenha as mãos apoiadas e o corpo alinhado, sem forçar." },
+    { title: "Mobilidade suave", detail: "Explore movimentos confortáveis de ombros e quadril, sem dor." }
+  ] },
+  "Meditação": { description: "Práticas breves de atenção e relaxamento.", entries: [
+    { title: "Atenção à respiração", detail: "Observe a respiração natural por alguns minutos, sem prendê-la." },
+    { title: "Escaneamento corporal", detail: "Perceba sensações do corpo com curiosidade e sem julgamento." },
+    { title: "Pausa consciente", detail: "Reserve um momento para notar sons e sensações do ambiente." }
+  ] }
+};
+
 export default function HealthWorkspace() {
   const { navigateTo } = useVyraNavigation();
   const [goal, setGoal] = useState<Goal>("fitness");
@@ -28,6 +58,7 @@ export default function HealthWorkspace() {
   const [saving, setSaving] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileSaved, setProfileSaved] = useState(false);
+  const [openLibrary, setOpenLibrary] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -129,8 +160,21 @@ export default function HealthWorkspace() {
       {profileSaved && <button type="button" onClick={() => void deleteProfile()} className="rounded-xl border border-rose-400/30 px-4 py-3 text-sm text-rose-200 hover:bg-rose-500/10">Excluir perfil salvo</button>}
     </div>
     <button type="button" onClick={openMika} className="w-full rounded-xl bg-violet-600 px-4 py-3 font-semibold text-white hover:bg-violet-500 sm:w-auto">Continuar avaliação com a MIKA</button>
+    <section className="space-y-3 rounded-2xl border border-white/10 bg-slate-950/40 p-4 sm:p-5" aria-label="Bibliotecas de atividades">
+      <div><h3 className="text-lg font-semibold text-white">Suas bibliotecas de atividades</h3><p className="mt-1 text-sm text-slate-300">Selecione suas atividades acima para explorar conteúdos específicos. As orientações são educativas e não substituem acompanhamento profissional.</p></div>
+      {selected.length === 0 ? <p className="rounded-xl border border-white/10 p-3 text-sm text-slate-400">Escolha uma ou mais atividades para abrir suas bibliotecas.</p> :
+        <div className="grid gap-3 sm:grid-cols-2">{selected.map(activity => {
+          const library = activityLibraries[activity];
+          if (!library) return null;
+          const expanded = openLibrary === activity;
+          return <article key={activity} className="min-w-0 rounded-xl border border-violet-400/20 bg-slate-900/70 p-3">
+            <h4 className="font-semibold text-white">{activity}</h4><p className="mt-1 text-xs text-slate-300">{library.description}</p>
+            <button type="button" aria-expanded={expanded} onClick={() => setOpenLibrary(expanded ? null : activity)} className="mt-3 rounded-lg border border-violet-400/50 px-3 py-2 text-sm font-semibold text-violet-100">{expanded ? "Fechar biblioteca" : "Abrir biblioteca"}</button>
+            {expanded && <div className="mt-3 space-y-2">{activity === "Academia" ? <HealthExerciseLibrary /> : library.entries.map(entry => <div key={entry.title} className="rounded-lg border border-white/10 bg-slate-950/60 p-3"><h5 className="text-sm font-semibold text-white">{entry.title}</h5><p className="mt-1 text-xs text-slate-300">{entry.detail}</p></div>)}</div>}
+          </article>;
+        })}</div>}
+    </section>
     <HealthWorkoutPlanner />
-    <HealthExerciseLibrary />
     <HealthProgress />
     <HealthDailyLog />
     <div className="rounded-xl border border-rose-400/20 p-3"><p className="text-xs text-slate-400">Privacidade: você controla seus registros de saúde.</p><button type="button" disabled={saving} onClick={() => void eraseHealthData()} className="mt-2 text-sm text-rose-300 underline disabled:opacity-50">Excluir todos os meus dados de saúde</button></div>
