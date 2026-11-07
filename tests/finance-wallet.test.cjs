@@ -73,3 +73,11 @@ test("wallet warns when historical figures are refreshing", () => {
   assert.ok(source.includes("Atualizando histórico e saldo estimado."));
   assert.ok(source.includes("Os valores exibidos podem ser da consulta anterior."));
 });
+
+test("wallet rejects invalid persisted entries before publishing a new balance", () => {
+  const refresh = section("const load = async () => {", "void load();");
+  assert.ok(refresh.includes("Number.isSafeInteger(item.amount_cents)"));
+  assert.ok(refresh.includes('item.amount_cents <= 0'));
+  assert.ok(refresh.includes('["income", "expense"].includes(item.kind)'));
+  assert.ok(refresh.indexOf("Histórico financeiro inválido.") < refresh.indexOf("setEntries(allEntries)"));
+});
