@@ -81,3 +81,9 @@ test("wallet rejects invalid persisted entries before publishing a new balance",
   assert.ok(refresh.includes('["income", "expense"].includes(item.kind)'));
   assert.ok(refresh.indexOf("Histórico financeiro inválido.") < refresh.indexOf("setEntries(allEntries)"));
 });
+
+test("invalid opening balance never partially commits refreshed ledger", () => {
+  const refresh = section("const load = async () => {", "void load();");
+  assert.ok(refresh.includes('if (!Number.isSafeInteger(nextBalance)) throw new Error("Saldo inicial inválido.")'));
+  assert.ok(refresh.indexOf('if (!Number.isSafeInteger(nextBalance))') < refresh.indexOf("setEntries(allEntries)"));
+});
