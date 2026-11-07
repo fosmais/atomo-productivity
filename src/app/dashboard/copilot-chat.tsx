@@ -94,6 +94,7 @@ function isEventProposal(
   const [pendingConciergePrompt, setPendingConciergePrompt] = useState<string | null>(null);
   useEffect(() => {
     if (activeModule !== "vyra-ai") return;
+    const timer = window.setTimeout(() => {
     const conciergePrompt = sessionStorage.getItem("myryra:myka:concierge-handoff");
     const investmentPrompt = sessionStorage.getItem("myryra:myka:investment-handoff");
     const healthPrompt = sessionStorage.getItem("myryra:myka:health-handoff");
@@ -104,6 +105,8 @@ function isEventProposal(
     else sessionStorage.removeItem("myryra:myka:health-handoff");
     if (conciergePrompt) setPendingConciergePrompt(prompt.slice(0, 3500));
     else setInput(prompt.slice(0, 1500));
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [activeModule]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -613,8 +616,11 @@ setConversationId(data.conversationId);
   useEffect(() => {
     if (!pendingConciergePrompt || historyLoading || loading || error || dailyLimitReached || activeModule !== "vyra-ai") return;
     const prompt = pendingConciergePrompt;
-    setPendingConciergePrompt(null);
-    void sendTextMessage(prompt);
+    const timer = window.setTimeout(() => {
+      setPendingConciergePrompt(null);
+      void sendTextMessage(prompt);
+    }, 0);
+    return () => window.clearTimeout(timer);
     // Only dispatch a saved Concierge handoff once when the chat becomes ready.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingConciergePrompt, historyLoading, loading, error, dailyLimitReached, activeModule]);
