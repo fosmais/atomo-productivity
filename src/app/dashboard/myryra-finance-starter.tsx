@@ -176,7 +176,7 @@ export default function MyryraFinanceStarter() {
       if (authError || !auth.user) throw new Error("Sessão expirada.");
       const { data: deleted, error: deleteError } = await client.from("myryra_finance_entries").delete().eq("id", id).eq("user_id", auth.user.id).select("id");
       if (deleteError) throw deleteError;
-      if (!deleted?.length) throw new Error("Registro não encontrado.");
+      if (!deleted || deleted.length !== 1 || deleted[0]?.id !== id) throw new Error("Exclusão não confirmada para o lançamento solicitado.");
       setEntries(previous => previous.filter(item => item.id !== id));
       window.dispatchEvent(new Event("myryra:finance-updated"));
     } catch { setError("Não foi possível excluir o lançamento."); }
