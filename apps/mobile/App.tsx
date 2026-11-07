@@ -13,10 +13,11 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [requiresMfa, setRequiresMfa] = useState(false);
   const [verifiedToken, setVerifiedToken] = useState<string | null>(null);
+  const sessionToken = session?.access_token;
   useEffect(() => {
+    if (!sessionToken) return;
     let cancelled = false;
-    if (!session) { setRequiresMfa(false); setVerifiedToken(null); return; }
-    const token = session.access_token;
+    const token = sessionToken;
     supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data, error }) => {
       if (!cancelled) {
         setRequiresMfa(Boolean(error || data?.currentLevel !== "aal2"));
@@ -24,7 +25,7 @@ export default function App() {
       }
     }).catch(() => { if (!cancelled) { setRequiresMfa(true); setVerifiedToken(token); } });
     return () => { cancelled = true; };
-  }, [session?.access_token]);
+  }, [sessionToken]);
   useEffect(() => {
     const unregisterLifecycle = registerAuthLifecycle();
     let mounted = true;
