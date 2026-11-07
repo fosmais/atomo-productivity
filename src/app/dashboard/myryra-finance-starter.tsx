@@ -17,6 +17,17 @@ function parseBRL(input: string): number | null {
 
 type Entry = { id: string; description: string; amount_cents: number; kind: "income" | "expense"; created_at: string };
 
+function calculateBalanceCents(openingBalanceCents: number, entries: Entry[]): number | null {
+  if (!Number.isSafeInteger(openingBalanceCents)) return null;
+  let total = openingBalanceCents;
+  for (const entry of entries) {
+    if (!Number.isSafeInteger(entry.amount_cents) || entry.amount_cents <= 0 || (entry.kind !== "income" && entry.kind !== "expense")) return null;
+    total += entry.kind === "income" ? entry.amount_cents : -entry.amount_cents;
+    if (!Number.isSafeInteger(total)) return null;
+  }
+  return total;
+}
+
 export default function MyryraFinanceStarter() {
   const { navigateTo } = useVyraNavigation();
   const [handoffError, setHandoffError] = useState(false);
@@ -62,8 +73,7 @@ export default function MyryraFinanceStarter() {
         if (mounted && requestId === latestRequest) {
           const nextBalance = Number(balance?.opening_balance_cents ?? 0);
           if (!Number.isSafeInteger(nextBalance)) throw new Error("Saldo inicial inválido.");
-          const transactionTotal = allEntries.reduce((sum, item) => sum + (item.kind === "income" ? item.amount_cents : -item.amount_cents), 0);
-          if (!Number.isSafeInteger(nextBalance + transactionTotal)) throw new Error("Total financeiro fora do limite seguro.");
+          if (calculateBalanceCents(nextBalance, allEntries) === null) throw new Error("Total financeiro fora do limite seguro.");
           setEntries(allEntries);
           setOpeningBalanceCents(nextBalance);
           if (!openingBalanceDraftDirty.current) setOpeningBalanceInput((nextBalance / 100).toFixed(2).replace(".", ","));
@@ -81,7 +91,7 @@ export default function MyryraFinanceStarter() {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [kind, setKind] = useState<"income" | "expense">("expense");
-  const totals = useMemo(() => openingBalanceCents + entries.reduce((sum, item) => sum + (item.kind === "income" ? item.amount_cents : -item.amount_cents), 0), [entries, openingBalanceCents]);
+  const totals = useMemo(() => calculateBalanceCents(openingBalanceCents, entries) ?? 0, [entries, openingBalanceCents]);
   const currency = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
   const askMykaToReplan = () => {
     const prompt = [
