@@ -150,6 +150,8 @@ export default function MyryraFinanceStarter() {
 
   const deleteEntry = async (id: string) => {
     if (saving || balanceSaving || loading) return;
+    const target = entries.find(item => item.id === id);
+    if (!target || !window.confirm(`Excluir permanentemente o lançamento "${target.description}"? Esta ação não pode ser desfeita.`)) return;
     setSaving(true);
     setError("");
     try {
