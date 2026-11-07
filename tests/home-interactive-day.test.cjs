@@ -62,3 +62,16 @@ test("timeline refreshes on calendar update and cleans up listener", () => {
   assert.ok(source.includes('window.addEventListener("myryra:events-updated", loadAgenda)'));
   assert.ok(source.includes('window.removeEventListener("myryra:events-updated", loadAgenda)'));
 });
+
+test("home provides safe task completion entry without direct mutation", () => {
+  const day = section('aria-label="Seu dia interativo"', 'aria-label="Resumo rápido"');
+  assert.ok(day.includes("Concluir tarefas"));
+  assert.ok(day.includes('onClick={() => navigateTo("vyra-tasks")}'));
+});
+
+test("each timeline event offers an accessible reschedule entry", () => {
+  const day = section('aria-label="Seu dia interativo"', 'aria-label="Resumo rápido"');
+  assert.ok(day.includes("Ver / reagendar"));
+  assert.ok(day.includes('aria-label={\`Ver ou reagendar ${event.title} na Agenda\`}'));
+  assert.ok(day.includes('onClick={() => navigateTo("vyra-calendar")}'));
+});
