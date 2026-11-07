@@ -22,8 +22,8 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
   const { activeModule, quickAction } = useVyraNavigation();
   useEffect(() => {
     if (activeModule !== "vyra-tasks" || !quickAction) return;
-    setActive("tasks");
     const timer = window.setTimeout(() => {
+      setActive("tasks");
       const details = document.querySelector<HTMLDetailsElement>(`[data-feature-id="${quickAction}"]`);
       if (details) {
         details.open = true;
