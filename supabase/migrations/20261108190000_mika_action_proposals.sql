@@ -92,9 +92,15 @@ create index if not exists myryra_legal_acceptances_user_idx
   on public.myryra_legal_acceptances(user_id);
 alter table public.myryra_legal_acceptances enable row level security;
 revoke all on public.myryra_legal_acceptances from anon, authenticated;
-grant select on public.myryra_legal_acceptances to authenticated;
+grant select, insert on public.myryra_legal_acceptances to authenticated;
 create policy "Users can read own legal acceptances"
   on public.myryra_legal_acceptances for select to authenticated
   using ((select auth.uid()) = user_id);
--- Writing acceptance requires a dedicated, audited server flow with explicit
--- user interaction; never backfill or grant generic client INSERT.
+-- Immutable self-service acceptance: user and timestamp are database-bound.
+-- The application endpoint only writes after an explicit user action.
+-- Existing users are never backfilled.
+create policy "Users can record own legal acceptance"
+  on public.myryra_legal_acceptances for insert to authenticated
+  with check ((select auth.uid()) = user_id and accepted_at >= now() - interval '1 minute'
+    and accepted_at <= now() + interval '1 minute');
+-- No UPDATE or DELETE grants: accepted records cannot be rewritten by clients.
