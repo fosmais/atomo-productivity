@@ -65,6 +65,21 @@ export async function POST(request: Request) {
       (doc.document_type !== "terms" && action !== "acknowledged")) {
     return NextResponse.json({ error: "Versão de documento inválida ou não publicada." }, { status: 409 });
   }
+  // Only the currently effective version may be accepted. Prevent stale tabs from
+  // recording an outdated version after a new document is published.
+  const { data: currentDocs, error: currentError } = await service
+    .from("myryra_privacy_document_versions")
+    .select("id")
+    .eq("document_type", doc.document_type)
+    .eq("status", "published")
+    .lte("effective_at", new Date().toISOString())
+    .lte("published_at", new Date().toISOString())
+    .order("effective_at", { ascending: false })
+    .limit(1);
+  if (currentError) return NextResponse.json({ error: "Não foi possível validar a versão vigente." }, { status: 503 });
+  if (currentDocs?.[0]?.id !== documentVersionId) {
+    return NextResponse.json({ error: "O documento foi atualizado. Recarregue a página para aceitar a versão vigente." }, { status: 409 });
+  }
   const { data: existing, error: lookupError } = await service.from("myryra_privacy_acceptances")
     .select("id,document_version_id,action").eq("user_id", user.id).eq("request_id", requestId).maybeSingle();
   if (lookupError) return NextResponse.json({ error: "Falha ao verificar solicitação." }, { status: 503 });
