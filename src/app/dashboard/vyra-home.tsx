@@ -42,7 +42,11 @@ export default function VyraHome() {
   const [agendaError, setAgendaError] = useState(false);
   const [today, setToday] = useState<Date | null>(null);
 
-  useEffect(() => { setToday(new Date()); }, []);
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => { if (active) setToday(new Date()); });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     if (activeModule !== "home") return;
