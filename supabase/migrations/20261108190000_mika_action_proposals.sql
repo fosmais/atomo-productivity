@@ -77,3 +77,24 @@ alter table public.mika_action_audit
 create unique index if not exists mika_action_audit_proposal_event_once_idx
   on public.mika_action_audit(proposal_id, event_type)
   where event_type in ('proposed', 'approved', 'rejected', 'started', 'succeeded', 'expired');
+
+-- Consent ledger. No existing user is automatically marked as accepted.
+-- Legal document versions must be reviewed and published before recording acceptance.
+create table if not exists public.myryra_legal_acceptances (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  document_type text not null check (document_type in ('terms','privacy')),
+  document_version text not null check (length(document_version) between 1 and 80),
+  accepted_at timestamptz not null default now(),
+  unique(user_id, document_type, document_version)
+);
+create index if not exists myryra_legal_acceptances_user_idx
+  on public.myryra_legal_acceptances(user_id);
+alter table public.myryra_legal_acceptances enable row level security;
+revoke all on public.myryra_legal_acceptances from anon, authenticated;
+grant select on public.myryra_legal_acceptances to authenticated;
+create policy "Users can read own legal acceptances"
+  on public.myryra_legal_acceptances for select to authenticated
+  using ((select auth.uid()) = user_id);
+-- Writing acceptance requires a dedicated, audited server flow with explicit
+-- user interaction; never backfill or grant generic client INSERT.
