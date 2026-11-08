@@ -20,6 +20,7 @@ create table if not exists public.mika_action_proposals (
   approved_at timestamptz,
   executed_at timestamptz,
   result jsonb,
+  execution_key uuid unique,
   constraint mika_action_proposal_expiry check (expires_at > created_at)
 );
 create index if not exists mika_action_proposals_user_created_idx
@@ -69,3 +70,10 @@ alter table public.mika_action_audit
   add constraint mika_action_audit_owner_fk
   foreign key (proposal_id, user_id)
   references public.mika_action_proposals(id, user_id) on delete cascade;
+
+-- Execution claim must be unique and assigned by trusted server logic only.
+-- Keep the execution endpoint disabled until approval, consent and
+-- transactional claiming are implemented and tested end to end.
+create unique index if not exists mika_action_audit_proposal_event_once_idx
+  on public.mika_action_audit(proposal_id, event_type)
+  where event_type in ('proposed', 'approved', 'rejected', 'started', 'succeeded', 'expired');
