@@ -2,7 +2,7 @@
 
 /**
  * Isolated MVP2 integration status cards for review.
- * This component is intentionally NOT mounted in the production dashboard.
+ * Mounted only in the isolated release branch for Preview review; not merged to production.
  * No OAuth endpoints or external API access are enabled by these cards.
  */
 const integrations = [
