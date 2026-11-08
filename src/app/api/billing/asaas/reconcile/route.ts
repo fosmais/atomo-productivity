@@ -45,6 +45,9 @@ export async function POST(request: NextRequest) {
           // Unlinked events may arrive before provisioning; keep retryable.
           state = result.reason === "unlinked_subscription" ? "retry" : "rejected";
           errorCode = result.reason;
+        } else if (result.subscriptionStatus !== "ACTIVE") {
+          state = "rejected";
+          errorCode = "subscription_not_active";
         } else if (result.paymentStatus === "CONFIRMED" || result.paymentStatus === "RECEIVED") {
           // Evidence is verified; activation is a separate, currently disabled workflow.
           state = "verified";
