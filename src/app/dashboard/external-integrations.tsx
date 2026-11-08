@@ -9,52 +9,76 @@ const integrations = [
   {
     name: "Todoist",
     subtitle: "Tarefas e projetos",
-    description: "Importar tarefas e projetos existentes para organizar seu dia com a MYKA.",
-    url: "https://developer.todoist.com/",
-    label: "Documentação da API",
+    description: "Conecte sua conta para consultar tarefas e importar somente as selecionadas.",
+    status: "Consulta e importação disponíveis para teste",
+    connectUrl: "/api/todoist/connect",
+    connectLabel: "Conectar Todoist",
+    sectionId: "myryra-todoist-import",
+    docsUrl: "https://developer.todoist.com/",
   },
   {
     name: "Google Tasks",
     subtitle: "Listas e tarefas",
-    description: "Aproveitar tarefas do Google sem misturá-las automaticamente com eventos do calendário.",
-    url: "https://developers.google.com/workspace/tasks",
-    label: "Documentação da API",
+    description: "Consulte suas listas Google e confirme quais tarefas deseja importar.",
+    status: "Consulta e importação disponíveis para teste",
+    connectUrl: "/api/google/connect",
+    connectLabel: "Autorizar Google Tasks",
+    sectionId: "myryra-google-tasks-import",
+    docsUrl: "https://developers.google.com/workspace/tasks",
   },
   {
     name: "Microsoft Outlook",
     subtitle: "Calendário profissional",
-    description: "Consultar compromissos do Outlook para planejar disponibilidade e prioridades.",
-    url: "https://learn.microsoft.com/graph/api/resources/calendar",
-    label: "Documentação da API",
+    description: "Consulta de compromissos via Microsoft Graph, com autorização do usuário.",
+    status: "Conexão ainda não disponível",
+    connectUrl: null,
+    connectLabel: null,
+    sectionId: null,
+    docsUrl: "https://learn.microsoft.com/graph/api/resources/calendar",
   },
-];
+] as const;
 
 export default function ExternalIntegrations() {
   return (
     <section className="space-y-4" aria-label="Integrações externas">
       <p className="text-sm leading-6 text-slate-300">
-        Prepare suas ferramentas para trabalhar com a MYRYRA. Google Tasks oferece consulta e importação sob demanda mediante autorização.
-        Todoist também oferece importação manual após configurar a conexão. Outlook permanece em desenvolvimento.
+        Conecte suas ferramentas e escolha o que importar. A MYRYRA não modifica tarefas externas nesta etapa.
+        Google Tasks e Todoist possuem fluxos de teste; Outlook ainda está em implementação.
       </p>
       <div className="grid gap-3 lg:grid-cols-3">
-        {integrations.map((integration) => (
+        {integrations.map(integration => (
           <article key={integration.name} className="flex min-w-0 flex-col gap-3 rounded-2xl border border-violet-400/20 bg-slate-900/75 p-4">
             <div>
               <h3 className="text-base font-semibold text-white">{integration.name}</h3>
               <p className="mt-1 text-xs font-medium text-violet-300">{integration.subtitle}</p>
             </div>
             <p className="flex-1 text-sm leading-6 text-slate-300">{integration.description}</p>
-            <span className="w-fit rounded-full border border-amber-400/25 bg-amber-400/10 px-2.5 py-1 text-xs text-amber-200">Integração em desenvolvimento</span>
-            <a href={integration.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-violet-300 underline underline-offset-4 hover:text-violet-100">{integration.label}</a>
+            <span className="w-fit rounded-full border border-amber-400/25 bg-amber-400/10 px-2.5 py-1 text-xs text-amber-200">
+              {integration.status}
+            </span>
+            {integration.connectUrl && integration.connectLabel && integration.sectionId ? (
+              <div className="flex flex-wrap gap-3 text-sm">
+                <a href={integration.connectUrl} className="font-medium text-violet-200 underline underline-offset-4">
+                  {integration.connectLabel}
+                </a>
+                <a href={`#${integration.sectionId}`} className="text-violet-300 underline underline-offset-4">
+                  Consultar e importar
+                </a>
+              </div>
+            ) : <p className="text-xs text-slate-400">Disponível após homologação da integração.</p>}
+            <a href={integration.docsUrl} target="_blank" rel="noopener noreferrer"
+              className="text-sm font-medium text-violet-300 underline underline-offset-4 hover:text-violet-100">
+              Documentação da API
+            </a>
           </article>
         ))}
       </div>
-      <GoogleTasksImport />
-      <TodoistImport />
+      <div id="myryra-google-tasks-import" className="scroll-mt-24"><GoogleTasksImport /></div>
+      <div id="myryra-todoist-import" className="scroll-mt-24"><TodoistImport /></div>
       <ManualTaskImport />
       <ManualCalendarImport />
       <p className="text-xs leading-5 text-slate-400">
-        As importações são manuais, mediante confirmação. Google Tasks e Todoist não alteram dados nas contas externas.
+        As importações exigem confirmação. Conectar uma conta não inicia sincronização automática.
       </p>
     </section>
   );
