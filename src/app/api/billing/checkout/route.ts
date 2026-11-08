@@ -22,3 +22,21 @@ export async function POST() {
     error: "Checkout em preparação: cadastro do cliente, recorrência e conciliação pendentes.",
   }, { status: 501, headers });
 }
+
+/** Read-only readiness probe. Never creates a customer, subscription, or payment. */
+export async function GET() {
+  const sandboxConfigured = asaasSandboxReady();
+  const provisioningEnabled = process.env.ASAAS_SANDBOX_PROVISIONING_ENABLED === "true";
+  const checkoutEnabled = process.env.BILLING_CHECKOUT_ENABLED === "true";
+  const entitlementsEnabled = process.env.BILLING_ENTITLEMENTS_ENABLED === "true";
+  return NextResponse.json({
+    provider: "asaas", environment: "sandbox",
+    sandboxConfigured,
+    provisioningEnabled,
+    checkoutEnabled,
+    entitlementsEnabled,
+    checkoutImplemented: false,
+    readyForPurchase: false,
+    reason: "Cadastro de clientes, assinatura e conciliacao ainda nao homologados.",
+  }, { headers });
+}
