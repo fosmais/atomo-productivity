@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getCloudEvents, saveCloudEvent } from "@/lib/event-cloud";
 
 type Plan = {
   focusSuggestion: { title: string; startsAt: string; endsAt: string; minutes: number } | null;
@@ -24,9 +25,12 @@ function localIso(date: Date) {
 export default function MikaResolveMyDay() {
   const [plan, setPlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(false);
+  const [savingFocus, setSavingFocus] = useState(false);
+  const [focusSaved, setFocusSaved] = useState(false);
+  const [focusMessage, setFocusMessage] = useState("");
   const [error, setError] = useState("");
   async function prepare() {
-    setLoading(true); setError(""); setPlan(null);
+    setLoading(true); setError(""); setPlan(null); setFocusSaved(false); setFocusMessage("");
     try {
       const start = new Date(); start.setHours(0, 0, 0, 0);
       const end = new Date(start); end.setDate(end.getDate() + 1);
@@ -39,6 +43,27 @@ export default function MikaResolveMyDay() {
       setPlan(result.plan);
     } catch (err) { setError(err instanceof Error ? err.message : "Falha ao consultar o planejamento."); }
     finally { setLoading(false); }
+  }
+  async function approveFocus() {
+    const focus = plan?.focusSuggestion;
+    if (!focus || savingFocus || focusSaved) return;
+    if (!window.confirm(`Aprovar a criação do compromisso "${focus.title}" das ${new Date(focus.startsAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} às ${new Date(focus.endsAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} na sua agenda MYRYRA?`)) return;
+    setSavingFocus(true); setFocusMessage("");
+    try {
+      if (new Date(focus.startsAt).getTime() <= Date.now()) throw new Error("Este horário já passou. Atualize o planejamento.");
+      const existing = await getCloudEvents();
+      const start = Date.parse(focus.startsAt), end = Date.parse(focus.endsAt);
+      if (existing.some(event => event.blocksTime && Date.parse(event.startsAt) < end && Date.parse(event.endsAt) > start)) {
+        throw new Error("O horário ficou ocupado. Atualize o planejamento antes de salvar.");
+      }
+      if (existing.some(event => event.title === focus.title && Date.parse(event.startsAt) === start && Date.parse(event.endsAt) === end)) {
+        setFocusSaved(true); setFocusMessage("Este bloco de foco já está na sua agenda."); return;
+      }
+      await saveCloudEvent({ title: focus.title, startsAt: focus.startsAt, endsAt: focus.endsAt, eventType: "appointment", category: "personal", blocksTime: true, notes: "Bloco de foco aprovado pelo usuário após sugestão da MIKA." });
+      setFocusSaved(true); setFocusMessage("Bloco de foco salvo na sua agenda MYRYRA.");
+      window.dispatchEvent(new Event("myryra:events-updated"));
+    } catch (err) { setFocusMessage(err instanceof Error ? err.message : "Não foi possível salvar o foco."); }
+    finally { setSavingFocus(false); }
   }
   function downloadFocusCalendar() {
     if (!plan?.focusSuggestion) return;
@@ -79,7 +104,7 @@ export default function MikaResolveMyDay() {
         <div><h4 className="font-semibold text-white">Suas prioridades</h4>
           {plan.priorities.length ? <ul className="mt-1 list-inside list-disc">{plan.priorities.map((task, i) => <li key={i}>{task.title} ({task.priority})</li>)}</ul> : <p>Sem tarefas pendentes.</p>}
         </div>
-        {plan.focusSuggestion && <div className="rounded-xl border border-violet-400/30 bg-violet-400/10 p-3"><h4 className="font-semibold text-white">Sugestão da MIKA: 25 minutos de foco</h4><p className="mt-1">{plan.focusSuggestion.title}</p><p className="text-violet-200">{formatTime(plan.focusSuggestion.startsAt)}–{formatTime(plan.focusSuggestion.endsAt)}</p><button type="button" onClick={downloadFocusCalendar} className="mt-3 rounded-lg bg-violet-500 px-3 py-2 font-semibold text-white hover:bg-violet-400">Adicionar ao meu calendário (.ics)</button><p className="mt-2 text-xs text-slate-300">O arquivo será baixado. Revise e confirme a importação no seu calendário; a MYRYRA não altera sua agenda automaticamente.</p></div>}
+        {plan.focusSuggestion && <div className="rounded-xl border border-violet-400/30 bg-violet-400/10 p-3"><h4 className="font-semibold text-white">Sugestão da MIKA: 25 minutos de foco</h4><p className="mt-1">{plan.focusSuggestion.title}</p><p className="text-violet-200">{formatTime(plan.focusSuggestion.startsAt)}–{formatTime(plan.focusSuggestion.endsAt)}</p><button type="button" onClick={approveFocus} disabled={savingFocus || focusSaved} className="mt-3 mr-2 rounded-lg bg-violet-500 px-3 py-2 font-semibold text-white disabled:opacity-50">{savingFocus ? "Salvando..." : focusSaved ? "Salvo na agenda" : "Aprovar e salvar na MYRYRA"}</button><button type="button" onClick={downloadFocusCalendar} className="mt-3 rounded-lg bg-violet-500 px-3 py-2 font-semibold text-white hover:bg-violet-400">Adicionar ao meu calendário (.ics)</button>{focusMessage && <p role="status" className="mt-2 text-sm text-violet-100">{focusMessage}</p>}<p className="mt-2 text-xs text-slate-300">O arquivo será baixado. Revise e confirme a importação no seu calendário; a MYRYRA não altera sua agenda automaticamente.</p></div>}
         <div><h4 className="font-semibold text-white">Horários livres</h4>
           {plan.freeSlots.length ? <ul className="mt-1 list-inside list-disc">{plan.freeSlots.slice(0, 3).map((slot, i) => <li key={i}>{formatTime(slot.startsAt)}–{formatTime(slot.endsAt)} ({slot.minutes} min)</li>)}</ul> : <p>Nenhum intervalo livre identificado no restante do dia.</p>}
         </div>
