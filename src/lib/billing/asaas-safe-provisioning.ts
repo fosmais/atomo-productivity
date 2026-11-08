@@ -141,6 +141,11 @@ export async function recoverAsaasSandboxOperation(input: {
   } else {
     throw new Error("Tipo de operação inválido.");
   }
+  if (operation.state === "needs_recovery") {
+    await recordAsaasSandboxOperation(admin, {
+      operationId: operation.id, state: "remote_created", providerId: operation.provider_id,
+    });
+  }
   await recordAsaasSandboxOperation(admin, {
     operationId: operation.id, state: "completed", providerId: operation.provider_id,
   });
