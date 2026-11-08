@@ -87,6 +87,19 @@ export async function verifyLinkedAsaasSandboxPayment(
   if (Math.round(payment.value * 100) !== Math.round(expectedValue * 100)) {
     return { verified: false as const, reason: "amount_mismatch" as const };
   }
+  // A payment without a valid billing due date cannot be reconciled safely.
+  // This is a date-integrity guard, not yet a full subscription-period match.
+  if (!payment.dueDate || !/^\\d{4}-\\d{2}-\\d{2}$/.test(payment.dueDate) ||
+      !Number.isFinite(Date.parse(payment.dueDate + "T00:00:00Z")) ||
+      new Date(payment.dueDate + "T00:00:00Z").toISOString().slice(0, 10) !== payment.dueDate) {
+    return { verified: false as const, reason: "invalid_billing_date" as const };
+  }
+  if (payment.paymentDate &&
+      (!/^\\d{4}-\\d{2}-\\d{2}$/.test(payment.paymentDate) ||
+       !Number.isFinite(Date.parse(payment.paymentDate + "T00:00:00Z")) ||
+       new Date(payment.paymentDate + "T00:00:00Z").toISOString().slice(0, 10) !== payment.paymentDate)) {
+    return { verified: false as const, reason: "invalid_payment_date" as const };
+  }
   return {
     verified: true as const,
     userId: link.user_id,
