@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type DocumentStatus = { type: "terms" | "privacy"; version: string; accepted: boolean };
+type DocumentStatus = { type: "terms" | "privacy"; version: string; url: string; accepted: boolean };
 type LegalStatus = { accepted: boolean; documents: DocumentStatus[] };
 
 export function MyryraLegalAcceptance({ onAccepted }: { onAccepted?: () => void }) {
@@ -11,8 +11,8 @@ export function MyryraLegalAcceptance({ onAccepted }: { onAccepted?: () => void 
   const [privacyChecked, setPrivacyChecked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const termsUrl = process.env.NEXT_PUBLIC_MYRYRA_TERMS_URL;
-  const privacyUrl = process.env.NEXT_PUBLIC_MYRYRA_PRIVACY_URL;
+  const termsUrl = status?.documents.find(d => d.type === "terms")?.url;
+  const privacyUrl = status?.documents.find(d => d.type === "privacy")?.url;
   const validUrl = (url: string | undefined) => {
     if (!url) return false;
     try { return new URL(url).protocol === "https:"; } catch { return false; }
