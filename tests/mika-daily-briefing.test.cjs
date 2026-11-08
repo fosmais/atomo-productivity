@@ -50,3 +50,18 @@ test("does not count completed tasks and handles overdue due dates", () => {
 test("rejects invalid day ranges", () => {
   assert.throws(() => buildMikaDailyBriefing({ ...base, tasks: [], events: [], dayEnd: base.dayStart }));
 });
+
+test("suggests 25-minute focus for the top priority in a free slot", () => {
+  const plan = buildMikaDailyBriefing({
+    ...base,
+    tasks: [{ title: "Relatório", priority: "Alta", completed: false }],
+    events: [{ title: "Reunião", starts_at: "2026-11-08T10:00:00-03:00", ends_at: "2026-11-08T11:00:00-03:00" }]
+  });
+  assert.equal(plan.focusSuggestion.title, "Foco: Relatório");
+  assert.equal(plan.focusSuggestion.minutes, 25);
+  assert.equal(plan.focusSuggestion.startsAt, "2026-11-08T12:00:00.000Z");
+});
+test("does not suggest focus when no pending tasks", () => {
+  const plan = buildMikaDailyBriefing({ ...base, tasks: [], events: [] });
+  assert.equal(plan.focusSuggestion, null);
+});
