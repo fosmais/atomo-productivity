@@ -32,17 +32,21 @@ export async function auditAsaasSandboxProvisioning() {
       counts[op.state as ProvisioningState]++;
     } else {
       unknownStates++;
-      requiresReview++;
     }
-    if (op.state === "completed" && !op.provider_id) completedWithoutProviderId++;
-    if (op.state === "needs_recovery" ||
-        (op.state !== "completed" && now - new Date(op.updated_at).getTime() > 15 * 60_000)) {
+    const updatedAt = Date.parse(op.updated_at);
+    const stalled = op.state !== "completed" &&
+      (!Number.isFinite(updatedAt) || now - updatedAt > 15 * 60_000);
+    const missingProvider = op.state === "completed" && !op.provider_id;
+    if (missingProvider) completedWithoutProviderId++;
+    if (!STATES.includes(op.state as ProvisioningState) ||
+        op.state === "needs_recovery" || stalled || missingProvider) {
       requiresReview++;
     }
   }
   return {
     inspected: (data ?? []).length,
     sampleLimit: 1000,
+    sampleMayBeTruncated: (data ?? []).length === 1000,
     counts,
     unknownStates,
     requiresReview,
