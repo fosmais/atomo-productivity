@@ -39,15 +39,20 @@ export default function GoogleCalendarSettings() {
       save_error: "O Google autorizou a conexão, mas não foi possível salvá-la. Tente novamente.",
       connection_error: "Não foi possível concluir a conexão. Verifique as permissões do Google e tente novamente.",
     };
-    if (status === "connected") {
-      setMessage("Google Calendar conectado com sucesso. Selecione os calendários que devem bloquear horários.");
-    } else if (messages[status]) {
-      setError(messages[status]);
-    }
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      if (status === "connected") {
+        setMessage("Google Calendar conectado com sucesso. Selecione os calendários que devem bloquear horários.");
+      } else if (messages[status]) {
+        setError(messages[status]);
+      }
+    });
     // Remove the one-time callback status without reloading or repeating it.
     const url = new URL(window.location.href);
     url.searchParams.delete("google_calendar");
     window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
