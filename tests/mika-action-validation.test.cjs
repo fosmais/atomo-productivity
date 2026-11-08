@@ -27,3 +27,7 @@ test("does not accept non-string reasons or dates", () => {
   assert.equal(isAction({ ...valid, reason: null }), false);
   assert.equal(isAction({ ...valid, due_at: 123 }), false);
 });
+
+test("rejects empty action batches", () => {
+  assert.equal(validateProposalList({ actions: [] }), null);
+});
