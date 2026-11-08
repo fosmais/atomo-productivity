@@ -29,8 +29,8 @@ begin
  update public.mika_action_proposals set status='executed',executed_at=now(),
  result=jsonb_build_object('task_id',v_task,'plan_id',p_plan_id)
  where id=p.id;
- insert into public.mika_action_audit(proposal_id,user_id,event_type,details)
- values(p.id,auth.uid(),'executed',jsonb_build_object('task_id',v_task));
+ insert into public.mika_action_audit(proposal_id,user_id,event_type,metadata)
+ values(p.id,auth.uid(),'succeeded',jsonb_build_object('task_id',v_task));
  return query select 'executed'::text,v_task;
 end $$;
 revoke all on function public.mika_execute_approved_task(uuid,uuid) from public,anon;
