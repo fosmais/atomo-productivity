@@ -62,6 +62,31 @@ async function DashboardContent() {
     redirect("/login");
   }
 
+  // Legal onboarding is enforced only after both reviewed documents are published.
+  // A missing catalog never implies consent, and no synthetic acceptance is created.
+  const { data: legalDocs, error: legalError } = await supabase
+    .from("myryra_privacy_document_versions")
+    .select("id,document_type,published_at")
+    .in("document_type", ["terms", "privacy_notice"])
+    .eq("status", "published")
+    .lte("effective_at", new Date().toISOString())
+    .order("effective_at", { ascending: false });
+
+  if (!legalError && legalDocs) {
+    const terms = legalDocs.find(d => d.document_type === "terms" && d.published_at);
+    const notice = legalDocs.find(d => d.document_type === "privacy_notice" && d.published_at);
+    if (terms && notice) {
+      const { data: accepted, error: acceptanceError } = await supabase
+        .from("myryra_privacy_acceptances")
+        .select("document_version_id,action")
+        .in("document_version_id", [terms.id, notice.id]);
+      if (acceptanceError || !accepted?.some(a => a.document_version_id === terms.id && a.action === "accepted") ||
+          !accepted?.some(a => a.document_version_id === notice.id && a.action === "acknowledged")) {
+        redirect("/privacidade/primeiro-acesso");
+      }
+    }
+  }
+
   const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (assurance.error || (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2")) {
     redirect("/login");
