@@ -28,6 +28,30 @@ export async function POST(request: Request) {
   const { proposalId, approve } = body as Record<string, unknown>;
   if (typeof proposalId !== "string" || !uuid.test(proposalId) || typeof approve !== "boolean")
     return NextResponse.json({ error: "Decisão inválida." }, { status: 400 });
+  // Verify the current published legal versions at decision time, not only at proposal time.
+  const now = new Date().toISOString();
+  const { data: docs, error: docsError } = await supabase
+    .from("myryra_privacy_document_versions")
+    .select("id,document_type,published_at")
+    .in("document_type", ["terms", "privacy_notice"])
+    .eq("status", "published")
+    .lte("effective_at", now)
+    .lte("published_at", now)
+    .order("effective_at", { ascending: false });
+  if (docsError) return NextResponse.json({ error: "Verificação legal indisponível." }, { status: 503 });
+  const terms = docs?.find(doc => doc.document_type === "terms" && doc.published_at);
+  const notice = docs?.find(doc => doc.document_type === "privacy_notice" && doc.published_at);
+  if (!terms || !notice)
+    return NextResponse.json({ error: "Documentos legais ainda não publicados.", code: "LEGAL_NOT_CONFIGURED" }, { status: 503 });
+  const { data: acceptance, error: acceptanceError } = await supabase
+    .from("myryra_privacy_acceptances")
+    .select("document_version_id,action")
+    .eq("user_id", user.id)
+    .in("document_version_id", [terms.id, notice.id]);
+  if (acceptanceError) return NextResponse.json({ error: "Verificação legal indisponível." }, { status: 503 });
+  if (!acceptance?.some(row => row.document_version_id === terms.id && row.action === "accepted") ||
+      !acceptance?.some(row => row.document_version_id === notice.id && row.action === "acknowledged"))
+    return NextResponse.json({ error: "Aceite dos documentos vigentes necessário.", code: "LEGAL_ACCEPTANCE_REQUIRED" }, { status: 403 });
   const { data, error } = await supabase.rpc("mika_decide_proposal", {
     p_proposal_id: proposalId, p_approve: approve
   });
