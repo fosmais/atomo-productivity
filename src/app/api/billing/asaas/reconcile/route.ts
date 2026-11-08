@@ -46,13 +46,13 @@ export async function POST(request: NextRequest) {
           state = result.reason === "unlinked_subscription" ? "retry" : "rejected";
           errorCode = result.reason;
         } else if (result.subscriptionStatus !== "ACTIVE") {
-          state = "rejected";
+          state = result.subscriptionStatus === "INACTIVE" ? "retry" : "rejected";
           errorCode = "subscription_not_active";
         } else if (result.paymentStatus === "CONFIRMED" || result.paymentStatus === "RECEIVED") {
           // Evidence is verified; activation is a separate, currently disabled workflow.
           state = "verified";
         } else {
-          state = "rejected";
+          state = result.paymentStatus === "PENDING" || result.paymentStatus === "OVERDUE" ? "retry" : "rejected";
           errorCode = "payment_not_settled";
         }
       }
