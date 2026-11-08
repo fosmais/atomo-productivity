@@ -15,7 +15,7 @@ export default function HcaptchaCaptcha({ onToken, resetSignal }: { onToken: (to
   const ref = useRef<HTMLDivElement>(null);
   const widgetId = useRef<string | undefined>(undefined);
   const callback = useRef(onToken);
-  callback.current = onToken;
+  useEffect(() => { callback.current = onToken; }, [onToken]);
   const [failed, setFailed] = useState(false);
   const sitekey = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY?.trim();
 
