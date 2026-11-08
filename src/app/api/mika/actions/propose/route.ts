@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { checkConciergeRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -116,7 +117,8 @@ export async function POST(request: Request) {
     if (!actions) throw new Error("Invalid action list");
     // Persist the proposals before displaying them. If the migration is not
     // installed, fail closed rather than showing an untracked approval.
-    const { data: saved, error: saveError } = await supabase
+    const admin = createSupabaseAdmin();
+    const { data: saved, error: saveError } = await admin
       .from("mika_action_proposals")
       .insert(actions.map(action => ({
         user_id: user.id,
