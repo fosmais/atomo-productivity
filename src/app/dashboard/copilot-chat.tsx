@@ -615,10 +615,15 @@ setConversationId(data.conversationId);
   useEffect(() => {
     if (!pendingConciergePrompt || historyLoading || loading || error || dailyLimitReached || activeModule !== "vyra-ai") return;
     const prompt = pendingConciergePrompt;
-    setPendingConciergePrompt(null);
-    void sendTextMessage(prompt);
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      setPendingConciergePrompt(null);
+      void sendTextMessage(prompt);
+    });
     // Only dispatch a saved Concierge handoff once when the chat becomes ready.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => { active = false; };
   }, [pendingConciergePrompt, historyLoading, loading, error, dailyLimitReached, activeModule]);
 
   return (
