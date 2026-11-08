@@ -363,7 +363,7 @@ export default function FinanceSubscriptions() {
         .update({ title: title.trim(), amount_cents: cents, billing_cycle: cycle, next_due_date: due })
         .eq("id", editingId).eq("user_id", auth.user.id)
         .select("id,title,amount_cents,billing_cycle,next_due_date").single();
-      if (updateError || !data || data.id !== editingId) throw new Error("Atualização não confirmada");
+      if (updateError || !data || data.id !== editingId || data.title !== title.trim() || data.amount_cents !== cents || data.billing_cycle !== cycle || data.next_due_date !== due) throw new Error("Atualização não confirmada");
       setItems(previous => previous.map(item => item.id === editingId ? data as Subscription : item).sort((a,b) => a.next_due_date.localeCompare(b.next_due_date)));
       cancelEditing();
     } catch { setError("Não foi possível atualizar a assinatura. Verifique as permissões e tente novamente."); }
