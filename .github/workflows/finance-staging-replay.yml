@@ -1,0 +1,88 @@
+name: MYRYRA Finance clean staging replay
+on:
+  push:
+    branches:
+      - test/mvp2-finance-wallet-regression
+    paths:
+      - 'docs/sql/staging-migrations/**'
+      - '.github/workflows/finance-staging-replay.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  clean-replay:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: replay_only
+          POSTGRES_DB: finance_replay
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d finance_replay"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: replay_only
+      PGDATABASE: finance_replay
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bootstrap minimal Supabase auth dependencies in disposable Postgres
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE SCHEMA auth;
+          CREATE TABLE auth.users (id uuid PRIMARY KEY);
+          CREATE ROLE authenticated NOLOGIN;
+          CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$
+            SELECT NULLIF(current_setting('request.jwt.claim.sub', true), '')::uuid
+          $$;
+          SQL
+      - name: Replay all seven staging-only migrations in order
+        run: |
+          set -euo pipefail
+          count=0
+          for migration in docs/sql/staging-migrations/[0-9]*.sql; do
+            echo "Replaying: $migration"
+            psql -v ON_ERROR_STOP=1 --single-transaction -f "$migration"
+            count=$((count+1))
+          done
+          test "$count" -eq 7
+      - name: Assert isolated Finance schema shape and RLS
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          DECLARE
+            table_count integer;
+            policy_count integer;
+            index_count integer;
+            trash_column_count integer;
+            unprotected_count integer;
+          BEGIN
+            SELECT count(*) INTO table_count FROM pg_tables
+              WHERE schemaname='public' AND tablename LIKE 'myryra_finance_%';
+            SELECT count(*) INTO policy_count FROM pg_policies
+              WHERE schemaname='public' AND tablename LIKE 'myryra_finance_%';
+            SELECT count(*) INTO index_count FROM pg_indexes
+              WHERE schemaname='public' AND tablename LIKE 'myryra_finance_%';
+            SELECT count(*) INTO trash_column_count FROM information_schema.columns
+              WHERE table_schema='public' AND table_name IN
+              ('myryra_finance_entries','myryra_finance_subscriptions')
+              AND column_name='deleted_at';
+            SELECT count(*) INTO unprotected_count FROM pg_class c
+              JOIN pg_namespace n ON n.oid=c.relnamespace
+              WHERE n.nspname='public' AND c.relname LIKE 'myryra_finance_%'
+                AND c.relkind='r' AND NOT c.relrowsecurity;
+            IF table_count <> 9 OR policy_count <> 28 OR index_count <> 21
+               OR trash_column_count <> 2 OR unprotected_count <> 0 THEN
+              RAISE EXCEPTION 'Finance replay mismatch: tables %, policies %, indexes %, trash columns %, RLS off %',
+                table_count,policy_count,index_count,trash_column_count,unprotected_count;
+            END IF;
+          END $$;
+          SQL
