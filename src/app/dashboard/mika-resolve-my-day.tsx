@@ -78,7 +78,7 @@ export default function MikaResolveMyDay() {
       `SUMMARY:${escapeIcs(focus.title)}`,
       "DESCRIPTION:Bloco de foco sugerido pela MIKA. Confirme a importação no seu calendário.",
       "END:VEVENT", "END:VCALENDAR", ""
-    ].join("\\r\\n");
+    ].join("\r\n");
     const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
     const anchor = document.createElement("a");
     anchor.href = url; anchor.download = "mika-foco.ics"; anchor.click();
@@ -104,13 +104,13 @@ export default function MikaResolveMyDay() {
         <div><h4 className="font-semibold text-white">Suas prioridades</h4>
           {plan.priorities.length ? <ul className="mt-1 list-inside list-disc">{plan.priorities.map((task, i) => <li key={i}>{task.title} ({task.priority})</li>)}</ul> : <p>Sem tarefas pendentes.</p>}
         </div>
-        {plan.focusSuggestion && <div className="rounded-xl border border-violet-400/30 bg-violet-400/10 p-3"><h4 className="font-semibold text-white">Sugestão da MIKA: 25 minutos de foco</h4><p className="mt-1">{plan.focusSuggestion.title}</p><p className="text-violet-200">{formatTime(plan.focusSuggestion.startsAt)}–{formatTime(plan.focusSuggestion.endsAt)}</p><button type="button" onClick={approveFocus} disabled={savingFocus || focusSaved} className="mt-3 mr-2 rounded-lg bg-violet-500 px-3 py-2 font-semibold text-white disabled:opacity-50">{savingFocus ? "Salvando..." : focusSaved ? "Salvo na agenda" : "Aprovar e salvar na MYRYRA"}</button><button type="button" onClick={downloadFocusCalendar} className="mt-3 rounded-lg bg-violet-500 px-3 py-2 font-semibold text-white hover:bg-violet-400">Adicionar ao meu calendário (.ics)</button>{focusMessage && <p role="status" className="mt-2 text-sm text-violet-100">{focusMessage}</p>}<p className="mt-2 text-xs text-slate-300">O arquivo será baixado. Revise e confirme a importação no seu calendário; a MYRYRA não altera sua agenda automaticamente.</p></div>}
+        {plan.focusSuggestion && <div className="rounded-xl border border-violet-400/30 bg-violet-400/10 p-3"><h4 className="font-semibold text-white">Sugestão da MIKA: 25 minutos de foco</h4><p className="mt-1">{plan.focusSuggestion.title}</p><p className="text-violet-200">{formatTime(plan.focusSuggestion.startsAt)}–{formatTime(plan.focusSuggestion.endsAt)}</p><button type="button" onClick={approveFocus} disabled={savingFocus || focusSaved} className="mt-3 mr-2 rounded-lg bg-violet-500 px-3 py-2 font-semibold text-white disabled:opacity-50">{savingFocus ? "Salvando..." : focusSaved ? "Salvo na agenda" : "Aprovar e salvar na MYRYRA"}</button><button type="button" onClick={downloadFocusCalendar} className="mt-3 rounded-lg bg-violet-500 px-3 py-2 font-semibold text-white hover:bg-violet-400">Adicionar ao meu calendário (.ics)</button>{focusMessage && <p role="status" className="mt-2 text-sm text-violet-100">{focusMessage}</p>}<p className="mt-2 text-xs text-slate-300">A exportação .ics exige importação manual. O botão de aprovação salva na MYRYRA somente após sua confirmação.</p></div>}
         <div><h4 className="font-semibold text-white">Horários livres</h4>
           {plan.freeSlots.length ? <ul className="mt-1 list-inside list-disc">{plan.freeSlots.slice(0, 3).map((slot, i) => <li key={i}>{formatTime(slot.startsAt)}–{formatTime(slot.endsAt)} ({slot.minutes} min)</li>)}</ul> : <p>Nenhum intervalo livre identificado no restante do dia.</p>}
         </div>
         {plan.conflicts.length > 0 && <div className="rounded-lg border border-amber-400/30 bg-amber-400/10 p-3"><h4 className="font-semibold text-amber-200">{plan.conflicts.length} conflito(s) na agenda</h4><ul className="mt-1 list-inside list-disc text-amber-100">{plan.conflicts.slice(0, 3).map((item, i) => <li key={i}>{item.first} × {item.second}</li>)}</ul></div>}
         <div className="flex flex-wrap gap-2"><a href="#vyra-tasks" className="rounded-lg border border-violet-400/50 px-3 py-2 text-violet-100 hover:bg-violet-400/10">Revisar tarefas</a><a href="#vyra-calendar" className="rounded-lg border border-white/20 px-3 py-2 text-white hover:bg-white/10">Abrir agenda</a></div>
-        <p className="text-xs text-slate-400">Análise somente de leitura. Nenhuma tarefa ou compromisso foi alterado. A execução assistida exigirá aprovação.</p>
+        <p className="text-xs text-slate-400">A análise não altera seus dados. A criação do bloco de foco depende de sua aprovação explícita.</p>
       </div>}
     </section>
   );
