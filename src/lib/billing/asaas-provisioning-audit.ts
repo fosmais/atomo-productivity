@@ -1,5 +1,12 @@
 import "server-only";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { classifyAsaasOperation } = require("./asaas-audit-classification.cjs") as {
+  classifyAsaasOperation: (op: { state: string; provider_id: string | null; updated_at: string }, now: number) => {
+    unknownState: boolean; completedWithoutProviderId: boolean;
+    remoteCreatedWithoutProviderId: boolean; requiresReview: boolean;
+  };
+};
 
 type ProvisioningState = "reserved" | "remote_created" | "completed" | "needs_recovery";
 
@@ -34,17 +41,10 @@ export async function auditAsaasSandboxProvisioning() {
     } else {
       unknownStates++;
     }
-    const updatedAt = Date.parse(op.updated_at);
-    const stalled = op.state !== "completed" &&
-      (!Number.isFinite(updatedAt) || now - updatedAt > 15 * 60_000);
-    const missingProvider = op.state === "completed" && !op.provider_id;
-    const remoteMissingProvider = op.state === "remote_created" && !op.provider_id;
-    if (missingProvider) completedWithoutProviderId++;
-    if (remoteMissingProvider) remoteCreatedWithoutProviderId++;
-    if (!STATES.includes(op.state as ProvisioningState) ||
-        op.state === "needs_recovery" || stalled || missingProvider || remoteMissingProvider) {
-      requiresReview++;
-    }
+    const classification = classifyAsaasOperation(op, now);
+    if (classification.completedWithoutProviderId) completedWithoutProviderId++;
+    if (classification.remoteCreatedWithoutProviderId) remoteCreatedWithoutProviderId++;
+    if (classification.requiresReview) requiresReview++;
   }
   return {
     inspected: (data ?? []).length,
