@@ -42,7 +42,7 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 <<'SQL'
           CREATE SCHEMA auth;
-          CREATE TABLE auth.users (id uuid PRIMARY KEY);
+          CREATE TABLE auth.users (id uuid PRIMARY KEY, instance_id uuid, aud text, role text);
           CREATE ROLE authenticated NOLOGIN;
           CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$
             SELECT NULLIF(current_setting('request.jwt.claim.sub', true), '')::uuid
@@ -87,6 +87,26 @@ jobs:
                OR trash_column_count <> 2 OR unprotected_count <> 0 THEN
               RAISE EXCEPTION 'Finance replay mismatch: tables %, policies %, indexes %, trash columns %, RLS off %',
                 table_count,policy_count,index_count,trash_column_count,unprotected_count;
+            END IF;
+          END $$;
+          SQL
+      - name: Run two-identity Finance RLS regressions with rollback
+        run: |
+          psql -v ON_ERROR_STOP=1 -f docs/sql/mvp2-finance-staging-rls-regression.sql
+          psql -v ON_ERROR_STOP=1 -f docs/sql/mvp2-finance-notifications-rls-regression.sql
+      - name: Confirm RLS test fixtures did not persist
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          DECLARE n integer;
+          BEGIN
+            SELECT (SELECT count(*) FROM auth.users)
+                 + (SELECT count(*) FROM public.myryra_finance_entries)
+                 + (SELECT count(*) FROM public.myryra_finance_subscriptions)
+                 + (SELECT count(*) FROM public.myryra_finance_notifications)
+              INTO n;
+            IF n <> 0 THEN
+              RAISE EXCEPTION 'Finance regression fixtures persisted: %', n;
             END IF;
           END $$;
           SQL
