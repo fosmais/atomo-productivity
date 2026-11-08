@@ -153,7 +153,7 @@ export function MikaActionProposals() {
             <label key={action.proposal_id} className="flex gap-3 rounded-xl border p-3">
               <input type="checkbox" disabled={Date.parse(action.expires_at) <= Date.now()} checked={selected.includes(action.proposal_id)}
                 onChange={(event) => setSelected(current => event.target.checked
-                  ? [...current, index] : current.filter(value => value !== index))} />
+                  ? [...current, action.proposal_id] : current.filter(value => value !== action.proposal_id))} />
               <span>
                 <strong className="block">{action.title}</strong>
                 <span className="block text-sm opacity-75">{action.reason}</span>
