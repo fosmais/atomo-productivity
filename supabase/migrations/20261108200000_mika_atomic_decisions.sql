@@ -23,7 +23,8 @@ begin
     where id = p_proposal_id;
     insert into public.mika_action_audit(proposal_id,user_id,event_type)
     values (p_proposal_id,v_user,'expired');
-    raise exception 'proposal_expired' using errcode = '22023';
+    return query select p_proposal_id, 'expired'::text;
+    return;
   end if;
   v_status := case when p_approve then 'approved' else 'rejected' end;
   update public.mika_action_proposals
