@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 
-export const runtime = "nodejs";
 
 const allowedActions = new Set(["accepted", "acknowledged"]);
 const allowedSources = new Set(["registration", "google_onboarding", "settings"]);
