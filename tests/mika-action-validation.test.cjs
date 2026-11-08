@@ -31,3 +31,14 @@ test("does not accept non-string reasons or dates", () => {
 test("rejects empty action batches", () => {
   assert.equal(validateProposalList({ actions: [] }), null);
 });
+
+test("rejects impossible dates and invalid time offsets", () => {
+  for (const due_at of [
+    "2026-02-30T10:00:00Z",
+    "2026-13-01T10:00:00Z",
+    "2026-11-09T25:00:00Z",
+    "2026-11-09T10:00:00+25:00",
+    "2026-11-09T10:00:00-03:90"
+  ]) assert.equal(isAction({ ...valid, due_at }), false, due_at);
+  assert.equal(isAction({ ...valid, due_at: "2028-02-29T10:00:00Z" }), true);
+});
