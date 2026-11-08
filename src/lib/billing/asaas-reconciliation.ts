@@ -83,6 +83,17 @@ export async function verifyLinkedAsaasSandboxPayment(
   if (!customer || customer.user_id !== link.user_id) {
     return { verified: false as const, reason: "customer_mismatch" as const };
   }
+  const { data: billing, error: billingError } = await admin
+    .from("billing_subscriptions")
+    .select("user_id,plan_id,status")
+    .eq("provider", "asaas")
+    .eq("provider_subscription_id", subscription.id)
+    .maybeSingle();
+  if (billingError) throw new Error("Falha ao consultar assinatura interna.");
+  if (!billing || billing.user_id !== link.user_id || billing.plan_id !== link.plan_id ||
+      billing.status === "canceled" || billing.status === "unpaid") {
+    return { verified: false as const, reason: "billing_subscription_mismatch" as const };
+  }
   const expectedValue = BILLING_PLANS[link.plan_id as "pro" | "premium"].monthlyPriceCents / 100;
   if (Math.round(payment.value * 100) !== Math.round(expectedValue * 100)) {
     return { verified: false as const, reason: "amount_mismatch" as const };
