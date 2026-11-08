@@ -21,6 +21,23 @@ export async function POST(request: Request) {
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
 
+  // No implicit consent for existing accounts. Versions are configured only
+  // after legal review and publication; missing configuration fails closed.
+  const termsVersion = process.env.MYRYRA_TERMS_VERSION;
+  const privacyVersion = process.env.MYRYRA_PRIVACY_VERSION;
+  if (!termsVersion || !privacyVersion)
+    return NextResponse.json({ error: "Termos legais ainda não configurados.", code: "LEGAL_NOT_CONFIGURED" }, { status: 503 });
+  const { data: acceptances, error: consentError } = await supabase
+    .from("myryra_legal_acceptances")
+    .select("document_type,document_version")
+    .eq("user_id", user.id);
+  if (consentError)
+    return NextResponse.json({ error: "Não foi possível verificar o aceite.", code: "LEGAL_CHECK_UNAVAILABLE" }, { status: 503 });
+  const accepted = (type: string, version: string) =>
+    (acceptances ?? []).some(row => row.document_type === type && row.document_version === version);
+  if (!accepted("terms", termsVersion) || !accepted("privacy", privacyVersion))
+    return NextResponse.json({ error: "É necessário aceitar os Termos de Uso e a Política de Privacidade atuais.", code: "LEGAL_ACCEPTANCE_REQUIRED" }, { status: 403 });
+
   const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (assurance.error) return NextResponse.json({ error: "Sessão indisponível." }, { status: 503 });
   if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2")
