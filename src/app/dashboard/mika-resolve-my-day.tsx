@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 type Plan = {
+  focusSuggestion: { title: string; startsAt: string; endsAt: string; minutes: number } | null;
   pendingTasks: number;
   overdueTasks: number;
   todayEvents: number;
@@ -59,6 +60,7 @@ export default function MikaResolveMyDay() {
         <div><h4 className="font-semibold text-white">Suas prioridades</h4>
           {plan.priorities.length ? <ul className="mt-1 list-inside list-disc">{plan.priorities.map((task, i) => <li key={i}>{task.title} ({task.priority})</li>)}</ul> : <p>Sem tarefas pendentes.</p>}
         </div>
+        {plan.focusSuggestion && <div className="rounded-xl border border-violet-400/30 bg-violet-400/10 p-3"><h4 className="font-semibold text-white">Sugestão da MIKA: 25 minutos de foco</h4><p className="mt-1">{plan.focusSuggestion.title}</p><p className="text-violet-200">{formatTime(plan.focusSuggestion.startsAt)}–{formatTime(plan.focusSuggestion.endsAt)}</p><p className="mt-2 text-xs text-slate-300">Sugestão apenas. Nenhum compromisso foi criado.</p></div>}
         <div><h4 className="font-semibold text-white">Horários livres</h4>
           {plan.freeSlots.length ? <ul className="mt-1 list-inside list-disc">{plan.freeSlots.slice(0, 3).map((slot, i) => <li key={i}>{formatTime(slot.startsAt)}–{formatTime(slot.endsAt)} ({slot.minutes} min)</li>)}</ul> : <p>Nenhum intervalo livre identificado no restante do dia.</p>}
         </div>
