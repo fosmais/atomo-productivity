@@ -48,12 +48,18 @@ export async function GET() {
   const provisioningEnabled = process.env.ASAAS_SANDBOX_PROVISIONING_ENABLED === "true";
   const checkoutEnabled = process.env.BILLING_CHECKOUT_ENABLED === "true";
   const entitlementsEnabled = process.env.BILLING_ENTITLEMENTS_ENABLED === "true";
+  const reconciliationQueueEnabled = process.env.ASAAS_RECONCILIATION_QUEUE_ENABLED === "true";
+  const reconciliationWorkerEnabled = process.env.ASAAS_RECONCILIATION_WORKER_ENABLED === "true";
+  const reconciliationWorkerConfigured = Boolean(process.env.ASAAS_RECONCILIATION_WORKER_SECRET && process.env.ASAAS_RECONCILIATION_WORKER_SECRET.length >= 32);
   return NextResponse.json({
     provider: "asaas", environment: "sandbox",
     sandboxConfigured,
     provisioningEnabled,
     checkoutEnabled,
     entitlementsEnabled,
+    reconciliationQueueEnabled,
+    reconciliationWorkerEnabled,
+    reconciliationWorkerConfigured,
     checkoutImplemented: false,
     readyForPurchase: false,
     reason: "Cadastro de clientes, assinatura e conciliacao ainda nao homologados.",
