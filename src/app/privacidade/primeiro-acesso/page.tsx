@@ -14,7 +14,11 @@ export default function LegalOnboarding() {
   useEffect(() => {
     fetch("/api/privacy/onboarding", { cache: "no-store" }).then(async r => {
       if (!r.ok) throw Error("Não foi possível consultar os documentos.");
-      setStatus(await r.json());
+      const result: Status = await r.json();
+      setStatus(result);
+      setAgree(result.accepted);
+      setReadNotice(result.acknowledged);
+      if (result.complete) window.location.replace("/dashboard");
     }).catch(e => setError(e instanceof Error ? e.message : "Erro de conexão."));
   }, []);
 
@@ -24,13 +28,13 @@ export default function LegalOnboarding() {
     setError("");
     try {
       const actions = [
-        { documentVersionId: status.terms.id, action: "accepted" },
-        { documentVersionId: status.notice.id, action: "acknowledged" },
+        ...(!status.accepted ? [{ documentVersionId: status.terms.id, action: "accepted" }] : []),
+        ...(!status.acknowledged ? [{ documentVersionId: status.notice.id, action: "acknowledged" }] : []),
       ];
       for (const item of actions) {
         const response = await fetch("/api/privacy/consents", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...item, source: "registration", requestId: crypto.randomUUID() }),
+          body: JSON.stringify({ ...item, source: "settings", requestId: crypto.randomUUID() }),
         });
         if (!response.ok) throw Error("Não foi possível registrar os aceites. Tente novamente.");
       }
@@ -58,8 +62,8 @@ export default function LegalOnboarding() {
         <h2 className="text-lg font-semibold">Documentos legais</h2>
         <a className="block underline" href={status.terms.public_url} target="_blank" rel="noopener noreferrer">Termos de Uso — versão {status.terms.version}</a>
         <a className="block underline" href={status.notice.public_url} target="_blank" rel="noopener noreferrer">Aviso de Privacidade — versão {status.notice.version}</a>
-        <label className="flex gap-3 text-sm"><input type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} /> Li e aceito os Termos de Uso.</label>
-        <label className="flex gap-3 text-sm"><input type="checkbox" checked={readNotice} onChange={e => setReadNotice(e.target.checked)} /> Declaro ciência do Aviso de Privacidade.</label>
+        <label className="flex gap-3 text-sm"><input type="checkbox" checked={agree} disabled={status.accepted} onChange={e => setAgree(e.target.checked)} /> Li e aceito os Termos de Uso.</label>
+        <label className="flex gap-3 text-sm"><input type="checkbox" checked={readNotice} disabled={status.acknowledged} onChange={e => setReadNotice(e.target.checked)} /> Declaro ciência do Aviso de Privacidade.</label>
       </section>
       <p className="mt-4 text-xs opacity-70">As autorizações opcionais para personalização, análises e marketing são independentes e poderão ser gerenciadas na Central de Privacidade.</p>
       <button type="button" disabled={!agree || !readNotice || busy} onClick={() => void submit()}
