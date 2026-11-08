@@ -36,6 +36,11 @@ export default function LegalOnboarding() {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...item, source: "settings", requestId: crypto.randomUUID() }),
         });
+        if (response.status === 409) {
+          // Refresh the page when the legal document version changes.
+          window.location.reload();
+          return;
+        }
         if (!response.ok) throw Error("Não foi possível registrar os aceites. Tente novamente.");
       }
       const check = await fetch("/api/privacy/onboarding", { cache: "no-store" });
