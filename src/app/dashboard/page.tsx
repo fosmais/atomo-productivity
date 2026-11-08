@@ -1,4 +1,5 @@
 import SettingsCards from "./settings-cards";
+import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
@@ -63,6 +64,35 @@ async function DashboardContent() {
   const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (assurance.error || (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2")) {
     redirect("/login");
+  }
+
+  // Opt-in rollout only: never lock existing users out before legal documents are published.
+  if (process.env.MYRYRA_LEGAL_CONSENT_GATE_ENABLED === "true") {
+    const admin = createSupabaseAdmin();
+    const { data: published, error: documentError } = await admin
+      .from("myryra_privacy_document_versions")
+      .select("id,document_type")
+      .eq("status", "published")
+      .not("published_at", "is", null)
+      .lte("effective_at", new Date().toISOString())
+      .order("effective_at", { ascending: false });
+    if (documentError) throw new Error("Falha na verificação dos documentos legais");
+    const current = new Map<string, string>();
+    for (const doc of published ?? []) {
+      if (!current.has(doc.document_type)) current.set(doc.document_type, doc.id);
+    }
+    if (current.has("terms") && current.has("privacy_notice")) {
+      const ids = [current.get("terms")!, current.get("privacy_notice")!];
+      const { data: accepted, error: acceptanceError } = await admin
+        .from("myryra_privacy_acceptances")
+        .select("document_version_id")
+        .eq("user_id", user.id)
+        .eq("action", "accepted")
+        .in("document_version_id", ids);
+      if (acceptanceError) throw new Error("Falha na verificação do aceite legal");
+      const acceptedIds = new Set((accepted ?? []).map((row) => row.document_version_id));
+      if (ids.some((id) => !acceptedIds.has(id))) redirect("/legal/consent");
+    }
   }
 
   return (
