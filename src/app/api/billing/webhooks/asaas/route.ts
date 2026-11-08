@@ -75,15 +75,16 @@ export async function POST(request: Request) {
     const payment = event.payment;
     const paymentId = payment && typeof payment === "object" && !Array.isArray(payment)
       ? (payment as Record<string, unknown>).id : null;
-    if (typeof paymentId === "string" && /^pay_[A-Za-z0-9]+$/.test(paymentId)) {
-      try {
-        const { error: enqueueError } = await createSupabaseAdmin().rpc("enqueue_asaas_reconciliation_event", {
-          p_event_id: eventId, p_event_type: eventType, p_payment_id: paymentId,
-        });
-        if (enqueueError) throw enqueueError;
-      } catch {
-        // Persisted inbox remains the recovery source; never acknowledge before inbox write.
-      }
+    if (typeof paymentId !== "string" || !/^pay_[A-Za-z0-9]+$/.test(paymentId)) {
+      return NextResponse.json({ error: "Referência de pagamento ausente ou inválida." }, { status: 422, headers: noStore });
+    }
+    try {
+      const { error: enqueueError } = await createSupabaseAdmin().rpc("enqueue_asaas_reconciliation_event", {
+        p_event_id: eventId, p_event_type: eventType, p_payment_id: paymentId,
+      });
+      if (enqueueError) throw enqueueError;
+    } catch {
+      return NextResponse.json({ error: "Fila indisponível; tente novamente." }, { status: 503, headers: noStore });
     }
   }
 
