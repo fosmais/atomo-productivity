@@ -94,9 +94,11 @@ export default function FinanceSubscriptions() {
         }
         const { data, error: queryError } = await db.from("myryra_finance_subscriptions").select("id,title,amount_cents,billing_cycle,next_due_date").eq("user_id", auth.user.id).order("next_due_date", { ascending: true }).limit(200);
         if (queryError) throw queryError;
+        let historyQuery = db.from("myryra_finance_entries").select("amount_cents,kind").eq("user_id",auth.user.id);
+        if (process.env.NEXT_PUBLIC_MYRYRA_FINANCE_TRASH_ENABLED === "true") historyQuery = historyQuery.is("deleted_at", null);
         const [future, history, balance, income] = await Promise.all([
           db.from("myryra_finance_planned_expenses").select("id,title,amount_cents,due_date").eq("user_id",auth.user.id).limit(1000),
-          db.from("myryra_finance_entries").select("amount_cents,kind").eq("user_id",auth.user.id).limit(1000),
+          historyQuery.limit(1000),
           db.from("myryra_finance_balances").select("opening_balance_cents").eq("user_id",auth.user.id).maybeSingle(),
           db.from("myryra_finance_expected_income").select("id,title,amount_cents,due_date").eq("user_id",auth.user.id).limit(1000)
         ]);
