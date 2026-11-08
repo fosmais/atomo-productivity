@@ -57,11 +57,23 @@ export async function POST(request: Request) {
 
   try {
     const admin = createSupabaseAdmin();
-    const { error: insertError } = await admin.from("myryra_privacy_acceptances").insert([
+    // Repeated explicit submissions should not create duplicate evidence.
+    // Only the authenticated user's current published versions are considered.
+    const { data: existing, error: existingError } = await admin
+      .from("myryra_privacy_acceptances")
+      .select("document_version_id,action")
+      .eq("user_id", user.id)
+      .in("document_version_id", [terms.id, notice.id]);
+    if (existingError) return NextResponse.json({ error: "Não foi possível verificar o aceite.", code: "LEGAL_CHECK_UNAVAILABLE" }, { status: 503 });
+    const rows = [
       { user_id: user.id, document_version_id: terms.id, action: "accepted", evidence_source: "settings", request_id: crypto.randomUUID(), ui_locale: "pt-BR" },
       { user_id: user.id, document_version_id: notice.id, action: "acknowledged", evidence_source: "settings", request_id: crypto.randomUUID(), ui_locale: "pt-BR" }
-    ]);
-    if (insertError) return NextResponse.json({ error: "Não foi possível registrar o aceite.", code: "LEGAL_WRITE_FAILED" }, { status: 503 });
+    ].filter(row => !(existing ?? []).some(item =>
+      item.document_version_id === row.document_version_id && item.action === row.action));
+    if (rows.length) {
+      const { error: insertError } = await admin.from("myryra_privacy_acceptances").insert(rows);
+      if (insertError) return NextResponse.json({ error: "Não foi possível registrar o aceite.", code: "LEGAL_WRITE_FAILED" }, { status: 503 });
+    }
   } catch {
     return NextResponse.json({ error: "Serviço de aceite indisponível." }, { status: 503 });
   }
