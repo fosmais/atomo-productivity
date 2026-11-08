@@ -65,3 +65,13 @@ test("does not suggest focus when no pending tasks", () => {
   const plan = buildMikaDailyBriefing({ ...base, tasks: [], events: [] });
   assert.equal(plan.focusSuggestion, null);
 });
+
+test("counts nonblocking events without consuming focus time", () => {
+  const plan = buildMikaDailyBriefing({
+    ...base, tasks: [{ title: "Preparar entrega", priority: "Alta" }],
+    events: [{ title: "Lembrete", starts_at: "2026-11-08T09:15:00-03:00", ends_at: "2026-11-08T09:45:00-03:00", blocks_time: false }]
+  });
+  assert.equal(plan.todayEvents, 1);
+  assert.equal(plan.conflicts.length, 0);
+  assert.equal(plan.focusSuggestion.startsAt, "2026-11-08T12:00:00.000Z");
+});
