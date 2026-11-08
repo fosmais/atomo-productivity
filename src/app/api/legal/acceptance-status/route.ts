@@ -17,6 +17,7 @@ export async function GET() {
       .select("id,document_type,version,public_url,effective_at")
       .eq("status", "published")
       .lte("effective_at", new Date().toISOString())
+      .not("published_at", "is", null)
       .order("effective_at", { ascending: false });
     if (error || !docs) throw new Error("Documentos indisponíveis");
     const current = new Map<string, (typeof docs)[number]>();
