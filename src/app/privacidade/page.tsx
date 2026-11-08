@@ -33,7 +33,7 @@ export default function PrivacyCenter() {
     }
   }, []);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => { queueMicrotask(() => { void refresh(); }); }, [refresh]);
 
   async function update(purpose: Purpose, granted: boolean) {
     if (!notice || busy) return;
