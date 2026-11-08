@@ -5,23 +5,16 @@ import { checkConciergeRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
-type Action = {
-  type: "create_task" | "create_event" | "create_reminder";
-  title: string;
-  reason: string;
-  due_at: string | null;
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
+const { validateProposalList } = require("@/lib/mika/action-validation.cjs") as {
+  validateProposalList: (value: unknown) => Array<{
+    type: "create_task" | "create_event" | "create_reminder";
+    title: string;
+    reason: string;
+    due_at: string | null;
+  }> | null;
 };
-
-function isAction(value: unknown): value is Action {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  const v = value as Record<string, unknown>;
-  return (
-    ["create_task", "create_event", "create_reminder"].includes(String(v.type)) &&
-    typeof v.title === "string" && v.title.trim().length > 0 && v.title.length <= 160 &&
-    typeof v.reason === "string" && v.reason.length <= 500 &&
-    (v.due_at === null || (typeof v.due_at === "string" && !Number.isNaN(Date.parse(v.due_at))))
-  );
-}
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -91,10 +84,8 @@ export async function POST(request: Request) {
       max_output_tokens: 1200
     });
     const parsed: unknown = JSON.parse(result.output_text);
-    const candidates = parsed && typeof parsed === "object" && "actions" in parsed
-      ? (parsed as { actions: unknown }).actions : null;
-    if (!Array.isArray(candidates)) throw new Error("Invalid action list");
-    const actions = candidates.filter(isAction).slice(0, 5);
+    const actions = validateProposalList(parsed);
+    if (!actions) throw new Error("Invalid action list");
     return NextResponse.json({
       actions,
       status: "proposal_only",
