@@ -17,8 +17,8 @@ export async function auditAsaasSandboxProvisioning() {
   }
   const admin = createSupabaseAdmin();
   const { data, error } = await admin.from("asaas_provisioning_operations")
-    .select("id,operation_type,state,provider_id,created_at,updated_at")
-    .order("created_at", { ascending: false }).limit(1000);
+    .select("state,provider_id,updated_at")
+    .order("updated_at", { ascending: false }).limit(1000);
   if (error) throw new Error("Falha na auditoria do provisionamento.");
   const counts: Record<ProvisioningState, number> = {
     reserved: 0, remote_created: 0, completed: 0, needs_recovery: 0,
