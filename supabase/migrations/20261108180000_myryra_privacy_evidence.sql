@@ -4,6 +4,7 @@ create table if not exists public.myryra_privacy_document_versions (
  document_type text not null check (document_type in ('terms','privacy_notice')),
  version text not null,
  public_url text not null,
+ content_hash text not null,
  status text not null default 'draft' check (status in ('draft','published','retired')),
  effective_at timestamptz not null,
  published_at timestamptz,
@@ -38,7 +39,7 @@ create table if not exists public.myryra_privacy_choices (
  user_id uuid not null references auth.users(id) on delete cascade,
  purpose_key text not null,
  purpose_version integer not null,
- notice_version_id uuid not null references public.myryra_privacy_document_versions(id),
+ notice_version_id uuid references public.myryra_privacy_document_versions(id),
  granted boolean not null,
  source text not null check(source in ('registration','google_onboarding','settings')),
  request_id uuid not null,
@@ -53,9 +54,13 @@ alter table public.myryra_privacy_purposes enable row level security;
 alter table public.myryra_privacy_choices enable row level security;
 revoke all on public.myryra_privacy_document_versions,public.myryra_privacy_acceptances,public.myryra_privacy_purposes,public.myryra_privacy_choices from anon;
 grant select on public.myryra_privacy_document_versions,public.myryra_privacy_acceptances,public.myryra_privacy_purposes,public.myryra_privacy_choices to authenticated;
-create policy privacy_docs_read on public.myryra_privacy_document_versions for select to authenticated using (status='published' and published_at is not null and effective_at<=now());
-create policy privacy_purposes_read on public.myryra_privacy_purposes for select to authenticated using (active);
-create policy privacy_acceptances_own_read on public.myryra_privacy_acceptances for select to authenticated using (user_id=(select auth.uid()));
-create policy privacy_choices_own_read on public.myryra_privacy_choices for select to authenticated using (user_id=(select auth.uid()));
+drop policy if exists privacy_published_documents_read on public.myryra_privacy_document_versions;
+create policy privacy_published_documents_read on public.myryra_privacy_document_versions for select to authenticated using (status='published' and published_at is not null and effective_at<=now());
+drop policy if exists privacy_active_purposes_read on public.myryra_privacy_purposes;
+create policy privacy_active_purposes_read on public.myryra_privacy_purposes for select to authenticated using (active);
+drop policy if exists privacy_acceptances_owner_read on public.myryra_privacy_acceptances;
+create policy privacy_acceptances_owner_read on public.myryra_privacy_acceptances for select to authenticated using (user_id=(select auth.uid()));
+drop policy if exists privacy_choices_owner_read on public.myryra_privacy_choices;
+create policy privacy_choices_owner_read on public.myryra_privacy_choices for select to authenticated using (user_id=(select auth.uid()));
 -- Inserts only via authenticated server endpoints using service role, after document validation.
 -- No default published documents, purposes, or synthetic user acceptances.
