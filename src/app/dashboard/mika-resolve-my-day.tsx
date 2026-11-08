@@ -40,6 +40,25 @@ export default function MikaResolveMyDay() {
     } catch (err) { setError(err instanceof Error ? err.message : "Falha ao consultar o planejamento."); }
     finally { setLoading(false); }
   }
+  function downloadFocusCalendar() {
+    if (!plan?.focusSuggestion) return;
+    const focus = plan.focusSuggestion;
+    const utc = (value: string) => new Date(value).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+    const escapeIcs = (value: string) => value.replace(/\\/g, "\\\\").replace(/\r?\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
+    const uid = `mika-focus-${utc(focus.startsAt)}@myryra.com`;
+    const ics = [
+      "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//MYRYRA//MIKA Focus//PT-BR", "CALSCALE:GREGORIAN",
+      "BEGIN:VEVENT", `UID:${uid}`, `DTSTAMP:${utc(new Date().toISOString())}`,
+      `DTSTART:${utc(focus.startsAt)}`, `DTEND:${utc(focus.endsAt)}`,
+      `SUMMARY:${escapeIcs(focus.title)}`,
+      "DESCRIPTION:Bloco de foco sugerido pela MIKA. Confirme a importação no seu calendário.",
+      "END:VEVENT", "END:VCALENDAR", ""
+    ].join("\\r\\n");
+    const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
+    const anchor = document.createElement("a");
+    anchor.href = url; anchor.download = "mika-foco.ics"; anchor.click();
+    URL.revokeObjectURL(url);
+  }
   const formatTime = (iso: string) => new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   return (
     <section className="rounded-2xl border border-violet-400/30 bg-gradient-to-br from-violet-950/50 to-slate-950 p-4 sm:p-5" aria-label="MIKA resolva meu dia">
@@ -60,7 +79,7 @@ export default function MikaResolveMyDay() {
         <div><h4 className="font-semibold text-white">Suas prioridades</h4>
           {plan.priorities.length ? <ul className="mt-1 list-inside list-disc">{plan.priorities.map((task, i) => <li key={i}>{task.title} ({task.priority})</li>)}</ul> : <p>Sem tarefas pendentes.</p>}
         </div>
-        {plan.focusSuggestion && <div className="rounded-xl border border-violet-400/30 bg-violet-400/10 p-3"><h4 className="font-semibold text-white">Sugestão da MIKA: 25 minutos de foco</h4><p className="mt-1">{plan.focusSuggestion.title}</p><p className="text-violet-200">{formatTime(plan.focusSuggestion.startsAt)}–{formatTime(plan.focusSuggestion.endsAt)}</p><p className="mt-2 text-xs text-slate-300">Sugestão apenas. Nenhum compromisso foi criado.</p></div>}
+        {plan.focusSuggestion && <div className="rounded-xl border border-violet-400/30 bg-violet-400/10 p-3"><h4 className="font-semibold text-white">Sugestão da MIKA: 25 minutos de foco</h4><p className="mt-1">{plan.focusSuggestion.title}</p><p className="text-violet-200">{formatTime(plan.focusSuggestion.startsAt)}–{formatTime(plan.focusSuggestion.endsAt)}</p><button type="button" onClick={downloadFocusCalendar} className="mt-3 rounded-lg bg-violet-500 px-3 py-2 font-semibold text-white hover:bg-violet-400">Adicionar ao meu calendário (.ics)</button><p className="mt-2 text-xs text-slate-300">O arquivo será baixado. Revise e confirme a importação no seu calendário; a MYRYRA não altera sua agenda automaticamente.</p></div>}
         <div><h4 className="font-semibold text-white">Horários livres</h4>
           {plan.freeSlots.length ? <ul className="mt-1 list-inside list-disc">{plan.freeSlots.slice(0, 3).map((slot, i) => <li key={i}>{formatTime(slot.startsAt)}–{formatTime(slot.endsAt)} ({slot.minutes} min)</li>)}</ul> : <p>Nenhum intervalo livre identificado no restante do dia.</p>}
         </div>
