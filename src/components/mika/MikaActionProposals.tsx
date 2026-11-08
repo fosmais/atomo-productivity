@@ -25,15 +25,15 @@ export function MikaActionProposals() {
   const [legalMessage, setLegalMessage] = useState("Verificando os termos de uso...");
   useEffect(() => {
     let active = true;
-    fetch("/api/privacy/onboarding", { credentials: "same-origin", cache: "no-store" })
+    fetch("/api/legal/status", { credentials: "same-origin", cache: "no-store" })
       .then(async response => {
         if (!response.ok) throw new Error("Aceite legal indisponível. Consulte o suporte.");
-        return response.json() as Promise<{ complete?: boolean; configured?: boolean }>;
+        return response.json() as Promise<{ accepted?: boolean; requires_explicit_acceptance?: boolean }>;
       })
       .then(data => {
         if (!active) return;
-        setLegalReady(data.complete === true);
-        setLegalMessage(data.complete === true ? "" : "Os documentos legais precisam estar publicados e aceitos antes de usar a MIKA Agente.");
+        setLegalReady(data.accepted === true);
+        setLegalMessage(data.accepted === true ? "" : "Os documentos legais precisam estar publicados e aceitos antes de usar a MIKA Agente.");
       })
       .catch(() => {
         if (active) setLegalMessage("Não foi possível verificar o aceite legal. Tente novamente mais tarde.");
