@@ -11,7 +11,7 @@
 1. Reproduce staging-only migrations from a clean disposable database; this has NOT been performed.
 2. Complete authenticated UI E2E in the protected Vercel Preview (SSO enabled); this has NOT been performed.
 3. Verify actual staging Preview environment variables and full Finance CRUD with test accounts.
-4. Review staging-only SQL files in supabase/migrations: these must NEVER be blindly promoted to production; isolate or gate them before merge.
+4. RESOLVED: seven staging-only SQL files moved from supabase/migrations to docs/sql/staging-migrations, preventing automatic migration pickup on merge. Review actual production migration separately before any release.
 5. Verify feature flags: keep real billing/checkout/entitlements disabled until separately approved.
 
 ## Safety
