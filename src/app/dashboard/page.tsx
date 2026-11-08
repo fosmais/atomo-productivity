@@ -47,6 +47,7 @@ import FinanceWorkspace from "./finance-workspace";
 import HealthWorkspace from "./health-workspace";
 import ThemePreferences from "./theme-preferences";
 import { MikaActionProposals } from "@/components/mika/MikaActionProposals";
+import { MyryraLegalAcceptance } from "@/components/legal/MyryraLegalAcceptance";
 
 async function DashboardContent() {
   await connection();
@@ -65,6 +66,45 @@ async function DashboardContent() {
   const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (assurance.error || (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2")) {
     redirect("/login");
+  }
+
+  // Gate the dashboard only after the legal rollout is explicitly enabled.
+  // Missing or unpublished documents fail closed instead of silently admitting users.
+  if (process.env.MYRYRA_LEGAL_GATE_ENABLED === "true") {
+    const now = new Date().toISOString();
+    const { data: versions, error: versionsError } = await supabase
+      .from("myryra_privacy_document_versions")
+      .select("id,document_type,published_at,public_url")
+      .in("document_type", ["terms", "privacy_notice"])
+      .eq("status", "published")
+      .lte("effective_at", now)
+      .lte("published_at", now)
+      .order("effective_at", { ascending: false });
+    const terms = versions?.find(row => row.document_type === "terms" && row.published_at && row.public_url);
+    const privacy = versions?.find(row => row.document_type === "privacy_notice" && row.published_at && row.public_url);
+    if (versionsError || !terms || !privacy) {
+      return <section className="mx-auto max-w-xl rounded-xl border p-6" role="alert">
+        <h1 className="text-xl font-semibold">Documentos legais indisponíveis</h1>
+        <p>Não foi possível verificar os documentos vigentes. Tente novamente ou procure o suporte.</p>
+        <LogoutButton />
+      </section>;
+    }
+    const { data: acceptances, error: acceptanceError } = await supabase
+      .from("myryra_privacy_acceptances")
+      .select("document_version_id,action")
+      .eq("user_id", user.id)
+      .in("document_version_id", [terms.id, privacy.id]);
+    const acceptedTerms = acceptances?.some(row => row.document_version_id === terms.id && row.action === "accepted");
+    const acknowledgedPrivacy = acceptances?.some(row => row.document_version_id === privacy.id && row.action === "acknowledged");
+    if (acceptanceError || !acceptedTerms || !acknowledgedPrivacy) {
+      return <section className="mx-auto max-w-xl space-y-4 rounded-xl border p-6">
+        <h1 className="text-xl font-semibold">Antes de continuar na MYRYRA</h1>
+        <p>Para acessar o painel, leia os documentos vigentes e registre sua decisão.</p>
+        <MyryraLegalAcceptance />
+        <p className="text-sm">Após confirmar, atualize a página para entrar no painel.</p>
+        <LogoutButton />
+      </section>;
+    }
   }
 
   return (
