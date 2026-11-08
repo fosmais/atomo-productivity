@@ -55,5 +55,16 @@ export async function linkAsaasSandboxSubscription(
     asaas_subscription_id: input.subscriptionId, user_id: input.userId,
     asaas_customer_id: input.customerId, plan_id: input.planId,
   });
-  if (error) throw new Error("Falha ao registrar assinatura Sandbox.");
+  if (error) {
+    // A concurrent request may have inserted the same immutable link.
+    // Confirm the exact ownership and plan before treating it as success.
+    const { data: concurrent, error: concurrentError } = await admin
+      .from("asaas_subscription_links")
+      .select("user_id,asaas_customer_id,plan_id")
+      .eq("asaas_subscription_id", input.subscriptionId).maybeSingle();
+    if (!concurrentError && concurrent?.user_id === input.userId &&
+        concurrent.asaas_customer_id === input.customerId &&
+        concurrent.plan_id === input.planId) return;
+    throw new Error("Falha ao registrar assinatura Sandbox.");
+  }
 }
