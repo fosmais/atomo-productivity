@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type DocumentStatus = { type: "terms" | "privacy"; version: string; url: string; accepted: boolean };
 type LegalStatus = { accepted: boolean; documents: DocumentStatus[] };
 
 export function MyryraLegalAcceptance({ onAccepted }: { onAccepted?: () => void }) {
+  const router = useRouter();
   const [status, setStatus] = useState<LegalStatus | null>(null);
   const [termsChecked, setTermsChecked] = useState(false);
   const [privacyChecked, setPrivacyChecked] = useState(false);
@@ -26,7 +28,10 @@ export function MyryraLegalAcceptance({ onAccepted }: { onAccepted?: () => void 
     if (!Array.isArray(data.documents) || data.documents.length !== 2)
       throw new Error("Documentos legais indisponíveis.");
     setStatus(data);
-    if (data.accepted) onAccepted?.();
+    if (data.accepted) {
+      onAccepted?.();
+      router.refresh();
+    }
   }
 
   useEffect(() => {
