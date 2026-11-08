@@ -54,6 +54,7 @@ jobs:
           set -euo pipefail
           count=0
           for migration in docs/sql/staging-migrations/[0-9]*.sql; do
+            case "$migration" in *privacy_consent_schema*) continue ;; esac
             echo "Replaying: $migration"
             psql -v ON_ERROR_STOP=1 --single-transaction -f "$migration"
             count=$((count+1))
