@@ -32,8 +32,9 @@ export function buildMikaDailyBriefing(input: {
     throw new Error("Invalid day boundaries");
   }
   const pending = input.tasks.filter(t => !t.completed && typeof t.title === "string" && t.title.trim());
-  const events = input.events
-    .filter(e => e.blocks_time !== false && Number.isFinite(time(e.starts_at)) && Number.isFinite(time(e.ends_at)))
+  const validEvents = input.events.filter(e => Number.isFinite(time(e.starts_at)) && Number.isFinite(time(e.ends_at)) && time(e.ends_at) > time(e.starts_at) && time(e.starts_at) < end && time(e.ends_at) > start);
+  const events = validEvents
+    .filter(e => e.blocks_time !== false)
     .map(e => ({ title: e.title, start: Math.max(start, time(e.starts_at)), end: Math.min(end, time(e.ends_at)) }))
     .filter(e => e.end > e.start)
     .sort((a,b) => a.start-b.start);
@@ -55,7 +56,7 @@ export function buildMikaDailyBriefing(input: {
   return {
     pendingTasks: pending.length,
     overdueTasks: pending.filter(t => t.due_date && /^\d{4}-\d{2}-\d{2}$/.test(t.due_date) && t.due_date < input.dayStart.slice(0,10)).length,
-    todayEvents: events.length,
+    todayEvents: validEvents.length,
     conflicts,
     priorities: [...pending].sort((a,b) => score(b.priority)-score(a.priority) || String(a.due_date ?? "9999").localeCompare(String(b.due_date ?? "9999"))).slice(0,3).map(t => ({ title: t.title, priority: t.priority ?? "Normal", dueDate: t.due_date ?? null })),
     freeSlots: slots.slice(0,10),
