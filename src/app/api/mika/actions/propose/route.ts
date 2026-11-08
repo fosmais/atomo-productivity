@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
-const { validateProposalList } = require("@/lib/mika/action-validation.cjs") as {
+const { validateProposalList } = require("../../../../../lib/mika/action-validation.cjs") as {
   validateProposalList: (value: unknown) => Array<{
     type: "create_task" | "create_event" | "create_reminder";
     title: string;
