@@ -22,7 +22,7 @@ test("wallet operations guard against pending mutations and refreshes", () => {
   assert.ok(section("const addEntry = async", "const saveOpeningBalance = async").includes("if (saving || balanceSaving || loading || error) return"));
   assert.ok(section("const saveOpeningBalance = async", "const deleteEntry = async").includes("if (saving || balanceSaving || loading || error) return"));
   assert.ok(section("const deleteEntry = async", "return (").includes("if (saving || balanceSaving || loading || error) return"));
-  assert.ok(source.includes("disabled={saving || balanceSaving || loading || Boolean(error)} onClick={() => void deleteEntry(item.id)}"));
+  assert.ok(source.includes("disabled={saving || balanceSaving || loading || Boolean(error) || editingId === item.id} onClick={() => void deleteEntry(item.id)}"));
 });
 
 test("wallet retries failed refresh and preserves visible records", () => {
@@ -40,7 +40,7 @@ test("wallet only publishes confirmed mutations", () => {
 
 test("wallet balance and entry controls share the same concurrency guard", () => {
   const guard = "saving || balanceSaving || loading || Boolean(error)";
-  assert.ok(source.includes(`disabled={${guard}} onClick={() => void deleteEntry(item.id)}`));
+  assert.ok(source.includes(`disabled={${guard} || editingId === item.id} onClick={() => void deleteEntry(item.id)}`));
   assert.ok(source.includes(`disabled={${guard}} className="rounded-xl bg-violet-600 px-4 py-3`));
   assert.ok(source.includes(`disabled={${guard}} className="rounded-xl bg-violet-600 px-4 py-2`));
 });
