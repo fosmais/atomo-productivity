@@ -63,7 +63,8 @@ export default function FinanceSubscriptions() {
   useEffect(() => {
     let active = true;
     const now = new Date();
-    setAsOf([now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-"));
+    const initialDate = [now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");
+    queueMicrotask(() => { if (active) setAsOf(initialDate); });
     (async () => {
       try {
         const db = createClient();
