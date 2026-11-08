@@ -14,7 +14,8 @@ test("AutoPilot migrations retain ownership and authenticated identity checks", 
   assert.match(sql, /v_user\s+uuid\s*:=\s*\(select auth\.uid\(\)\)/i);
   assert.match(sql, /if v_user is null then raise exception/i);
   assert.match(sql, /where id\s*=\s*p_task_id\s+and user_id\s*=\s*v_user/i);
-  assert.match(sql, /SECURITY INVOKER/i);
+  // PostgreSQL defaults to SECURITY INVOKER and pg_get_functiondef omits the default.
+  assert.doesNotMatch(sql, /SECURITY\s+DEFINER/i);
 });
 
 test("AutoPilot ignores deleted events but rejects deleted tasks", () => {
