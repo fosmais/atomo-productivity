@@ -15,11 +15,16 @@ export default function QuickGoals({ userId }: { userId: string }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    try {
-      const stored: unknown = JSON.parse(localStorage.getItem(storageKey) || "[]");
-      if (Array.isArray(stored)) setGoals(stored.filter((g): g is Goal => !!g && typeof g.id === "string" && typeof g.title === "string" && Number.isInteger(g.target) && g.target > 0 && Number.isInteger(g.progress) && g.progress >= 0).slice(0, MAX_GOALS));
-    } catch { /* Invalid or disabled browser storage. */ }
-    setReady(true);
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      try {
+        const stored: unknown = JSON.parse(localStorage.getItem(storageKey) || "[]");
+        if (Array.isArray(stored)) setGoals(stored.filter((g): g is Goal => !!g && typeof g.id === "string" && typeof g.title === "string" && Number.isInteger(g.target) && g.target > 0 && Number.isInteger(g.progress) && g.progress >= 0).slice(0, MAX_GOALS));
+      } catch { /* Invalid or disabled browser storage. */ }
+      setReady(true);
+    });
+    return () => { active = false; };
   }, [storageKey]);
 
   function persist(next: Goal[]) {
