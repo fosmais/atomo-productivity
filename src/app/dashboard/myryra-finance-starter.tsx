@@ -33,6 +33,7 @@ export default function MyryraFinanceStarter() {
   const { navigateTo } = useVyraNavigation();
   const [handoffError, setHandoffError] = useState(false);
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [trashedEntries, setTrashedEntries] = useState<Entry[]>([]);
   const [showTrash, setShowTrash] = useState(false);
   const [openingBalanceCents, setOpeningBalanceCents] = useState(0);
@@ -128,6 +129,43 @@ export default function MyryraFinanceStarter() {
       setHandoffError(false);
       navigateTo("vyra-ai");
     } catch { setHandoffError(true); }
+  };
+  const startEditing = (item: Entry) => {
+    setEditingId(item.id);
+    setName(item.description);
+    setAmount((item.amount_cents / 100).toFixed(2).replace(".", ","));
+    setKind(item.kind);
+    setEntryError(""); setEntrySuccess("");
+  };
+  const cancelEditing = () => {
+    setEditingId(null); setName(""); setAmount(""); setKind("expense");
+    setEntryError("");
+  };
+  const saveEditing = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editingId || saving || balanceSaving || loading || error) return;
+    const cents = parseBRL(amount);
+    const previous = entries.find(item => item.id === editingId);
+    if (!previous || cents === null || cents <= 0 || !name.trim() || name.trim().length > 100 ||
+      calculateBalanceCents(openingBalanceCents, entries.map(item => item.id === editingId ? { ...item, description: name.trim(), amount_cents: cents, kind } : item)) === null) {
+      setEntryError("Confira a descrição, o valor e o saldo total antes de salvar."); return;
+    }
+    setSaving(true); setEntryError(""); setEntrySuccess("");
+    try {
+      const client = createClient();
+      const { data: auth, error: authError } = await client.auth.getUser();
+      if (authError || !auth.user) throw new Error("Sessão expirada.");
+      const { data, error: updateError } = await client.from("myryra_finance_entries")
+        .update({ description: name.trim(), amount_cents: cents, kind })
+        .eq("id", editingId).eq("user_id", auth.user.id)
+        .select("id,description,amount_cents,kind,created_at").single();
+      if (updateError || !data || data.id !== editingId || data.amount_cents !== cents || data.kind !== kind || data.description !== name.trim()) throw new Error("Atualização não confirmada.");
+      setEntries(current => current.map(item => item.id === editingId ? data as Entry : item));
+      cancelEditing();
+      setEntrySuccess("Lançamento atualizado com sucesso.");
+      window.dispatchEvent(new Event("myryra:finance-updated"));
+    } catch { setEntryError("Não foi possível editar o lançamento. Confira as permissões e tente novamente."); }
+    finally { setSaving(false); }
   };
   const addEntry = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -271,8 +309,8 @@ export default function MyryraFinanceStarter() {
         {balanceError && <p role="alert" className="mt-2 text-sm text-rose-300">{balanceError}</p>}
         {balanceSaved && <p role="status" className="mt-2 text-sm text-emerald-300">Saldo salvo com sucesso.</p>}
       </form>
-      <form onSubmit={addEntry} className="space-y-3 rounded-2xl border border-white/15 bg-slate-900/75 p-4 sm:p-5">
-        <h3 className="font-semibold text-white">Adicionar entrada ou gasto</h3>
+      <form onSubmit={editingId ? saveEditing : addEntry} className="space-y-3 rounded-2xl border border-white/15 bg-slate-900/75 p-4 sm:p-5">
+        <h3 className="font-semibold text-white">{editingId ? "Editar entrada ou gasto" : "Adicionar entrada ou gasto"}</h3>
         <div className="grid gap-3 sm:grid-cols-3">
           <label className="text-sm text-slate-300">O que foi?
             <input required maxLength={100} value={name} onChange={event => { setName(event.target.value); setEntrySuccess(""); }} placeholder="Ex.: Mercado" className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-3 text-white" />
@@ -286,13 +324,14 @@ export default function MyryraFinanceStarter() {
             </select>
           </label>
         </div>
-        <button type="submit" disabled={saving || balanceSaving || loading || Boolean(error)} className="rounded-xl bg-violet-600 px-4 py-2 font-medium text-white hover:bg-violet-500">{saving ? "Salvando..." : "Salvar valor"}</button>
+        <button type="submit" disabled={saving || balanceSaving || loading || Boolean(error)} className="rounded-xl bg-violet-600 px-4 py-2 font-medium text-white hover:bg-violet-500">{saving ? "Salvando..." : editingId ? "Salvar alterações" : "Salvar valor"}</button>
+        {editingId && <button type="button" disabled={saving} onClick={cancelEditing} className="ml-3 rounded-xl border border-white/20 px-4 py-2 text-sm text-slate-200">Cancelar edição</button>}
         {entryError && <p role="alert" className="text-sm text-rose-300">{entryError}</p>}
         {entrySuccess && <p role="status" aria-live="polite" className="text-sm text-emerald-300">{entrySuccess}</p>}
       </form>
       <div className="rounded-2xl border border-white/15 bg-slate-900/75 p-4 sm:p-5">
         <h3 className="mb-3 font-semibold text-white">Histórico de entradas e gastos</h3>
-        {entries.length === 0 ? <p className="text-sm text-slate-400">{loading ? "Carregando lançamentos..." : "Você ainda não adicionou entradas ou gastos."}</p> : <ul className="space-y-2">{entries.slice(0, 200).map(item => <li key={item.id} className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-white/10 py-2 text-sm"><span className="min-w-0 flex-1 break-words text-slate-200">{item.description}</span><span className={item.kind === "income" ? "shrink-0 text-emerald-300" : "shrink-0 text-rose-300"}>{item.kind === "income" ? "+" : "−"} {currency(item.amount_cents / 100)}</span><button type="button" disabled={saving || balanceSaving || loading || Boolean(error)} onClick={() => void deleteEntry(item.id)} className="text-slate-400 underline hover:text-white disabled:cursor-not-allowed disabled:opacity-50">Excluir</button></li>)}</ul>}
+        {entries.length === 0 ? <p className="text-sm text-slate-400">{loading ? "Carregando lançamentos..." : "Você ainda não adicionou entradas ou gastos."}</p> : <ul className="space-y-2">{entries.slice(0, 200).map(item => <li key={item.id} className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-white/10 py-2 text-sm"><span className="min-w-0 flex-1 break-words text-slate-200">{item.description}</span><span className={item.kind === "income" ? "shrink-0 text-emerald-300" : "shrink-0 text-rose-300"}>{item.kind === "income" ? "+" : "−"} {currency(item.amount_cents / 100)}</span><button type="button" disabled={saving || balanceSaving || loading || Boolean(error)} onClick={() => startEditing(item)} className="text-violet-300 underline hover:text-white disabled:opacity-50">Editar</button><button type="button" disabled={saving || balanceSaving || loading || Boolean(error) || editingId === item.id} onClick={() => void deleteEntry(item.id)} className="text-slate-400 underline hover:text-white disabled:cursor-not-allowed disabled:opacity-50">Excluir</button></li>)}</ul>}
       </div>
       {trashEnabled && (
         <section className="rounded-2xl border border-white/15 bg-slate-900/75 p-4 sm:p-5">
