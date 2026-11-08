@@ -62,6 +62,11 @@ async function DashboardContent() {
     redirect("/login");
   }
 
+  const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (assurance.error || (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2")) {
+    redirect("/login");
+  }
+
   // Legal onboarding is enforced only after both reviewed documents are published.
   // A missing catalog never implies consent, and no synthetic acceptance is created.
   const { data: legalDocs, error: legalError } = await supabase
@@ -85,11 +90,6 @@ async function DashboardContent() {
         redirect("/privacidade/primeiro-acesso");
       }
     }
-  }
-
-  const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (assurance.error || (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2")) {
-    redirect("/login");
   }
 
   return (
