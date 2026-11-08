@@ -21,22 +21,33 @@ export async function POST(request: Request) {
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
 
-  // No implicit consent for existing accounts. Versions are configured only
-  // after legal review and publication; missing configuration fails closed.
-  const termsVersion = process.env.MYRYRA_TERMS_VERSION;
-  const privacyVersion = process.env.MYRYRA_PRIVACY_VERSION;
-  if (!termsVersion || !privacyVersion)
-    return NextResponse.json({ error: "Termos legais ainda não configurados.", code: "LEGAL_NOT_CONFIGURED" }, { status: 503 });
+  // Read the same versioned LGPD ledger used by MYRYRA onboarding.
+  // No implicit acceptance and no legacy acceptance table fallback.
+  const now = new Date().toISOString();
+  const { data: documents, error: documentsError } = await supabase
+    .from("myryra_privacy_document_versions")
+    .select("id,document_type,published_at")
+    .in("document_type", ["terms", "privacy_notice"])
+    .eq("status", "published")
+    .lte("effective_at", now)
+    .lte("published_at", now)
+    .order("effective_at", { ascending: false });
+  if (documentsError) return NextResponse.json({ error: "Documentos legais indisponíveis.", code: "LEGAL_CHECK_UNAVAILABLE" }, { status: 503 });
+  const terms = documents?.find(row => row.document_type === "terms" && row.published_at);
+  const notice = documents?.find(row => row.document_type === "privacy_notice" && row.published_at);
+  if (!terms || !notice)
+    return NextResponse.json({ error: "Documentos legais ainda não publicados.", code: "LEGAL_NOT_CONFIGURED" }, { status: 503 });
   const { data: acceptances, error: consentError } = await supabase
-    .from("myryra_legal_acceptances")
-    .select("document_type,document_version")
-    .eq("user_id", user.id);
+    .from("myryra_privacy_acceptances")
+    .select("document_version_id,action")
+    .eq("user_id", user.id)
+    .in("document_version_id", [terms.id, notice.id]);
   if (consentError)
     return NextResponse.json({ error: "Não foi possível verificar o aceite.", code: "LEGAL_CHECK_UNAVAILABLE" }, { status: 503 });
-  const accepted = (type: string, version: string) =>
-    (acceptances ?? []).some(row => row.document_type === type && row.document_version === version);
-  if (!accepted("terms", termsVersion) || !accepted("privacy", privacyVersion))
-    return NextResponse.json({ error: "É necessário aceitar os Termos de Uso e a Política de Privacidade atuais.", code: "LEGAL_ACCEPTANCE_REQUIRED" }, { status: 403 });
+  const termsAccepted = acceptances?.some(row => row.document_version_id === terms.id && row.action === "accepted");
+  const noticeAcknowledged = acceptances?.some(row => row.document_version_id === notice.id && row.action === "acknowledged");
+  if (!termsAccepted || !noticeAcknowledged)
+    return NextResponse.json({ error: "É necessário aceitar os Termos e confirmar ciência do Aviso de Privacidade vigentes.", code: "LEGAL_ACCEPTANCE_REQUIRED" }, { status: 403 });
 
   const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (assurance.error) return NextResponse.json({ error: "Sessão indisponível." }, { status: 503 });
