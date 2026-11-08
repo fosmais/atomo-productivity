@@ -24,6 +24,7 @@ export default function FinanceSubscriptions() {
   const { navigateTo } = useVyraNavigation();
   const [handoffError, setHandoffError] = useState(false);
   const [items, setItems] = useState<Subscription[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [planned, setPlanned] = useState<PlannedExpense[]>([]);
   const [expectedIncome, setExpectedIncome] = useState<ExpectedIncome[]>([]);
   const [incomeTitle, setIncomeTitle] = useState("");
@@ -333,6 +334,41 @@ export default function FinanceSubscriptions() {
     } catch { setError("Não foi possível salvar a assinatura."); }
     finally { setBusy(false); }
   }
+  function startEditing(item: Subscription) {
+    setEditingId(item.id);
+    setTitle(item.title);
+    setAmount((item.amount_cents / 100).toFixed(2).replace(".", ","));
+    setCycle(item.billing_cycle);
+    setDue(item.next_due_date);
+    setError("");
+  }
+  function cancelEditing() {
+    setEditingId(null);
+    setTitle(""); setAmount(""); setCycle("monthly"); setDue("");
+    setError("");
+  }
+  async function saveEditing(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editingId || busy || loading) return;
+    const cents = parseMoney(amount);
+    if (!title.trim() || title.trim().length > 100 || !cents || !/^\\d{4}-\\d{2}-\\d{2}$/.test(due) || Number.isNaN(Date.parse(due + "T12:00:00"))) {
+      setError("Informe descrição, valor e data válidos."); return;
+    }
+    setBusy(true); setError("");
+    try {
+      const db = createClient();
+      const { data: auth, error: authError } = await db.auth.getUser();
+      if (authError || !auth.user) throw new Error("Sessão inválida");
+      const { data, error: updateError } = await db.from("myryra_finance_subscriptions")
+        .update({ title: title.trim(), amount_cents: cents, billing_cycle: cycle, next_due_date: due })
+        .eq("id", editingId).eq("user_id", auth.user.id)
+        .select("id,title,amount_cents,billing_cycle,next_due_date").single();
+      if (updateError || !data || data.id !== editingId) throw new Error("Atualização não confirmada");
+      setItems(previous => previous.map(item => item.id === editingId ? data as Subscription : item).sort((a,b) => a.next_due_date.localeCompare(b.next_due_date)));
+      cancelEditing();
+    } catch { setError("Não foi possível atualizar a assinatura. Verifique as permissões e tente novamente."); }
+    finally { setBusy(false); }
+  }
   async function remove(id: string) {
     setError("");
     try {
@@ -411,15 +447,16 @@ export default function FinanceSubscriptions() {
       <p className="text-xs text-slate-400">Estimativa com receitas futuras cadastradas manualmente, sem garantia de recebimento, inflação ou gastos não cadastrados. Revise possíveis duplicidades acima. Atualize a página após alterar outros lançamentos.</p>
     </div>
     <div className="space-y-3 rounded-xl border border-emerald-400/20 bg-slate-950/40 p-4"><h4 className="font-semibold text-white">Receitas futuras previstas</h4><p className="text-xs text-slate-400">Cadastre entradas esperadas, como salário ou pagamentos. São previsões manuais, não dinheiro recebido.</p><form onSubmit={addIncome} className="grid gap-2 sm:grid-cols-4"><input required maxLength={100} aria-label="Descrição da receita" placeholder="Ex.: Salário" value={incomeTitle} onChange={e=>setIncomeTitle(e.target.value)} className="rounded-lg border border-white/20 bg-slate-900 p-2 text-white"/><input required inputMode="decimal" aria-label="Valor da receita" placeholder="Valor (R$)" value={incomeAmount} onChange={e=>setIncomeAmount(e.target.value)} className="rounded-lg border border-white/20 bg-slate-900 p-2 text-white"/><input required type="date" aria-label="Data prevista da receita" value={incomeDue} onChange={e=>setIncomeDue(e.target.value)} className="rounded-lg border border-white/20 bg-slate-900 p-2 text-white"/><button disabled={busy} className="rounded-lg bg-emerald-700 p-2 font-semibold text-white disabled:opacity-50">Adicionar receita</button></form><div className="space-y-2">{expectedIncome.map(item=><div key={item.id} className="flex items-center justify-between gap-2 text-sm text-slate-200"><span>{item.title} · {brl(item.amount_cents)} · {item.due_date.split("-").reverse().join("/")}</span><button type="button" onClick={()=>removeIncome(item.id)} className="text-rose-300">Excluir</button></div>)}</div></div>
-    <form onSubmit={add} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <form onSubmit={editingId ? saveEditing : add} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <label className="text-sm text-slate-300">Serviço ou assinatura<input required maxLength={100} value={title} onChange={event => setTitle(event.target.value)} placeholder="Ex.: Streaming" className="mt-1 w-full rounded-xl border border-white/20 bg-slate-950 p-3 text-white"/></label>
       <label className="text-sm text-slate-300">Valor (R$)<input required inputMode="decimal" value={amount} onChange={event => setAmount(event.target.value)} placeholder="Ex.: R$ 49,90" className="mt-1 w-full rounded-xl border border-white/20 bg-slate-950 p-3 text-white"/></label>
       <label className="text-sm text-slate-300">Recorrência<select value={cycle} onChange={event => setCycle(event.target.value as "monthly" | "yearly")} className="mt-1 w-full rounded-xl border border-white/20 bg-slate-950 p-3 text-white"><option value="monthly">Mensal</option><option value="yearly">Anual</option></select></label>
       <label className="text-sm text-slate-300">Próximo vencimento<input required type="date" value={due} onChange={event => setDue(event.target.value)} className="mt-1 w-full rounded-xl border border-white/20 bg-slate-950 p-3 text-white"/></label>
-      <button type="submit" disabled={busy || loading} className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50 sm:col-span-2 lg:col-span-4">{busy ? "Salvando..." : "Adicionar assinatura"}</button>
+      <button type="submit" disabled={busy || loading} className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50 sm:col-span-2 lg:col-span-4">{busy ? "Salvando..." : editingId ? "Salvar alterações" : "Adicionar assinatura"}</button>
+      {editingId && <button type="button" disabled={busy} onClick={cancelEditing} className="rounded-xl border border-white/20 px-5 py-3 text-sm text-slate-200 sm:col-span-2 lg:col-span-4">Cancelar edição</button>}
     </form>
     {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
-    <ul className="space-y-2">{items.map(item => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 p-3"><div className="min-w-0"><p className="truncate font-medium text-white">{item.title}</p><p className="text-xs text-slate-400">{item.billing_cycle === "monthly" ? "Mensal" : "Anual"} · Próximo vencimento: {item.next_due_date.split("-").reverse().join("/")}</p></div><div className="flex items-center gap-4"><span className="text-sm font-semibold text-white">{brl(item.amount_cents)}</span><button type="button" onClick={() => void remove(item.id)} className="text-xs text-violet-300 hover:text-white">Excluir</button></div></li>)}</ul>
+    <ul className="space-y-2">{items.map(item => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 p-3"><div className="min-w-0"><p className="truncate font-medium text-white">{item.title}</p><p className="text-xs text-slate-400">{item.billing_cycle === "monthly" ? "Mensal" : "Anual"} · Próximo vencimento: {item.next_due_date.split("-").reverse().join("/")}</p></div><div className="flex items-center gap-4"><span className="text-sm font-semibold text-white">{brl(item.amount_cents)}</span><button type="button" disabled={busy} onClick={() => startEditing(item)} className="text-xs text-violet-300 hover:text-white">Editar</button><button type="button" disabled={busy || editingId === item.id} onClick={() => void remove(item.id)} className="text-xs text-violet-300 hover:text-white">Excluir</button></div></li>)}</ul>
     {!loading && items.length === 0 && <p className="text-sm text-slate-400">Nenhuma assinatura cadastrada.</p>}
   </section>;
 }
