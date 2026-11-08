@@ -13,10 +13,16 @@ export default function EventReminders({ showControls = false }: { showControls?
   const [overrides, setOverrides] = useState<Record<string, Minutes>>({});
   const [alerts, setAlerts] = useState<string[]>([]);
   const [enabled, setEnabled] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
   useEffect(() => {
+    const timer = window.setTimeout(() => {
+    setCurrentTime(Date.now());
     try { const stored = Number(localStorage.getItem(storageKey)); if ([0, 10, 15, 30].includes(stored)) setMinutes(stored as Minutes); } catch { /* optional */ }
     try { const stored = JSON.parse(localStorage.getItem(overridesKey) || "{}"); if (stored && typeof stored === "object" && !Array.isArray(stored)) setOverrides(stored); } catch { /* optional */ }
     setEnabled(true);
+    }, 0);
+    const clock = window.setInterval(() => setCurrentTime(Date.now()), 30000);
+    return () => { window.clearTimeout(timer); window.clearInterval(clock); };
   }, []);
   useEffect(() => {
     if (!enabled) return;
@@ -64,9 +70,9 @@ export default function EventReminders({ showControls = false }: { showControls?
         <option value={0}>Desativado</option><option value={10}>10 minutos</option><option value={15}>15 minutos</option><option value={30}>30 minutos</option>
       </select>
     </label>}
-    {showControls && events.filter(event => new Date(event.startsAt).getTime() > Date.now()).slice(0, 12).length > 0 && <div className="mt-3 space-y-2">
+    {showControls && currentTime > 0 && events.filter(event => new Date(event.startsAt).getTime() > currentTime).slice(0, 12).length > 0 && <div className="mt-3 space-y-2">
       <p className="text-xs font-semibold text-violet-200">Personalize o aviso dos próximos compromissos</p>
-      {events.filter(event => new Date(event.startsAt).getTime() > Date.now()).slice(0, 12).map(event => <div key={event.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 p-2">
+      {events.filter(event => new Date(event.startsAt).getTime() > currentTime).slice(0, 12).map(event => <div key={event.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 p-2">
         <span className="min-w-0 text-xs text-slate-200"><span className="block truncate font-semibold">{event.title}</span><span className="text-slate-400">{new Date(event.startsAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span></span>
         <select aria-label={`Aviso para ${event.title}`} value={overrides[event.id] ?? "default"} onChange={e => {
           const next = { ...overrides };

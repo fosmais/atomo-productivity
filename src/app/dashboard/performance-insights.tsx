@@ -53,7 +53,8 @@ export default function PerformanceInsights() {
   }, []);
 
   useEffect(() => {
-    void loadMetrics();
+    const initialRefresh = window.setTimeout(() => { void loadMetrics(); }, 0);
+    return () => window.clearTimeout(initialRefresh);
   }, [loadMetrics]);
 
   const { navigateTo, navigateToTask } = useVyraNavigation();

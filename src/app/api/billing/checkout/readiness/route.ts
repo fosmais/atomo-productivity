@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 
@@ -9,6 +9,7 @@ const headers = { "Cache-Control": "private, no-store" };
  * All state comes from server-controlled tables and environment flags.
  */
 export async function GET() {
+  await connection();
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) {

@@ -27,6 +27,7 @@ export default function GoogleCalendarSettings() {
   const [reconnectRequired, setReconnectRequired] = useState(false);
 
   useEffect(() => {
+    const timer = window.setTimeout(() => {
     const status = new URLSearchParams(window.location.search).get("google_calendar");
     if (!status) return;
     const messages: Record<string, string> = {
@@ -48,6 +49,8 @@ export default function GoogleCalendarSettings() {
     const url = new URL(window.location.href);
     url.searchParams.delete("google_calendar");
     window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {

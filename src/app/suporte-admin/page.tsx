@@ -25,7 +25,7 @@ export default function SupportAdminPage() {
   } catch {setNotice("Falha de conexão.");}
   finally {setRefreshing(false);}
  }
- useEffect(()=>{void refresh();},[]);
+ useEffect(()=>{const timer=window.setTimeout(()=>{void refresh();},0);return ()=>window.clearTimeout(timer);},[]);
  async function update(id:string,field:"status"|"priority",value:string){
   setBusy(id);
   try{

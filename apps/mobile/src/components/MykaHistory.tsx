@@ -18,7 +18,6 @@ export function MykaHistory({ userId }: { userId: string }) {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const load = useCallback(async () => {
-    setLoading(true);
     try {
       const { data: conversation, error: conversationError } = await supabase.from("myka_conversations")
         .select("id").eq("user_id", userId).order("updated_at", { ascending: false }).limit(1).maybeSingle();
@@ -34,7 +33,10 @@ export function MykaHistory({ userId }: { userId: string }) {
       setError("Histórico indisponível. Confira as permissões e tente novamente.");
     } finally { setLoading(false); }
   }, [userId]);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const timer = setTimeout(() => { void load(); }, 0);
+    return () => clearTimeout(timer);
+  }, [load]);
   async function chooseAttachment() {
     try {
       const selection = await DocumentPicker.getDocumentAsync({
@@ -128,7 +130,7 @@ export function MykaHistory({ userId }: { userId: string }) {
     {attachment ? <View style={styles.message}><Text style={styles.content}>{attachment.name} · {Math.ceil((attachment.size ?? 0) / 1024)} KB</Text><Pressable accessibilityRole="button" onPress={() => setAttachment(null)}><Text style={styles.action}>Remover anexo</Text></Pressable></View> : null}
     <Pressable accessibilityRole="button" disabled={sending || transcribing || (!draft.trim() && !attachment)} onPress={() => void send()}><Text style={styles.action}>{sending ? "Enviando..." : "Enviar para MYKA"}</Text></Pressable>
     {reply ? <View style={styles.message}><Text style={styles.role}>MYKA · resposta recente</Text><Text style={styles.content}>{reply}</Text></View> : null}
-    <Pressable accessibilityRole="button" onPress={() => void load()}><Text style={styles.action}>Atualizar mensagens</Text></Pressable>
+    <Pressable accessibilityRole="button" onPress={() => { setLoading(true); void load(); }}><Text style={styles.action}>Atualizar mensagens</Text></Pressable>
     {error ? <Text style={styles.caption}>{error}</Text> : null}
     {loading ? <ActivityIndicator color="#B98AFF" /> : messages.length === 0 ? <Text style={styles.caption}>Nenhuma mensagem encontrada.</Text>
       : messages.map(message => <View key={message.id} style={styles.message}>

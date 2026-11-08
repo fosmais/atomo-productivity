@@ -19,10 +19,15 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npx tsc --noEmit
-      - run: npm run lint
+      - id: lint
+        run: npm run lint
+        continue-on-error: true
       - run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder
       - run: npm audit --omit=dev --audit-level=high
+      - name: Enforce lint quality gate
+        if: ${{ steps.lint.outcome == 'failure' }}
+        run: exit 1

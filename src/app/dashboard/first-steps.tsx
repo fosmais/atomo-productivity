@@ -18,11 +18,20 @@ export default function FirstSteps({ userId }: { userId: string }) {
   const [expanded, setExpanded] = useState(false);
   const storageKey = `myryra:onboarding:v1:${userId}`;
   useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(storageKey) || "{}") as { done?: number[]; dismissed?: boolean };
-      setDone(Array.isArray(saved.done) ? saved.done.filter((i): i is number => Number.isInteger(i) && i >= 0 && i < steps.length) : []);
-      setDismissed(saved.dismissed === true);
-    } catch { setDone([]); setDismissed(false); }
+    let cancelled = false;
+    // Read browser storage after the effect subscribes, avoiding synchronous effect updates.
+    void Promise.resolve().then(() => {
+      if (cancelled) return;
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || "{}") as { done?: number[]; dismissed?: boolean };
+        if (cancelled) return;
+        setDone(Array.isArray(saved.done) ? saved.done.filter((i): i is number => Number.isInteger(i) && i >= 0 && i < steps.length) : []);
+        setDismissed(saved.dismissed === true);
+      } catch {
+        if (!cancelled) { setDone([]); setDismissed(false); }
+      }
+    });
+    return () => { cancelled = true; };
   }, [storageKey]);
   function persist(nextDone: number[], nextDismissed: boolean) {
     setDone(nextDone);
