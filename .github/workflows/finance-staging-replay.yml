@@ -94,7 +94,7 @@ jobs:
       - name: Assert client roles cannot truncate Finance tables
         run: |
           psql -v ON_ERROR_STOP=1 <<'SQL'
-          DO $
+          DO $audit$
           DECLARE n integer;
           BEGIN
             SELECT count(*) INTO n
@@ -108,7 +108,7 @@ jobs:
             IF n <> 0 THEN
               RAISE EXCEPTION 'Finance client roles retain administrative table privileges: %', n;
             END IF;
-          END $;
+          END $audit$;
           SQL
       - name: Run two-identity Finance RLS regressions with rollback
         run: |
