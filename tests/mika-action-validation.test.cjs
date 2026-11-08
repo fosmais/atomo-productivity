@@ -38,7 +38,13 @@ test("rejects impossible dates and invalid time offsets", () => {
     "2026-13-01T10:00:00Z",
     "2026-11-09T25:00:00Z",
     "2026-11-09T10:00:00+25:00",
-    "2026-11-09T10:00:00-03:90"
+    "2026-11-09T10:00:00-03:90",
+    "2026-11-09T10:00:00+15:00",
+    "2026-11-09T10:00:00+14:30",
+    "1900-02-29T10:00:00Z",
+    "2026-02-29T10:00:00Z"
   ]) assert.equal(isAction({ ...valid, due_at }), false, due_at);
   assert.equal(isAction({ ...valid, due_at: "2028-02-29T10:00:00Z" }), true);
+  assert.equal(isAction({ ...valid, due_at: "2000-02-29T10:00:00Z" }), true);
+  assert.equal(isAction({ ...valid, due_at: "2026-11-09T10:00:00+14:00" }), true);
 });
