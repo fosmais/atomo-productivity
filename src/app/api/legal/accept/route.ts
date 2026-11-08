@@ -7,7 +7,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "JSON obrigatório." }, { status: 415 });
   const origin = request.headers.get("origin");
   const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
-  if (!origin || !host || new URL(origin).host !== host)
+  let validOrigin = false;
+  try {
+    if (origin && host) {
+      const parsed = new URL(origin);
+      validOrigin = parsed.protocol === "https:" && parsed.host === host;
+    }
+  } catch {
+    validOrigin = false;
+  }
+  if (!validOrigin)
     return NextResponse.json({ error: "Origem inválida." }, { status: 403 });
 
   const supabase = await createClient();
@@ -24,7 +33,10 @@ export async function POST(request: Request) {
   try {
     if (Number(request.headers.get("content-length") || "0") > 2048)
       return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
-    body = await request.json();
+    const raw = await request.text();
+    if (raw.length > 2048)
+      return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+    body = JSON.parse(raw);
   } catch {
     return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
   }
