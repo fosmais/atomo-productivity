@@ -19,6 +19,25 @@ function id(value: unknown, prefix: "cus" | "sub"): string {
   return value;
 }
 
+function validCpfCnpj(value: string): boolean {
+  if (!/^(\\d{11}|\\d{14})$/.test(value) || /^(\\d)\\1+$/.test(value)) return false;
+  const digit = (numbers: string, weights: number[]) => {
+    const sum = weights.reduce((total, weight, index) => total + Number(numbers[index]) * weight, 0);
+    const remainder = sum % 11;
+    return remainder < 2 ? 0 : 11 - remainder;
+  };
+  if (value.length === 11) {
+    const weights1 = [10, 9, 8, 7, 6, 5, 4, 3, 2];
+    const weights2 = [11, ...weights1];
+    return digit(value, weights1) === Number(value[9]) &&
+      digit(value, weights2) === Number(value[10]);
+  }
+  const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  const weights2 = [6, ...weights1];
+  return digit(value, weights1) === Number(value[12]) &&
+    digit(value, weights2) === Number(value[13]);
+}
+
 /**
  * Creates a sandbox customer only. Caller must check authenticated ownership,
  * explicit consent, and existing customer links before calling this function.
@@ -65,7 +84,8 @@ export async function createAsaasSandboxSubscription(input: {
   const price = BILLING_PLANS[input.planId]?.monthlyPriceCents;
   if (!price || !/^\d{4}-\d{2}-\d{2}$/.test(input.nextDueDate) ||
       !Number.isFinite(Date.parse(input.nextDueDate + "T00:00:00Z")) ||
-      new Date(input.nextDueDate + "T00:00:00Z").toISOString().slice(0, 10) !== input.nextDueDate) {
+      new Date(input.nextDueDate + "T00:00:00Z").toISOString().slice(0, 10) !== input.nextDueDate ||
+      input.nextDueDate < new Date().toISOString().slice(0, 10)) {
     throw new Error("Assinatura Sandbox inválida.");
   }
   const response = record(await asaasSandboxPost("/subscriptions", {
