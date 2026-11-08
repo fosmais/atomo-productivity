@@ -1,39 +1,32 @@
-# MYRYRA MVP2 — inventário Finance para homologação isolada
+# MYRYRA MVP2 — inventário Finance e critérios de homologação
 
-Consulta somente leitura ao catálogo do projeto principal; nenhuma alteração em produção.
+Atualizado após inspeções somente leitura do Supabase principal e migrações executadas **exclusivamente** no projeto isolado `xanavauqzsrgvdfhcrsm`.
 
-## Tabelas Finance presentes no projeto principal (9)
-- myryra_finance_alert_preferences
-- myryra_finance_balances
-- myryra_finance_delivery_log
-- myryra_finance_entries
-- myryra_finance_expected_income
-- myryra_finance_goals
-- myryra_finance_notifications
-- myryra_finance_planned_expenses
-- myryra_finance_subscriptions
+## Cobertura estrutural
+- 9/9 tabelas Finance de produção presentes na homologação.
+- 63/63 colunas de produção correspondentes em nome, tipo, nulidade e padrão.
+- Duas colunas adicionais `deleted_at` somente em homologação: lançamentos e assinaturas.
+- 42/42 constraints correspondentes.
+- 26/26 políticas RLS de produção correspondentes; duas políticas UPDATE adicionais para testar edição e lixeira.
+- 18/18 índices de produção presentes; três índices adicionais de homologação.
 
-## Tabelas presentes na branch isolada (2)
-- myryra_finance_entries
-- myryra_finance_subscriptions
+## Segurança e testes já executados
+- Testes SQL transacionais com dois usuários para as nove tabelas: operações autorizadas e bloqueio de acessos cruzados aprovados; fixtures revertidas com ROLLBACK.
+- Script reproduzível para lançamentos e assinaturas: `docs/sql/mvp2-finance-staging-rls-regression.sql`.
+- Script reproduzível para receitas, preferências, notificações e entregas: `docs/sql/mvp2-finance-notifications-rls-regression.sql`.
+- Scripts aplicados diretamente ao Supabase staging ainda precisam ser consolidados em migrações de código-fonte antes da promoção.
 
-## Tabelas faltantes na branch (7)
-- myryra_finance_alert_preferences
-- myryra_finance_balances
-- myryra_finance_delivery_log
-- myryra_finance_expected_income
-- myryra_finance_goals
-- myryra_finance_notifications
-- myryra_finance_planned_expenses
+## Preview
+- Vercel deployment `dpl_2gzHqwFyvtTn5yH6dNorFc1mPx1d`, commit `f6d57adce904235fa4d29a1afa674285d36c1f8d`, estado READY.
+- URL: https://atomo-productivity-10uyhquii-fosmais.vercel.app
+- Vercel SSO habilitado para Preview; READY não equivale a validação de login ou E2E.
+- Autenticação, salvar/editar/excluir/restaurar, persistência e UI mobile: **pendentes**.
 
-## Prioridade
-1. Reconstruir balances, goals e planned_expenses preservando constraints, índices, políticas RLS e sem reexecutar migrações originais incompatíveis sobre o harness.
-2. Depois expected_income, alert_preferences, notifications e delivery_log.
-3. Validar fluxo autenticado e duas identidades, incluindo exclusão/restauração.
-4. Não habilitar Finance Trash em produção antes de migração versionada e E2E.
+## Gates antes de produção
+1. Consolidar migrações SQL de homologação em arquivos versionados e conferir ordem de aplicação.
+2. Testar autenticação e fluxos financeiros no Preview com usuários de teste, sem dados reais.
+3. Verificar lixeira e consultas de resumo/fluxo de caixa com `NEXT_PUBLIC_MYRYRA_FINANCE_TRASH_ENABLED` controlada.
+4. CI/build e regressão ponta a ponta aprovados; revisar diff do PR.
+5. Manter pagamentos reais desabilitados e não promover alterações sem validação explícita.
 
-## Estado de entrega
-- GitHub Actions: regression checks e MVP1 Quality and Security aprovados no commit a8ccd79d.
-- Vercel Preview isolado: deployment dpl_9oKPFfrVp49rH4x27m9HEhXJ4FT8 READY.
-- UI/E2E autenticado: pendente.
-- Pagamentos reais: desabilitados.
+**Não alterar Supabase principal, nem variáveis globais Preview, nem fazer deploy em PROD nesta fase.**
