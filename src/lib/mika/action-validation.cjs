@@ -18,7 +18,7 @@ function isAction(value) {
 function validateProposalList(input) {
   if (!input || typeof input !== "object" || Array.isArray(input) ||
       !Array.isArray(input.actions)) return null;
-  if (input.actions.length > 5 || input.actions.some(action => !isAction(action))) return null;
+  if (input.actions.length === 0 || input.actions.length > 5 || input.actions.some(action => !isAction(action))) return null;
   return input.actions.map(({ type, title, reason, due_at }) =>
     ({ type, title: title.trim(), reason, due_at }));
 }
