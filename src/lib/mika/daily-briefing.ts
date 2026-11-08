@@ -16,7 +16,8 @@ export type MikaDayPlan = {
 };
 
 const time = (value: string) => new Date(value).getTime();
-const score = (p?: string | null) => ({ alta: 3, high: 3, média: 2, media: 2, medium: 2, normal: 1, baixa: 1, low: 1 }[String(p ?? "").toLowerCase()] ?? 1);
+const priorityScores: Record<string, number> = { alta: 3, high: 3, média: 2, media: 2, medium: 2, normal: 1, baixa: 1, low: 1 };
+const score = (p?: string | null) => priorityScores[String(p ?? "").toLowerCase()] ?? 1;
 
 export function buildMikaDailyBriefing(input: {
   tasks: MikaTask[];
