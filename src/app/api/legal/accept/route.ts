@@ -71,7 +71,8 @@ export async function POST(request: Request) {
     ].filter(row => !(existing ?? []).some(item =>
       item.document_version_id === row.document_version_id && item.action === row.action));
     if (rows.length) {
-      const { error: insertError } = await admin.from("myryra_privacy_acceptances").insert(rows);
+      const { error: insertError } = await admin.from("myryra_privacy_acceptances")
+        .upsert(rows, { onConflict: "user_id,document_version_id,action", ignoreDuplicates: true });
       if (insertError) return NextResponse.json({ error: "Não foi possível registrar o aceite.", code: "LEGAL_WRITE_FAILED" }, { status: 503 });
     }
   } catch {
