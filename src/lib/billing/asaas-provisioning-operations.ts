@@ -19,7 +19,7 @@ export async function reserveAsaasSandboxOperation(
   admin: Admin, input: { userId: string; type: OperationType; context: string;
     customerId?: string; planId?: "pro" | "premium"; amountCents?: number },
 ) {
-  if (!/^[0-9a-f-]{36}$/i.test(input.userId) || !input.context || input.context.length > 256) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.userId) || !input.context || input.context.length > 256) {
     throw new Error("Contexto de provisionamento inválido.");
   }
   if (input.type === "subscription" && (!/^cus_[A-Za-z0-9]+$/.test(input.customerId ?? "") ||
@@ -63,7 +63,7 @@ export async function reserveAsaasSandboxOperation(
 export async function recordAsaasSandboxOperation(
   admin: Admin, input: { operationId: string; state: OperationState; providerId?: string },
 ) {
-  if (!/^[0-9a-f-]{36}$/i.test(input.operationId)) throw new Error("Operação inválida.");
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.operationId)) throw new Error("Operação inválida.");
   const { data: current, error: readError } = await admin
     .from("asaas_provisioning_operations")
     .select("state,provider_id").eq("id", input.operationId).maybeSingle();
