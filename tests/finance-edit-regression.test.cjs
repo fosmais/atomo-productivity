@@ -41,3 +41,15 @@ test("migration restricts both UPDATE policies to the owner and keeps trash gate
   assert.match(migration, /ADD COLUMN IF NOT EXISTS deleted_at timestamptz/);
   assert.match(wallet, /NEXT_PUBLIC_MYRYRA_FINANCE_TRASH_ENABLED === "true"/);
 });
+
+
+test("soft-delete flag consistently excludes trashed entries from summaries and forecasts", () => {
+  const monthly = read("src/app/dashboard/finance-monthly-summary.tsx");
+  const forecast = read("src/app/dashboard/finance-subscriptions.tsx");
+  for (const [name, source] of [["monthly", monthly], ["forecast", forecast]]) {
+    assert.ok(source.includes('NEXT_PUBLIC_MYRYRA_FINANCE_TRASH_ENABLED === "true"'), name + " must gate the trash filter");
+    assert.ok(source.includes('.is("deleted_at", null)'), name + " must filter out deleted entries");
+  }
+  assert.ok(monthly.includes("entryQuery.order("), "monthly summary must execute the filtered query");
+  assert.ok(forecast.includes("historyQuery.limit(1000)"), "forecast must execute the filtered query");
+});
