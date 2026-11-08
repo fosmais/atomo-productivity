@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/supabase/request-client";
 import { buildMikaDailyBriefing } from "@/lib/mika/daily-briefing";
+import { checkConciergeRateLimit } from "@/lib/rate-limit";
 
 /** Read-only daily plan. Never performs mutations or approves actions. */
 export async function POST(request: Request) {
@@ -9,6 +10,10 @@ export async function POST(request: Request) {
     if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
     if (assuranceUnavailable) return NextResponse.json({ error: "Verificação de sessão indisponível." }, { status: 503 });
     if (mfaRequired) return NextResponse.json({ error: "Segundo fator obrigatório." }, { status: 403 });
+    let limit;
+    try { limit = await checkConciergeRateLimit(user.id); }
+    catch { return NextResponse.json({ error: "Limite de acesso temporariamente indisponível." }, { status: 503 }); }
+    if (!limit.allowed) return NextResponse.json({ error: "Muitas solicitações. Tente novamente mais tarde." }, { status: 429, headers: { "Retry-After": String(Math.max(1, Math.ceil((limit.reset - Date.now()) / 1000))) } });
     if (!(request.headers.get("content-type") ?? "").toLowerCase().startsWith("application/json")) {
       return NextResponse.json({ error: "Envie JSON." }, { status: 415 });
     }
