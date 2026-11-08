@@ -114,7 +114,7 @@ export async function recoverAsaasSandboxOperation(input: {
     .eq("id", input.operationId).eq("user_id", input.userId).maybeSingle();
   if (error || !operation) throw new Error("Operação Sandbox não encontrada.");
   if (operation.state === "completed") return { recovered: true, alreadyCompleted: true };
-  if (operation.state !== "remote_created" || !operation.provider_id)
+  if (!["remote_created", "needs_recovery"].includes(operation.state) || !operation.provider_id)
     throw new Error("Operação exige revisão manual antes da recuperação.");
   if (operation.operation_type === "customer") {
     if (!/^cus_[A-Za-z0-9]+$/.test(operation.provider_id)) throw new Error("Cliente inválido.");
