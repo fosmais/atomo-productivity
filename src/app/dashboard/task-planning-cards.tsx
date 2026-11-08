@@ -22,7 +22,8 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
   const { activeModule, quickAction } = useVyraNavigation();
   useEffect(() => {
     if (activeModule !== "vyra-tasks" || !quickAction) return;
-    setActive("tasks");
+    let active = true;
+    queueMicrotask(() => { if (active) setActive("tasks"); });
     const timer = window.setTimeout(() => {
       const details = document.querySelector<HTMLDetailsElement>(`[data-feature-id="${quickAction}"]`);
       if (details) {
@@ -35,7 +36,7 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
         }
       }
     }, 80);
-    return () => window.clearTimeout(timer);
+    return () => { active = false; window.clearTimeout(timer); };
   }, [activeModule, quickAction]);
   const panels: Record<View, ReactNode> = { tasks, today, intelligence, focus };
 
