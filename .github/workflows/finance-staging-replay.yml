@@ -6,6 +6,10 @@ on:
     paths:
       - 'docs/sql/staging-migrations/**'
       - '.github/workflows/finance-staging-replay.yml'
+  pull_request:
+    paths:
+      - 'docs/sql/staging-migrations/**'
+      - '.github/workflows/finance-staging-replay.yml'
   workflow_dispatch:
 permissions:
   contents: read
