@@ -2,9 +2,9 @@
 
 **Status:** RASCUNHO — não publicar nem registrar ciência antes de revisão jurídica.
 **Versão proposta:** 1.0
-**Controlador dos dados:** [NOME/RAZÃO SOCIAL], [CNPJ/CPF], [CONTATO DO CONTROLADOR].
-**Canal para direitos dos titulares:** [E-MAIL OU FORMULÁRIO].
-**Encarregado, se aplicável:** [IDENTIFICAR OU INFORMAR CANAL DE CONTATO].
+**Identificação apresentada ao público:** MYRYRA DESENVOLVIMENTO DE SOFTWARE (nome de apresentação do projeto, sem indicação de CNPJ nesta versão). A identificação jurídica do controlador deverá ser validada antes da publicação definitiva.
+**Canal para direitos dos titulares:** support@myryra.com.
+**Canal de privacidade:** support@myryra.com. A necessidade de indicação formal de encarregado será avaliada conforme a legislação aplicável.
 
 ## 1. Dados tratados
 Conforme os recursos utilizados, a MYRYRA poderá tratar dados de cadastro e autenticação, tarefas, agenda, preferências, interações com a MIKA, arquivos enviados, registros financeiros inseridos manualmente, dados de integração autorizada e registros técnicos de segurança e uso.
@@ -39,6 +39,6 @@ São adotadas medidas técnicas e administrativas proporcionais aos riscos. Nenh
 Alterações relevantes serão comunicadas. A MYRYRA manterá o histórico das versões publicadas e poderá solicitar nova ciência da versão vigente.
 
 ## 10. Contato
-[INSERIR CONTATO OFICIAL DO CONTROLADOR.]
+support@myryra.com
 
-**Pendências obrigatórias:** mapa de dados e operadores; transferências internacionais; bases legais por finalidade; prazos de retenção; cookies; identificação do controlador; canal de direitos; revisão jurídica.
+**Pendências para publicação definitiva:** mapa de dados e operadores; transferências internacionais; bases legais por finalidade; prazos de retenção; cookies; validação da identificação jurídica do controlador; revisão jurídica. O CNPJ poderá ser incorporado em versão posterior, com histórico e nova ciência quando necessário.
