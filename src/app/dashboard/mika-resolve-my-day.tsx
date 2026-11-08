@@ -62,7 +62,8 @@ export default function MikaResolveMyDay() {
         <div><h4 className="font-semibold text-white">Horários livres</h4>
           {plan.freeSlots.length ? <ul className="mt-1 list-inside list-disc">{plan.freeSlots.slice(0, 3).map((slot, i) => <li key={i}>{formatTime(slot.startsAt)}–{formatTime(slot.endsAt)} ({slot.minutes} min)</li>)}</ul> : <p>Nenhum intervalo livre identificado no restante do dia.</p>}
         </div>
-        {plan.conflicts.length > 0 && <p className="text-amber-200">{plan.conflicts.length} conflito(s) entre compromissos. Revise sua agenda.</p>}
+        {plan.conflicts.length > 0 && <div className="rounded-lg border border-amber-400/30 bg-amber-400/10 p-3"><h4 className="font-semibold text-amber-200">{plan.conflicts.length} conflito(s) na agenda</h4><ul className="mt-1 list-inside list-disc text-amber-100">{plan.conflicts.slice(0, 3).map((item, i) => <li key={i}>{item.first} × {item.second}</li>)}</ul></div>}
+        <div className="flex flex-wrap gap-2"><a href="#vyra-tasks" className="rounded-lg border border-violet-400/50 px-3 py-2 text-violet-100 hover:bg-violet-400/10">Revisar tarefas</a><a href="#vyra-calendar" className="rounded-lg border border-white/20 px-3 py-2 text-white hover:bg-white/10">Abrir agenda</a></div>
         <p className="text-xs text-slate-400">Análise somente de leitura. Nenhuma tarefa ou compromisso foi alterado. A execução assistida exigirá aprovação.</p>
       </div>}
     </section>
