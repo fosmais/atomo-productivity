@@ -4,7 +4,16 @@ create table if not exists public.mika_action_proposals (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   action_type text not null check (action_type in ('create_task','create_event','create_reminder')),
-  payload jsonb not null check (jsonb_typeof(payload) = 'object'),
+  payload jsonb not null check (
+    jsonb_typeof(payload) = 'object'
+    and payload ? 'type' and payload->>'type' = action_type
+    and jsonb_typeof(payload->'title') = 'string'
+    and length(btrim(payload->>'title')) between 3 and 160
+    and jsonb_typeof(payload->'reason') = 'string'
+    and length(payload->>'reason') <= 500
+    and payload ? 'due_at'
+    and (payload->'due_at' = 'null'::jsonb or jsonb_typeof(payload->'due_at') = 'string')
+  ),
   status text not null default 'pending' check (status in ('pending','approved','rejected','executing','executed','failed','expired')),
   created_at timestamptz not null default now(),
   expires_at timestamptz not null default (now() + interval '30 minutes'),
@@ -49,3 +58,14 @@ grant select on public.mika_action_audit to authenticated;
 create policy "Users can read own action audit"
   on public.mika_action_audit for select to authenticated
   using ((select auth.uid()) = user_id);
+
+-- Immutable audit: clients cannot insert, update or delete events.
+-- The server-side approval workflow must append events using a reviewed,
+-- authenticated database function or another trusted server mechanism.
+-- Prevent mismatched user_id values in audit rows even from privileged writes.
+create unique index if not exists mika_action_proposals_id_user_idx
+  on public.mika_action_proposals(id, user_id);
+alter table public.mika_action_audit
+  add constraint mika_action_audit_owner_fk
+  foreign key (proposal_id, user_id)
+  references public.mika_action_proposals(id, user_id) on delete cascade;
