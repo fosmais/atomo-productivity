@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useVyraActiveModule, useVyraNavigation } from "./vyra-module-context";
 
 const steps = [
@@ -10,23 +10,30 @@ const steps = [
   { label: "Conhecer o Meu Dia", target: "vyra-planner" },
 ];
 
+function readOnboarding(key: string): { key: string; done: number[]; dismissed: boolean } {
+  if (typeof window === "undefined") return { key, done: [], dismissed: true };
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return { key, done: [], dismissed: false };
+    const saved = JSON.parse(raw) as { done?: number[]; dismissed?: boolean };
+    return {
+      key,
+      done: Array.isArray(saved.done) ? saved.done.filter((i): i is number => Number.isInteger(i) && i >= 0 && i < steps.length) : [],
+      dismissed: saved.dismissed === true,
+    };
+  } catch { return { key, done: [], dismissed: false }; }
+}
+
 export default function FirstSteps({ userId }: { userId: string }) {
   const activeModule = useVyraActiveModule();
   const { navigateTo } = useVyraNavigation();
-  const [done, setDone] = useState<number[]>([]);
-  const [dismissed, setDismissed] = useState(true);
+  const [onboarding, setOnboarding] = useState<{ key: string; done: number[]; dismissed: boolean }>(() => readOnboarding(`myryra:onboarding:v1:${userId}`));
   const [expanded, setExpanded] = useState(false);
   const storageKey = `myryra:onboarding:v1:${userId}`;
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(storageKey) || "{}") as { done?: number[]; dismissed?: boolean };
-      setDone(Array.isArray(saved.done) ? saved.done.filter((i): i is number => Number.isInteger(i) && i >= 0 && i < steps.length) : []);
-      setDismissed(saved.dismissed === true);
-    } catch { setDone([]); setDismissed(false); }
-  }, [storageKey]);
+  const current = onboarding.key === storageKey ? onboarding : readOnboarding(storageKey);
+  const { done, dismissed } = current;
   function persist(nextDone: number[], nextDismissed: boolean) {
-    setDone(nextDone);
-    setDismissed(nextDismissed);
+    setOnboarding({ key: storageKey, done: nextDone, dismissed: nextDismissed });
     try { localStorage.setItem(storageKey, JSON.stringify({ done: nextDone, dismissed: nextDismissed })); } catch { /* Browser storage may be disabled. */ }
   }
   if (activeModule !== "home" || dismissed || done.length === steps.length) return null;
