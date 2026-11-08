@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MyryraLegalAcceptance } from "@/components/legal/MyryraLegalAcceptance";
 
 type Action = {
   type: "create_task" | "create_event" | "create_reminder";
@@ -111,7 +112,10 @@ export function MikaActionProposals() {
     <section aria-label="Propostas da MIKA" className="space-y-4 rounded-2xl border p-4">
       <h2 className="text-lg font-semibold">MIKA Agente</h2>
       <p className="text-sm opacity-75">Descreva o que precisa organizar. A MIKA prepara sugestões sem alterar seus dados.</p>
-      {!legalReady && <p role="status" className="rounded-lg border p-3 text-sm">{legalMessage}</p>}
+      {!legalReady && <>
+        <p role="status" className="rounded-lg border p-3 text-sm">{legalMessage}</p>
+        <MyryraLegalAcceptance onAccepted={() => { setLegalReady(true); setLegalMessage(""); }} />
+      </>}
       <label htmlFor="mika-action-request" className="block text-sm font-medium">O que deseja organizar?</label>
       <textarea
         id="mika-action-request"
