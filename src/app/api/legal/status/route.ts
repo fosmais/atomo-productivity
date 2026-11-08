@@ -21,6 +21,14 @@ export async function GET() {
   const terms = versions?.find(row => row.document_type === "terms" && row.published_at);
   const notice = versions?.find(row => row.document_type === "privacy_notice" && row.published_at);
   if (!terms || !notice) return NextResponse.json({ error: "Documentos não publicados.", code: "LEGAL_NOT_CONFIGURED" }, { status: 503 });
+  // Only allow secure published document links to be presented for explicit acceptance.
+  const validDocumentUrl = (value: unknown) => {
+    if (typeof value !== "string") return false;
+    try { return new URL(value).protocol === "https:"; } catch { return false; }
+  };
+  if (!validDocumentUrl(terms.public_url) || !validDocumentUrl(notice.public_url))
+    return NextResponse.json({ error: "Links dos documentos legais indisponíveis.", code: "LEGAL_NOT_CONFIGURED" },
+      { status: 503, headers: { "Cache-Control": "no-store" } });
 
   const { data: records, error: recordsError } = await supabase
     .from("myryra_privacy_acceptances")
