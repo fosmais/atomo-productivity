@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { asaasSandboxReady } from "@/lib/billing/asaas";
 import { BILLING_PLANS } from "@/lib/billing/plans";
+import { createSupabaseAdmin } from "@/lib/supabase/admin";
 
 const headers = { "Cache-Control": "no-store" };
 /** Sandbox only. Customer creation, subscription creation and payment confirmation
@@ -32,6 +33,32 @@ export async function POST(request: Request) {
   const { planId } = body as Record<string, unknown>;
   if (planId !== "pro" && planId !== "premium") {
     return NextResponse.json({ error: "Selecione um plano pago válido." }, { status: 422, headers });
+  }
+  // Billing is blocked until current published legal terms have explicit acceptance.
+  // A missing document, missing acceptance or database failure must fail closed.
+  try {
+    const admin = createSupabaseAdmin();
+    const { data: documents, error: documentsError } = await admin
+      .from("myryra_privacy_document_versions")
+      .select("id,document_type")
+      .eq("status", "published")
+      .lte("effective_at", new Date().toISOString());
+    if (documentsError || !documents || documents.length === 0) {
+      return NextResponse.json({ error: "Termos legais indisponíveis.", code: "LEGAL_TERMS_UNAVAILABLE" }, { status: 503, headers });
+    }
+    const { data: acceptances, error: acceptanceError } = await admin
+      .from("myryra_privacy_acceptances")
+      .select("document_version_id")
+      .eq("user_id", user.id)
+      .eq("action", "accepted")
+      .in("document_version_id", documents.map((document) => document.id));
+    if (acceptanceError) throw acceptanceError;
+    const accepted = new Set((acceptances ?? []).map((acceptance) => acceptance.document_version_id));
+    if (documents.some((document) => !accepted.has(document.id))) {
+      return NextResponse.json({ error: "Aceite dos termos necessário.", code: "LEGAL_ACCEPTANCE_REQUIRED" }, { status: 403, headers });
+    }
+  } catch {
+    return NextResponse.json({ error: "Validação legal temporariamente indisponível.", code: "LEGAL_CHECK_UNAVAILABLE" }, { status: 503, headers });
   }
   const plan = BILLING_PLANS[planId];
   return NextResponse.json({
