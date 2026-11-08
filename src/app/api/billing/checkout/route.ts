@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { asaasSandboxReady } from "@/lib/billing/asaas";
+import { BILLING_PLANS } from "@/lib/billing/plans";
 
 const headers = { "Cache-Control": "no-store" };
 /** Sandbox only. Customer creation, subscription creation and payment confirmation
  * must be implemented and tested before this route can initiate any charge. */
-export async function POST() {
+export async function POST(request: Request) {
   if (!asaasSandboxReady() || process.env.BILLING_CHECKOUT_ENABLED !== "true") {
     return NextResponse.json({ error: "Contratação ainda não disponível." }, { status: 503, headers });
   }
@@ -17,8 +18,26 @@ export async function POST() {
   if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
     return NextResponse.json({ error: "Segundo fator obrigatório.", code: "MFA_REQUIRED" }, { status: 403, headers });
   }
+  const raw = await request.text().catch(() => "");
+  if (!raw || Buffer.byteLength(raw, "utf8") > 4096) {
+    return NextResponse.json({ error: "Solicitação inválida." }, { status: 400, headers });
+  }
+  let body: unknown;
+  try { body = JSON.parse(raw); } catch {
+    return NextResponse.json({ error: "JSON inválido." }, { status: 400, headers });
+  }
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: "Solicitação inválida." }, { status: 400, headers });
+  }
+  const { planId } = body as Record<string, unknown>;
+  if (planId !== "pro" && planId !== "premium") {
+    return NextResponse.json({ error: "Selecione um plano pago válido." }, { status: 422, headers });
+  }
+  const plan = BILLING_PLANS[planId];
   return NextResponse.json({
-    provider: "asaas", environment: "sandbox",
+    provider: "asaas", environment: "sandbox", planId: plan.id,
+    monthlyPriceCents: plan.monthlyPriceCents,
+    checkoutImplemented: false,
     error: "Checkout em preparação: cadastro do cliente, recorrência e conciliação pendentes.",
   }, { status: 501, headers });
 }
