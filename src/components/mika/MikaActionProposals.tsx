@@ -11,12 +11,48 @@ type Action = {
   expires_at: string;
 };
 
+type HistoryItem = {
+  id: string;
+  action_type: string;
+  payload: { title?: string };
+  status: string;
+  created_at: string;
+  expires_at: string;
+};
+
 export function MikaActionProposals() {
   const [request, setRequest] = useState("");
   const [actions, setActions] = useState<Action[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<number[]>([]);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState("");
+
+  async function loadHistory() {
+    setHistoryLoading(true);
+    setHistoryError("");
+    try {
+      const response = await fetch("/api/mika/actions/history", {
+        method: "GET", credentials: "same-origin", cache: "no-store"
+      });
+      if (!response.ok) throw new Error("Não foi possível carregar o histórico.");
+      const body: unknown = await response.json();
+      if (!body || typeof body !== "object" || !("proposals" in body) ||
+          !Array.isArray(body.proposals)) throw new Error("Resposta inválida do histórico.");
+      setHistory(body.proposals.filter((item: unknown): item is HistoryItem =>
+        !!item && typeof item === "object" &&
+        "id" in item && typeof item.id === "string" &&
+        "status" in item && typeof item.status === "string" &&
+        "created_at" in item && typeof item.created_at === "string"
+      ));
+    } catch (err) {
+      setHistoryError(err instanceof Error ? err.message : "Histórico indisponível.");
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
 
   async function propose() {
     setLoading(true);
@@ -69,6 +105,22 @@ export function MikaActionProposals() {
         {loading ? "Preparando..." : "Gerar propostas"}
       </button>
       {error && <p role="alert" className="text-sm">{error}</p>}
+      <div className="rounded-xl border p-3 space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="font-medium">Histórico de propostas</h3>
+          <button type="button" onClick={loadHistory} disabled={historyLoading}
+            className="rounded-lg border px-3 py-1 text-sm disabled:opacity-50">
+            {historyLoading ? "Carregando..." : "Atualizar histórico"}
+          </button>
+        </div>
+        {historyError && <p role="alert" className="text-sm">{historyError}</p>}
+        {history.map(item => (
+          <div key={item.id} className="rounded-lg border p-2 text-sm">
+            <strong className="block">{item.payload?.title || item.action_type}</strong>
+            <span className="opacity-75">Status: {item.status} · {new Date(item.created_at).toLocaleString("pt-BR")}</span>
+          </div>
+        ))}
+      </div>
       {actions.length > 0 && (
         <div className="space-y-3">
           <p className="font-medium">Revise as propostas</p>
