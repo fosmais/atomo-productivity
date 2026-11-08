@@ -17,7 +17,14 @@ export default function GlobalSearch() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (query.trim().length < 2) { setResults([]); setCompletedQuery(""); setError(""); setLoading(false); return; }
+    if (query.trim().length < 2) {
+      let active = true;
+      queueMicrotask(() => {
+        if (!active) return;
+        setResults([]); setCompletedQuery(""); setError(""); setLoading(false);
+      });
+      return () => { active = false; };
+    }
     let active = true;
     const controller = new AbortController();
     const timeout = setTimeout(async () => {
