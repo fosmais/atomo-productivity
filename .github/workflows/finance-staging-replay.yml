@@ -48,7 +48,7 @@ jobs:
             SELECT NULLIF(current_setting('request.jwt.claim.sub', true), '')::uuid
           $$;
           SQL
-      - name: Replay all seven staging-only migrations in order
+      - name: Replay all eight staging-only migrations in order
         run: |
           set -euo pipefail
           count=0
@@ -57,7 +57,7 @@ jobs:
             psql -v ON_ERROR_STOP=1 --single-transaction -f "$migration"
             count=$((count+1))
           done
-          test "$count" -eq 7
+          test "$count" -eq 8
       - name: Assert isolated Finance schema shape and RLS
         run: |
           psql -v ON_ERROR_STOP=1 <<'SQL'
@@ -83,7 +83,7 @@ jobs:
               JOIN pg_namespace n ON n.oid=c.relnamespace
               WHERE n.nspname='public' AND c.relname LIKE 'myryra_finance_%'
                 AND c.relkind='r' AND NOT c.relrowsecurity;
-            IF table_count <> 9 OR policy_count <> 28 OR index_count <> 21
+            IF table_count <> 9 OR policy_count <> 28 OR index_count <> 20
                OR trash_column_count <> 2 OR unprotected_count <> 0 THEN
               RAISE EXCEPTION 'Finance replay mismatch: tables %, policies %, indexes %, trash columns %, RLS off %',
                 table_count,policy_count,index_count,trash_column_count,unprotected_count;
