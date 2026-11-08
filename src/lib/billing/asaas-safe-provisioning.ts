@@ -113,7 +113,21 @@ export async function recoverAsaasSandboxOperation(input: {
     .select("id,user_id,operation_type,state,provider_id,expected_customer_id,expected_plan_id,expected_amount_cents")
     .eq("id", input.operationId).eq("user_id", input.userId).maybeSingle();
   if (error || !operation) throw new Error("Operação Sandbox não encontrada.");
-  if (operation.state === "completed") return { recovered: true, alreadyCompleted: true };
+  if (operation.state === "completed") {
+    if (operation.operation_type === "customer") {
+      const linked = await getAsaasSandboxCustomerLink(admin, input.userId);
+      if (linked !== operation.provider_id) throw new Error("Cliente concluído sem vínculo consistente.");
+    } else if (operation.operation_type === "subscription") {
+      const { data: link, error: linkError } = await admin.from("asaas_subscription_links")
+        .select("user_id,asaas_customer_id,plan_id")
+        .eq("asaas_subscription_id", operation.provider_id).maybeSingle();
+      if (linkError || !link || link.user_id !== input.userId ||
+          link.asaas_customer_id !== operation.expected_customer_id ||
+          link.plan_id !== operation.expected_plan_id)
+        throw new Error("Assinatura concluída sem vínculo consistente.");
+    } else throw new Error("Tipo de operação inválido.");
+    return { recovered: true, alreadyCompleted: true, entitlementGranted: false };
+  }
   if (!["remote_created", "needs_recovery"].includes(operation.state) || !operation.provider_id)
     throw new Error("Operação exige revisão manual antes da recuperação.");
   if (operation.operation_type === "customer") {
