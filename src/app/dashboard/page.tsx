@@ -46,6 +46,7 @@ import FinanceSubscriptions from "./finance-subscriptions";
 import FinanceWorkspace from "./finance-workspace";
 import HealthWorkspace from "./health-workspace";
 import ThemePreferences from "./theme-preferences";
+import { MikaActionProposals } from "@/components/mika/MikaActionProposals";
 
 async function DashboardContent() {
   await connection();
@@ -78,6 +79,15 @@ async function DashboardContent() {
 
 
 
+
+      {process.env.MYRYRA_MIKA_AGENT_ENABLED === "true" && (
+        <VyraModule id="mika-agent">
+          <VyraSection id="mika-agent" eyebrow="MYRYRA INTELLIGENCE"
+            title="MIKA Agente" description="Sugestões revisáveis. Execução automática desabilitada.">
+            <MikaActionProposals />
+          </VyraSection>
+        </VyraModule>
+      )}
 
       <VyraModule id="vyra-ai">
         <VyraSection
