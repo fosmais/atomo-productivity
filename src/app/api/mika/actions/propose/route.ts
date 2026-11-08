@@ -1,5 +1,4 @@
 import OpenAI from "openai";
-import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
@@ -117,13 +116,6 @@ export async function POST(request: Request) {
     const actions = validateProposalList(parsed);
     if (!actions) throw new Error("Invalid action list");
     // Only this authenticated server endpoint can persist model proposals.
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    if (!serviceKey || !supabaseUrl)
-      return NextResponse.json({ error: "Persistência de propostas indisponível." }, { status: 503 });
-    const trustedDb = createAdminClient(supabaseUrl, serviceKey, {
-      auth: { persistSession: false, autoRefreshToken: false }
-    });
     // Persist the proposals before displaying them. If the migration is not
     // installed, fail closed rather than showing an untracked approval.
     const admin = createSupabaseAdmin();
