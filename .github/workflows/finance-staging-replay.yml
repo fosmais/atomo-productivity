@@ -48,7 +48,7 @@ jobs:
             SELECT NULLIF(current_setting('request.jwt.claim.sub', true), '')::uuid
           $$;
           SQL
-      - name: Replay all eight staging-only migrations in order
+      - name: Replay all nine staging-only migrations in order
         run: |
           set -euo pipefail
           count=0
@@ -57,7 +57,7 @@ jobs:
             psql -v ON_ERROR_STOP=1 --single-transaction -f "$migration"
             count=$((count+1))
           done
-          test "$count" -eq 8
+          test "$count" -eq 9
       - name: Assert isolated Finance schema shape and RLS
         run: |
           psql -v ON_ERROR_STOP=1 <<'SQL'
@@ -89,6 +89,25 @@ jobs:
                 table_count,policy_count,index_count,trash_column_count,unprotected_count;
             END IF;
           END $$;
+          SQL
+      - name: Assert client roles cannot truncate Finance tables
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          DO $
+          DECLARE n integer;
+          BEGIN
+            SELECT count(*) INTO n
+            FROM pg_tables t
+            CROSS JOIN (VALUES ('anon'), ('authenticated')) AS roles(role_name)
+            WHERE t.schemaname='public'
+              AND t.tablename LIKE 'myryra_finance_%'
+              AND (has_table_privilege(roles.role_name, format('%I.%I',t.schemaname,t.tablename), 'TRUNCATE')
+                OR has_table_privilege(roles.role_name, format('%I.%I',t.schemaname,t.tablename), 'TRIGGER')
+                OR has_table_privilege(roles.role_name, format('%I.%I',t.schemaname,t.tablename), 'REFERENCES'));
+            IF n <> 0 THEN
+              RAISE EXCEPTION 'Finance client roles retain administrative table privileges: %', n;
+            END IF;
+          END $;
           SQL
       - name: Run two-identity Finance RLS regressions with rollback
         run: |
