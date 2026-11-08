@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextResponse, connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 
 export async function GET() {
+  await connection();
   const client = await createClient();
   const { data: auth, error: authError } = await client.auth.getUser();
   if (authError || !auth.user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
