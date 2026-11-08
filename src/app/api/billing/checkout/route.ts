@@ -40,21 +40,23 @@ export async function POST(request: Request) {
     const admin = createSupabaseAdmin();
     const { data: documents, error: documentsError } = await admin
       .from("myryra_privacy_document_versions")
-      .select("id,document_type")
+      .select("id,document_type,effective_at")
       .eq("status", "published")
-      .lte("effective_at", new Date().toISOString());
+      .lte("effective_at", new Date().toISOString())
+      .order("effective_at", { ascending: false });
     if (documentsError || !documents || documents.length === 0) {
       return NextResponse.json({ error: "Termos legais indisponíveis.", code: "LEGAL_TERMS_UNAVAILABLE" }, { status: 503, headers });
     }
+    const currentDocuments = [...new Map([...documents].reverse().map((document) => [document.document_type, document])).values()];
     const { data: acceptances, error: acceptanceError } = await admin
       .from("myryra_privacy_acceptances")
       .select("document_version_id")
       .eq("user_id", user.id)
       .eq("action", "accepted")
-      .in("document_version_id", documents.map((document) => document.id));
+      .in("document_version_id", currentDocuments.map((document) => document.id));
     if (acceptanceError) throw acceptanceError;
     const accepted = new Set((acceptances ?? []).map((acceptance) => acceptance.document_version_id));
-    if (documents.some((document) => !accepted.has(document.id))) {
+    if (currentDocuments.some((document) => !accepted.has(document.id))) {
       return NextResponse.json({ error: "Aceite dos termos necessário.", code: "LEGAL_ACCEPTANCE_REQUIRED" }, { status: 403, headers });
     }
   } catch {
