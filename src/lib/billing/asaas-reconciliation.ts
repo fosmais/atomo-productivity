@@ -1,5 +1,6 @@
 import "server-only";
 import { asaasSandboxGet, asaasSandboxReady } from "@/lib/billing/asaas";
+import { BILLING_PLANS } from "@/lib/billing/plans";
 
 /** Provider-verified evidence only. A webhook payload is never payment evidence. */
 export type VerifiedPayment = {
@@ -81,6 +82,10 @@ export async function verifyLinkedAsaasSandboxPayment(
   if (customerError) throw new Error("Falha ao consultar vínculo de cliente.");
   if (!customer || customer.user_id !== link.user_id) {
     return { verified: false as const, reason: "customer_mismatch" as const };
+  }
+  const expectedValue = BILLING_PLANS[link.plan_id as "pro" | "premium"].monthlyPriceCents / 100;
+  if (Math.round(payment.value * 100) !== Math.round(expectedValue * 100)) {
+    return { verified: false as const, reason: "amount_mismatch" as const };
   }
   return {
     verified: true as const,
