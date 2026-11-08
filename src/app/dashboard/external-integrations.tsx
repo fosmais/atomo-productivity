@@ -11,7 +11,7 @@ const integrations = [
     name: "Todoist",
     subtitle: "Tarefas e projetos",
     description: "Conecte sua conta para consultar tarefas e importar somente as selecionadas.",
-    status: "Consulta e importação disponíveis para teste",
+    status: "Fluxo de teste · requer configuração",
     connectUrl: "/api/todoist/connect",
     connectLabel: "Conectar Todoist",
     sectionId: "myryra-todoist-import",
@@ -21,7 +21,7 @@ const integrations = [
     name: "Google Tasks",
     subtitle: "Listas e tarefas",
     description: "Consulte suas listas Google e confirme quais tarefas deseja importar.",
-    status: "Consulta e importação disponíveis para teste",
+    status: "Fluxo de teste · requer autorização",
     connectUrl: "/api/google/connect",
     connectLabel: "Autorizar Google Tasks",
     sectionId: "myryra-google-tasks-import",
@@ -31,10 +31,10 @@ const integrations = [
     name: "Microsoft Outlook",
     subtitle: "Calendário profissional",
     description: "Consulta de compromissos via Microsoft Graph, com autorização do usuário.",
-    status: "Conexão ainda não disponível",
+    status: "Consulta desenvolvida · aguardando homologação",
     connectUrl: null,
     connectLabel: null,
-    sectionId: null,
+    sectionId: "myryra-microsoft-calendar",
     docsUrl: "https://learn.microsoft.com/graph/api/resources/calendar",
   },
 ] as const;
@@ -44,7 +44,7 @@ export default function ExternalIntegrations() {
     <section className="space-y-4" aria-label="Integrações externas">
       <p className="text-sm leading-6 text-slate-300">
         Conecte suas ferramentas e escolha o que importar. A MYRYRA não modifica tarefas externas nesta etapa.
-        Google Tasks e Todoist possuem fluxos de teste; Outlook ainda está em implementação.
+        Google Tasks e Todoist possuem fluxos de teste. Outlook possui consulta somente leitura, pendente de configuração e homologação.
       </p>
       <div className="grid gap-3 lg:grid-cols-3">
         {integrations.map(integration => (
@@ -66,6 +66,8 @@ export default function ExternalIntegrations() {
                   Consultar e importar
                 </a>
               </div>
+            ) : integration.sectionId ? (
+              <a href={`#${integration.sectionId}`} className="text-sm font-medium text-violet-200 underline underline-offset-4">Ver consulta Outlook em homologação</a>
             ) : <p className="text-xs text-slate-400">Disponível após homologação da integração.</p>}
             <a href={integration.docsUrl} target="_blank" rel="noopener noreferrer"
               className="text-sm font-medium text-violet-300 underline underline-offset-4 hover:text-violet-100">
