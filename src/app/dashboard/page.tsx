@@ -75,6 +75,7 @@ async function DashboardContent() {
     .in("document_type", ["terms", "privacy_notice"])
     .eq("status", "published")
     .lte("effective_at", new Date().toISOString())
+    .lte("published_at", new Date().toISOString())
     .order("effective_at", { ascending: false });
 
   if (!legalError && legalDocs) {
