@@ -2,7 +2,7 @@
 
 **Status:** RASCUNHO — não publicar nem exigir aceite antes de revisão jurídica.
 **Versão proposta:** 1.0
-**Operadora do serviço:** [RAZÃO SOCIAL OU NOME DO RESPONSÁVEL], [CNPJ/CPF], [ENDEREÇO], [E-MAIL DE CONTATO].
+**Identificação apresentada ao público:** MYRYRA DESENVOLVIMENTO DE SOFTWARE (nome de apresentação do projeto, sem indicação de CNPJ nesta versão). **Contato:** support@myryra.com. A identificação jurídica completa do fornecedor deverá ser validada antes da publicação definitiva.
 
 ## 1. Objeto
 A MYRYRA oferece ferramentas digitais de organização pessoal, agenda, tarefas, planejamento, assistente de inteligência artificial e funcionalidades financeiras de registro e planejamento manual, conforme os recursos disponibilizados ao usuário.
@@ -29,12 +29,12 @@ Funcionalidades podem ser modificadas, suspensas ou descontinuadas, observadas a
 O tratamento de dados pessoais é descrito no Aviso de Privacidade vigente, disponibilizado separadamente.
 
 ## 9. Planos, cobranças e cancelamento
-[INSERIR REGRAS REAIS DE PLANOS, PREÇOS, RENOVAÇÃO, CANCELAMENTO, REEMBOLSO E DIREITOS DO CONSUMIDOR ANTES DE PUBLICAR.]
+Planos, valores e condições eventualmente disponibilizados serão informados antes de qualquer contratação. Enquanto a cobrança real não estiver habilitada, não haverá cobrança pela plataforma. As regras de renovação, cancelamento e reembolso deverão ser publicadas antes da ativação comercial.
 
 ## 10. Responsabilidade e legislação
 Aplicam-se as normas brasileiras, inclusive o Código de Defesa do Consumidor quando cabível. Nenhuma cláusula afasta direitos legalmente assegurados.
 
 ## 11. Contato
-[CONFIRMAR CANAL OFICIAL DE SUPORTE E CONTATO LEGAL.]
+Canal de suporte: support@myryra.com.
 
-**Pendências obrigatórias:** identificação do fornecedor; regras comerciais reais; políticas de retenção e exclusão; canais de contato; revisão jurídica e publicação de URL estável.
+**Pendências para publicação definitiva:** validação da identificação jurídica do fornecedor sem CNPJ; confirmação das regras comerciais e de retenção; revisão jurídica; URL pública estável. O CNPJ poderá ser incorporado em versão posterior, com histórico e novo aceite quando necessário.
