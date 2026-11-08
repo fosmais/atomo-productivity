@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export const runtime = "nodejs";
-
 // Explicit click-only acceptance. Do not call this endpoint on page load.
 export async function POST(request: Request) {
   if (!(request.headers.get("content-type") || "").toLowerCase().startsWith("application/json"))
