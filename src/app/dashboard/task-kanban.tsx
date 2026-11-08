@@ -116,10 +116,12 @@ export default function TaskKanban() {
   }, [focusedTaskId]);
 
   useEffect(() => {
-    void loadTasks();
+    let active = true;
+    queueMicrotask(() => { if (active) void loadTasks(); });
     const refresh = () => { void loadTasks(); };
     window.addEventListener("myryra:tasks-updated", refresh);
     return () => {
+      active = false;
       ++latestLoadRef.current;
       window.removeEventListener("myryra:tasks-updated", refresh);
     };
