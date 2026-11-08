@@ -68,3 +68,26 @@ export async function linkAsaasSandboxSubscription(
     throw new Error("Falha ao registrar assinatura Sandbox.");
   }
 }
+
+/**
+ * Preflight before creating any remote subscription. A user with an existing
+ * linked Asaas subscription must be reviewed rather than provisioned again.
+ * This guard is not a distributed lock; provider-side idempotency and an
+ * operation ledger are still required before enabling checkout.
+ */
+export async function assertNoExistingAsaasSandboxSubscription(admin: Admin, userId: string) {
+  const { data, error } = await admin.from("asaas_subscription_links")
+    .select("asaas_subscription_id")
+    .eq("user_id", userId).limit(1);
+  if (error) throw new Error("Falha ao verificar assinaturas existentes.");
+  if (data && data.length > 0) {
+    throw new Error("Já existe uma assinatura Sandbox vinculada a este usuário.");
+  }
+  const { data: billing, error: billingError } = await admin.from("billing_subscriptions")
+    .select("id")
+    .eq("user_id", userId).eq("provider", "asaas").limit(1);
+  if (billingError) throw new Error("Falha ao verificar histórico de assinaturas.");
+  if (billing && billing.length > 0) {
+    throw new Error("Existe uma assinatura Asaas que requer conciliação.");
+  }
+}
