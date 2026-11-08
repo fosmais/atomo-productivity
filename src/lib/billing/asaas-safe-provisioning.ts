@@ -1,5 +1,6 @@
 import "server-only";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
+import { asaasSandboxGet } from "@/lib/billing/asaas";
 import { createAsaasSandboxCustomer, createAsaasSandboxSubscription } from "@/lib/billing/asaas-provisioning";
 import { getAsaasSandboxCustomerLink, linkAsaasSandboxCustomer, linkAsaasSandboxSubscription, assertNoExistingAsaasSandboxSubscription } from "@/lib/billing/asaas-link-persistence";
 import { reserveAsaasSandboxOperation, recordAsaasSandboxOperation } from "@/lib/billing/asaas-provisioning-operations";
@@ -96,4 +97,52 @@ export async function provisionAsaasSandboxSubscription(input: {
   });
   // No billing_subscriptions activation, no entitlement, no real checkout.
   return { subscriptionId, entitlementGranted: false as const };
+}
+
+/**
+ * Recover a provider-created record without issuing a second POST.
+ * Only operations already marked remote_created and owned by the caller
+ * can be linked. The provider record is checked before persistence.
+ */
+export async function recoverAsaasSandboxOperation(input: {
+  userId: string; operationId: string; explicitlyAuthorized: boolean;
+}) {
+  requireExplicitSandboxAuthorization(input.explicitlyAuthorized);
+  const admin = createSupabaseAdmin();
+  const { data: operation, error } = await admin.from("asaas_provisioning_operations")
+    .select("id,user_id,operation_type,state,provider_id,expected_customer_id,expected_plan_id,expected_amount_cents")
+    .eq("id", input.operationId).eq("user_id", input.userId).maybeSingle();
+  if (error || !operation) throw new Error("Operação Sandbox não encontrada.");
+  if (operation.state === "completed") return { recovered: true, alreadyCompleted: true };
+  if (operation.state !== "remote_created" || !operation.provider_id)
+    throw new Error("Operação exige revisão manual antes da recuperação.");
+  if (operation.operation_type === "customer") {
+    if (!/^cus_[A-Za-z0-9]+$/.test(operation.provider_id)) throw new Error("Cliente inválido.");
+    const remote = await asaasSandboxGet("/customers/" + operation.provider_id) as Record<string, unknown>;
+    if (remote.id !== operation.provider_id || remote.externalReference !== input.userId)
+      throw new Error("Cliente remoto não corresponde ao usuário.");
+    await linkAsaasSandboxCustomer(admin, input.userId, operation.provider_id);
+  } else if (operation.operation_type === "subscription") {
+    if (!/^sub_[A-Za-z0-9]+$/.test(operation.provider_id) ||
+        !/^cus_[A-Za-z0-9]+$/.test(operation.expected_customer_id ?? "") ||
+        (operation.expected_plan_id !== "pro" && operation.expected_plan_id !== "premium"))
+      throw new Error("Assinatura inválida.");
+    const linked = await getAsaasSandboxCustomerLink(admin, input.userId);
+    if (linked !== operation.expected_customer_id) throw new Error("Cliente não vinculado.");
+    const remote = await asaasSandboxGet("/subscriptions/" + operation.provider_id) as Record<string, unknown>;
+    if (remote.id !== operation.provider_id || remote.customer !== linked ||
+        typeof remote.value !== "number" ||
+        Math.round(remote.value * 100) !== operation.expected_amount_cents)
+      throw new Error("Assinatura remota diverge da operação.");
+    await linkAsaasSandboxSubscription(admin, {
+      userId: input.userId, customerId: linked,
+      subscriptionId: operation.provider_id, planId: operation.expected_plan_id,
+    });
+  } else {
+    throw new Error("Tipo de operação inválido.");
+  }
+  await recordAsaasSandboxOperation(admin, {
+    operationId: operation.id, state: "completed", providerId: operation.provider_id,
+  });
+  return { recovered: true, alreadyCompleted: false, entitlementGranted: false };
 }
