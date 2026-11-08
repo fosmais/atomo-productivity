@@ -29,20 +29,11 @@ create index if not exists mika_action_proposals_pending_idx
   on public.mika_action_proposals(user_id,expires_at) where status = 'pending';
 alter table public.mika_action_proposals enable row level security;
 revoke all on public.mika_action_proposals from anon, authenticated;
-grant select, insert on public.mika_action_proposals to authenticated;
+grant select on public.mika_action_proposals to authenticated;
 create policy "Users can read own action proposals"
   on public.mika_action_proposals for select to authenticated
   using ((select auth.uid()) = user_id);
--- Users can only create their own pending proposals; no direct updates/deletes.
--- Client inserts are NOT proof that the model generated a proposal.
-create policy "Users can submit own pending proposals"
-  on public.mika_action_proposals for insert to authenticated
-  with check (
-    (select auth.uid()) = user_id and status = 'pending'
-    and approved_at is null and executed_at is null and result is null
-    and expires_at > now() and expires_at <= now() + interval '30 minutes'
-  );
--- Approval and execution require an independently verified atomic server path.
+-- Proposals are created only by trusted server-side code.\n-- Authenticated Data API clients cannot forge model-generated proposals.\n-- Approval and execution require an independently verified atomic server path.
 create table if not exists public.mika_action_audit (
   id bigint generated always as identity primary key,
   proposal_id uuid not null references public.mika_action_proposals(id) on delete cascade,
@@ -92,15 +83,8 @@ create index if not exists myryra_legal_acceptances_user_idx
   on public.myryra_legal_acceptances(user_id);
 alter table public.myryra_legal_acceptances enable row level security;
 revoke all on public.myryra_legal_acceptances from anon, authenticated;
-grant select, insert on public.myryra_legal_acceptances to authenticated;
+grant select on public.myryra_legal_acceptances to authenticated;
 create policy "Users can read own legal acceptances"
   on public.myryra_legal_acceptances for select to authenticated
   using ((select auth.uid()) = user_id);
--- Immutable self-service acceptance: user and timestamp are database-bound.
--- The application endpoint only writes after an explicit user action.
--- Existing users are never backfilled.
-create policy "Users can record own legal acceptance"
-  on public.myryra_legal_acceptances for insert to authenticated
-  with check ((select auth.uid()) = user_id and accepted_at >= now() - interval '1 minute'
-    and accepted_at <= now() + interval '1 minute');
--- No UPDATE or DELETE grants: accepted records cannot be rewritten by clients.
+-- Only trusted server-side code may insert acceptance records after explicit user action.\n-- No INSERT, UPDATE or DELETE grants for authenticated Data API clients.
