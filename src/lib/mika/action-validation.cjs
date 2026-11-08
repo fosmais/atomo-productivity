@@ -12,7 +12,7 @@ function isAction(value) {
   if (typeof due_at !== "string") return false;
   // ISO 8601 timestamp with an explicit UTC offset; reject ambiguous local times.
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(due_at)) return false;
-  const match = /^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.\\d{1,3})?(Z|([+-])(\\d{2}):(\\d{2}))$/.exec(due_at);
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,3})?(Z|([+-])(\d{2}):(\d{2}))$/.exec(due_at);
   if (!match) return false;
   const [, year, month, day, hour, minute, second, , , offsetHour, offsetMinute] = match;
   const y = Number(year), mo = Number(month), d = Number(day);
