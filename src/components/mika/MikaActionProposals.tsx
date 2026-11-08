@@ -25,7 +25,7 @@ export function MikaActionProposals() {
   const [actions, setActions] = useState<Action[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [selected, setSelected] = useState<number[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
@@ -124,9 +124,9 @@ export function MikaActionProposals() {
       {actions.length > 0 && (
         <div className="space-y-3">
           <p className="font-medium">Revise as propostas</p>
-          {actions.map((action, index) => (
+          {actions.map((action) => (
             <label key={action.proposal_id} className="flex gap-3 rounded-xl border p-3">
-              <input type="checkbox" checked={selected.includes(index)}
+              <input type="checkbox" disabled={Date.parse(action.expires_at) <= Date.now()} checked={selected.includes(action.proposal_id)}
                 onChange={(event) => setSelected(current => event.target.checked
                   ? [...current, index] : current.filter(value => value !== index))} />
               <span>
