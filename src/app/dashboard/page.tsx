@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import CloudPlans from "./cloud-plans";
+import IntegrationStatusCards from "./integration-status-cards";
 import { LogoutButton } from "./logout-button";
 
 async function DashboardContent() {
@@ -33,6 +34,8 @@ async function DashboardContent() {
 
         <CloudPlans />
       </section>
+
+      <IntegrationStatusCards />
 
       <LogoutButton />
     </div>
