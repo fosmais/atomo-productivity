@@ -157,7 +157,9 @@ export default function CalendarEvents() {
   }
 
   useEffect(() => {
-    void loadGoogleEvents();
+    let active = true;
+    queueMicrotask(() => { if (active) void loadGoogleEvents(); });
+    return () => { active = false; };
   }, []);
 
   const [title, setTitle] = useState("");
