@@ -48,6 +48,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Termos legais indisponíveis.", code: "LEGAL_TERMS_UNAVAILABLE" }, { status: 503, headers });
     }
     const currentDocuments = [...new Map([...documents].reverse().map((document) => [document.document_type, document])).values()];
+    const requiredDocumentTypes = ["terms", "privacy_notice"];
+    if (requiredDocumentTypes.some((type) => !currentDocuments.some((document) => document.document_type === type))) {
+      return NextResponse.json({ error: "Documentação legal incompleta.", code: "LEGAL_DOCUMENTS_INCOMPLETE" }, { status: 503, headers });
+    }
     const { data: acceptances, error: acceptanceError } = await admin
       .from("myryra_privacy_acceptances")
       .select("document_version_id")
