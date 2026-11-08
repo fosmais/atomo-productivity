@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Action = {
   type: "create_task" | "create_event" | "create_reminder";
@@ -21,6 +21,25 @@ type HistoryItem = {
 };
 
 export function MikaActionProposals() {
+  const [legalReady, setLegalReady] = useState(false);
+  const [legalMessage, setLegalMessage] = useState("Verificando os termos de uso...");
+  useEffect(() => {
+    let active = true;
+    fetch("/api/legal/status", { credentials: "same-origin", cache: "no-store" })
+      .then(async response => {
+        if (!response.ok) throw new Error("Aceite legal indisponível. Consulte o suporte.");
+        return response.json() as Promise<{ accepted?: boolean }>;
+      })
+      .then(data => {
+        if (!active) return;
+        setLegalReady(data.accepted === true);
+        setLegalMessage(data.accepted === true ? "" : "É necessário aceitar as versões atuais dos Termos de Uso e da Política de Privacidade antes de usar a MIKA Agente.");
+      })
+      .catch(() => {
+        if (active) setLegalMessage("Não foi possível verificar o aceite legal. Tente novamente mais tarde.");
+      });
+    return () => { active = false; };
+  }, []);
   const [request, setRequest] = useState("");
   const [actions, setActions] = useState<Action[]>([]);
   const [loading, setLoading] = useState(false);
@@ -55,6 +74,7 @@ export function MikaActionProposals() {
   }
 
   async function propose() {
+    if (!legalReady) return;
     setLoading(true);
     setError("");
     setActions([]);
@@ -91,6 +111,7 @@ export function MikaActionProposals() {
     <section aria-label="Propostas da MIKA" className="space-y-4 rounded-2xl border p-4">
       <h2 className="text-lg font-semibold">MIKA Agente</h2>
       <p className="text-sm opacity-75">Descreva o que precisa organizar. A MIKA prepara sugestões sem alterar seus dados.</p>
+      {!legalReady && <p role="status" className="rounded-lg border p-3 text-sm">{legalMessage}</p>}
       <label htmlFor="mika-action-request" className="block text-sm font-medium">O que deseja organizar?</label>
       <textarea
         id="mika-action-request"
@@ -100,7 +121,7 @@ export function MikaActionProposals() {
         value={request}
         onChange={(event) => setRequest(event.target.value)}
       />
-      <button type="button" onClick={propose} disabled={loading || request.trim().length < 3}
+      <button type="button" onClick={propose} disabled={!legalReady || loading || request.trim().length < 3}
         className="rounded-lg border px-4 py-2 disabled:opacity-50">
         {loading ? "Preparando..." : "Gerar propostas"}
       </button>
