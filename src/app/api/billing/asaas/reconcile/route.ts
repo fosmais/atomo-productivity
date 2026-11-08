@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
         const result = await verifyLinkedAsaasSandboxPayment(job.provider_payment_id, admin);
         if (!result.verified) {
           // Unlinked events may arrive before provisioning; keep retryable.
-          state = result.reason === "unlinked_subscription" ? "retry" : "rejected";
+          state = result.reason === "unlinked_subscription" || result.reason === "billing_subscription_mismatch" ? "retry" : "rejected";
           errorCode = result.reason;
         } else if (result.subscriptionStatus !== "ACTIVE") {
           state = result.subscriptionStatus === "INACTIVE" ? "retry" : "rejected";
