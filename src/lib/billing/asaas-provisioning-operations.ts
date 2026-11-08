@@ -19,6 +19,14 @@ export async function reserveAsaasSandboxOperation(
   admin: Admin, input: { userId: string; type: OperationType; context: string;
     customerId?: string; planId?: "pro" | "premium"; amountCents?: number },
 ) {
+  if (!/^[0-9a-f-]{36}$/i.test(input.userId) || !input.context || input.context.length > 256) {
+    throw new Error("Contexto de provisionamento inválido.");
+  }
+  if (input.type === "subscription" && (!/^cus_[A-Za-z0-9]+$/.test(input.customerId ?? "") ||
+      (input.planId !== "pro" && input.planId !== "premium") ||
+      !Number.isInteger(input.amountCents) || (input.amountCents ?? 0) <= 0)) {
+    throw new Error("Assinatura de provisionamento inválida.");
+  }
   const requestFingerprint = fingerprint(input.userId, input.type, input.context);
   const { data: existing, error: lookupError } = await admin
     .from("asaas_provisioning_operations")
