@@ -63,13 +63,34 @@ export async function reserveAsaasSandboxOperation(
 export async function recordAsaasSandboxOperation(
   admin: Admin, input: { operationId: string; state: OperationState; providerId?: string },
 ) {
+  if (!/^[0-9a-f-]{36}$/i.test(input.operationId)) throw new Error("Operação inválida.");
+  const { data: current, error: readError } = await admin
+    .from("asaas_provisioning_operations")
+    .select("state,provider_id").eq("id", input.operationId).maybeSingle();
+  if (readError || !current) throw new Error("Operação não encontrada.");
+  const allowed: Record<OperationState, OperationState[]> = {
+    reserved: ["remote_created", "needs_recovery"],
+    remote_created: ["completed", "needs_recovery"],
+    needs_recovery: ["remote_created"],
+    completed: [],
+  };
+  const from = current.state as OperationState;
+  if (!allowed[from]?.includes(input.state)) {
+    if (from === input.state && (!input.providerId || current.provider_id === input.providerId)) return;
+    throw new Error("Transição de provisionamento não permitida.");
+  }
+  if (current.provider_id && input.providerId && current.provider_id !== input.providerId)
+    throw new Error("Identificador Asaas não pode ser substituído.");
+  if ((input.state === "remote_created" || input.state === "completed") &&
+      !(input.providerId || current.provider_id))
+    throw new Error("Operação sem identificador remoto.");
   const { data, error } = await admin.from("asaas_provisioning_operations")
     .update({
       state: input.state,
       ...(input.providerId ? { provider_id: input.providerId } : {}),
       updated_at: new Date().toISOString(),
     })
-    .eq("id", input.operationId)
+    .eq("id", input.operationId).eq("state", from)
     .select("id").maybeSingle();
-  if (error || !data) throw new Error("Falha ao registrar resultado Asaas; reconciliação manual necessária.");
+  if (error || !data) throw new Error("Operação alterada em paralelo; conciliação necessária.");
 }
