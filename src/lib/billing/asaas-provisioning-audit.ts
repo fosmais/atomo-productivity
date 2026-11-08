@@ -18,7 +18,7 @@ export async function auditAsaasSandboxProvisioning() {
   const admin = createSupabaseAdmin();
   const { data, error } = await admin.from("asaas_provisioning_operations")
     .select("state,provider_id,updated_at")
-    .order("updated_at", { ascending: false }).limit(1000);
+    .order("updated_at", { ascending: true }).limit(1000);
   if (error) throw new Error("Falha na auditoria do provisionamento.");
   const counts: Record<ProvisioningState, number> = {
     reserved: 0, remote_created: 0, completed: 0, needs_recovery: 0,
@@ -26,6 +26,7 @@ export async function auditAsaasSandboxProvisioning() {
   let unknownStates = 0;
   let requiresReview = 0;
   let completedWithoutProviderId = 0;
+  let remoteCreatedWithoutProviderId = 0;
   const now = Date.now();
   for (const op of data ?? []) {
     if (STATES.includes(op.state as ProvisioningState)) {
@@ -37,9 +38,11 @@ export async function auditAsaasSandboxProvisioning() {
     const stalled = op.state !== "completed" &&
       (!Number.isFinite(updatedAt) || now - updatedAt > 15 * 60_000);
     const missingProvider = op.state === "completed" && !op.provider_id;
+    const remoteMissingProvider = op.state === "remote_created" && !op.provider_id;
     if (missingProvider) completedWithoutProviderId++;
+    if (remoteMissingProvider) remoteCreatedWithoutProviderId++;
     if (!STATES.includes(op.state as ProvisioningState) ||
-        op.state === "needs_recovery" || stalled || missingProvider) {
+        op.state === "needs_recovery" || stalled || missingProvider || remoteMissingProvider) {
       requiresReview++;
     }
   }
@@ -51,6 +54,7 @@ export async function auditAsaasSandboxProvisioning() {
     unknownStates,
     requiresReview,
     completedWithoutProviderId,
+    remoteCreatedWithoutProviderId,
     // No customer IDs, subscription IDs, names, emails, or CPF/CNPJ.
   };
 }
