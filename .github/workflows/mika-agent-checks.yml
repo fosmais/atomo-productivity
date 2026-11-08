@@ -1,0 +1,37 @@
+name: MIKA Agent checks
+
+on:
+  pull_request:
+    paths:
+      - 'src/lib/mika/**'
+      - 'src/app/api/mika/actions/**'
+      - 'src/app/api/legal/**'
+      - 'src/components/mika/**'
+      - 'src/components/legal/**'
+      - 'supabase/migrations/**'
+      - 'tests/mika-action-validation.test.cjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/mika-agent-checks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: MIKA validation tests
+        run: node --test tests/mika-action-validation.test.cjs
+      - name: MIKA source lint
+        run: npx eslint src/lib/mika/action-validation.cjs src/app/api/mika/actions src/app/api/legal src/components/mika src/components/legal --rule "@typescript-eslint/no-require-imports: off"
+      - name: TypeScript check
+        run: npx tsc --noEmit
