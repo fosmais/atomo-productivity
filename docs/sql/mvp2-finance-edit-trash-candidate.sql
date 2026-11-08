@@ -5,6 +5,13 @@ BEGIN;
 ALTER TABLE public.myryra_finance_entries
   ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
 
+ALTER TABLE public.myryra_finance_subscriptions
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+
+CREATE INDEX IF NOT EXISTS myryra_finance_subscriptions_user_active_idx
+  ON public.myryra_finance_subscriptions (user_id, next_due_date)
+  WHERE deleted_at IS NULL;
+
 CREATE INDEX IF NOT EXISTS myryra_finance_entries_user_active_idx
   ON public.myryra_finance_entries (user_id, created_at DESC)
   WHERE deleted_at IS NULL;
