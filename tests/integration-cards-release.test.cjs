@@ -22,6 +22,7 @@ test("dashboard mounts cards behind authenticated session", () => {
 
 test("cards remain informational, with no OAuth, mutations or external API calls", () => {
   assert.match(cards, /ainda não estão disponíveis/);
-  assert.doesNotMatch(cards, /\bfetch\s*\(|\baxios\b|\buseEffect\s*\(|\/api\/|connect\s*\(/);
+  const executableSource = cards.replace(/https?:\/\/[^"\s]+/g, "EXTERNAL_DOC_URL");
+  assert.doesNotMatch(executableSource, /\bfetch\s*\(|\baxios\b|\buseEffect\s*\(|\/api\/|connect\s*\(/);
   assert.match(cards, /rel="noopener noreferrer"/);
 });
