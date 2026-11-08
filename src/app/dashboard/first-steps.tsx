@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useVyraActiveModule, useVyraNavigation } from "./vyra-module-context";
 
 const steps = [
@@ -27,10 +27,17 @@ function readOnboarding(key: string): { key: string; done: number[]; dismissed: 
 export default function FirstSteps({ userId }: { userId: string }) {
   const activeModule = useVyraActiveModule();
   const { navigateTo } = useVyraNavigation();
-  const [onboarding, setOnboarding] = useState<{ key: string; done: number[]; dismissed: boolean }>(() => readOnboarding(`myryra:onboarding:v1:${userId}`));
+  const [onboarding, setOnboarding] = useState<{ key: string; done: number[]; dismissed: boolean }>(() => ({ key: `myryra:onboarding:v1:${userId}`, done: [], dismissed: true }));
   const [expanded, setExpanded] = useState(false);
   const storageKey = `myryra:onboarding:v1:${userId}`;
-  const current = onboarding.key === storageKey ? onboarding : readOnboarding(storageKey);
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      if (active) setOnboarding(readOnboarding(storageKey));
+    });
+    return () => { active = false; };
+  }, [storageKey]);
+  const current = onboarding.key === storageKey ? onboarding : { key: storageKey, done: [], dismissed: true };
   const { done, dismissed } = current;
   function persist(nextDone: number[], nextDismissed: boolean) {
     setOnboarding({ key: storageKey, done: nextDone, dismissed: nextDismissed });
