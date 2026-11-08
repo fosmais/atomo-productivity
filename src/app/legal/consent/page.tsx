@@ -36,8 +36,8 @@ export default function LegalConsentPage() {
         await load();
         return;
       }
-      await load();
-      setMessage("Seu aceite foi registrado.");
+      window.location.assign("/dashboard");
+      return;
     } catch { setMessage("Falha de conexão. Tente novamente."); }
     finally { setBusy(false); }
   }
