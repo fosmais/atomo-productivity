@@ -7,6 +7,8 @@ type Action = {
   title: string;
   reason: string;
   due_at: string | null;
+  proposal_id: string;
+  expires_at: string;
 };
 
 export function MikaActionProposals() {
@@ -38,7 +40,9 @@ export function MikaActionProposals() {
       setActions(body.actions.filter((item: unknown): item is Action =>
         !!item && typeof item === "object" && "title" in item &&
         typeof item.title === "string" && "type" in item &&
-        ["create_task", "create_event", "create_reminder"].includes(String(item.type))
+        ["create_task", "create_event", "create_reminder"].includes(String(item.type)) &&
+        "proposal_id" in item && typeof item.proposal_id === "string" &&
+        "expires_at" in item && typeof item.expires_at === "string"
       ));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao preparar propostas.");
@@ -69,7 +73,7 @@ export function MikaActionProposals() {
         <div className="space-y-3">
           <p className="font-medium">Revise as propostas</p>
           {actions.map((action, index) => (
-            <label key={index} className="flex gap-3 rounded-xl border p-3">
+            <label key={action.proposal_id} className="flex gap-3 rounded-xl border p-3">
               <input type="checkbox" checked={selected.includes(index)}
                 onChange={(event) => setSelected(current => event.target.checked
                   ? [...current, index] : current.filter(value => value !== index))} />
@@ -77,12 +81,13 @@ export function MikaActionProposals() {
                 <strong className="block">{action.title}</strong>
                 <span className="block text-sm opacity-75">{action.reason}</span>
                 {action.due_at && <span className="block text-xs opacity-75">Prazo: {action.due_at}</span>}
+                <span className="block text-xs opacity-75">Proposta registrada · válida até {new Date(action.expires_at).toLocaleString("pt-BR")}</span>
                 <span className="block text-xs opacity-75">{action.type}</span>
               </span>
             </label>
           ))}
           <p role="status" className="text-sm">
-            {selected.length} proposta(s) selecionada(s). A execução ficará disponível após a homologação do fluxo de autorização.
+            {selected.length} proposta(s) selecionada(s). Nenhuma ação será executada. A autorização ficará disponível após a homologação.
           </p>
           <button type="button" disabled className="rounded-lg border px-4 py-2 opacity-50">
             Executar ações selecionadas (em homologação)
