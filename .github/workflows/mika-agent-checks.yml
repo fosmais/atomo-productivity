@@ -31,5 +31,7 @@ jobs:
       - run: npm ci
       - name: MIKA validation tests
         run: node --test tests/mika-action-validation.test.cjs
+      - name: MIKA source lint
+        run: npx eslint src/lib/mika/action-validation.cjs src/app/api/mika/actions src/app/api/legal src/components/mika src/components/legal --rule "@typescript-eslint/no-require-imports: off"
       - name: TypeScript check
         run: npx tsc --noEmit
