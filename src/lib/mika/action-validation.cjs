@@ -16,11 +16,12 @@ function isAction(value) {
   if (!match) return false;
   const [, year, month, day, hour, minute, second, , , offsetHour, offsetMinute] = match;
   const y = Number(year), mo = Number(month), d = Number(day);
-  if (y < 1 || mo < 1 || mo > 12 || d < 1 || Number(hour) > 23 ||
+  if (y < 1000 || mo < 1 || mo > 12 || d < 1 || Number(hour) > 23 ||
       Number(minute) > 59 || Number(second) > 59) return false;
-  const daysInMonth = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+  const leap = y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0);
+  const daysInMonth = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mo - 1];
   if (d > daysInMonth) return false;
-  if (offsetHour !== undefined && (Number(offsetHour) > 23 || Number(offsetMinute) > 59)) return false;
+  if (offsetHour !== undefined && (Number(offsetHour) > 14 || Number(offsetMinute) > 59 || (Number(offsetHour) === 14 && Number(offsetMinute) !== 0))) return false;
   return !Number.isNaN(Date.parse(due_at));
 }
 
