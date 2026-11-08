@@ -12,6 +12,7 @@ export type MikaDayPlan = {
   conflicts: { first: string; second: string }[];
   priorities: { title: string; priority: string; dueDate: string | null }[];
   freeSlots: { startsAt: string; endsAt: string; minutes: number }[];
+  focusSuggestion: { title: string; startsAt: string; endsAt: string; minutes: number } | null;
   requiresApproval: true;
 };
 
@@ -58,6 +59,11 @@ export function buildMikaDailyBriefing(input: {
     conflicts,
     priorities: [...pending].sort((a,b) => score(b.priority)-score(a.priority) || String(a.due_date ?? "9999").localeCompare(String(b.due_date ?? "9999"))).slice(0,3).map(t => ({ title: t.title, priority: t.priority ?? "Normal", dueDate: t.due_date ?? null })),
     freeSlots: slots.slice(0,10),
+    focusSuggestion: pending.length && slots.some(slot => slot.minutes >= 25) ? (() => {
+      const selected = slots.find(slot => slot.minutes >= 25)!;
+      const top = [...pending].sort((a,b) => score(b.priority)-score(a.priority) || String(a.due_date ?? '9999').localeCompare(String(b.due_date ?? '9999')))[0];
+      return { title: `Foco: ${top.title}`, startsAt: selected.startsAt, endsAt: new Date(time(selected.startsAt) + 25 * 60000).toISOString(), minutes: 25 };
+    })() : null,
     requiresApproval: true
   };
 }
