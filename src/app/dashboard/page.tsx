@@ -46,6 +46,7 @@ import FinanceSubscriptions from "./finance-subscriptions";
 import FinanceWorkspace from "./finance-workspace";
 import HealthWorkspace from "./health-workspace";
 import ThemePreferences from "./theme-preferences";
+import MikaResolveMyDay from "./mika-resolve-my-day";
 
 async function DashboardContent() {
   await connection();
@@ -73,6 +74,7 @@ async function DashboardContent() {
     >
       <VyraWorkspace>
       <VyraHome />
+      <MikaResolveMyDay />
 
         <div className="min-w-0 space-y-6">
 
