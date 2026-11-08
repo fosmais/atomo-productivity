@@ -6,8 +6,9 @@
 - Two versioned two-user RLS SQL regressions executed successfully with transaction rollback.
 - Synthetic user Finance entries, subscriptions and notifications: zero after tests.
 - Staging-only SQL files live under `docs/sql/staging-migrations/`, not `supabase/migrations/`.
-- The clean-replay GitHub Actions job successfully applied all seven migrations to disposable PostgreSQL 16 and asserted nine tables, 28 policies, 21 indexes, two soft-delete columns and RLS enabled on every Finance table. Workflow: `.github/workflows/finance-staging-replay.yml`; run 42442107105, commit 529aad414dd6d4f199508b0eb3954867a7346a88.
-- The MYRYRA regression checks and MVP1 Quality and Security workflows both succeeded on commit 529aad414dd6d4f199508b0eb3954867a7346a88.
+- The clean-replay GitHub Actions job successfully applied all seven migrations to disposable PostgreSQL 16 and asserted nine tables, 28 policies, 21 indexes, two soft-delete columns and RLS enabled on every Finance table. Workflow: `.github/workflows/finance-staging-replay.yml`; initial passing run 42442107105, commit 529aad414dd6d4f199508b0eb3954867a7346a88.
+- Extended clean replay also ran both two-identity RLS SQL regressions with transaction rollback and verified zero persistent fixtures: run 42442430247, commit de7e52da287e414531c9fe9f0edf6a50b6cff391. Every job step passed.
+- The MYRYRA regression checks and MVP1 Quality and Security workflows both succeeded on commit de7e52da287e414531c9fe9f0edf6a50b6cff391.
 - Vercel Preview override on branch `test/mvp2-finance-wallet-regression` points to isolated staging Supabase `xanavauqzsrgvdfhcrsm`; checkout and entitlements flags are false.
 
 ## BLOCKERS — do not merge or promote to production
