@@ -4,8 +4,6 @@ import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { asaasSandboxReady } from "@/lib/billing/asaas";
 import { verifyLinkedAsaasSandboxPayment } from "@/lib/billing/asaas-reconciliation";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 function authorized(request: NextRequest): boolean {
   const secret = process.env.ASAAS_RECONCILIATION_WORKER_SECRET;
