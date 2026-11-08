@@ -44,6 +44,7 @@ export function MikaActionProposals() {
   const [request, setRequest] = useState("");
   const [actions, setActions] = useState<Action[]>([]);
   const [loading, setLoading] = useState(false);
+  const [reviewTime, setReviewTime] = useState(0);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -94,6 +95,7 @@ export function MikaActionProposals() {
       );
       if (!body || typeof body !== "object" || !("actions" in body) ||
           !Array.isArray(body.actions)) throw new Error("Resposta inesperada.");
+      setReviewTime(Date.now());
       setActions(body.actions.filter((item: unknown): item is Action =>
         !!item && typeof item === "object" && "title" in item &&
         typeof item.title === "string" && "type" in item &&
@@ -151,7 +153,7 @@ export function MikaActionProposals() {
           <p className="font-medium">Revise as propostas</p>
           {actions.map((action) => (
             <label key={action.proposal_id} className="flex gap-3 rounded-xl border p-3">
-              <input type="checkbox" disabled={Date.parse(action.expires_at) <= Date.now()} checked={selected.includes(action.proposal_id)}
+              <input type="checkbox" disabled={Date.parse(action.expires_at) <= reviewTime} checked={selected.includes(action.proposal_id)}
                 onChange={(event) => setSelected(current => event.target.checked
                   ? [...current, action.proposal_id] : current.filter(value => value !== action.proposal_id))} />
               <span>
