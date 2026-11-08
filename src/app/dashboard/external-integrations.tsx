@@ -4,6 +4,7 @@ import ManualTaskImport from "./manual-task-import";
 import ManualCalendarImport from "./manual-calendar-import";
 import GoogleTasksImport from "./google-tasks-import";
 import TodoistImport from "./todoist-import";
+import MicrosoftCalendarPreview from "./microsoft-calendar-preview";
 
 const integrations = [
   {
@@ -75,6 +76,7 @@ export default function ExternalIntegrations() {
       </div>
       <div id="myryra-google-tasks-import" className="scroll-mt-24"><GoogleTasksImport /></div>
       <div id="myryra-todoist-import" className="scroll-mt-24"><TodoistImport /></div>
+      <div id="myryra-microsoft-calendar" className="scroll-mt-24"><MicrosoftCalendarPreview /></div>
       <ManualTaskImport />
       <ManualCalendarImport />
       <p className="text-xs leading-5 text-slate-400">
