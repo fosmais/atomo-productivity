@@ -86,8 +86,24 @@ export async function POST(request: Request) {
     const parsed: unknown = JSON.parse(result.output_text);
     const actions = validateProposalList(parsed);
     if (!actions) throw new Error("Invalid action list");
+    // Persist the proposals before displaying them. If the migration is not
+    // installed, fail closed rather than showing an untracked approval.
+    const { data: saved, error: saveError } = await supabase
+      .from("mika_action_proposals")
+      .insert(actions.map(action => ({
+        user_id: user.id,
+        action_type: action.type,
+        payload: action,
+        status: "pending" as const
+      })))
+      .select("id,action_type,payload,expires_at");
+    if (saveError || !saved || saved.length !== actions.length) {
+      console.error("MIKA proposal persistence failed", { code: saveError?.code });
+      return NextResponse.json({ error: "Não foi possível registrar as propostas. Tente novamente." },
+        { status: 503, headers: { "Cache-Control": "no-store" } });
+    }
     return NextResponse.json({
-      actions,
+      actions: saved.map(row => ({ ...(row.payload as object), proposal_id: row.id, expires_at: row.expires_at })),
       status: "proposal_only",
       requires_approval: true,
       executed: false,
