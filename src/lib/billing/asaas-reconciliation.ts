@@ -111,6 +111,10 @@ export async function verifyLinkedAsaasSandboxPayment(
        new Date(payment.paymentDate + "T00:00:00Z").toISOString().slice(0, 10) !== payment.paymentDate)) {
     return { verified: false as const, reason: "invalid_payment_date" as const };
   }
+  // Reject a settlement date in the future; provider status alone is insufficient.
+  if (payment.paymentDate && payment.paymentDate > new Date().toISOString().slice(0, 10)) {
+    return { verified: false as const, reason: "future_payment_date" as const };
+  }
   return {
     verified: true as const,
     userId: link.user_id,
