@@ -59,6 +59,8 @@ export async function POST(request: Request) {
   if (docError) return NextResponse.json({ error: "Documento indisponível." }, { status: 503 });
   if (!doc || doc.status !== "published" || !doc.published_at ||
       new Date(doc.effective_at).getTime() > Date.now() ||
+      new Date(doc.published_at).getTime() > Date.now() ||
+      !["terms", "privacy_notice"].includes(doc.document_type) ||
       (doc.document_type === "terms" && action !== "accepted") ||
       (doc.document_type !== "terms" && action !== "acknowledged")) {
     return NextResponse.json({ error: "Versão de documento inválida ou não publicada." }, { status: 409 });
