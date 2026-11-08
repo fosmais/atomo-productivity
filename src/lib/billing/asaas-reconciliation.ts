@@ -50,3 +50,46 @@ export async function verifyAsaasSandboxSubscription(subscriptionId: string) {
   }
   return { id: subscriptionId, status: record.status, customerId: record.customer };
 }
+
+
+/**
+ * Read-only ownership check before a payment may be reconciled.
+ * Never infer the owner from webhook content or customer email.
+ * An unlinked Asaas subscription is not eligible for a plan grant.
+ */
+export async function verifyLinkedAsaasSandboxPayment(
+  paymentId: string,
+  admin: ReturnType<typeof import("@/lib/supabase/admin").createSupabaseAdmin>,
+) {
+  const payment = await verifyAsaasSandboxPayment(paymentId);
+  const subscription = await verifyAsaasSandboxSubscription(payment.subscriptionId);
+  const { data: link, error } = await admin
+    .from("asaas_subscription_links")
+    .select("user_id,asaas_customer_id,plan_id")
+    .eq("asaas_subscription_id", subscription.id)
+    .maybeSingle();
+  if (error) throw new Error("Falha ao consultar vínculo de assinatura.");
+  if (!link || link.asaas_customer_id !== subscription.customerId ||
+      (link.plan_id !== "pro" && link.plan_id !== "premium")) {
+    return { verified: false as const, reason: "unlinked_subscription" as const };
+  }
+  const { data: customer, error: customerError } = await admin
+    .from("asaas_customer_links")
+    .select("user_id")
+    .eq("asaas_customer_id", subscription.customerId)
+    .maybeSingle();
+  if (customerError) throw new Error("Falha ao consultar vínculo de cliente.");
+  if (!customer || customer.user_id !== link.user_id) {
+    return { verified: false as const, reason: "customer_mismatch" as const };
+  }
+  return {
+    verified: true as const,
+    userId: link.user_id,
+    planId: link.plan_id,
+    paymentStatus: payment.status,
+    subscriptionStatus: subscription.status,
+    paymentValue: payment.value,
+    // Explicitly no entitlement decision here; that requires amount/period verification.
+    entitlementGranted: false as const,
+  };
+}
