@@ -83,22 +83,22 @@ async function DashboardContent() {
       <VyraModule id="vyra-ai">
         <VyraSection
           id="vyra-ai"
-          eyebrow="SUA ASSISTENTE"
-          title="Converse com a MIKA"
-          description="Sua assistente pessoal para transformar ideias em decisões e próximos passos."
+          eyebrow="SUA INTELIGÊNCIA PESSOAL"
+          title="MIKA: sua inteligência pessoal para ir além"
+          description="Sua vida tem potencial para muito mais. A MIKA conecta informações da sua rotina, identifica prioridades e ajuda a transformar planos em ações — com você no controle."
         >
           <div className="min-w-0 space-y-4">
             <div className="rounded-2xl border border-violet-400/20 bg-gradient-to-br from-violet-950/40 via-slate-900/75 to-slate-950/80 p-5 sm:p-7">
               <div className="flex flex-wrap items-center gap-3">
-                <img src="/myka-transparente.png" alt="MYKA" className="h-12 w-12 shrink-0 object-contain" />
+                <img src="/myka-transparente.png" alt="MIKA" className="h-12 w-12 shrink-0 object-contain" />
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">MYKA · Assistente pessoal</p>
-                  <h3 className="mt-1 text-xl font-semibold tracking-tight text-white">Sua próxima ideia começa aqui.</h3>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">MIKA · Sua inteligência pessoal</p>
+                  <h3 className="mt-1 text-xl font-semibold tracking-tight text-white">Suas ideias podem ir mais longe.</h3>
                 </div>
               </div>
-              <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">Converse naturalmente sobre prioridades, compromissos e objetivos. A MYKA ajuda você a organizar o que importa.</p>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">Converse, explore prioridades e descubra próximos passos. A MIKA conecta informações da sua rotina para ajudar você a decidir e planejar.</p>
             </div>
-            <section className="min-w-0 rounded-2xl border border-white/15 bg-slate-900/75 p-3 sm:p-5" aria-label="Conversa com a MYKA">
+            <section className="min-w-0 rounded-2xl border border-white/15 bg-slate-900/75 p-3 sm:p-5" aria-label="Conversa com a MIKA">
               <CopilotChat />
             </section>
           </div>
@@ -109,7 +109,7 @@ async function DashboardContent() {
     id="vyra-tasks"
     eyebrow="ORGANIZAÇÃO"
     title="Minhas tarefas e planos"
-    description="Organize suas tarefas, planeje seu dia e evolua com a MYKA."
+    description="Tire planos do papel: organize prioridades, acompanhe tarefas e converse com a MIKA para decidir seus próximos passos."
   >
     <TaskPlanningCards
       tasks={<div className="min-w-0 space-y-4">
@@ -156,7 +156,7 @@ async function DashboardContent() {
       <VyraModule id="vyra-scheduling">
 <VyraSection
         id="vyra-scheduling"
-        eyebrow="SUA ASSISTENTE"
+        eyebrow="SUA INTELIGÊNCIA PESSOAL"
         title="Seu tempo, melhor aproveitado."
         description="Descubra os melhores horários para suas tarefas com base nas prioridades, durações e compromissos da sua agenda."
       >
@@ -181,17 +181,17 @@ async function DashboardContent() {
       </VyraSection>
 </VyraModule>
       <VyraModule id="vyra-finance">
-        <VyraSection id="vyra-finance" eyebrow="MYRYRA FINANCE" title="Seu dinheiro, com mais clareza." description="Organize receitas e despesas sem precisar conectar um banco.">
+        <VyraSection id="vyra-finance" eyebrow="MYRYRA FINANCE" title="Seu dinheiro, com mais clareza." description="Tenha clareza sobre receitas, despesas e objetivos. A MIKA pode ajudar você a refletir sobre seus próximos passos financeiros, sem conexão bancária.">
           <FinanceWorkspace />
         </VyraSection>
       </VyraModule>
       <VyraModule id="vyra-health">
-        <VyraSection id="vyra-health" eyebrow="MYRYRA SAÚDE" title="Bem-estar com a MIKA." description="Comece com seus objetivos e preferências para construir uma rotina saudável.">
+        <VyraSection id="vyra-health" eyebrow="MYRYRA SAÚDE" title="Bem-estar com a MIKA." description="Cuide do corpo e da mente com objetivos, hábitos e acompanhamento. A MIKA ajuda você a planejar uma rotina que faça sentido para sua vida.">
           <HealthWorkspace />
         </VyraSection>
       </VyraModule>
       <VyraModule id="vyra-guide">
-        <VyraSection id="vyra-guide" eyebrow="COMO FUNCIONA" title="Conheça a MYRYRA" description="Descubra as ferramentas e encontre o melhor caminho para começar.">
+        <VyraSection id="vyra-guide" eyebrow="COMO FUNCIONA" title="Conheça a MYRYRA" description="Conheça cada ferramenta da MYRYRA e descubra como a MIKA pode ajudar você a usar sua rotina a seu favor.">
           <MyryraGuide />
         </VyraSection>
       </VyraModule>

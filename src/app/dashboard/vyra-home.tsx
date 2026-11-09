@@ -106,7 +106,7 @@ export default function VyraHome() {
       <section className="rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-950/65 via-slate-900/80 to-slate-950 p-4 sm:p-6" aria-label="Boas-vindas MYRYRA">
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-300">{today ? new Intl.DateTimeFormat("pt-BR",{weekday:"long",day:"numeric",month:"long"}).format(today) : "MYRYRA · SEU ESPAÇO"}</p>
         <h1 className="mt-2 max-w-xl text-2xl font-semibold leading-tight text-white sm:text-3xl">Menos coisas na cabeça. Mais tempo para viver.</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-200">A MYRYRA reúne suas tarefas, compromissos e dinheiro. Você vê o que importa agora e a MIKA ajuda a dar o próximo passo.</p>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-200">Uma nova forma de organizar sua vida. A MYRYRA conecta tarefas, compromissos e finanças, enquanto a MIKA ajuda você a enxergar prioridades e avançar com mais clareza.</p>
         <p className="mt-3 text-sm leading-relaxed text-violet-200" aria-label="Inspiração do dia">{today ? dailyMessages[dayOfYear(today)%dailyMessages.length] : "Um dia de cada vez. Grandes mudanças começam com pequenos passos."}</p>
         <div className="mt-4 grid grid-cols-2 gap-2">
           <button type="button" onClick={() => navigateToQuickAction?.("capture")} className="rounded-xl bg-violet-600 px-3 py-3 text-sm font-semibold text-white hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-violet-400">+ Criar tarefa</button>
@@ -186,7 +186,7 @@ export default function VyraHome() {
           {[
             { title: "1. Anote", text: "Coloque suas tarefas e compromissos em um só lugar.", action: "Criar tarefa", module: "vyra-tasks", quick: true },
             { title: "2. Escolha", text: "Veja o que é importante hoje e comece por uma coisa.", action: "Ver minhas tarefas", module: "vyra-tasks" },
-            { title: "3. Peça ajuda", text: "A MIKA ajuda a organizar ideias e encontrar o próximo passo.", action: "Falar com a MIKA", module: "vyra-ai" },
+            { title: "3. Avance com a MIKA", text: "Converse, analise prioridades e transforme suas ideias em próximos passos.", action: "Falar com a MIKA", module: "vyra-ai" },
           ].map(item => (
             <div key={item.title} className="rounded-xl border border-white/10 bg-slate-950/50 p-3">
               <h3 className="text-sm font-semibold text-white">{item.title}</h3>

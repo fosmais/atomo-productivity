@@ -41,3 +41,135 @@ export async function asaasSandboxPost(path: string, body: Record<string, unknow
   if (!response.ok) throw new Error("Falha no provisionamento Asaas Sandbox.");
   return response.json();
 }
+
+/**
+ * Fetch the authoritative payment state from Asaas Sandbox rather than trusting
+ * webhook payloads. This helper does NOT activate a subscription.
+ */
+export async function getVerifiedAsaasSandboxPayment(paymentId: string): Promise<{
+  id: string;
+  status: string;
+  subscription: string | null;
+  customer: string;
+  value: number;
+  externalReference: string | null;
+}> {
+  if (!/^pay_[a-zA-Z0-9_-]{3,96}$/.test(paymentId)) {
+    throw new Error("Referência de pagamento inválida.");
+  }
+  const response = await asaasSandboxGet(`/payments/${paymentId}`);
+  if (!response || typeof response !== "object" || Array.isArray(response)) {
+    throw new Error("Resposta inválida do Asaas.");
+  }
+  const payment = response as Record<string, unknown>;
+  if (payment.id !== paymentId ||
+      typeof payment.status !== "string" ||
+      typeof payment.customer !== "string" ||
+      typeof payment.value !== "number" ||
+      !Number.isFinite(payment.value) ||
+      payment.value <= 0 ||
+      (payment.subscription != null && typeof payment.subscription !== "string") ||
+      (payment.externalReference != null && typeof payment.externalReference !== "string")) {
+    throw new Error("Dados de pagamento inconsistentes no Asaas.");
+  }
+  return {
+    id: paymentId,
+    status: payment.status,
+    customer: payment.customer,
+    subscription: typeof payment.subscription === "string" ? payment.subscription : null,
+    value: payment.value,
+    externalReference: typeof payment.externalReference === "string" ? payment.externalReference : null,
+  };
+}
+
+/**
+ * Conservative payment-to-subscription match. The caller must supply the
+ * subscription and customer IDs from trusted server-side persistence.
+ * This function never grants entitlements or mutates provider state.
+ */
+export function matchesAsaasSandboxSubscriptionPayment(
+  payment: Awaited<ReturnType<typeof getVerifiedAsaasSandboxPayment>>,
+  expected: { subscriptionId: string; customerId: string; monthlyPriceCents: number },
+): boolean {
+  if (!expected.subscriptionId || !expected.customerId ||
+      !Number.isSafeInteger(expected.monthlyPriceCents) || expected.monthlyPriceCents <= 0) {
+    return false;
+  }
+  return payment.subscription === expected.subscriptionId &&
+    payment.customer === expected.customerId &&
+    Math.round(payment.value * 100) === expected.monthlyPriceCents &&
+    (payment.status === "CONFIRMED" || payment.status === "RECEIVED");
+}
+
+/**
+ * Create a customer ONLY in the Asaas Sandbox, using verified user data
+ * supplied by a trusted server-side caller. Does not create any charge.
+ */
+export async function createAsaasSandboxCustomer(input: {
+  name: string;
+  email: string;
+  externalReference: string;
+}): Promise<string> {
+  const name = input.name.trim();
+  const email = input.email.trim().toLowerCase();
+  if (name.length < 2 || name.length > 120 ||
+      !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || email.length > 254 ||
+      !/^[0-9a-f]{8}-[0-9a-f-]{27,36}$/i.test(input.externalReference)) {
+    throw new Error("Dados de cadastro Asaas inválidos.");
+  }
+  const response = await asaasSandboxPost("/customers", {
+    name,
+    email,
+    externalReference: input.externalReference,
+    notificationDisabled: true,
+  });
+  if (!response || typeof response !== "object" || Array.isArray(response)) {
+    throw new Error("Cadastro Asaas retornou dados inválidos.");
+  }
+  const customerId = (response as Record<string, unknown>).id;
+  if (typeof customerId !== "string" || !/^cus_[A-Za-z0-9_-]{3,96}$/.test(customerId)) {
+    throw new Error("Identificador de cliente Asaas inválido.");
+  }
+  return customerId;
+}
+
+/**
+ * Sandbox-only monthly subscription provisioning. The caller must first
+ * persist a trusted customer link and must implement retry/idempotency
+ * coordination before invoking this function. No entitlement is granted.
+ */
+export async function createAsaasSandboxMonthlySubscription(input: {
+  customerId: string;
+  planId: "pro" | "premium";
+  externalReference: string;
+}): Promise<string> {
+  if (!/^cus_[A-Za-z0-9_-]{3,96}$/.test(input.customerId) ||
+      !/^[0-9a-f]{8}-[0-9a-f-]{27,36}$/i.test(input.externalReference)) {
+    throw new Error("Referência de assinatura inválida.");
+  }
+  const { BILLING_PLANS } = await import("@/lib/billing/plans");
+  if (input.planId !== "pro" && input.planId !== "premium") {
+    throw new Error("Plano inválido.");
+  }
+  const plan = BILLING_PLANS[input.planId];
+  const nextDueDate = new Date();
+  nextDueDate.setUTCDate(nextDueDate.getUTCDate() + 1);
+  const dueDate = nextDueDate.toISOString().slice(0, 10);
+  const response = await asaasSandboxPost("/subscriptions", {
+    customer: input.customerId,
+    billingType: "UNDEFINED",
+    value: plan.monthlyPriceCents / 100,
+    nextDueDate: dueDate,
+    cycle: "MONTHLY",
+    description: `MYRYRA ${plan.name} - teste Sandbox`,
+    externalReference: input.externalReference,
+  });
+  if (!response || typeof response !== "object" || Array.isArray(response)) {
+    throw new Error("Resposta inválida da assinatura Sandbox.");
+  }
+  const subscriptionId = (response as Record<string, unknown>).id;
+  if (typeof subscriptionId !== "string" || !/^sub_[A-Za-z0-9_-]{3,96}$/.test(subscriptionId)) {
+    throw new Error("Identificador de assinatura Asaas inválido.");
+  }
+  return subscriptionId;
+}

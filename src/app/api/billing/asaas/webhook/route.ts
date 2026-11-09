@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   try { data = JSON.parse(raw); } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400, headers }); }
   if (!data || typeof data !== "object") return NextResponse.json({ error: "Evento inválido." }, { status: 400, headers });
   const event = data as Record<string, unknown>;
-  if (typeof event.id !== "string" || !/^[\w-]{1,128}$/.test(event.id) ||
+  if (typeof event.id !== "string" || !/^[A-Za-z0-9_&-]{1,128}$/.test(event.id) ||
       typeof event.event !== "string" || !/^[A-Z_]{1,100}$/.test(event.event)) {
     return NextResponse.json({ error: "Evento inválido." }, { status: 400, headers });
   }

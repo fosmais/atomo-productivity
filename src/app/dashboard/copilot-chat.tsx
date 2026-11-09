@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import MykaPortrait from "@/components/myka-portrait";
+import MikaAgentMode from "./mika-agent-mode";
 import type { FormEvent } from "react";
 import TaskConfirmation from "./task-confirmation";
 import { useVyraActiveModule } from "./vyra-module-context";
@@ -43,6 +44,37 @@ function isTaskProposal(
       value.priority === "Normal") &&
     (typeof value.dueDate === "string" || value.dueDate === null)
   );
+}
+
+const EXTERNAL_APP_LINKS = [
+  { name: "Uber", pattern: /\buber\b/i, url: "https://m.uber.com/looking", action: "Abrir Uber" },
+  { name: "Spotify", pattern: /\bspotify\b/i, url: "https://open.spotify.com/", action: "Abrir Spotify" },
+  { name: "WhatsApp", pattern: /\bwhats?app\b/i, url: "https://wa.me/", action: "Abrir WhatsApp" },
+  { name: "Google Maps", pattern: /\b(google maps|maps)\b/i, url: "https://www.google.com/maps", action: "Abrir Google Maps" },
+  { name: "YouTube", pattern: /\byoutube\b/i, url: "https://www.youtube.com/", action: "Abrir YouTube" },
+] as const;
+
+function appLinkForMessage(messages: ChatMessage[], index: number) {
+  const message = messages[index];
+  if (message?.role !== "assistant" || index < 1) return null;
+  const previous = messages[index - 1];
+  if (previous?.role !== "user") return null;
+  const text = previous.content.trim();
+  const request = /\b(abrir|abra|abre|acesse|acessar|iniciar|coloque|tocar|reproduzir|chamar|pedir|solicitar|corrida|viagem)\b/i;
+  const explicitApp = EXTERNAL_APP_LINKS.find((app) => app.pattern.test(text));
+  if (explicitApp && request.test(text)) return explicitApp;
+  // Continue a recent app request when the user supplies a destination or approval.
+  // Never infer an app from an unrelated conversation.
+  const recentRequest = messages.slice(Math.max(0, index - 8), index - 1).reverse()
+    .find((item) => item.role === "user" && request.test(item.content) &&
+      EXTERNAL_APP_LINKS.some((app) => app.pattern.test(item.content)));
+  if (!recentRequest) return null;
+  const app = EXTERNAL_APP_LINKS.find((candidate) => candidate.pattern.test(recentRequest.content));
+  if (!app) return null;
+  const approval = /^(segue|seguir|sim|pode|continue|continuar|ok|vamos|confirmo)[!. ]*$/i.test(text);
+  const destination = app.name === "Uber" &&
+    /\b(corrida|viagem|destino|para|ate|até|avenida|av\.?|rua|aeroporto|estacao|estação)\b/i.test(text);
+  return approval || destination ? app : null;
 }
 
 export default function CopilotChat() {
@@ -632,18 +664,18 @@ setConversationId(data.conversationId);
 
   return (
     <section className="min-w-0 rounded-2xl border border-violet-400/20 bg-gradient-to-b from-slate-900 to-slate-950 p-3 text-white shadow-xl shadow-violet-950/20 sm:p-7">
+      <MikaAgentMode />
       <div className="mb-5">
         <p className="text-xs font-semibold uppercase tracking-[.2em] text-violet-300">
-          Myka AI
+          MIKA
         </p>
 
         <h2 className="text-2xl font-bold">
-          Converse com seu assistente
+          Converse com a MIKA
         </h2>
 
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-300">
-          Organize tarefas, defina prioridades e planeje seu dia conversando
-          com a inteligência artificial.
+          Faça perguntas, analise prioridades e planeje seus próximos passos em uma única conversa.
         </p>
       </div>
 
@@ -656,7 +688,7 @@ setConversationId(data.conversationId);
         )}
         {!historyLoading && messages.length === 0 && (
           <div className="space-y-3 text-sm text-slate-300">
-            <p>Olá! Sou a MYKA. Como posso ajudar?</p>
+            <p>Olá! Sou a MIKA, sua inteligência pessoal. Vamos entender suas prioridades e transformar seus planos em próximos passos?</p>
             <div className="grid gap-2 sm:grid-cols-2">
               {[
                 { label: "Planejar meu dia", prompt: "Ajude-me a organizar minhas prioridades e tarefas de hoje." },
@@ -665,7 +697,7 @@ setConversationId(data.conversationId);
                 { label: "Objetivo de investimento", prompt: "Quero planejar investimentos para alcançar meu objetivo financeiro." },
               ].map(suggestion => <button key={suggestion.label} type="button" onClick={() => setInput(suggestion.prompt)} className="rounded-xl border border-violet-400/25 bg-violet-500/10 px-3 py-3 text-left text-sm text-violet-100 transition hover:border-violet-300/70 focus-visible:outline-2 focus-visible:outline-violet-400">{suggestion.label} <span aria-hidden="true">↗</span></button>)}
             </div>
-            <p className="text-xs text-slate-400">A MYKA sugere ações; confirme antes de salvar tarefas ou compromissos. Para decisões financeiras, confira os riscos e suas necessidades.</p>
+            <p className="text-xs text-slate-400">A MIKA analisa e sugere próximos passos; confirme antes de salvar tarefas ou compromissos. Para decisões financeiras, confira os riscos e suas necessidades.</p>
           </div>
         )}
 
@@ -683,7 +715,7 @@ setConversationId(data.conversationId);
               }
             >
               <p className="mb-1 text-xs font-semibold">
-                {message.role === "user" ? "Você" : "Myka"}
+                {message.role === "user" ? "Você" : "MIKA"}
               </p>
 
               <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-sm leading-relaxed">
@@ -691,6 +723,12 @@ setConversationId(data.conversationId);
               </p>
             </div>
             </div>
+            {appLinkForMessage(messages, index) && (
+              <div className="ml-10 rounded-xl border border-violet-400/30 bg-violet-950/30 p-3 text-sm sm:ml-12">
+                <p className="mb-2 text-violet-100">A MIKA pode encaminhar você ao serviço solicitado. A abertura depende do dispositivo; ações dentro do aplicativo precisam ser confirmadas por você e podem exigir uma integração específica.</p>
+                <a href={appLinkForMessage(messages, index)!.url} target="_blank" rel="noopener noreferrer" className="inline-flex rounded-lg bg-violet-600 px-4 py-2 font-semibold text-white hover:bg-violet-500">{appLinkForMessage(messages, index)!.action} ↗</a>
+              </div>
+            )}
                         {message.role === "assistant" &&
   Array.isArray(message.proposedTasks) &&
   message.proposedTasks.length > 0 && (
@@ -917,11 +955,11 @@ setConversationId(data.conversationId);
 
       {error && (
         <div role="alert" className="mb-3 space-y-2 text-sm text-red-400">
-          <p>{/você atingiu as \d+ mensagens disponíveis hoje/i.test(error) ? `Você utilizou suas 10 mensagens gratuitas de hoje. ${dailyResetAt && dailyResetAt > Date.now() ? `Seu limite será renovado automaticamente às ${new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }).format(new Date(dailyResetAt))} (horário de Brasília).` : "Seu limite será renovado automaticamente no próximo ciclo diário."} Quer continuar conversando? Conheça nossos planos Pro e Premium.` : error}</p>
+          <p>{/você atingiu as \d+ mensagens disponíveis hoje/i.test(error) ? `Você utilizou suas 10 mensagens gratuitas de hoje. ${dailyResetAt && dailyResetAt > Date.now() ? `Seu limite será renovado automaticamente às ${new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }).format(new Date(dailyResetAt))} (horário de Brasília).` : "Seu limite será renovado automaticamente no próximo ciclo diário."} Os planos Pro e Premium estão em preparação; a contratação ainda não está disponível.` : error}</p>
           {/(pagamento|cobrança|assinatura|plano|financeiro|limite diário|mensagens gratuitas)/i.test(error) && <p className="text-slate-300">Para questões de planos e pagamentos, a Ajuda MIKA continua disponível.</p>}
           {/(pagamento|cobrança|assinatura|plano|financeiro|limite diário|mensagens gratuitas)/i.test(error) && <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("myryra:open-support", { detail: { topic: "billing-payments" } }))} className="rounded-lg border border-violet-400 px-3 py-2 font-semibold text-violet-200">Abrir suporte financeiro</button>}
           {/você atingiu as \d+ mensagens disponíveis hoje/i.test(error) ? (
-            <a href="/planos" className="ml-2 inline-flex rounded-lg bg-violet-600 px-3 py-2 font-semibold text-white hover:bg-violet-500">Conhecer planos e fazer upgrade</a>
+            <a href="/planos" className="ml-2 inline-flex rounded-lg bg-violet-600 px-3 py-2 font-semibold text-white hover:bg-violet-500">Conhecer planos (contratação em preparação)</a>
           ) : (
             <button type="button" onClick={() => setError("")} className="ml-2 rounded-lg border border-slate-600 px-3 py-2 text-slate-200">Tentar novamente</button>
           )}
@@ -945,8 +983,8 @@ setConversationId(data.conversationId);
           value={input}
           onChange={(event) => setInput(event.target.value)}
           maxLength={1500}
-          placeholder="Pergunte algo à Myka..."
-          aria-label="Mensagem para a Myka"
+          placeholder="Converse com a MIKA..."
+          aria-label="Mensagem para a MIKA"
           className="min-w-0 w-full flex-1 rounded-xl border border-white/10 bg-slate-800/80 px-3 py-3 text-base text-white outline-none transition focus:border-violet-400/60 focus:ring-2 focus:ring-violet-500/20 sm:px-4"
         />
 
