@@ -41,11 +41,11 @@ export async function advanceAsaasCheckoutAttempt(input: {
   subscriptionId?: string;
 }): Promise<void> {
   if (process.env.ASAAS_ENVIRONMENT !== "sandbox") throw new Error("Sandbox obrigatório.");
-  if (input.to === "subscription_created" &&
+  if ((input.to === "subscription_created" || (input.to === "manual_review" && input.subscriptionId)) &&
       (!input.subscriptionId || !/^sub_[A-Za-z0-9_-]{3,96}$/.test(input.subscriptionId))) {
     throw new Error("Assinatura não verificada.");
   }
-  if (input.to !== "subscription_created" && input.subscriptionId) {
+  if (input.to !== "subscription_created" && input.to !== "manual_review" && input.subscriptionId) {
     throw new Error("Assinatura inesperada.");
   }
   const patch: Record<string, unknown> = {
