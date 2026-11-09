@@ -45,13 +45,13 @@ const a = makeClient(), b = makeClient();
  if (beforeError) throw beforeError;
  assert.equal(before.status,'approved','Requires an approved, unexecuted proposal');
  assert.equal(before.action_type,'create_task');
- assert.match(before.payload.title, /^\\[MIKA-STAGING-TEST\\]/, 'Only explicitly marked synthetic proposals may be executed');
+ assert.match(before.payload.title, /^\[MIKA-STAGING-TEST\]/, 'Only explicitly marked synthetic proposals may be executed');
  assert.equal(before.payload.plan_id,env.MIKA_TEST_PLAN_ID);
  const { data: plan, error: planError } = await a.from('plans')
   .select('id,user_id,title').eq('id',env.MIKA_TEST_PLAN_ID).single();
  if (planError) throw planError;
  assert.equal(plan.user_id,identity.user.id,'Plan must belong to the authenticated test user');
- assert.match(plan.title, /^\\[MIKA-STAGING-TEST\\]/, 'Only synthetic test plans may be used');
+ assert.match(plan.title, /^\[MIKA-STAGING-TEST\]/, 'Only synthetic test plans may be used');
  const { data: existingAudit, error: auditBeforeError } = await a.from('mika_action_audit')
   .select('id').eq('proposal_id',env.MIKA_TEST_PROPOSAL_ID).eq('event_type','succeeded');
  if (auditBeforeError) throw auditBeforeError;
