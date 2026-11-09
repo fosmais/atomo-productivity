@@ -103,6 +103,7 @@ export default function MikaAppConnections() {
               <p className="mb-2 font-semibold">Registros de conexão (não validados pelo provedor)</p>
               <p>Google Calendar: {connectionRecords.googleCalendar === "record_present_unverified" ? "Registro encontrado — autorização não verificada" : "Nenhum registro encontrado"}</p>
               <p>Todoist: {connectionRecords.todoist === "record_present_unverified" ? "Registro encontrado — autorização não verificada" : "Nenhum registro encontrado"}</p>
+              <p className="mt-2 text-slate-300">Google Calendar: as permissões atuais permitem apenas consultar calendários, eventos e tarefas. A MIKA não pode criar ou alterar dados no Google.</p>
               <p className="mt-2 text-slate-300">Todoist: o OAuth atual permite somente leitura (data:read). A MIKA não pode criar, editar ou excluir tarefas nesse serviço.</p>
               {connectionRecords.googleCalendar === "no_record" && (
                 <a href="/api/google/connect" className="mt-2 inline-block underline underline-offset-2">Autorizar Google Calendar</a>
