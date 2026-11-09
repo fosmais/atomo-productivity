@@ -55,3 +55,13 @@ Transformar **Minha Meta Atual** em jornadas pessoais e compartilhadas, com plan
 - Feature flag desligada mantém Minha Meta Atual funcionando sem regressão.
 
 **Estado:** escopo aprovado; implementação ainda pendente. LGPD e pagamentos reais são iniciativas separadas e permanecem sob suas próprias restrições de liberação.
+
+## Princípio de produto aprovado — Modelo heliocêntrico
+**MYRYRA Journey é o Sol:** a jornada do usuário é o núcleo da navegação, do planejamento e da experiência de evolução pessoal. **MIKA é a inteligência orquestradora** e os demais módulos são planetas que apoiam o Journey.
+
+- Agenda reserva tempo para missões; Tarefas executa ações; Finanças apoia metas financeiras; Saúde sustenta bem-estar; Foco ajuda na execução; Score resume progresso; Social viabiliza jornadas coletivas.
+- A home deve priorizar: jornada atual, progresso, próxima missão e acesso contextual aos módulos de apoio. Os módulos permanecem utilizáveis de forma independente.
+- Integrações entre módulos são opt-in e respeitam permissões granulares, minimização de dados e autorização explícita para ações externas. Dados financeiros e de saúde não são compartilhados automaticamente com participantes.
+- O Score deve refletir indicadores explicáveis de evolução, sem punição por condições pessoais ou períodos de inatividade. MYRAs recompensam marcos verificáveis, não o tempo de tela.
+- A identidade visual pode usar Sol, órbitas e planetas como metáfora, mas a interface deve continuar simples, responsiva, acessível e em cards.
+- Roadmap J1 deve preparar a associação opcional entre jornadas e itens de módulos existentes, sem migração destrutiva nem alteração automática de dados.
