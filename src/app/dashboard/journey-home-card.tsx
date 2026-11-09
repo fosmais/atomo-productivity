@@ -71,6 +71,7 @@ export default function JourneyHomeCard() {
       if (titles.length === 0) { setError("Adicione ao menos uma missão antes de confirmar."); return; }
       if (titles.length > 30) { setError("A trilha pode ter no máximo 30 missões."); return; }
       if (titles.some(title => title.length > 160)) { setError("Cada missão deve ter no máximo 160 caracteres."); return; }
+      if (new Set(titles.map(title => title.toLocaleLowerCase("pt-BR"))).size !== titles.length) { setError("Há missões repetidas na trilha. Revise antes de confirmar."); return; }
     }
     setBusy(true); setError("");
     try {
