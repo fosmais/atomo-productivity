@@ -121,6 +121,20 @@ export async function POST(request: Request) {
     const subscriptionId = await createAsaasSandboxMonthlySubscription({
       customerId, planId: planId as "pro" | "premium", externalReference: attemptId,
     });
+    // Persist as pending. Only verified payment reconciliation may later
+    // change the subscription to active and grant an entitlement.
+    const { error: persistenceError } = await createSupabaseAdmin()
+      .from("billing_subscriptions")
+      .insert({
+        user_id: user.id,
+        plan_id: planId,
+        provider: "asaas",
+        provider_subscription_id: subscriptionId,
+        status: "pending",
+        current_period_end: null,
+        cancel_at_period_end: false,
+      });
+    if (persistenceError) throw new Error("Falha ao registrar assinatura pendente.");
     await advanceAsaasCheckoutAttempt({
       id: attemptId, userId: user.id, from: "customer_linked",
       to: "subscription_created", subscriptionId,
