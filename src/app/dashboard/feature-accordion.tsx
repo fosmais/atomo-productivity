@@ -62,8 +62,14 @@ export function FeatureAccordion({ id, title, description, userId, defaultOpen =
       const detail = (event as CustomEvent<{ open: boolean }>).detail;
       if (typeof detail?.open === "boolean") node.open = detail.open;
     };
+    const onJourneyCapture = () => {
+      if (id !== "capture") return;
+      node.open = true;
+      window.requestAnimationFrame(() => node.scrollIntoView({ behavior: "smooth", block: "center" }));
+    };
+    window.addEventListener("myryra:journey-open-capture", onJourneyCapture);
     window.addEventListener(eventName, onAll);
-    return () => window.removeEventListener(eventName, onAll);
+    return () => { window.removeEventListener(eventName, onAll); window.removeEventListener("myryra:journey-open-capture", onJourneyCapture); };
   }, [id, userId, defaultOpen]);
   return <details data-feature-id={id} ref={ref} onToggle={event => {
     if (!event.currentTarget.isConnected) return;
