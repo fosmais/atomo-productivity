@@ -695,7 +695,7 @@ setConversationId(data.conversationId);
             {message.role === "assistant" &&
               index > 0 &&
               messages[index - 1]?.role === "user" &&
-              /\\buber\\b/i.test(messages[index - 1].content) &&
+              /\buber\b/i.test(messages[index - 1].content) &&
               /(abrir|abra|chamar|pedir|solicitar|corrida|viagem)/i.test(messages[index - 1].content) && (
                 <div className="ml-10 rounded-xl border border-violet-400/30 bg-violet-950/30 p-3 text-sm sm:ml-12">
                   <p className="mb-2 text-violet-100">Posso abrir o site do Uber para você escolher o destino e confirmar a viagem. Nenhuma corrida foi solicitada pela MIKA.</p>
