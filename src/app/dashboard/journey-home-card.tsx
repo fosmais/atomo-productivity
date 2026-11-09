@@ -129,6 +129,10 @@ export default function JourneyHomeCard() {
           <div><span className="text-3xl font-bold tabular-nums text-white">{progress ? `${progress.percent}%` : "—"}</span><p className="text-xs text-slate-300">{progress ? `${progress.completed} de ${progress.total} missões concluídas` : "Carregando progresso"}</p></div>
           {journey.target_date && <span className="text-xs text-amber-100">Meta: {journey.target_date.split("-").reverse().join("/")}</span>}
         </div>
+        {progress && progress.total > 0 && <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-200" aria-live="polite">
+          <span>{progress.total - progress.completed === 0 ? "Todas as missões realizadas" : `${progress.total - progress.completed} ${progress.total - progress.completed === 1 ? "missão restante" : "missões restantes"}`}</span>
+          <span>{progress.completed === 0 ? "Sua primeira conquista está à frente" : progress.completed === progress.total ? "Objetivo alcançado!" : "Continue no seu ritmo"}</span>
+        </div>}
         <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/15" role="progressbar" aria-label="Progresso da jornada" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress?.percent ?? 0}>
           <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${progress?.percent ?? 0}%` }} />
         </div>
