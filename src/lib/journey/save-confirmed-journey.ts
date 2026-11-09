@@ -15,7 +15,8 @@ export async function saveConfirmedJourney(
   if (!confirmed) throw new Error("Confirme a jornada antes de salvar.");
   if (!draft.requiresUserConfirmation || !draft.title.trim() ||
       draft.title.length > 120 || draft.missions.length < 1 ||
-      draft.missions.length > 104 ||\n      draft.missions.some((m) => !m.title.trim() || m.title.length > 160 || m.status !== "pending")) {
+      draft.missions.length > 104 ||
+      draft.missions.some((m) => !m.title.trim() || m.title.length > 160 || m.status !== "pending")) {
     throw new Error("Rascunho de jornada inválido.");
   }
   const { data: { user }, error: authError } = await supabase.auth.getUser();
