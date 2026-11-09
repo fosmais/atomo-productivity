@@ -158,10 +158,6 @@ export default function JourneyHomeCard() {
         </div>
         {plan && <div className="mt-3 space-y-2" aria-label="Prévia da trilha">
           <p className="text-xs text-amber-200">Sugestão automática inicial, ainda sem personalização da MIKA. Não será salva sem sua confirmação.</p>
-          {plan.stages.map((stage, index) => <div key={index} className="rounded-lg border border-white/10 p-2">
-            <p className="font-semibold">Semana {stage.week}: {stage.title}</p>
-            <ul className="list-inside list-disc text-xs text-slate-300">{stage.missions.map(mission => <li key={mission}>{mission}</li>)}</ul>
-          </div>)}
           <p className="text-xs text-slate-300">Você pode editar cada missão antes de confirmar.</p>
           {plan.stages.map((stage, stageIndex) => <div key={stageIndex} className="space-y-2 rounded-lg border border-white/10 p-2">
             <p className="text-xs font-semibold text-amber-200">Semana {stage.week} · {stage.title}</p>
