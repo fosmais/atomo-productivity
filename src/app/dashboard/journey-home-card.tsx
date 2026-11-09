@@ -61,7 +61,12 @@ export default function JourneyHomeCard() {
   async function createJourney(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!journeyTitle.trim() || busy) return;
-    if (plan && !plan.stages.some(stage => stage.missions.some(title => title.trim()))) { setError("Adicione ao menos uma missão antes de confirmar."); return; }
+    if (plan) {
+      const titles = plan.stages.flatMap(stage => stage.missions.map(title => title.trim()).filter(Boolean));
+      if (titles.length === 0) { setError("Adicione ao menos uma missão antes de confirmar."); return; }
+      if (titles.length > 30) { setError("A trilha pode ter no máximo 30 missões."); return; }
+      if (titles.some(title => title.length > 160)) { setError("Cada missão deve ter no máximo 160 caracteres."); return; }
+    }
     setBusy(true); setError("");
     try {
       const proposed = plan?.stages.flatMap(stage => stage.missions.map(title => title.trim()).filter(Boolean)) ?? [];
