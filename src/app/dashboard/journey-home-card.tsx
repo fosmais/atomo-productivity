@@ -23,6 +23,7 @@ export default function JourneyHomeCard() {
   const [daysPerWeek, setDaysPerWeek] = useState(3);
   const [plan, setPlan] = useState<{ source: string; stages: { title: string; week: number; missions: string[] }[] } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showCreator, setShowCreator] = useState(false);
   const [refresh, setRefresh] = useState(0);
   useEffect(() => {
     if (active !== "home") return;
@@ -71,7 +72,7 @@ export default function JourneyHomeCard() {
       const created = data.journey as Journey;
       setJourneys(current => [created, ...current]);
       setSelected(created.id);
-      setJourneyTitle("");
+      setJourneyTitle(""); setShowCreator(false);
       const proposed = plan?.stages.flatMap(stage => stage.missions.map(title => title.trim()).filter(Boolean)) ?? [];
       setPlan(null);
       if (proposed.length) {
@@ -127,7 +128,7 @@ export default function JourneyHomeCard() {
           </select>
         </label>}
       </div>
-      {journey ? <>
+      {journey && !showCreator ? <>
         <div className="mt-4 flex items-end justify-between gap-2">
           <div><span className="text-3xl font-bold tabular-nums text-white">{progress ? `${progress.percent}%` : "—"}</span><p className="text-xs text-slate-300">{progress ? `${progress.completed} de ${progress.total} missões concluídas` : "Carregando progresso"}</p></div>
           {journey.target_date && <span className="text-xs text-amber-100">Meta: {journey.target_date.split("-").reverse().join("/")}</span>}
@@ -173,6 +174,7 @@ export default function JourneyHomeCard() {
           <p className="text-xs text-slate-400">Ao confirmar, a jornada e as missões revisadas serão criadas.</p>
         </div>}
         <p className="mt-2 text-xs text-slate-400">Sua jornada começa privada. Depois, você poderá adicionar missões.</p></div>}
+      {journey && <button type="button" disabled={busy} onClick={() => { setShowCreator(value => !value); setError(""); setPlan(null); }} className="mt-3 rounded-xl border border-amber-400/40 px-3 py-2 text-xs font-semibold text-amber-100 disabled:opacity-50">{showCreator ? "Voltar à minha jornada" : "+ Criar outra jornada"}</button>}
       {error && <p role="alert" className="mt-2 text-xs text-rose-200">{error}</p>}
       <div className="mt-4 flex flex-wrap gap-2">
         <button type="button" onClick={() => navigateToQuickAction?.("goals")} className="rounded-xl bg-amber-400 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-amber-300">{journey ? "Ver minhas metas" : "Definir minha meta"}</button>
