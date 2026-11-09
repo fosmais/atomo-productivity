@@ -26,8 +26,23 @@ export async function POST(request: Request) {
   }
   let payload: unknown;
   try {
-    const raw = await request.text();
-    if (new TextEncoder().encode(raw).byteLength > 8192) {
+    const reader = request.body?.getReader();
+    if (!reader) throw new Error("Corpo ausente");
+    const decoder = new TextDecoder("utf-8", { fatal: true });
+    let raw = "";
+    let bytes = 0;
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      bytes += chunk.value.byteLength;
+      if (bytes > 8192) {
+        await reader.cancel();
+        return NextResponse.json({ error: "Requisição muito grande." }, { status: 413, headers });
+      }
+      raw += decoder.decode(chunk.value, { stream: true });
+    }
+    raw += decoder.decode();
+    if (bytes > 8192) {
       return NextResponse.json({ error: "Requisição muito grande." }, { status: 413, headers });
     }
     payload = JSON.parse(raw);
