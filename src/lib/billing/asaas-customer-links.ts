@@ -44,3 +44,32 @@ export async function registerAsaasSandboxCustomerLink(userId: string, customerI
   if (existing === customerId) return;
   throw new Error("Conflito no vínculo de cliente Asaas; requer conciliação manual.");
 }
+
+/**
+ * Server-side orchestration for an authenticated user. The caller must pass
+ * the user ID and email returned by Supabase Auth, never browser-supplied IDs.
+ * A duplicate remote customer can be created if persistence fails; in that
+ * case fail closed and reconcile manually rather than creating a subscription.
+ */
+export async function ensureAsaasSandboxCustomerForAuthenticatedUser(user: {
+  id: string;
+  email: string;
+  name: string;
+}): Promise<string> {
+  if (process.env.ASAAS_ENVIRONMENT !== "sandbox" ||
+      process.env.ASAAS_SANDBOX_PROVISIONING_ENABLED !== "true") {
+    throw new Error("Provisionamento Sandbox desabilitado.");
+  }
+  if (!userIdPattern.test(user.id)) throw new Error("Usuário inválido.");
+  const existing = await findAsaasCustomerForUser(user.id);
+  if (existing) return existing;
+
+  const { createAsaasSandboxCustomer } = await import("@/lib/billing/asaas");
+  const customerId = await createAsaasSandboxCustomer({
+    name: user.name,
+    email: user.email,
+    externalReference: user.id,
+  });
+  await registerAsaasSandboxCustomerLink(user.id, customerId);
+  return customerId;
+}
