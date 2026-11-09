@@ -21,7 +21,7 @@ export default function JourneyHomeCard() {
   const [weeks, setWeeks] = useState(8);
   const [minutesPerDay, setMinutesPerDay] = useState(20);
   const [daysPerWeek, setDaysPerWeek] = useState(3);
-  const [plan, setPlan] = useState<{ stages: { title: string; week: number; missions: string[] }[] } | null>(null);
+  const [plan, setPlan] = useState<{ source: string; stages: { title: string; week: number; missions: string[] }[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [refresh, setRefresh] = useState(0);
   useEffect(() => {
@@ -161,7 +161,7 @@ export default function JourneyHomeCard() {
           <button type="button" disabled={busy || !journeyTitle.trim() || weeks < 1 || weeks > 52 || minutesPerDay < 5 || minutesPerDay > 240 || daysPerWeek < 1 || daysPerWeek > 7} onClick={() => void previewPlan()} className="rounded-xl border border-violet-400/50 px-3 py-2 text-xs text-violet-100 disabled:opacity-50">Ver sugestão de trilha</button>
         </div>
         {plan && <div className="mt-3 space-y-2" aria-label="Prévia da trilha">
-          <p className="text-xs text-amber-200">Sugestão automática inicial, ainda sem personalização da MIKA. Não será salva sem sua confirmação.</p>
+          <p className="text-xs text-amber-200">{plan.source === "mika_ai" ? "Trilha personalizada pela MIKA. Revise antes de confirmar." : "Trilha automática por categoria (MIKA indisponível). Revise antes de confirmar."}</p>
           <p className="text-xs text-slate-300">Você pode editar cada missão antes de confirmar.</p>
           {plan.stages.map((stage, stageIndex) => <div key={stageIndex} className="space-y-2 rounded-lg border border-white/10 p-2">
             <p className="text-xs font-semibold text-amber-200">Semana {stage.week} · {stage.title}</p>
