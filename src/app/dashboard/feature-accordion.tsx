@@ -52,7 +52,9 @@ export function FeatureAccordion({ id, title, description, userId, defaultOpen =
     if (!node) return;
     const oauthCallback = id === "external-integrations" &&
       new URLSearchParams(window.location.search).has("google_calendar");
-    node.open = oauthCallback || storedOpen(userId, id, defaultOpen);
+    let journeyCapture = false;
+    if (id === "capture") { try { journeyCapture = Boolean(sessionStorage.getItem("myryra:journey-task-prefill:v1")); } catch { /* optional */ } }
+    node.open = oauthCallback || journeyCapture || storedOpen(userId, id, defaultOpen);
     if (oauthCallback) {
       window.requestAnimationFrame(() => {
         node.scrollIntoView({ behavior: "smooth", block: "center" });
