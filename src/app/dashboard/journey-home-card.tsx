@@ -19,6 +19,8 @@ export default function JourneyHomeCard() {
   const [newTitle, setNewTitle] = useState("");
   const [journeyTitle, setJourneyTitle] = useState("");
   const [weeks, setWeeks] = useState(8);
+  const [minutesPerDay, setMinutesPerDay] = useState(20);
+  const [daysPerWeek, setDaysPerWeek] = useState(3);
   const [plan, setPlan] = useState<{ stages: { title: string; week: number; missions: string[] }[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [refresh, setRefresh] = useState(0);
@@ -49,7 +51,7 @@ export default function JourneyHomeCard() {
     if (!journeyTitle.trim() || busy) return;
     setBusy(true); setError(""); setPlan(null);
     try {
-      const response = await fetch("/api/journeys/plan-preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ goal: journeyTitle.trim(), weeks }) });
+      const response = await fetch("/api/journeys/plan-preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ goal: journeyTitle.trim(), weeks, minutesPerDay, daysPerWeek }) });
       if (!response.ok) throw new Error("Não foi possível preparar a trilha.");
       setPlan(await response.json());
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Erro na prévia."); }
@@ -154,7 +156,9 @@ export default function JourneyHomeCard() {
         </form>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <label className="text-xs text-slate-300">Prazo em semanas <input type="number" min={1} max={52} value={weeks} onChange={event => { setWeeks(Number(event.target.value)); setPlan(null); }} className="ml-2 w-16 rounded-lg border border-white/20 bg-slate-950 p-2 text-white" /></label>
-          <button type="button" disabled={busy || !journeyTitle.trim() || weeks < 1 || weeks > 52} onClick={() => void previewPlan()} className="rounded-xl border border-violet-400/50 px-3 py-2 text-xs text-violet-100 disabled:opacity-50">Ver sugestão de trilha</button>
+          <label className="text-xs text-slate-300">Minutos/dia <input type="number" min={5} max={240} value={minutesPerDay} onChange={event => { setMinutesPerDay(Number(event.target.value)); setPlan(null); }} className="ml-2 w-16 rounded-lg border border-white/20 bg-slate-950 p-2 text-white" /></label>
+          <label className="text-xs text-slate-300">Dias/semana <input type="number" min={1} max={7} value={daysPerWeek} onChange={event => { setDaysPerWeek(Number(event.target.value)); setPlan(null); }} className="ml-2 w-14 rounded-lg border border-white/20 bg-slate-950 p-2 text-white" /></label>
+          <button type="button" disabled={busy || !journeyTitle.trim() || weeks < 1 || weeks > 52 || minutesPerDay < 5 || minutesPerDay > 240 || daysPerWeek < 1 || daysPerWeek > 7} onClick={() => void previewPlan()} className="rounded-xl border border-violet-400/50 px-3 py-2 text-xs text-violet-100 disabled:opacity-50">Ver sugestão de trilha</button>
         </div>
         {plan && <div className="mt-3 space-y-2" aria-label="Prévia da trilha">
           <p className="text-xs text-amber-200">Sugestão automática inicial, ainda sem personalização da MIKA. Não será salva sem sua confirmação.</p>
