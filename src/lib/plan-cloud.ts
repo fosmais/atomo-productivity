@@ -114,7 +114,7 @@ export async function saveCloudPlan(
   if (error) throw error;
 
   if (tasks.length > 0) {
-    const { error: tasksError } = await supabase.from("tasks").insert(
+    const { data: insertedTasks, error: tasksError } = await supabase.from("tasks").insert(
       tasks.map((task) => ({
         plan_id: plan.id,
         user_id: userId,
@@ -123,9 +123,12 @@ export async function saveCloudPlan(
         due_date: task.dueDate || null,
         completed: task.completed,
       }))
-    );
+    ).select("id,title");
 
-    if (tasksError) {
+    if (!tasksError && insertedTasks?.length === tasks.length) {
+      tasks = tasks.map((task, index) => ({ ...task, id: insertedTasks[index].id }));
+    }
+    if (tasksError || insertedTasks?.length !== tasks.length) {
       const { error: rollbackError } = await supabase
         .from("plans")
         .delete()
