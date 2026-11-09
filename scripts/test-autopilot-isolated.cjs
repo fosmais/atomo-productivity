@@ -10,6 +10,7 @@
  * TEST_USER_A_JWT=...
  * TEST_USER_B_JWT=...
  * TEST_USER_A_TASK_ID=<uuid>  (pending, duration_minutes=25, not deleted)
+ * TEST_EXPECTED_PROJECT_REF=<dedicated-test-project-ref>
  * TEST_ALLOW_WRITES_IN_ISOLATED_PROJECT=YES
  * node scripts/test-autopilot-isolated.cjs
  */
@@ -17,7 +18,7 @@ const assert = require("node:assert/strict");
 const { createClient } = require("@supabase/supabase-js");
 
 const env = process.env;
-const required = ["TEST_SUPABASE_URL", "TEST_SUPABASE_ANON_KEY", "TEST_USER_A_JWT", "TEST_USER_B_JWT", "TEST_USER_A_TASK_ID"];
+const required = ["TEST_SUPABASE_URL", "TEST_SUPABASE_ANON_KEY", "TEST_USER_A_JWT", "TEST_USER_B_JWT", "TEST_USER_A_TASK_ID", "TEST_EXPECTED_PROJECT_REF"];
 for (const name of required) {
   if (!env[name]) throw new Error("Missing isolated test configuration: " + name);
 }
@@ -25,6 +26,8 @@ const url = new URL(env.TEST_SUPABASE_URL);
 assert.equal(url.protocol, "https:", "HTTPS required");
 assert.match(url.hostname, /^[a-z0-9-]+\.supabase\.co$/, "Supabase project URL required");
 assert.notEqual(url.hostname, "qothgddrvrpeqsprslqk.supabase.co", "Active MYRYRA project is forbidden");
+assert.match(env.TEST_EXPECTED_PROJECT_REF, /^[a-z0-9-]+$/, "Invalid test project ref");
+assert.equal(url.hostname, env.TEST_EXPECTED_PROJECT_REF + ".supabase.co", "Target does not match explicitly approved test project");
 assert.equal(env.TEST_ALLOW_WRITES_IN_ISOLATED_PROJECT, "YES", "Explicit test-write opt-in required");
 assert.match(env.TEST_USER_A_TASK_ID, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
 
@@ -38,7 +41,6 @@ const a = client(env.TEST_USER_A_JWT);
 const b = client(env.TEST_USER_B_JWT);
 const guest = client();
 const taskId = env.TEST_USER_A_TASK_ID;
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const results = [];
 async function run(id, fn) {
   try { await fn(); results.push({ id, status: "PASS" }); }
