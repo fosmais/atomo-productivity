@@ -33,10 +33,14 @@ export async function POST(request: Request) {
     input = JSON.parse(raw + decoder.decode());
   } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400, headers }); }
   if (!input || typeof input !== "object" || Array.isArray(input)) return NextResponse.json({ error: "Dados inválidos." }, { status: 400, headers });
-  const { goal, weeks } = input as { goal?: unknown; weeks?: unknown };
+  const { goal, weeks, minutesPerDay, daysPerWeek } = input as { goal?: unknown; weeks?: unknown; minutesPerDay?: unknown; daysPerWeek?: unknown };
   if (typeof goal !== "string" || !goal.trim() || goal.trim().length > 120 || !Number.isInteger(weeks) || typeof weeks !== "number" || weeks < 1 || weeks > 52) {
     return NextResponse.json({ error: "Informe um objetivo e um prazo entre 1 e 52 semanas." }, { status: 400, headers });
   }
+  if (minutesPerDay !== undefined && (typeof minutesPerDay !== "number" || !Number.isInteger(minutesPerDay) || minutesPerDay < 5 || minutesPerDay > 240)) return NextResponse.json({ error: "Tempo diário deve ser entre 5 e 240 minutos." }, { status: 400, headers });
+  if (daysPerWeek !== undefined && (typeof daysPerWeek !== "number" || !Number.isInteger(daysPerWeek) || daysPerWeek < 1 || daysPerWeek > 7)) return NextResponse.json({ error: "Dias por semana devem ser entre 1 e 7." }, { status: 400, headers });
+  const daily = minutesPerDay ?? 20;
+  const weekly = daysPerWeek ?? 3;
   const clean = goal.trim();
   const normalized = clean.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const category = /italiano|ingles|espanhol|frances|idioma|lingua/.test(normalized) ? "language"
@@ -71,11 +75,12 @@ export async function POST(request: Request) {
       ["Revisar o que foi conquistado", "Definir a próxima etapa da jornada"],
     ],
   };
-  const steps = templates[category];
+  const steps = templates[category].map(items => [...items]) as [string[], string[], string[]];
+  steps[0].push(`Reservar ${daily} minutos em ${weekly} dia(s) por semana para a jornada`);
   const stages = [
     { title: "Preparar a jornada", week: 1, missions: steps[0] },
     { title: "Criar consistência", week: Math.min(weeks, Math.max(1, Math.ceil(weeks / 3))), missions: steps[1] },
     { title: "Consolidar o progresso", week: weeks, missions: steps[2] },
   ];
-  return NextResponse.json({ goal: clean, weeks, source: "category_template", category, requiresConfirmation: true, persisted: false, stages }, { headers });
+  return NextResponse.json({ goal: clean, weeks, source: "category_template", category, availability: { minutesPerDay: daily, daysPerWeek: weekly }, requiresConfirmation: true, persisted: false, stages }, { headers });
 }
