@@ -72,18 +72,16 @@ export default function JourneyHomeCard() {
       setJourneyTitle("");
       const proposed = plan?.stages.flatMap(stage => stage.missions) ?? [];
       setPlan(null);
-      let saved = 0;
-      for (const title of proposed) {
-        const missionResponse = await fetch(`/api/journeys/${encodeURIComponent(created.id)}/missions`, {
+      if (proposed.length) {
+        const missionResponse = await fetch(`/api/journeys/${encodeURIComponent(created.id)}/missions/bulk`, {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title }),
+          body: JSON.stringify({ titles: proposed }),
         });
         if (!missionResponse.ok) {
-          setError(`Jornada criada. ${saved} de ${proposed.length} missões adicionadas. Confira a lista antes de continuar para evitar duplicações.`);
+          setError("Jornada criada, mas não foi possível salvar as missões. Confira a jornada antes de tentar novamente.");
           setRefresh(value => value + 1);
           return;
         }
-        saved += 1;
       }
       setRefresh(value => value + 1);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Erro ao criar jornada."); }
