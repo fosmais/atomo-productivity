@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   }
   const expected = new URL("/api/todoist/callback", request.url);
   const callback = new URL(redirectUri);
-  if (callback.protocol !== "https:" || callback.pathname !== expected.pathname) {
+  if (callback.protocol !== "https:" || callback.origin !== expected.origin || callback.pathname !== expected.pathname) {
     return NextResponse.json({ error: "Callback Todoist não configurado corretamente." }, { status: 503 });
   }
   const state = randomBytes(32).toString("hex");
