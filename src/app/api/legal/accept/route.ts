@@ -47,10 +47,9 @@ export async function POST(request: Request) {
     const accepted = new Set((existing ?? []).map((item) => item.document_version_id));
     const missing = requiredTypes.map((type) => current.get(type)!).filter((doc) => !accepted.has(doc.id));
     if (missing.length) {
-      const requestId = randomUUID();
       const { error: insertError } = await admin.from("myryra_privacy_acceptances").insert(missing.map((doc) => ({
         user_id: user.id, document_version_id: doc.id, action: "accepted",
-        evidence_source: "web_explicit_acceptance", request_id: requestId, ui_locale: "pt-BR",
+        evidence_source: "web_explicit_acceptance", request_id: randomUUID(), ui_locale: "pt-BR",
       })));
       if (insertError) throw new Error("Falha ao registrar aceite");
     }
