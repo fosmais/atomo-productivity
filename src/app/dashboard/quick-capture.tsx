@@ -78,6 +78,13 @@ export default function QuickCapture() {
       setError("");
       setSuccess("Missão importada da Journey. Revise e confirme para criar a tarefa.");
     };
+    try {
+      const pending = sessionStorage.getItem("myryra:journey-task-prefill:v1");
+      if (pending) {
+        sessionStorage.removeItem("myryra:journey-task-prefill:v1");
+        prefillMission(new CustomEvent("myryra:journey-prefill-task", { detail: { title: pending } }));
+      }
+    } catch { /* optional */ }
     window.addEventListener("myryra:journey-prefill-task", prefillMission);
     return () => window.removeEventListener("myryra:journey-prefill-task", prefillMission);
   }, []);
