@@ -18,7 +18,7 @@ const missing = required.filter(k => !env[k]);
 if (missing.length) { console.error('Missing staging test settings:', missing.join(', ')); process.exit(2); }
 const url = new URL(env.MIKA_STAGING_URL);
 if (url.protocol !== 'https:' || !url.hostname.endsWith('.supabase.co')) throw new Error('Expected a Supabase HTTPS staging URL');
-if (url.hostname.startsWith('qothgddrvrpeqsprslqk.')) throw new Error('Production Supabase project is forbidden');
+if (url.hostname !== 'xanavauqzsrgvdfhcrsm.supabase.co') throw new Error('Only the approved isolated finance homologation project is permitted');
 if (!/^[0-9a-f-]{36}$/i.test(env.MIKA_TEST_PROPOSAL_ID) || !/^[0-9a-f-]{36}$/i.test(env.MIKA_TEST_PLAN_ID)) throw new Error('Invalid UUID');
 const makeClient = () => createClient(env.MIKA_STAGING_URL, env.MIKA_STAGING_ANON_KEY, {
  global: { headers: { Authorization: 'Bearer ' + env.MIKA_TEST_ACCESS_TOKEN } },
