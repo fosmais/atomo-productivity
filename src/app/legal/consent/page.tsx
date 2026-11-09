@@ -20,7 +20,7 @@ export default function LegalConsentPage() {
   }
   useEffect(() => { void load().catch(() => setMessage("Não foi possível consultar os documentos.")); }, []);
   async function submit() {
-    if (!status?.ready || !terms || !privacy || busy) return;
+    if (!status?.ready || !status.documents.every((doc) => doc.accepted || (doc.type === "terms" ? terms : privacy)) || busy) return;
     setBusy(true); setMessage("");
     try {
       const response = await fetch("/api/legal/accept", {
@@ -42,6 +42,7 @@ export default function LegalConsentPage() {
     finally { setBusy(false); }
   }
   const ready = status?.ready && status.documents.length === 2;
+  const confirmed = status?.documents.every((doc) => doc.accepted || (doc.type === "terms" ? terms : privacy)) ?? false;
   return (
     <main className="mx-auto w-full max-w-xl px-5 py-12">
       <h1 className="text-2xl font-semibold">Privacidade e Termos de Uso</h1>
@@ -57,9 +58,9 @@ export default function LegalConsentPage() {
           ))}
           {status.acceptanceRequired ? (
             <>
-              <label className="flex gap-3"><input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} /> Li e concordo com os Termos de Uso vigentes.</label>
-              <label className="flex gap-3"><input type="checkbox" checked={privacy} onChange={(e) => setPrivacy(e.target.checked)} /> Li e estou ciente do Aviso de Privacidade vigente.</label>
-              <button type="button" disabled={!terms || !privacy || busy} onClick={() => void submit()} className="rounded-xl bg-violet-700 px-5 py-3 font-semibold text-white disabled:opacity-50">{busy ? "Registrando…" : "Confirmar e continuar"}</button>
+              {!status.documents.find((doc) => doc.type === "terms")?.accepted && <label className="flex gap-3"><input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} /> Li e concordo com os Termos de Uso vigentes.</label>}
+              {!status.documents.find((doc) => doc.type === "privacy_notice")?.accepted && <label className="flex gap-3"><input type="checkbox" checked={privacy} onChange={(e) => setPrivacy(e.target.checked)} /> Li e estou ciente do Aviso de Privacidade vigente.</label>}
+              <button type="button" disabled={!confirmed || busy} onClick={() => void submit()} className="rounded-xl bg-violet-700 px-5 py-3 font-semibold text-white disabled:opacity-50">{busy ? "Registrando…" : "Confirmar e continuar"}</button>
             </>
           ) : <p>Seus aceites estão atualizados. <a className="underline" href="/dashboard">Ir para a MYRYRA</a></p>}
         </section>
