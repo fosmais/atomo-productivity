@@ -132,3 +132,44 @@ export async function createAsaasSandboxCustomer(input: {
   }
   return customerId;
 }
+
+/**
+ * Sandbox-only monthly subscription provisioning. The caller must first
+ * persist a trusted customer link and must implement retry/idempotency
+ * coordination before invoking this function. No entitlement is granted.
+ */
+export async function createAsaasSandboxMonthlySubscription(input: {
+  customerId: string;
+  planId: "pro" | "premium";
+  externalReference: string;
+}): Promise<string> {
+  if (!/^cus_[A-Za-z0-9_-]{3,96}$/.test(input.customerId) ||
+      !/^[0-9a-f]{8}-[0-9a-f-]{27,36}$/i.test(input.externalReference)) {
+    throw new Error("Referência de assinatura inválida.");
+  }
+  const { BILLING_PLANS } = await import("@/lib/billing/plans");
+  if (input.planId !== "pro" && input.planId !== "premium") {
+    throw new Error("Plano inválido.");
+  }
+  const plan = BILLING_PLANS[input.planId];
+  const nextDueDate = new Date();
+  nextDueDate.setUTCDate(nextDueDate.getUTCDate() + 1);
+  const dueDate = nextDueDate.toISOString().slice(0, 10);
+  const response = await asaasSandboxPost("/subscriptions", {
+    customer: input.customerId,
+    billingType: "UNDEFINED",
+    value: plan.monthlyPriceCents / 100,
+    nextDueDate: dueDate,
+    cycle: "MONTHLY",
+    description: `MYRYRA ${plan.name} - teste Sandbox`,
+    externalReference: input.externalReference,
+  });
+  if (!response || typeof response !== "object" || Array.isArray(response)) {
+    throw new Error("Resposta inválida da assinatura Sandbox.");
+  }
+  const subscriptionId = (response as Record<string, unknown>).id;
+  if (typeof subscriptionId !== "string" || !/^sub_[A-Za-z0-9_-]{3,96}$/.test(subscriptionId)) {
+    throw new Error("Identificador de assinatura Asaas inválido.");
+  }
+  return subscriptionId;
+}
