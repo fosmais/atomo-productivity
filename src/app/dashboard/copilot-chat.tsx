@@ -955,11 +955,11 @@ setConversationId(data.conversationId);
 
       {error && (
         <div role="alert" className="mb-3 space-y-2 text-sm text-red-400">
-          <p>{/você atingiu as \d+ mensagens disponíveis hoje/i.test(error) ? `Você utilizou suas 10 mensagens gratuitas de hoje. ${dailyResetAt && dailyResetAt > Date.now() ? `Seu limite será renovado automaticamente às ${new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }).format(new Date(dailyResetAt))} (horário de Brasília).` : "Seu limite será renovado automaticamente no próximo ciclo diário."} Quer continuar conversando? Conheça nossos planos Pro e Premium.` : error}</p>
+          <p>{/você atingiu as \d+ mensagens disponíveis hoje/i.test(error) ? `Você utilizou suas 10 mensagens gratuitas de hoje. ${dailyResetAt && dailyResetAt > Date.now() ? `Seu limite será renovado automaticamente às ${new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }).format(new Date(dailyResetAt))} (horário de Brasília).` : "Seu limite será renovado automaticamente no próximo ciclo diário."} Os planos Pro e Premium estão em preparação; a contratação ainda não está disponível.` : error}</p>
           {/(pagamento|cobrança|assinatura|plano|financeiro|limite diário|mensagens gratuitas)/i.test(error) && <p className="text-slate-300">Para questões de planos e pagamentos, a Ajuda MIKA continua disponível.</p>}
           {/(pagamento|cobrança|assinatura|plano|financeiro|limite diário|mensagens gratuitas)/i.test(error) && <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("myryra:open-support", { detail: { topic: "billing-payments" } }))} className="rounded-lg border border-violet-400 px-3 py-2 font-semibold text-violet-200">Abrir suporte financeiro</button>}
           {/você atingiu as \d+ mensagens disponíveis hoje/i.test(error) ? (
-            <a href="/planos" className="ml-2 inline-flex rounded-lg bg-violet-600 px-3 py-2 font-semibold text-white hover:bg-violet-500">Conhecer planos e fazer upgrade</a>
+            <a href="/planos" className="ml-2 inline-flex rounded-lg bg-violet-600 px-3 py-2 font-semibold text-white hover:bg-violet-500">Conhecer planos (contratação em preparação)</a>
           ) : (
             <button type="button" onClick={() => setError("")} className="ml-2 rounded-lg border border-slate-600 px-3 py-2 text-slate-200">Tentar novamente</button>
           )}
