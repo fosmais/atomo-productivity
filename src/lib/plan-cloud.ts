@@ -116,6 +116,7 @@ export async function saveCloudPlan(
   if (tasks.length > 0) {
     const { data: insertedTasks, error: tasksError } = await supabase.from("tasks").insert(
       tasks.map((task) => ({
+        id: task.id,
         plan_id: plan.id,
         user_id: userId,
         title: task.title.trim(),
@@ -126,7 +127,7 @@ export async function saveCloudPlan(
     ).select("id,title");
 
     if (!tasksError && insertedTasks?.length === tasks.length) {
-      tasks = tasks.map((task, index) => ({ ...task, id: insertedTasks[index].id }));
+      // IDs are provided by the caller; no ordering assumption is needed.
     }
     if (tasksError || insertedTasks?.length !== tasks.length) {
       const { error: rollbackError } = await supabase
