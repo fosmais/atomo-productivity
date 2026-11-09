@@ -100,3 +100,35 @@ export function matchesAsaasSandboxSubscriptionPayment(
     Math.round(payment.value * 100) === expected.monthlyPriceCents &&
     (payment.status === "CONFIRMED" || payment.status === "RECEIVED");
 }
+
+/**
+ * Create a customer ONLY in the Asaas Sandbox, using verified user data
+ * supplied by a trusted server-side caller. Does not create any charge.
+ */
+export async function createAsaasSandboxCustomer(input: {
+  name: string;
+  email: string;
+  externalReference: string;
+}): Promise<string> {
+  const name = input.name.trim();
+  const email = input.email.trim().toLowerCase();
+  if (name.length < 2 || name.length > 120 ||
+      !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || email.length > 254 ||
+      !/^[0-9a-f]{8}-[0-9a-f-]{27,36}$/i.test(input.externalReference)) {
+    throw new Error("Dados de cadastro Asaas inválidos.");
+  }
+  const response = await asaasSandboxPost("/customers", {
+    name,
+    email,
+    externalReference: input.externalReference,
+    notificationDisabled: true,
+  });
+  if (!response || typeof response !== "object" || Array.isArray(response)) {
+    throw new Error("Cadastro Asaas retornou dados inválidos.");
+  }
+  const customerId = (response as Record<string, unknown>).id;
+  if (typeof customerId !== "string" || !/^cus_[A-Za-z0-9_-]{3,96}$/.test(customerId)) {
+    throw new Error("Identificador de cliente Asaas inválido.");
+  }
+  return customerId;
+}
