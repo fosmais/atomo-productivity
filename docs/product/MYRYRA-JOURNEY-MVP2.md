@@ -86,3 +86,46 @@ Transformar **Minha Meta Atual** em jornadas pessoais e compartilhadas, com plan
 | JRN-14 | P2 | Benefícios de parceiros para MYRA | **Pós-MVP2**; depende de acordos, avaliação jurídica e modelo comercial |
 
 **Ordem de execução:** JRN-01 → JRN-02 → JRN-03 → JRN-04 → JRN-05 → JRN-06/07/08 → JRN-09/10/11/12 → JRN-13. JRN-14 permanece planejado fora da MVP2. Não ativar Journey para usuários sem homologação; não alterar pagamentos reais ou gate LGPD.
+
+## Redesenho transversal da experiência — Journey-first (diretriz aprovada)
+
+**Objetivo:** não criar uma aba isolada, mas transformar a aplicação em uma experiência contínua de jornada. O Journey é o Sol, a MIKA coordena as ações, e os módulos são planetas de apoio. Não remover funções existentes nem interromper usuários ativos.
+
+### UX-01 — Mapa de navegação e Home (P0)
+- Home: hero compacto “Sua jornada”, meta prioritária, percentual de progresso, próxima missão, ação principal “Continuar minha jornada”.
+- Segundo nível: órbita de ferramentas contextuais (Agenda, Tarefas, Finanças, Saúde, Foco, Score, Social), com links funcionais e explicação de como cada módulo ajuda a meta.
+- Estado sem jornada: onboarding de três passos (escolher objetivo → MIKA sugere trilha → usuário confirma). Permitir pular e usar módulos independentes.
+- Usuário com várias jornadas: seletor de jornada ativa e visão “Todas as jornadas”; nenhuma alteração automática da jornada ativa.
+- Sem telas excessivamente longas; cards compactos, títulos curtos, hierarquia consistente e menu acessível.
+
+### UX-02 — Navegação global (P0)
+- Renomear entrada principal para “Minha jornada” após liberação gradual; manter rotas e deep links antigos.
+- MIKA acessível de qualquer módulo; contexto da jornada com consentimento, nunca enviar dados sensíveis sem autorização.
+- Cada planeta oferece retorno claro à jornada e ações contextuais: “Adicionar à minha jornada”, “Vincular missão”, “Ver impacto”.
+- Mobile: navegação reduzida, atalhos prioritários e acessibilidade com leitor de tela; metáfora visual solar opcional, nunca prejudicar legibilidade.
+
+### UX-03 — Padrão de interface e conteúdo (P0)
+- Design system: card de missão, progresso, conquista, ferramenta de apoio, estado vazio, erro, carregamento e permissão.
+- Textos orientados à ação e ao benefício, sem promessas irreais; linguagem consistente em todos os módulos.
+- Modo claro/escuro, contraste, teclado, responsividade, performance e animações reduzidas.
+
+### UX-04 — Integração contextual dos planetas (P1)
+- Agenda reserva tempo para missão; Tarefas detalha ações; Finanças auxilia metas; Saúde e Foco ajudam hábitos; Score resume evolução; Social permite convites.
+- Vínculos explícitos e reversíveis, com consentimento por módulo; manter dados privados isolados.
+- Eventos de progresso devem ser derivados de ações reais, evitando recompensas por cliques.
+
+### UX-05 — Experiência de retorno (P1)
+- Briefing da MIKA: “Onde você está”, “O que avançou”, “Seu próximo passo”; ajustes somente com confirmação.
+- Celebrar conquistas sem pressão por streaks; compartilhamento social sempre opcional e com prévia.
+
+### Estratégia de migração e homologação
+1. Inventariar telas, fluxos e navegação existentes; mapear para componentes reutilizáveis.
+2. Implementar Home Journey-first atrás de flag e preservar Home antiga como fallback.
+3. Introduzir navegação e cards padronizados, testando deep links e regressões.
+4. Integrar os planetas em blocos, com contratos de dados e permissões.
+5. Testar usuários sem jornada, com jornada, com múltiplas jornadas e com acessibilidade/mobile.
+6. Ativar gradualmente em Preview e somente depois de validação autorizar produção.
+
+**Critérios de aceite:** o usuário entende sua jornada em até uma tela; chega à próxima missão em até dois toques; navega para qualquer módulo existente sem perda de funções; consegue voltar ao Journey; nenhum dado privado aparece indevidamente; não há regressão no login, Agenda, Tarefas, Finanças ou MIKA.
+
+**Estado:** backlog de redesign aprovado; implementação de interface e rollout pendentes.
