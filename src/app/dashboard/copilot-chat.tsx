@@ -10,6 +10,7 @@ import { useVyraActiveModule } from "./vyra-module-context";
 import EventConfirmation from "./event-confirmation";
 import type { SavedTask } from "@/lib/plan-storage";
 import type { NewCalendarEvent } from "@/lib/event-cloud";
+import { getExternalAppCapability } from "@/lib/mika/external-app-registry";
 
 type ChatMessage = {
   id?: string;
@@ -47,16 +48,22 @@ function isTaskProposal(
 }
 
 const EXTERNAL_APP_LINKS = [
-  { name: "Uber", pattern: /\buber\b/i, url: "https://m.uber.com/looking", action: "Abrir Uber" },
-  { name: "Spotify", pattern: /\bspotify\b/i, url: "https://open.spotify.com/", action: "Abrir Spotify" },
-  { name: "WhatsApp", pattern: /\bwhats?app\b/i, url: "https://wa.me/", action: "Abrir WhatsApp" },
-  { name: "Google Maps", pattern: /\b(google maps|maps)\b/i, url: "https://www.google.com/maps", action: "Abrir Google Maps" },
-  { name: "YouTube", pattern: /\byoutube\b/i, url: "https://www.youtube.com/", action: "Abrir YouTube" },
-  { name: "Google Calendar", pattern: /\b(google calendar|agenda do google)\b/i, url: "https://calendar.google.com/", action: "Abrir Google Calendar" },
-  { name: "Waze", pattern: /\bwaze\b/i, url: "https://www.waze.com/live-map/", action: "Abrir Waze" },
-  { name: "99", pattern: /\b(99|99app)\b/i, url: "https://99app.com/", action: "Abrir 99" },
-  // Estes serviços são apenas handoffs externos; não há execução de ações por API aqui.
+  { id: "uber", name: "Uber", pattern: /\buber\b/i },
+  { id: "spotify", name: "Spotify", pattern: /\bspotify\b/i },
+  { id: "whatsapp", name: "WhatsApp", pattern: /\bwhats?app\b/i },
+  { id: "google-maps", name: "Google Maps", pattern: /\b(google maps|maps)\b/i },
+  { id: "youtube", name: "YouTube", pattern: /\byoutube\b/i },
+  { id: "google-calendar", name: "Google Calendar", pattern: /\b(google calendar|agenda do google)\b/i },
+  { id: "waze", name: "Waze", pattern: /\bwaze\b/i },
+  { id: "99", name: "99", pattern: /\b(99|99app)\b/i },
 ] as const;
+
+function resolveExternalApp(app: (typeof EXTERNAL_APP_LINKS)[number] | undefined) {
+  if (!app) return null;
+  const capability = getExternalAppCapability(app.id);
+  if (!capability || capability.apiExecutionEnabled !== false) return null;
+  return { ...app, url: capability.handoffUrl, action: `Abrir ${app.name}` };
+}
 
 function appLinkForMessage(messages: ChatMessage[], index: number) {
   const message = messages[index];
@@ -66,7 +73,7 @@ function appLinkForMessage(messages: ChatMessage[], index: number) {
   const text = previous.content.trim();
   const request = /\b(abrir|abra|abre|acesse|acessar|iniciar|coloque|tocar|reproduzir|chamar|pedir|solicitar|corrida|viagem|navegar|agendar|enviar)\b/i;
   const explicitApp = EXTERNAL_APP_LINKS.find((app) => app.pattern.test(text));
-  if (explicitApp && request.test(text)) return explicitApp;
+  if (explicitApp && request.test(text)) return resolveExternalApp(explicitApp);
   // Continue a recent app request when the user supplies a destination or approval.
   // Never infer an app from an unrelated conversation.
   const recentRequest = messages.slice(Math.max(0, index - 8), index - 1).reverse()
@@ -79,7 +86,7 @@ function appLinkForMessage(messages: ChatMessage[], index: number) {
   const approval = false;
   const destination = (app.name === "Uber" || app.name === "99") &&
     /\b(corrida|viagem|destino|para|ate|até|avenida|av\.?|rua|aeroporto|estacao|estação)\b/i.test(text);
-  return approval || destination ? app : null;
+  return approval || destination ? resolveExternalApp(app) : null;
 }
 
 export default function CopilotChat() {
