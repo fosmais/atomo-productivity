@@ -7,7 +7,6 @@ import CalendarEvents from "./calendar-events";
 import DueReminders from "./due-reminders";
 import CloudPlans from "./cloud-plans";
 import CopilotChat from "./copilot-chat";
-import MikaAgentMode from "./mika-agent-mode";
 import DailyCopilot from "./daily-copilot";
 import WhatNow from "./what-now";
 import FocusMode from "./focus-mode";
@@ -99,9 +98,7 @@ async function DashboardContent() {
               </div>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">Converse naturalmente sobre prioridades, compromissos e objetivos. A MYKA ajuda você a organizar o que importa.</p>
             </div>
-            <div id="mika-agent" className="scroll-mt-24"><MikaAgentMode /></div>
             <section className="min-w-0 rounded-2xl border border-white/15 bg-slate-900/75 p-3 sm:p-5" aria-label="Conversa com a MIKA Assistente">
-              <div className="mb-3 rounded-lg bg-slate-800/70 px-3 py-2 text-sm text-violet-200">MIKA Assistente · Conversa e orientação</div>
               <CopilotChat />
             </section>
           </div>
