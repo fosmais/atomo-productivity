@@ -41,3 +41,43 @@ export async function asaasSandboxPost(path: string, body: Record<string, unknow
   if (!response.ok) throw new Error("Falha no provisionamento Asaas Sandbox.");
   return response.json();
 }
+
+/**
+ * Fetch the authoritative payment state from Asaas Sandbox rather than trusting
+ * webhook payloads. This helper does NOT activate a subscription.
+ */
+export async function getVerifiedAsaasSandboxPayment(paymentId: string): Promise<{
+  id: string;
+  status: string;
+  subscription: string | null;
+  customer: string;
+  value: number;
+  externalReference: string | null;
+}> {
+  if (!/^pay_[a-zA-Z0-9_-]{3,96}$/.test(paymentId)) {
+    throw new Error("Referência de pagamento inválida.");
+  }
+  const response = await asaasSandboxGet(`/payments/${paymentId}`);
+  if (!response || typeof response !== "object" || Array.isArray(response)) {
+    throw new Error("Resposta inválida do Asaas.");
+  }
+  const payment = response as Record<string, unknown>;
+  if (payment.id !== paymentId ||
+      typeof payment.status !== "string" ||
+      typeof payment.customer !== "string" ||
+      typeof payment.value !== "number" ||
+      !Number.isFinite(payment.value) ||
+      payment.value <= 0 ||
+      (payment.subscription != null && typeof payment.subscription !== "string") ||
+      (payment.externalReference != null && typeof payment.externalReference !== "string")) {
+    throw new Error("Dados de pagamento inconsistentes no Asaas.");
+  }
+  return {
+    id: paymentId,
+    status: payment.status,
+    customer: payment.customer,
+    subscription: typeof payment.subscription === "string" ? payment.subscription : null,
+    value: payment.value,
+    externalReference: typeof payment.externalReference === "string" ? payment.externalReference : null,
+  };
+}
