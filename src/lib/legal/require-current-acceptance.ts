@@ -2,7 +2,7 @@ import "server-only";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 
 type Result =
-  | { allowed: true; reason: "DISABLED" | "NO_PUBLISHED_DOCUMENTS" | "ACCEPTED" }
+  | { allowed: true; reason: "DISABLED" | "ACCEPTED" }
   | { allowed: false; reason: "ACCEPTANCE_REQUIRED" | "VERIFICATION_UNAVAILABLE" };
 
 /**
@@ -30,7 +30,7 @@ export async function requireCurrentLegalAcceptance(userId: string): Promise<Res
     }
     const terms = latest.get("terms");
     const privacy = latest.get("privacy_notice");
-    if (!terms || !privacy) return { allowed: true, reason: "NO_PUBLISHED_DOCUMENTS" };
+    if (!terms || !privacy) return { allowed: false, reason: "VERIFICATION_UNAVAILABLE" };
     const { data: rows, error: acceptanceError } = await admin
       .from("myryra_privacy_acceptances")
       .select("document_version_id")
