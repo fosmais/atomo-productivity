@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { listExternalAppConnections } from "@/lib/mika/external-app-connections";
 
 type App = ReturnType<typeof listExternalAppConnections>[number];
-type ConnectionRecordState = "record_present_unverified" | "no_record";
+type ConnectionRecordState = "record_present_unverified" | "no_record" | "verified_readonly" | "reconnect_required" | "verification_unavailable";
 type ConnectionRecords = { googleCalendar: ConnectionRecordState; todoist: ConnectionRecordState };
 
 const labels = {
@@ -52,7 +52,7 @@ export default function MikaAppConnections() {
         const validRecords = records !== null && typeof records === "object" &&
           "googleCalendar" in records && "todoist" in records &&
           (records.googleCalendar === "record_present_unverified" || records.googleCalendar === "no_record") &&
-          (records.todoist === "record_present_unverified" || records.todoist === "no_record");
+          (records.todoist === "record_present_unverified" || records.todoist === "no_record" || records.todoist === "verified_readonly" || records.todoist === "reconnect_required" || records.todoist === "verification_unavailable");
         if (!validRecords) throw new Error("Estado das conexões inválido");
         if (!controller.signal.aborted) {
           setApps(data.apps as App[]);
@@ -102,18 +102,18 @@ export default function MikaAppConnections() {
             <div className="rounded-lg border border-violet-400/20 bg-slate-800/60 p-3 text-xs text-slate-200">
               <p className="mb-2 font-semibold">Registros de conexão (não validados pelo provedor)</p>
               <p>Google Calendar: {connectionRecords.googleCalendar === "record_present_unverified" ? "Registro encontrado — autorização não verificada" : "Nenhum registro encontrado"}</p>
-              <p>Todoist: {connectionRecords.todoist === "record_present_unverified" ? "Registro encontrado — autorização não verificada" : "Nenhum registro encontrado"}</p>
+              <p>Todoist: {connectionRecords.todoist === "verified_readonly" ? "Leitura autorizada e verificada" : connectionRecords.todoist === "reconnect_required" ? "Reconexão necessária" : connectionRecords.todoist === "verification_unavailable" ? "Não foi possível verificar agora" : connectionRecords.todoist === "record_present_unverified" ? "Registro encontrado — autorização não verificada" : "Nenhum registro encontrado"}</p>
               <p className="mt-2 text-slate-300">Google Calendar: as permissões atuais permitem apenas consultar calendários, eventos e tarefas. A MIKA não pode criar ou alterar dados no Google.</p>
               <p className="mt-2 text-slate-300">Todoist: o OAuth atual permite somente leitura (data:read). A MIKA não pode criar, editar ou excluir tarefas nesse serviço.</p>
               {connectionRecords.googleCalendar === "no_record" && (
                 <a href="/api/google/connect" className="mt-2 inline-block underline underline-offset-2">Autorizar Google Calendar</a>
               )}
-              {connectionRecords.todoist === "no_record" && (
-                <a href="/api/todoist/connect" className="mt-2 ml-3 inline-block underline underline-offset-2">Autorizar leitura do Todoist</a>
+              {(connectionRecords.todoist === "no_record" || connectionRecords.todoist === "reconnect_required") && (
+                <a href="/api/todoist/connect" className="mt-2 ml-3 inline-block underline underline-offset-2">{connectionRecords.todoist === "reconnect_required" ? "Reconectar Todoist" : "Autorizar leitura do Todoist"}</a>
               )}
             </div>
           )}
-          <p className="text-xs text-slate-400">Abrir um aplicativo não concede permissões. A central ainda não verifica tokens OAuth nem executa operações por API.</p>
+          <p className="text-xs text-slate-400">Abrir um aplicativo não concede permissões. A central verifica a leitura do Todoist com o provedor; o Google ainda exige verificação. Nenhuma operação de escrita por API é executada.</p>
         </div>
       )}
     </section>
