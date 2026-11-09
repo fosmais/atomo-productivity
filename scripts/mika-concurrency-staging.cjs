@@ -47,6 +47,15 @@ const a = makeClient(), b = makeClient();
  assert.equal(before.action_type,'create_task');
  assert.match(before.payload.title, /^\\[MIKA-STAGING-TEST\\]/, 'Only explicitly marked synthetic proposals may be executed');
  assert.equal(before.payload.plan_id,env.MIKA_TEST_PLAN_ID);
+ const { data: plan, error: planError } = await a.from('plans')
+  .select('id,user_id,title').eq('id',env.MIKA_TEST_PLAN_ID).single();
+ if (planError) throw planError;
+ assert.equal(plan.user_id,identity.user.id,'Plan must belong to the authenticated test user');
+ assert.match(plan.title, /^\\[MIKA-STAGING-TEST\\]/, 'Only synthetic test plans may be used');
+ const { data: existingAudit, error: auditBeforeError } = await a.from('mika_action_audit')
+  .select('id').eq('proposal_id',env.MIKA_TEST_PROPOSAL_ID).eq('event_type','succeeded');
+ if (auditBeforeError) throw auditBeforeError;
+ assert.equal(existingAudit.length,0,'Test proposal must have no previous success audit');
  const args = { p_proposal_id: env.MIKA_TEST_PROPOSAL_ID, p_plan_id: env.MIKA_TEST_PLAN_ID };
  const started = Date.now();
  const [one,two] = await Promise.all([
