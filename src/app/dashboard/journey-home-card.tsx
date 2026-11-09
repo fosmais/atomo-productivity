@@ -132,6 +132,12 @@ export default function JourneyHomeCard() {
         <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/15" role="progressbar" aria-label="Progresso da jornada" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress?.percent ?? 0}>
           <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${progress?.percent ?? 0}%` }} />
         </div>
+        {progress && progress.total > 0 && <div className="mt-3 grid grid-cols-3 gap-2" aria-label="Marcos da jornada">
+          {[25, 50, 100].map(milestone => <div key={milestone} className={`rounded-xl border p-2 text-center ${progress.percent >= milestone ? "border-amber-300/40 bg-amber-400/15 text-amber-100" : "border-white/10 bg-white/5 text-slate-400"}`}>
+            <p className="text-sm font-bold">{progress.percent >= milestone ? "★" : "◇"} {milestone}%</p>
+            <p className="text-[10px]">{milestone === 25 ? "Primeiro avanço" : milestone === 50 ? "Meio caminho" : "Jornada concluída"}</p>
+          </div>)}
+        </div>}
         <div className="mt-4 rounded-xl border border-amber-300/25 bg-gradient-to-r from-amber-400/10 to-violet-400/10 p-4">
           <div className="flex items-center justify-between gap-2">
             <p className="text-[10px] font-bold uppercase tracking-widest text-amber-200">✦ Sua missão de agora</p>
