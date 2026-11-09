@@ -74,10 +74,48 @@ begin
  values (p_id,v_user,'approved->executing');
  return true;
 end $$;
+-- Users may reject an unexecuted proposal; the transition is atomic and audited.
+create or replace function public.mika_reject_action(p_id uuid)
+returns boolean language plpgsql security definer set search_path = ''
+as $
+declare v_user uuid := auth.uid(); v_id uuid;
+begin
+ if v_user is null then return false; end if;
+ update public.mika_action_proposals
+ set status='rejected', finished_at=now(), updated_at=now()
+ where id=p_id and user_id=v_user and status in ('proposed','approved')
+ returning id into v_id;
+ if v_id is null then return false; end if;
+ insert into public.mika_action_audit(proposal_id,user_id,transition)
+ values (p_id,v_user,'user->rejected');
+ return true;
+end $;
+-- Expiration is enforced by approval and claim predicates; this RPC makes
+-- expired proposals visible as terminal state without enabling execution.
+create or replace function public.mika_expire_action(p_id uuid)
+returns boolean language plpgsql security definer set search_path = ''
+as $
+declare v_user uuid := auth.uid(); v_id uuid;
+begin
+ if v_user is null then return false; end if;
+ update public.mika_action_proposals
+ set status='expired', finished_at=now(), updated_at=now()
+ where id=p_id and user_id=v_user and status in ('proposed','approved')
+   and expires_at<=now()
+ returning id into v_id;
+ if v_id is null then return false; end if;
+ insert into public.mika_action_audit(proposal_id,user_id,transition)
+ values (p_id,v_user,'pending->expired');
+ return true;
+end $;
 revoke all on function public.mika_approve_action(uuid,text) from public,anon,authenticated;
 revoke all on function public.mika_claim_action(uuid,text) from public,anon,authenticated;
 grant execute on function public.mika_approve_action(uuid,text) to authenticated;
 grant execute on function public.mika_claim_action(uuid,text) to authenticated;
+revoke all on function public.mika_reject_action(uuid) from public,anon,authenticated;
+revoke all on function public.mika_expire_action(uuid) from public,anon,authenticated;
+grant execute on function public.mika_reject_action(uuid) to authenticated;
+grant execute on function public.mika_expire_action(uuid) to authenticated;
 
 -- IMPORTANT: claim is a single-winner transaction but NOT an executor.
 -- The authenticated caller can claim its own action; this function must NOT
