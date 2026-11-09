@@ -55,6 +55,7 @@ const EXTERNAL_APP_LINKS = [
   { name: "Google Calendar", pattern: /\b(google calendar|agenda do google)\b/i, url: "https://calendar.google.com/", action: "Abrir Google Calendar" },
   { name: "Waze", pattern: /\bwaze\b/i, url: "https://www.waze.com/live-map/", action: "Abrir Waze" },
   { name: "99", pattern: /\b(99|99app)\b/i, url: "https://99app.com/", action: "Abrir 99" },
+  // Estes serviços são apenas handoffs externos; não há execução de ações por API aqui.
 ] as const;
 
 function appLinkForMessage(messages: ChatMessage[], index: number) {
@@ -74,8 +75,9 @@ function appLinkForMessage(messages: ChatMessage[], index: number) {
   if (!recentRequest) return null;
   const app = EXTERNAL_APP_LINKS.find((candidate) => candidate.pattern.test(recentRequest.content));
   if (!app) return null;
-  const approval = /^(segue|seguir|sim|pode|continue|continuar|ok|vamos|confirmo)[!. ]*$/i.test(text);
-  const destination = app.name === "Uber" &&
+  // Uma aprovação genérica não deve criar um novo link nem ser tratada como autorização de ação.
+  const approval = false;
+  const destination = (app.name === "Uber" || app.name === "99") &&
     /\b(corrida|viagem|destino|para|ate|até|avenida|av\.?|rua|aeroporto|estacao|estação)\b/i.test(text);
   return approval || destination ? app : null;
 }
