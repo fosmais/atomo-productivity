@@ -38,7 +38,10 @@ export async function GET() {
       return [{ id: row.id, title: row.content.trim().slice(0, 200),
         dueDate: typeof due === "string" ? due.slice(0, 10) : null }];
     });
-    return NextResponse.json({ connected: true, tasks }, { headers: { "Cache-Control": "no-store" } });
+    const nextCursor = payload && !Array.isArray(payload) && typeof payload === "object"
+      ? (payload as { next_cursor?: unknown }).next_cursor : null;
+    return NextResponse.json({ connected: true, tasks, hasMore: typeof nextCursor === "string" && nextCursor.length > 0 },
+      { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Não foi possível consultar tarefas do Todoist." }, { status: 502 });
   }
