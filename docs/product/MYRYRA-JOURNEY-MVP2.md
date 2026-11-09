@@ -129,3 +129,13 @@ Transformar **Minha Meta Atual** em jornadas pessoais e compartilhadas, com plan
 **Critérios de aceite:** o usuário entende sua jornada em até uma tela; chega à próxima missão em até dois toques; navega para qualquer módulo existente sem perda de funções; consegue voltar ao Journey; nenhum dado privado aparece indevidamente; não há regressão no login, Agenda, Tarefas, Finanças ou MIKA.
 
 **Estado:** backlog de redesign aprovado; implementação de interface e rollout pendentes.
+
+## Três pilares inegociáveis do Journey — confirmação de produto
+
+A experiência heliocêntrica não substitui estes pilares; **são o núcleo funcional e critérios obrigatórios de aceite da MVP2**.
+
+1. **Sua trilha inteligente (P0 / JRN-04):** usuário define sonho ou objetivo (ex.: aprender italiano, correr 10 km, juntar R$ 30 mil, mudar de país); MIKA sugere etapas, missões semanais e ações diárias com estimativas realistas. Exibir prévia e exigir confirmação antes de gravar ou replanejar; adaptar à evolução, disponibilidade e permissões.
+2. **Moeda MYRA (P1 / JRN-07 e JRN-08):** conceder pontos virtuais apenas após conquista validada, com ledger auditável, idempotência, limites e antifraude. Permitir resgatar temas, medalhas, personalizações da MIKA e itens digitais internos. Sem compra, transferência, saque, cotação ou conversão monetária; benefícios de parceiros são pós-MVP2.
+3. **Jornadas compartilhadas (P1 / JRN-09 e JRN-10):** convidar amigos, parceiros ou familiares via aceite opt-in; papéis e permissões claros; progresso individual e coletivo, celebração de marcos, saída/revogação; opção privada como padrão. Nunca expor automaticamente dados financeiros, saúde ou tarefas privadas de participantes.
+
+**Critérios transversais:** onboarding mostra os três benefícios sem prometer funções ainda indisponíveis; testes de privacidade, segurança, duplicidade de MYRAs, replanejamento e convites; nenhuma recompensa concedida por simples clique. Home e navegação devem dar destaque real a trilha, MYRA e compartilhamento, preservando acesso às ferramentas de apoio.
