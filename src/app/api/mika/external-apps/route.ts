@@ -48,7 +48,10 @@ export async function GET(request: Request) {
             ? new Date(google.data.token_expires_at).getTime() : undefined,
         });
         // Google OAuth client refreshes expired tokens automatically when possible.
-        const token = await oauth.getAccessToken();
+        const token = await Promise.race([
+          oauth.getAccessToken(),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Google OAuth verification timeout")), 8000)),
+        ]);
         if (!token.token) {
           googleStatus = "reconnect_required";
         } else {
