@@ -28,7 +28,7 @@ test("creates a four-week draft requiring confirmation", () => {
 
 test("rejects invalid goal and availability", () => {
   assert.throws(() => createJourneyDraft({ title: "   " }, today));
-  assert.throws(() => createJourneyDraft({ title: "x".repeat(161) }, today));
+  assert.throws(() => createJourneyDraft({ title: "x".repeat(121) }, today));
   assert.throws(() => createJourneyDraft({ title: "Correr", weeklyAvailabilityDays: 0 }, today));
   assert.throws(() => createJourneyDraft({ title: "Correr", weeklyAvailabilityDays: 8 }, today));
 });
