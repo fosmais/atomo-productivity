@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/supabase/request-client";
+import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { listExternalAppConnections } from "@/lib/mika/external-app-connections";
 
 /**
@@ -9,17 +10,19 @@ import { listExternalAppConnections } from "@/lib/mika/external-app-connections"
  */
 export async function GET(request: Request) {
   try {
-    const { supabase, user, mfaRequired, assuranceUnavailable } = await authenticateRequest(request);
+    const { user, mfaRequired, assuranceUnavailable } = await authenticateRequest(request);
     if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
     if (assuranceUnavailable || mfaRequired) {
       return NextResponse.json({ error: "Verificação de segurança necessária." }, { status: 403 });
     }
 
+    // These connection tables have RLS enabled without SELECT policies.
+    // Use the server-only admin client, always filtering by the verified user ID.
     // Never select encrypted credentials or accept a user ID from the client.
-    // User-scoped queries are protected by RLS and explicitly filtered by identity.
+    const admin = createSupabaseAdmin();
     const [google, todoist] = await Promise.all([
-      supabase.from("google_calendar_connections").select("user_id").eq("user_id", user.id).maybeSingle(),
-      supabase.from("todoist_connections").select("user_id").eq("user_id", user.id).maybeSingle(),
+      admin.from("google_calendar_connections").select("user_id").eq("user_id", user.id).maybeSingle(),
+      admin.from("todoist_connections").select("user_id").eq("user_id", user.id).maybeSingle(),
     ]);
     if (google.error || todoist.error) {
       return NextResponse.json(
