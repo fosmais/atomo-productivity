@@ -50,7 +50,7 @@ export function createJourneyDraft(goal: JourneyGoal, today = new Date()): Journ
   for (let week = 1; week <= weeks; week++) {
     missions.push({
       id: `week-${week}-plan`,
-      title: `Planejar uma ação concreta para: ${title}`,
+      title: `Planejar uma ação concreta para: ${title}`.slice(0, 160),
       week,
       status: "pending",
     });
