@@ -33,10 +33,10 @@ test('MIKA executor locks proposal and disallows anonymous and service-role call
 test('MIKA concurrency harness is staging-only and requires synthetic authenticated fixtures', () => {
  const harness = fs.readFileSync(path.join(__dirname, '../scripts/mika-concurrency-staging.cjs'), 'utf8');
  assert.ok(harness.includes('xanavauqzsrgvdfhcrsm.supabase.co'));
- assert.match(harness, /claims\\.role !== 'authenticated'/);
- assert.match(harness, /auth\\.getUser/);
+ assert.ok(harness.includes("claims.role !== 'authenticated'"));
+ assert.ok(harness.includes('auth.getUser'));
  assert.match(harness, /MIKA-STAGING-TEST/);
- assert.match(harness, /Promise\\.all/);
+ assert.ok(harness.includes('Promise.all'));
  assert.match(harness, /already_executed/);
  assert.match(harness, /Exactly one succeeded audit event/);
  assert.match(harness, /Exactly one task persisted/);
