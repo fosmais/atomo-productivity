@@ -636,16 +636,15 @@ setConversationId(data.conversationId);
       <MikaAgentMode />
       <div className="mb-5">
         <p className="text-xs font-semibold uppercase tracking-[.2em] text-violet-300">
-          Myka AI
+          MIKA
         </p>
 
         <h2 className="text-2xl font-bold">
-          Converse com seu assistente
+          Converse com a MIKA
         </h2>
 
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-300">
-          Organize tarefas, defina prioridades e planeje seu dia conversando
-          com a inteligência artificial.
+          Faça perguntas, analise prioridades e planeje seus próximos passos em uma única conversa.
         </p>
       </div>
 
