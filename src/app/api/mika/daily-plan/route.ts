@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Período inválido." }, { status: 400 });
     }
     const [tasksResult, eventsResult] = await Promise.all([
-      supabase.from("tasks").select("title, priority, due_date, completed").eq("user_id", user.id).eq("completed", false).limit(200),
+      supabase.from("tasks").select("title, priority, due_date, completed").eq("user_id", user.id).eq("completed", false).is("deleted_at", null).limit(200),
       supabase.from("events").select("title, starts_at, ends_at, blocks_time").eq("user_id", user.id).is("deleted_at", null).lt("starts_at", dayEnd).gt("ends_at", dayStart).limit(200),
     ]);
     if (tasksResult.error || eventsResult.error) {
