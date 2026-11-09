@@ -139,3 +139,29 @@ A experiência heliocêntrica não substitui estes pilares; **são o núcleo fun
 3. **Jornadas compartilhadas (P1 / JRN-09 e JRN-10):** convidar amigos, parceiros ou familiares via aceite opt-in; papéis e permissões claros; progresso individual e coletivo, celebração de marcos, saída/revogação; opção privada como padrão. Nunca expor automaticamente dados financeiros, saúde ou tarefas privadas de participantes.
 
 **Critérios transversais:** onboarding mostra os três benefícios sem prometer funções ainda indisponíveis; testes de privacidade, segurança, duplicidade de MYRAs, replanejamento e convites; nenhuma recompensa concedida por simples clique. Home e navegação devem dar destaque real a trilha, MYRA e compartilhamento, preservando acesso às ferramentas de apoio.
+
+## Três pilares obrigatórios — confirmação de produto
+
+Estes pilares são requisitos de aceite da MVP2, não apenas sugestões visuais.
+
+### Pilar 1: Sua trilha inteligente — P0
+- O usuário informa sonho/meta, prazo e disponibilidade (ex.: aprender italiano, correr 10 km, juntar R$ 30 mil, mudar de país).
+- A MIKA apresenta um plano **antes de gravar**: etapas, missões semanais e pequenas ações diárias, com critérios de conclusão.
+- A pessoa pode aceitar, editar, adiar ou rejeitar; replanejamento deve preservar histórico e exigir confirmação.
+- Integrar Agenda, Tarefas, Finanças, Saúde e Foco somente com autorização granular; oferecer fallback sem IA.
+- Aceite: fluxo objetivo → prévia → confirmação → jornada → primeira missão concluída, com progresso correto.
+
+### Pilar 2: Moeda MYRA — P1
+- MYRA é recompensa virtual por conquistas validadas, sem valor monetário, saque, compra, transferência ou conversão.
+- Ledger imutável, idempotência por evento, antifraude, reversões auditáveis e catálogo de recompensas digitais (temas, medalhas, personalização da MIKA).
+- Exibir regras transparentes e saldo; não premiar simples tempo de tela, nem incentivar uso compulsivo.
+- Aceite: uma conclusão elegível gera um único crédito; repetição da mesma ação não duplica MYRAs; resgate virtual controlado e reversível quando aplicável.
+
+### Pilar 3: Jornadas compartilhadas — P1
+- Convites opt-in para amigos, parceiros e familiares, com papéis e autorização explícita.
+- Trilhas privadas por padrão; participantes visualizam somente dados da jornada compartilhada e contribuições autorizadas.
+- Marcos coletivos, progresso individual e coletivo, comemorações e opção de sair/revogar acesso.
+- Nunca expor dados de Saúde, Finanças ou outras áreas privadas automaticamente.
+- Aceite: convidar → aceitar → contribuir → celebrar; convite recusado ou revogado não permite acesso.
+
+**Dependência do redesign:** Home Journey-first e metáfora Sol/planetas devem facilitar os três pilares, não substituí-los. O rollout requer homologação funcional, mobile, segurança e controle de custos. Benefícios de parceiros permanecem pós-MVP2.
