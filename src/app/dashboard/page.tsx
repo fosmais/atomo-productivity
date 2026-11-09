@@ -84,8 +84,8 @@ async function DashboardContent() {
         <VyraSection
           id="vyra-ai"
           eyebrow="SUA INTELIGÊNCIA PESSOAL"
-          title="MIKA: muito além de uma assistente"
-          description="Uma inteligência pessoal que conversa, analisa prioridades e ajuda a transformar planos em ações — sempre com você no controle."
+          title="MIKA: sua inteligência pessoal para ir além"
+          description="Sua vida tem potencial para muito mais. A MIKA conecta informações da sua rotina, identifica prioridades e ajuda a transformar planos em ações — com você no controle."
         >
           <div className="min-w-0 space-y-4">
             <div className="rounded-2xl border border-violet-400/20 bg-gradient-to-br from-violet-950/40 via-slate-900/75 to-slate-950/80 p-5 sm:p-7">
@@ -98,7 +98,7 @@ async function DashboardContent() {
               </div>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">Converse, explore prioridades e descubra próximos passos. A MIKA conecta informações da sua rotina para ajudar você a decidir e planejar.</p>
             </div>
-            <section className="min-w-0 rounded-2xl border border-white/15 bg-slate-900/75 p-3 sm:p-5" aria-label="Conversa com a MIKA Assistente">
+            <section className="min-w-0 rounded-2xl border border-white/15 bg-slate-900/75 p-3 sm:p-5" aria-label="Conversa com a MIKA">
               <CopilotChat />
             </section>
           </div>
@@ -109,7 +109,7 @@ async function DashboardContent() {
     id="vyra-tasks"
     eyebrow="ORGANIZAÇÃO"
     title="Minhas tarefas e planos"
-    description="Organize suas tarefas, planeje seu dia e evolua com a MYKA."
+    description="Organize suas tarefas, planeje seu dia e avance com a MIKA."
   >
     <TaskPlanningCards
       tasks={<div className="min-w-0 space-y-4">
@@ -156,7 +156,7 @@ async function DashboardContent() {
       <VyraModule id="vyra-scheduling">
 <VyraSection
         id="vyra-scheduling"
-        eyebrow="SUA ASSISTENTE"
+        eyebrow="SUA INTELIGÊNCIA PESSOAL"
         title="Seu tempo, melhor aproveitado."
         description="Descubra os melhores horários para suas tarefas com base nas prioridades, durações e compromissos da sua agenda."
       >
