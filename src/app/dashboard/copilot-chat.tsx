@@ -725,7 +725,7 @@ setConversationId(data.conversationId);
             </div>
             {appLinkForMessage(messages, index) && (
               <div className="ml-10 rounded-xl border border-violet-400/30 bg-violet-950/30 p-3 text-sm sm:ml-12">
-                <p className="mb-2 text-violet-100">A MIKA pode encaminhar você ao serviço solicitado. A abertura depende do dispositivo; ações dentro do aplicativo precisam ser confirmadas por você e podem exigir uma integração específica.</p>
+                <p className="mb-2 text-violet-100">{appLinkForMessage(messages, index)!.name === "Uber" ? "Abrir o Uber não solicita uma corrida. Confira origem, destino e preço no Uber antes de confirmar." : "Este botão apenas abre o aplicativo externo. Nenhuma ação é executada automaticamente."}</p>
                 <a href={appLinkForMessage(messages, index)!.url} target="_blank" rel="noopener noreferrer" className="inline-flex rounded-lg bg-violet-600 px-4 py-2 font-semibold text-white hover:bg-violet-500">{appLinkForMessage(messages, index)!.action} ↗</a>
               </div>
             )}
