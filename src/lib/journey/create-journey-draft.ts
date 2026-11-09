@@ -25,8 +25,8 @@ export type JourneyDraft = {
  */
 export function createJourneyDraft(goal: JourneyGoal, today = new Date()): JourneyDraft {
   const title = goal.title.trim().replace(/\s+/g, " ");
-  if (!title || title.length > 160) {
-    throw new Error("Informe um objetivo entre 1 e 160 caracteres.");
+  if (!title || title.length > 120) {
+    throw new Error("Informe um objetivo entre 1 e 120 caracteres.");
   }
   const days = goal.weeklyAvailabilityDays ?? 3;
   if (!Number.isInteger(days) || days < 1 || days > 7) {
