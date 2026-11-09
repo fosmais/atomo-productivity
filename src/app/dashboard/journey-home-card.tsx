@@ -165,7 +165,7 @@ export default function JourneyHomeCard() {
           <div className="mt-3 flex flex-wrap gap-2">
             {next && <button type="button" disabled={busy} onClick={() => void toggleMission(next)} className="rounded-xl bg-amber-400 px-3 py-2 text-xs font-bold text-slate-950 disabled:opacity-50">✓ Concluí esta missão</button>}
             <button type="button" onClick={() => navigateTo("vyra-ai")} className="rounded-xl border border-violet-300/40 px-3 py-2 text-xs font-semibold text-violet-100">Pedir orientação à MIKA</button>
-            {next && <button type="button" onClick={() => { void navigator.clipboard?.writeText(next.title).then(() => { setError("Missão copiada. Cole o título ao criar sua tarefa."); }).catch(() => { setError("Não foi possível copiar automaticamente. Use o título da missão ao criar sua tarefa."); }); navigateToQuickAction?.("capture"); }} className="rounded-xl border border-white/20 px-3 py-2 text-xs font-semibold text-white">Copiar missão e abrir Tarefas</button>}
+            {next && <button type="button" onClick={() => { const title = next.title; if (navigator.clipboard?.writeText) { void navigator.clipboard.writeText(title).then(() => setError("Missão copiada. Cole o título ao criar sua tarefa.")).catch(() => setError(`Copie o título da missão: ${title}`)); } else { setError(`Copie o título da missão: ${title}`); } navigateToQuickAction?.("capture"); }} className="rounded-xl border border-white/20 px-3 py-2 text-xs font-semibold text-white">Copiar missão e abrir Tarefas</button>}
             <button type="button" onClick={() => navigateTo("vyra-calendar")} className="rounded-xl border border-white/20 px-3 py-2 text-xs font-semibold text-white">Abrir Agenda</button>
           </div>
         </div>
