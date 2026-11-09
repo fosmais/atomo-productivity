@@ -77,7 +77,7 @@ end $$;
 -- Users may reject an unexecuted proposal; the transition is atomic and audited.
 create or replace function public.mika_reject_action(p_id uuid)
 returns boolean language plpgsql security definer set search_path = ''
-as $
+as $$
 declare v_user uuid := auth.uid(); v_id uuid;
 begin
  if v_user is null then return false; end if;
@@ -89,12 +89,12 @@ begin
  insert into public.mika_action_audit(proposal_id,user_id,transition)
  values (p_id,v_user,'user->rejected');
  return true;
-end $;
+end $$;
 -- Expiration is enforced by approval and claim predicates; this RPC makes
 -- expired proposals visible as terminal state without enabling execution.
 create or replace function public.mika_expire_action(p_id uuid)
 returns boolean language plpgsql security definer set search_path = ''
-as $
+as $$
 declare v_user uuid := auth.uid(); v_id uuid;
 begin
  if v_user is null then return false; end if;
@@ -107,7 +107,7 @@ begin
  insert into public.mika_action_audit(proposal_id,user_id,transition)
  values (p_id,v_user,'pending->expired');
  return true;
-end $;
+end $$;
 revoke all on function public.mika_approve_action(uuid,text) from public,anon,authenticated;
 revoke all on function public.mika_claim_action(uuid,text) from public,anon,authenticated;
 grant execute on function public.mika_approve_action(uuid,text) to authenticated;
