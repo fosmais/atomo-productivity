@@ -25,3 +25,19 @@ test("no anonymous execute privileges and audit is written in same function", ()
   assert.match(sql, /security definer set search_path = ''/i);
   assert.match(sql, /insert into public\.mika_action_audit/i);
 });
+
+
+test("rejection and expiration are owner-bound, terminal and audited", () => {
+  assert.match(sql, /function public\.mika_reject_action\(p_id uuid\)/);
+  assert.match(sql, /function public\.mika_expire_action\(p_id uuid\)/);
+  assert.match(sql, /status='rejected', finished_at=now\(\)/);
+  assert.match(sql, /status='expired', finished_at=now\(\)/);
+  assert.match(sql, /where id=p_id and user_id=v_user and status in \('proposed','approved'\)/);
+  assert.match(sql, /and expires_at<=now\(\)/);
+  assert.match(sql, /'user->rejected'/);
+  assert.match(sql, /'pending->expired'/);
+  for (const name of ["mika_reject_action", "mika_expire_action"]) {
+    assert.match(sql, new RegExp("revoke all on function public\\."+name+"\\(uuid\\) from public,anon,authenticated", "i"));
+    assert.match(sql, new RegExp("grant execute on function public\\."+name+"\\(uuid\\) to authenticated", "i"));
+  }
+});
