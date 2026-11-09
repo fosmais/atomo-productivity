@@ -15,6 +15,18 @@ type Provider = {
 export default function MikaIntegracoesPage() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [googleStatus, setGoogleStatus] = useState<"idle" | "checking" | "connected" | "disconnected" | "reconnect" | "error">("idle");
+
+  async function verifyGoogle() {
+    setGoogleStatus("checking");
+    try {
+      const response = await fetch("/api/google/events", { credentials: "same-origin", cache: "no-store" });
+      if (response.status === 409) { setGoogleStatus("reconnect"); return; }
+      if (!response.ok) { setGoogleStatus("error"); return; }
+      const data = await response.json();
+      setGoogleStatus(data.connected === true ? "connected" : "disconnected");
+    } catch { setGoogleStatus("error"); }
+  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -49,6 +61,16 @@ export default function MikaIntegracoesPage() {
               <p className="text-sm text-gray-500">{provider.note}</p>
               <p className="text-xs font-medium">{provider.connectionVerified ? "Conexão verificada" : "Conexão não verificada"}</p>
               <p className="text-xs">{provider.executionAvailable ? "Execução disponível" : "Execução externa indisponível"}</p>
+              {provider.id === "google_calendar" && (
+                <div className="space-y-2">
+                  <button type="button" onClick={verifyGoogle} disabled={googleStatus === "checking"} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-50">Verificar conexão Google</button>
+                  {googleStatus === "checking" && <p role="status" className="text-xs">Verificando autorização e acesso à agenda...</p>}
+                  {googleStatus === "connected" && <p role="status" className="text-xs">Leitura da agenda confirmada nesta sessão.</p>}
+                  {googleStatus === "disconnected" && <p role="status" className="text-xs">Google Agenda não conectado. <a className="underline" href="/api/google/connect">Autorizar leitura</a></p>}
+                  {googleStatus === "reconnect" && <p role="status" className="text-xs">A autorização precisa ser renovada. <a className="underline" href="/api/google/connect">Reconectar</a></p>}
+                  {googleStatus === "error" && <p role="alert" className="text-xs">Não foi possível verificar a conexão. Confira sua sessão e tente novamente.</p>}
+                </div>
+              )}
             </article>
           ))}
         </div>
