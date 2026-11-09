@@ -21,7 +21,16 @@ export default function LegalConsentPage() {
     setPrivacy(false);
     if (!response.ok) setMessage(result.error ?? "Documentos legais ainda não disponíveis.");
   }
-  useEffect(() => { void load().catch(() => setMessage("Não foi possível consultar os documentos.")); }, []);
+  useEffect(() => {
+    void load().catch(() => setMessage("Não foi possível consultar os documentos."));
+    const refreshOnReturn = () => {
+      if (document.visibilityState === "visible") {
+        void load().catch(() => setMessage("Não foi possível atualizar os documentos."));
+      }
+    };
+    document.addEventListener("visibilitychange", refreshOnReturn);
+    return () => document.removeEventListener("visibilitychange", refreshOnReturn);
+  }, []);
   async function submit() {
     if (!status?.ready || !status.documents.every((doc) => doc.accepted || (doc.type === "terms" ? terms : privacy)) || busy) return;
     setBusy(true); setMessage("");
