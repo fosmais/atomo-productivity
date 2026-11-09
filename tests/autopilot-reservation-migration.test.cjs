@@ -5,7 +5,7 @@ const path = require("node:path");
 
 const migrations = [
   "20261108234929_autopilot_ignore_soft_deleted_events.sql",
-  "20261108235900_autopilot_reject_soft_deleted_tasks.sql",
+  "20261108235224_autopilot_reject_soft_deleted_tasks.sql",
 ];
 const read = (name) => fs.readFileSync(path.join(__dirname, "..", "supabase", "migrations", name), "utf8");
 
