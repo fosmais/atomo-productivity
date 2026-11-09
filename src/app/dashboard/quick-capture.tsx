@@ -67,6 +67,21 @@ export default function QuickCapture() {
     return () => window.removeEventListener("myryra:focus-quick-capture", focusCapture);
   }, []);
 
+  useEffect(() => {
+    const prefillMission = (event: Event) => {
+      const detail = (event as CustomEvent<{ title?: string }>).detail;
+      const title = typeof detail?.title === "string" ? detail.title.trim().slice(0, 200) : "";
+      if (!title) return;
+      setCaptureType("task");
+      setInput(title);
+      setDrafts([]);
+      setError("");
+      setSuccess("Missão importada da Journey. Revise e confirme para criar a tarefa.");
+    };
+    window.addEventListener("myryra:journey-prefill-task", prefillMission);
+    return () => window.removeEventListener("myryra:journey-prefill-task", prefillMission);
+  }, []);
+
   async function saveQuickEvent() {
     if (savingRef.current) return;
     const startTime = new Date(eventStart).getTime();
