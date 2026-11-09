@@ -74,8 +74,13 @@ export async function GET(request: Request) {
             : response.status === 401 || response.status === 403 ? "reconnect_required"
             : "verification_unavailable";
         }
-      } catch {
-        googleStatus = "verification_unavailable";
+      } catch (error) {
+        // A revoked Google refresh grant requires reconnection, unlike a timeout.
+        const failure = error as { code?: unknown; response?: { data?: { error?: unknown } } } | null;
+        const oauthCode = failure?.code;
+        const providerError = failure?.response?.data?.error;
+        googleStatus = oauthCode === "invalid_grant" || providerError === "invalid_grant"
+          ? "reconnect_required" : "verification_unavailable";
       }
     }
 
