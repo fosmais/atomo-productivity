@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { listExternalAppConnections } from "@/lib/mika/external-app-connections";
 
 type App = ReturnType<typeof listExternalAppConnections>[number];
+type ConnectionRecordState = "record_present_unverified" | "no_record";
+type ConnectionRecords = { googleCalendar: ConnectionRecordState; todoist: ConnectionRecordState };
 
 const labels = {
   available_to_open: "Disponível para abrir",
@@ -18,6 +20,7 @@ export default function MikaAppConnections() {
   const [apps, setApps] = useState<App[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [connectionRecords, setConnectionRecords] = useState<ConnectionRecords | null>(null);
 
   useEffect(() => {
     if (!expanded) return;
@@ -25,6 +28,7 @@ export default function MikaAppConnections() {
     async function loadApps() {
       setLoading(true);
       setError("");
+      setConnectionRecords(null);
       try {
         const response = await fetch("/api/mika/external-apps", {
           credentials: "same-origin",
@@ -44,10 +48,20 @@ export default function MikaAppConnections() {
           "status" in app && typeof app.status === "string" && app.status in labels
         );
         if (!valid) throw new Error("Resposta inválida");
-        if (!controller.signal.aborted) setApps(data.apps as App[]);
+        const records = "connectionRecords" in data ? data.connectionRecords : null;
+        const validRecords = records !== null && typeof records === "object" &&
+          "googleCalendar" in records && "todoist" in records &&
+          (records.googleCalendar === "record_present_unverified" || records.googleCalendar === "no_record") &&
+          (records.todoist === "record_present_unverified" || records.todoist === "no_record");
+        if (!validRecords) throw new Error("Estado das conexões inválido");
+        if (!controller.signal.aborted) {
+          setApps(data.apps as App[]);
+          setConnectionRecords(records as ConnectionRecords);
+        }
       } catch {
         if (!controller.signal.aborted) {
           setApps([]);
+          setConnectionRecords(null);
           setError("Não foi possível consultar os aplicativos. Tente novamente.");
         }
       } finally {
@@ -82,6 +96,13 @@ export default function MikaAppConnections() {
                     className="shrink-0 rounded-lg border border-violet-400/40 px-3 py-2 text-xs text-violet-100">Abrir</a>
                 </div>
               ))}
+            </div>
+          )}
+          {connectionRecords && !loading && !error && (
+            <div className="rounded-lg border border-violet-400/20 bg-slate-800/60 p-3 text-xs text-slate-200">
+              <p className="mb-2 font-semibold">Registros de conexão (não validados pelo provedor)</p>
+              <p>Google Calendar: {connectionRecords.googleCalendar === "record_present_unverified" ? "Registro encontrado — autorização não verificada" : "Nenhum registro encontrado"}</p>
+              <p>Todoist: {connectionRecords.todoist === "record_present_unverified" ? "Registro encontrado — autorização não verificada" : "Nenhum registro encontrado"}</p>
             </div>
           )}
           <p className="text-xs text-slate-400">Abrir um aplicativo não concede permissões. A central ainda não verifica tokens OAuth nem executa operações por API.</p>
