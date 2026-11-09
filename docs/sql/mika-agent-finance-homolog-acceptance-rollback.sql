@@ -29,6 +29,15 @@ BEGIN
  IF v_first IS NULL OR v_first IS DISTINCT FROM v_second OR v_status <> 'already_executed' THEN RAISE EXCEPTION 'idempotency failed'; END IF;
  SELECT count(*) INTO v_count FROM public.tasks WHERE id=v_first;
  IF v_count <> 1 THEN RAISE EXCEPTION 'expected exactly one task'; END IF;
+ SELECT count(*) INTO v_count FROM public.mika_action_audit WHERE proposal_id='33333333-3333-4333-8333-333333333333' AND event_type='succeeded';
+ IF v_count <> 1 THEN RAISE EXCEPTION 'expected one success audit event'; END IF;
+ SELECT count(*) INTO v_count FROM public.mika_action_audit WHERE proposal_id='33333333-3333-4333-8333-333333333333' AND event_type='approved';
+ IF v_count <> 1 THEN RAISE EXCEPTION 'expected one approval audit event'; END IF;
+ BEGIN
+  PERFORM * FROM public.mika_execute_approved_task('44444444-4444-4444-8444-444444444444','22222222-2222-4222-8222-222222222222');
+  RAISE EXCEPTION 'unapproved execution unexpectedly allowed';
+ EXCEPTION WHEN SQLSTATE 'P0001' THEN NULL;
+ END;
  SELECT decision_status INTO v_status FROM public.mika_decide_proposal('44444444-4444-4444-8444-444444444444',false);
  IF v_status <> 'rejected' THEN RAISE EXCEPTION 'rejection failed'; END IF;
  SELECT decision_status INTO v_status FROM public.mika_decide_proposal('55555555-5555-4555-8555-555555555555',true);
