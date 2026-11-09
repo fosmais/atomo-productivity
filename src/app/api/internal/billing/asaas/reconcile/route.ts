@@ -2,9 +2,6 @@ import { NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { processOneAsaasSandboxReconciliationJob } from "@/lib/billing/asaas-reconciliation-worker";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
 const headers = { "Cache-Control": "no-store" };
 
 /**
