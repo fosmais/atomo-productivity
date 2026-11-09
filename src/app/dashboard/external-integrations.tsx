@@ -3,6 +3,7 @@
 import ManualTaskImport from "./manual-task-import";
 import ManualCalendarImport from "./manual-calendar-import";
 import GoogleTasksImport from "./google-tasks-import";
+import { useState } from "react";
 
 const integrations = [
   {
@@ -38,6 +39,12 @@ const integrations = [
 ] as const;
 
 export default function ExternalIntegrations() {
+  const [openImport, setOpenImport] = useState<"google" | "csv" | "ics" | null>(null);
+  const importPanels = [
+    { id: "google" as const, title: "Google Tasks", subtitle: "Consultar listas e importar tarefas selecionadas", content: <GoogleTasksImport /> },
+    { id: "csv" as const, title: "Importar tarefas · CSV", subtitle: "Enviar uma planilha e confirmar antes de salvar", content: <ManualTaskImport /> },
+    { id: "ics" as const, title: "Importar compromissos · ICS", subtitle: "Importar eventos de um arquivo de calendário", content: <ManualCalendarImport /> },
+  ];
   return (
     <section className="space-y-4" aria-label="Integrações externas">
       <p className="text-sm leading-6 text-slate-300">
@@ -60,7 +67,7 @@ export default function ExternalIntegrations() {
                 <a href={integration.connectUrl} className="font-medium text-violet-200 underline underline-offset-4">
                   {integration.connectLabel}
                 </a>
-                <a href={`#${integration.sectionId}`} className="text-violet-300 underline underline-offset-4">
+                <a href={`#${integration.sectionId}`} onClick={() => setOpenImport("google")} className="text-violet-300 underline underline-offset-4">
                   Consultar e importar
                 </a>
               </div>
@@ -72,10 +79,17 @@ export default function ExternalIntegrations() {
           </article>
         ))}
       </div>
-      <div id="myryra-google-tasks-import" className="scroll-mt-24"><GoogleTasksImport /></div>
-      {/* Fluxos Todoist e Outlook ficam ocultos até a configuração OAuth e homologação. */}
-      <ManualTaskImport />
-      <ManualCalendarImport />
+      <div className="grid gap-3 sm:grid-cols-2" aria-label="Importação manual">
+        {importPanels.map(panel => (
+          <section key={panel.id} className="min-w-0 rounded-2xl border border-violet-400/20 bg-slate-900/75 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0"><h3 className="text-sm font-semibold text-white">{panel.title}</h3><p className="mt-1 text-xs leading-5 text-slate-400">{panel.subtitle}</p></div>
+              <button type="button" aria-expanded={openImport === panel.id} onClick={() => setOpenImport(current => current === panel.id ? null : panel.id)} className="shrink-0 rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-violet-300">{openImport === panel.id ? "Fechar" : "Abrir"}</button>
+            </div>
+            {openImport === panel.id && <div id={panel.id === "google" ? "myryra-google-tasks-import" : undefined} className="mt-4 min-w-0 scroll-mt-24">{panel.content}</div>}
+          </section>
+        ))}
+      </div>
       <p className="text-xs leading-5 text-slate-400">
         As importações exigem confirmação. Conectar uma conta não inicia sincronização automática.
       </p>
