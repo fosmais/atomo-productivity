@@ -6,6 +6,7 @@ import { getUserEntitlements } from "@/lib/billing/entitlements";
 import { authenticateRequest } from "@/lib/supabase/request-client";
 import { getServerAvailability } from "@/lib/server-availability";
 import { checkConciergeRateLimit } from "@/lib/rate-limit";
+import { preflightExternalAction } from "@/lib/mika/external-action-gate";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -444,6 +445,17 @@ if (!rateLimit.allowed) {
       maxRetries: 0,
     });
 
+    // No external provider credentials/scopes are supplied to this chat endpoint.
+    // Evaluate a conservative server-side gate, never client-asserted permissions.
+    const externalAppPreflight = preflightExternalAction({
+      connector: "external-app",
+      action: "open",
+      requiredScopes: [],
+      grantedScopes: [],
+      providerSupportsAction: false,
+      userConfirmed: false,
+    });
+
     const response = await client.responses.create({
       model: "gpt-4.1-mini",
       store: false,
@@ -452,7 +464,12 @@ if (!rateLimit.allowed) {
         "Sua identidade é MIKA, da MYRYRA — Your life. In sync.",
         "Quando o usuário pedir para abrir um aplicativo, explique que a interface da MYRYRA pode oferecer um link de abertura para serviços compatíveis, como Uber, Spotify, WhatsApp, Google Maps e YouTube. Não diga genericamente que não há como abrir esses serviços.",
         "Para Uber: a MYRYRA oferece um botão para abrir o serviço, mas não solicita nem paga corridas diretamente. Se o usuário fornecer um destino depois do pedido, mantenha o contexto da viagem e oriente a usar o botão para finalizar no Uber.",
+        "Em pedidos de transporte, responda em no máximo 2 frases curtas, sem mencionar tarefas, reuniões, apresentações ou outros assuntos não solicitados. Se faltar a origem, pergunte somente qual é o ponto de partida. Não presuma localização atual.",
+        "Não diga que preparou, reservou, solicitou, pagou ou acompanha uma corrida sem retorno confirmado de uma integração real. Se houver apenas link, informe objetivamente que a contratação ocorre dentro do Uber.",
         "Abertura de outros aplicativos depende de links suportados e permissões do dispositivo. Não prometa controlar apps, executar ações externas ou ter integrações que não foram implementadas.",
+        `Estado verificado do canal de aplicativos externos: ${externalAppPreflight.status}. Neste endpoint não há credenciais de provedor nem permissão de execução externa; trate pedidos de execução como redirecionamento ou orientação, nunca como ação concluída.`,
+        "REGRA UNIVERSAL DE APLICATIVOS: não limite a MIKA ao Uber. Identifique o serviço solicitado pelo usuário e, para qualquer aplicativo, diferencie explicitamente integração via API autorizada, transferência contextual para o aplicativo e simples abertura de link. Solicite somente os dados necessários à ação e nunca afirme que executou algo sem confirmação verificável.",
+        "Permissões são específicas por serviço, escopo e operação; a autorização do usuário não substitui disponibilidade de API, aprovação do provedor ou confirmação antes de contratações, pagamentos e mensagens. Não alegue integração universal já implementada.",
         "Sua missão é ajudar o usuário a transformar intenções em ações,",
         "organizando seu tempo, compromissos, prioridades e decisões.",
 
