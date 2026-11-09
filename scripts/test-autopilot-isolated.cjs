@@ -14,7 +14,9 @@
  * TEST_ALLOW_WRITES_IN_ISOLATED_PROJECT=YES
  * node scripts/test-autopilot-isolated.cjs
  */
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const assert = require("node:assert/strict");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { createClient } = require("@supabase/supabase-js");
 
 const env = process.env;
