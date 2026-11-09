@@ -71,7 +71,7 @@ export async function GET(request: Request) {
             signal: AbortSignal.timeout(8000),
           });
           googleStatus = response.ok ? "verified_readonly"
-            : response.status === 401 || response.status === 403 ? "reconnect_required"
+            : response.status === 401 ? "reconnect_required"
             : "verification_unavailable";
         }
       } catch (error) {
