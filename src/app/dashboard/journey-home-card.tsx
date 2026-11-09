@@ -15,7 +15,6 @@ export default function JourneyHomeCard() {
   const [missions, setMissions] = useState<Mission[]>([]);
   const [progress, setProgress] = useState<JourneyProgress | null>(null);
   const [available, setAvailable] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   useEffect(() => {
     if (active !== "home") return;
@@ -26,7 +25,7 @@ export default function JourneyHomeCard() {
       if (!cancelled) { setAvailable(true); setJourneys(data.journeys ?? []); setSelected((data.journeys ?? [])[0]?.id ?? ""); }
     }).catch((cause: Error) => {
       if (!cancelled && cause.message !== "disabled") { setAvailable(true); setError(cause.message); }
-    }).finally(() => { if (!cancelled) setLoading(false); });
+    });
     return () => { cancelled = true; };
   }, [active]);
   useEffect(() => {
