@@ -47,7 +47,7 @@ const client = createClient(url,key,{auth:{persistSession:false,autoRefreshToken
   if (result.error) throw result.error;
   plan=result.data;
  }
- assert.match(plan.title,/^\\[MIKA-STAGING-TEST\\]/);
+ assert.match(plan.title,/^\[MIKA-STAGING-TEST\]/);
  console.log(JSON.stringify({status:'READY_FOR_PROPOSAL',project:'xanavauqzsrgvdfhcrsm',user_id:identity.user.id,plan_id:plan.id}));
  console.log('Keep the access token private. Prepare an approved synthetic proposal via the authorized staging fixture process, then run mika-concurrency-staging.cjs.');
 })().catch(e=>{console.error('Staging bootstrap failed:',e.message);process.exitCode=1;});
