@@ -123,6 +123,7 @@ function isEventProposal(
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [input, setInput] = useState("");
+  const [rideOrigin, setRideOrigin] = useState("");
   const [pendingConciergePrompt, setPendingConciergePrompt] = useState<string | null>(null);
   useEffect(() => {
     if (activeModule !== "vyra-ai") return;
@@ -725,6 +726,16 @@ setConversationId(data.conversationId);
             </div>
             {appLinkForMessage(messages, index) && (
               <div className="ml-10 rounded-xl border border-violet-400/30 bg-violet-950/30 p-3 text-sm sm:ml-12">
+                {appLinkForMessage(messages, index)!.name === "Uber" && (
+                  <div className="mb-3 space-y-2">
+                    <label htmlFor={`ride-origin-${index}`} className="block text-xs font-medium text-violet-200">Ponto de partida (opcional)</label>
+                    <div className="flex flex-wrap gap-2">
+                      <input id={`ride-origin-${index}`} type="text" maxLength={180} autoComplete="street-address" value={rideOrigin} onChange={(event) => setRideOrigin(event.target.value)} placeholder="Ex.: Rua e número, bairro" className="min-w-0 flex-1 rounded-lg border border-violet-400/30 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-400" />
+                      <button type="button" disabled={loading || !rideOrigin.trim()} onClick={() => { const origin = rideOrigin.trim(); if (!origin) return; setRideOrigin(""); void sendTextMessage(`Minha origem para a corrida de Uber é: ${origin}. Mantenha o destino informado anteriormente e me oriente para confirmar a corrida no aplicativo Uber.`); }} className="rounded-lg border border-violet-400/50 px-3 py-2 text-sm font-medium text-violet-100 disabled:opacity-50">Informar origem</button>
+                    </div>
+                    <p className="text-xs text-slate-400">A origem será enviada à MIKA no chat. O botão abaixo apenas abre o Uber; nenhum dado é enviado automaticamente ao aplicativo.</p>
+                  </div>
+                )}
                 <p className="mb-2 text-violet-100">{appLinkForMessage(messages, index)!.name === "Uber" ? "Abrir o Uber não solicita uma corrida. Confira origem, destino e preço no Uber antes de confirmar." : "Este botão apenas abre o aplicativo externo. Nenhuma ação é executada automaticamente."}</p>
                 <a href={appLinkForMessage(messages, index)!.url} target="_blank" rel="noopener noreferrer" className="inline-flex rounded-lg bg-violet-600 px-4 py-2 font-semibold text-white hover:bg-violet-500">{appLinkForMessage(messages, index)!.action} ↗</a>
               </div>
