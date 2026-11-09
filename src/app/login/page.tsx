@@ -240,14 +240,14 @@ export default function LoginPage() {
       <div className="relative z-10 grid w-full max-w-5xl items-center justify-center gap-6 lg:grid-cols-[minmax(0,430px)_minmax(0,420px)] lg:gap-10 xl:gap-14">
         <div className="hidden lg:flex items-center justify-center"><MykaLoginScene /></div>
         <div className="mx-auto w-full min-w-0 max-w-[420px]">
-          <div className="relative mx-auto mb-5 flex w-full max-w-[165px] items-center justify-center lg:hidden" aria-label="MYKA, sua companheira inteligente">
+          <div className="relative mx-auto mb-5 flex w-full max-w-[165px] items-center justify-center lg:hidden" aria-label="MIKA, sua inteligência pessoal">
             <div aria-hidden="true" className="absolute inset-4 rounded-full bg-violet-500/25 blur-2xl" />
-            <img src="/myka-transparente.png" alt="MYKA, sua companheira inteligente" className="relative h-auto w-full drop-shadow-[0_12px_28px_rgba(120,65,255,.4)]" />
+            <img src="/myka-transparente.png" alt="MIKA, sua inteligência pessoal" className="relative h-auto w-full drop-shadow-[0_12px_28px_rgba(120,65,255,.4)]" />
           </div>
           <div className="mx-auto mb-5 max-w-sm space-y-2 text-center lg:hidden">
             <h2 className="text-2xl font-bold leading-tight text-white">Sua vida, em <span className="text-violet-300">sintonia.</span></h2>
             <p className="text-base leading-relaxed text-slate-200">Tarefas, agenda e metas em um só lugar.</p>
-            <p className="text-sm leading-relaxed text-violet-200">A MYKA ajuda você a transformar planos em ação.</p>
+            <p className="text-sm leading-relaxed text-violet-200">Sua vida tem potencial para muito mais. A MIKA ajuda você a transformar esse potencial em ação.</p>
           </div>
           <div className="rounded-3xl border border-violet-300/45 bg-slate-950/90 p-4 shadow-2xl shadow-violet-950/40 backdrop-blur-xl sm:p-5 [@media(max-height:850px)]:sm:p-3">
         {(mode === "signup" || mfaFactorId) && <button type="button" disabled={loading} onClick={() => { setMode("login"); setMfaFactorId(""); setMfaCode(""); setMessage(""); setIsError(false); setCaptchaToken(""); setCaptchaReset(n => n + 1); }} className="mb-2 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-violet-200 transition hover:bg-white/10 hover:text-white disabled:opacity-50" aria-label="Voltar para login"><span aria-hidden="true">←</span> Voltar para login</button>}
@@ -260,7 +260,7 @@ export default function LoginPage() {
         </p>
 
         {mode === "signup" && !mfaFactorId && (
-          <p className="mt-3 text-sm text-violet-200">A MYKA acompanha seus primeiros passos na organização da rotina.</p>
+          <p className="mt-3 text-sm text-violet-200">A MIKA ajuda você a enxergar prioridades, planejar seus próximos passos e construir uma rotina com mais clareza.</p>
         )}
         {mode === "signup" && !mfaFactorId && process.env.NEXT_PUBLIC_MYRYRA_GOOGLE_LOGIN_ENABLED === "true" && (
           <div className="mt-4">
