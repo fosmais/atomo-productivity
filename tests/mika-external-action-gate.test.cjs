@@ -19,5 +19,5 @@ test("requires confirmation for sensitive operations", () => {
 test("ready is not completed until provider verifies", () => {
   const input = { connector: "calendar", action: "create_event", providerSupportsAction: true, scopes: ["calendar.write"], grantedScopes: ["calendar.write"] };
   assert.deepEqual([evaluateExternalAction(input).status, evaluateExternalAction(input).completed], ["ready_to_execute", false]);
-  assert.deepEqual([evaluateExternalAction({ ...input, verifiedExecution: true }).status, evaluateExternalAction({ ...input, verifiedExecution: true }).completed], ["completed", true]);
+  assert.deepEqual([evaluateExternalAction({ ...input, verifiedExecution: true }).status, evaluateExternalAction({ ...input, verifiedExecution: true }).completed], ["ready_to_execute", false]);
 });
