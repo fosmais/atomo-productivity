@@ -44,5 +44,13 @@ ALTER TABLE public.mika_action_proposals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.mika_action_audit ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.mika_action_proposals,public.mika_action_audit FROM PUBLIC,anon,authenticated;
 GRANT SELECT ON public.mika_action_proposals,public.mika_action_audit TO authenticated;
-CREATE POLICY "Users can read own action proposals" ON public.mika_action_proposals FOR SELECT TO authenticated USING ((select auth.uid())=user_id);
-CREATE POLICY "Users can read own action audit" ON public.mika_action_audit FOR SELECT TO authenticated USING ((select auth.uid())=user_id);
+DO $policy$ BEGIN
+ IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='mika_action_proposals' AND policyname='Users can read own action proposals') THEN
+  CREATE POLICY "Users can read own action proposals" ON public.mika_action_proposals FOR SELECT TO authenticated USING ((select auth.uid())=user_id);
+ END IF;
+END $policy$;
+DO $policy$ BEGIN
+ IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='mika_action_audit' AND policyname='Users can read own action audit') THEN
+  CREATE POLICY "Users can read own action audit" ON public.mika_action_audit FOR SELECT TO authenticated USING ((select auth.uid())=user_id);
+ END IF;
+END $policy$;
