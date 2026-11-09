@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkConciergeRateLimit } from "@/lib/rate-limit";
 import { validateTaskInput } from "@/lib/task-validation";
+import { requireCurrentLegalAcceptance } from "@/lib/legal/require-current-acceptance";
 
 type GeneratedTask = {
   title: string;
@@ -38,6 +39,14 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "Usuário não autenticado." },
       { status: 401 }
+    );
+  }
+
+  const legal = await requireCurrentLegalAcceptance(user.id);
+  if (!legal.allowed) {
+    return NextResponse.json(
+      { error: "Aceite legal necessário ou verificação indisponível.", code: legal.reason },
+      { status: legal.reason === "ACCEPTANCE_REQUIRED" ? 403 : 503, headers: { "Cache-Control": "no-store" } }
     );
   }
 
