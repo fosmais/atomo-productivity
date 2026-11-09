@@ -58,6 +58,7 @@ export default function QuickCapture() {
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
+  const missionRef = useRef<{ journeyId: string; missionId: string; title: string } | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -71,6 +72,9 @@ export default function QuickCapture() {
     const prefillMission = (event: Event) => {
       const detail = (event as CustomEvent<{ title?: string }>).detail;
       const title = typeof detail?.title === "string" ? detail.title.trim().slice(0, 200) : "";
+      if (detail && typeof (detail as { journeyId?: unknown }).journeyId === "string" && typeof (detail as { missionId?: unknown }).missionId === "string") {
+        missionRef.current = detail as { journeyId: string; missionId: string; title: string };
+      }
       if (!title) return;
       setCaptureType("task");
       setInput(title);
@@ -81,7 +85,8 @@ export default function QuickCapture() {
     try {
       const pending = sessionStorage.getItem("myryra:journey-task-prefill:v1");
       if (pending) {
-        prefillMission(new CustomEvent("myryra:journey-prefill-task", { detail: { title: pending } }));
+        const parsed: unknown = JSON.parse(pending);
+        if (parsed && typeof parsed === "object" && "title" in parsed) prefillMission(new CustomEvent("myryra:journey-prefill-task", { detail: parsed }));
       }
     } catch { /* optional */ }
     window.addEventListener("myryra:journey-prefill-task", prefillMission);
@@ -137,7 +142,7 @@ export default function QuickCapture() {
     setError("");
     setSuccess("");
     try {
-      await saveCloudPlan("Captura rápida", selected.map((draft) => ({
+      const saved = await saveCloudPlan("Captura rápida", selected.map((draft) => ({
         id: crypto.randomUUID(),
         title: draft.title.trim(),
         priority: draft.priority,
@@ -145,7 +150,21 @@ export default function QuickCapture() {
         completed: false,
       })));
       window.dispatchEvent(new Event("myryra:tasks-updated"));
-      setSuccess(`${selected.length} tarefa(s) salva(s) e adicionada(s) à lista.`);
+      const mission = missionRef.current;
+      if (mission && selected.length === 1 && selected[0].title.trim() === mission.title) {
+        const response = await fetch(`/api/journeys/${encodeURIComponent(mission.journeyId)}/missions/${encodeURIComponent(mission.missionId)}/task-link`, {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ taskId: saved.tasks[0].id }),
+        });
+        if (!response.ok) {
+          const detail = await response.json().catch(() => null) as { error?: string } | null;
+          setError(`Tarefa criada, mas não vinculada à Journey: ${detail?.error ?? "tente novamente"}.`);
+        } else {
+          missionRef.current = null;
+          setSuccess("Tarefa criada e vinculada à missão da Journey.");
+        }
+      } else {
+        setSuccess(`${selected.length} tarefa(s) salva(s) e adicionada(s) à lista.`);
+      }
       setDrafts([]);
       setInput("");
     } catch (err) {
