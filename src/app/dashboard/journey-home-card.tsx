@@ -55,7 +55,10 @@ export default function JourneyHomeCard() {
     setBusy(true); setError(""); setPlan(null);
     try {
       const response = await fetch("/api/journeys/plan-preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ goal: journeyTitle.trim(), weeks, minutesPerDay, daysPerWeek }) });
-      if (!response.ok) throw new Error("Não foi possível preparar a trilha.");
+      if (!response.ok) {
+        const detail = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(detail?.error || "Não foi possível preparar a trilha.");
+      }
       setPlan(await response.json());
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Erro na prévia."); }
     finally { setBusy(false); }
@@ -76,7 +79,10 @@ export default function JourneyHomeCard() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: journeyTitle.trim(), ...(plan ? { missions: proposed } : {}) }),
       });
-      if (!response.ok) throw new Error("Não foi possível criar sua jornada.");
+      if (!response.ok) {
+        const detail = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(detail?.error || "Não foi possível criar sua jornada.");
+      }
       const data = await response.json();
       const created = data.journey as Journey;
       setJourneys(current => [created, ...current]);
