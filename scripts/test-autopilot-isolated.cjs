@@ -32,6 +32,22 @@ assert.match(env.TEST_EXPECTED_PROJECT_REF, /^[a-z0-9-]+$/, "Invalid test projec
 assert.equal(url.hostname, env.TEST_EXPECTED_PROJECT_REF + ".supabase.co", "Target does not match explicitly approved test project");
 assert.equal(env.TEST_ALLOW_WRITES_IN_ISOLATED_PROJECT, "YES", "Explicit test-write opt-in required");
 assert.match(env.TEST_USER_A_TASK_ID, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+function jwtClaims(token, label) {
+  const parts = token.split(".");
+  assert.equal(parts.length, 3, label + " must be a JWT");
+  const claims = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"));
+  assert.equal(claims.role, label === "anon key" ? "anon" : "authenticated", label + " must not be privileged");
+  assert.ok(typeof claims.exp === "number" && claims.exp > Date.now() / 1000, label + " must not be expired");
+  if (claims.iss) {
+    assert.ok(claims.iss.startsWith(url.origin + "/auth/v1"), label + " issuer must match test project");
+  }
+  return claims;
+}
+jwtClaims(env.TEST_SUPABASE_ANON_KEY, "anon key");
+const claimsA = jwtClaims(env.TEST_USER_A_JWT, "user A");
+const claimsB = jwtClaims(env.TEST_USER_B_JWT, "user B");
+assert.ok(claimsA.sub && claimsB.sub && claimsA.sub !== claimsB.sub, "Distinct test users required");
+
 
 function client(jwt) {
   return createClient(url.origin, env.TEST_SUPABASE_ANON_KEY, {
