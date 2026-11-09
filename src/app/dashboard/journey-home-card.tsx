@@ -70,7 +70,7 @@ export default function JourneyHomeCard() {
       setJourneys(current => [created, ...current]);
       setSelected(created.id);
       setJourneyTitle("");
-      const proposed = plan?.stages.flatMap(stage => stage.missions) ?? [];
+      const proposed = plan?.stages.flatMap(stage => stage.missions.map(title => title.trim()).filter(Boolean)) ?? [];
       setPlan(null);
       if (proposed.length) {
         const missionResponse = await fetch(`/api/journeys/${encodeURIComponent(created.id)}/missions/bulk`, {
@@ -162,7 +162,15 @@ export default function JourneyHomeCard() {
             <p className="font-semibold">Semana {stage.week}: {stage.title}</p>
             <ul className="list-inside list-disc text-xs text-slate-300">{stage.missions.map(mission => <li key={mission}>{mission}</li>)}</ul>
           </div>)}
-          <p className="text-xs text-slate-400">Ao confirmar, a jornada e as missões sugeridas serão criadas. Revise a proposta antes de continuar.</p>
+          <p className="text-xs text-slate-300">Você pode editar cada missão antes de confirmar.</p>
+          {plan.stages.map((stage, stageIndex) => <div key={stageIndex} className="space-y-2 rounded-lg border border-white/10 p-2">
+            <p className="text-xs font-semibold text-amber-200">Semana {stage.week} · {stage.title}</p>
+            {stage.missions.map((mission, missionIndex) => <div key={missionIndex} className="flex gap-2">
+              <input aria-label={`Missão ${missionIndex + 1} da etapa ${stageIndex + 1}`} maxLength={160} value={mission} onChange={event => setPlan(current => current ? { ...current, stages: current.stages.map((item, i) => i === stageIndex ? { ...item, missions: item.missions.map((text, j) => j === missionIndex ? event.target.value : text) } : item) } : null)} className="min-w-0 flex-1 rounded-lg border border-white/20 bg-slate-950 p-2 text-xs text-white" />
+              <button type="button" aria-label="Remover missão" onClick={() => setPlan(current => current ? { ...current, stages: current.stages.map((item, i) => i === stageIndex ? { ...item, missions: item.missions.filter((_, j) => j !== missionIndex) } : item) } : null)} className="rounded-lg border border-rose-400/30 px-3 text-xs text-rose-200">×</button>
+            </div>)}
+          </div>)}
+          <p className="text-xs text-slate-400">Ao confirmar, a jornada e as missões revisadas serão criadas.</p>
         </div>}
         <p className="mt-2 text-xs text-slate-400">Sua jornada começa privada. Depois, você poderá adicionar missões.</p></div>}
       {error && <p role="alert" className="mt-2 text-xs text-rose-200">{error}</p>}
