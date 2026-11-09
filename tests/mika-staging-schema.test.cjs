@@ -41,3 +41,11 @@ test("rejection and expiration are owner-bound, terminal and audited", () => {
     assert.match(sql, new RegExp("grant execute on function public\\."+name+"\\(uuid\\) to authenticated", "i"));
   }
 });
+
+test("staging PL/pgSQL functions have paired dollar quote delimiters", () => {
+  const starts = (sql.match(/\bas \$\$\s*declare/g) || []).length;
+  const ends = (sql.match(/end \$\$;/g) || []).length;
+  assert.equal(starts, 4);
+  assert.equal(ends, starts);
+  assert.doesNotMatch(sql, /\bas \$\s*declare|end \$;/);
+});
