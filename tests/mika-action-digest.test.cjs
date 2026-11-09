@@ -37,3 +37,16 @@ test("rejects values that JSON would silently omit or coerce", () => {
   }
   assert.throws(() => mikaActionDigest({ ...base, payload: undefined }));
 });
+
+
+test("rejects circular, sparse and non-plain approval payloads", () => {
+  const cyclic = {}; cyclic.self = cyclic;
+  const sparse = new Array(2); sparse[1] = "ok";
+  for (const payload of [cyclic, { date: new Date() }, { map: new Map() }, { values: sparse }]) {
+    assert.throws(() => mikaActionDigest({ ...base, payload }));
+  }
+});
+test("allows reused plain-object references without cycles", () => {
+  const shared = { key: "value" };
+  assert.match(mikaActionDigest({ ...base, payload: { first: shared, second: shared } }), /^[a-f0-9]{64}$/);
+});
