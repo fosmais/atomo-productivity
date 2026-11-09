@@ -110,13 +110,10 @@ export default function VyraHome() {
         <p className="mt-3 text-sm leading-relaxed text-violet-200" aria-label="Inspiração do dia">{today ? dailyMessages[dayOfYear(today)%dailyMessages.length] : "Um dia de cada vez. Grandes mudanças começam com pequenos passos."}</p>
         <div className="mt-4 grid grid-cols-2 gap-2">
           <button type="button" onClick={() => navigateToQuickAction?.("capture")} className="rounded-xl bg-violet-600 px-3 py-3 text-sm font-semibold text-white hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-violet-400">+ Criar tarefa</button>
-          <button type="button" onClick={() => navigateTo("vyra-ai")} className="rounded-xl border border-violet-400/35 bg-violet-500/15 px-3 py-3 text-sm font-semibold text-violet-100 hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">✦ Falar com a MIKA</button>
+          <button type="button" onClick={() => navigateTo("vyra-ai")} className="rounded-xl border border-violet-400/35 bg-violet-500/15 px-3 py-3 text-sm font-semibold text-violet-100 hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">✦ MIKA</button>
         </div>
       </section>
 
-      <section aria-label="Acesso à MIKA Agente" className="rounded-2xl border border-violet-400/35 bg-violet-950/30 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-base font-semibold text-white">✦ MIKA Agente</h2><p className="mt-1 text-xs text-slate-200">Organize seu dia com sugestões de prioridades. Sem alterações automáticas.</p></div><button type="button" onClick={() => { navigateTo("vyra-ai"); window.setTimeout(() => document.getElementById("mika-agent")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100); }} className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white">Organizar meu dia</button></div>
-      </section>
       <section aria-label="Seu dia interativo" className="rounded-2xl border border-violet-400/25 bg-slate-900/70 p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
