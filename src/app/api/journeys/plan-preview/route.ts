@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   const normalized = clean.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const category = /italiano|ingles|espanhol|frances|idioma|lingua/.test(normalized) ? "language"
     : /correr|corrida|maratona|5 km|10 km|quilometro/.test(normalized) ? "running"
-    : /economizar|juntar|poupar|reserva|dinheiro|r\\$|investir/.test(normalized) ? "savings"
+    : /economizar|juntar|poupar|reserva|dinheiro|r\$|investir/.test(normalized) ? "savings"
     : /mudar de pais|morar fora|imigrar|mudanca de pais|italia|exterior/.test(normalized) ? "relocation"
     : "general";
   const templates: Record<string, [string[], string[], string[]]> = {
