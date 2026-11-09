@@ -110,6 +110,7 @@ export async function POST(request: Request) {
   }
 
   let phase: "reserved" | "customer_linked" = "reserved";
+  let createdSubscriptionId: string | undefined;
   try {
     const customerId = await ensureAsaasSandboxCustomerForAuthenticatedUser({
       id: user.id, email, name,
@@ -121,6 +122,7 @@ export async function POST(request: Request) {
     const subscriptionId = await createAsaasSandboxMonthlySubscription({
       customerId, planId: planId as "pro" | "premium", externalReference: attemptId,
     });
+    createdSubscriptionId = subscriptionId;
     // Persist as pending. Only verified payment reconciliation may later
     // change the subscription to active and grant an entitlement.
     const { error: persistenceError } = await createSupabaseAdmin()
@@ -152,6 +154,7 @@ export async function POST(request: Request) {
     try {
       await advanceAsaasCheckoutAttempt({
         id: attemptId, userId: user.id, from: phase, to: "manual_review",
+        subscriptionId: createdSubscriptionId,
       });
     } catch { /* preserve the original error and fail closed */ }
     return NextResponse.json({
