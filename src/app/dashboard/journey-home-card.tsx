@@ -141,7 +141,7 @@ export default function JourneyHomeCard() {
           <div className="mt-3 flex flex-wrap gap-2">
             {next && <button type="button" disabled={busy} onClick={() => void toggleMission(next)} className="rounded-xl bg-amber-400 px-3 py-2 text-xs font-bold text-slate-950 disabled:opacity-50">✓ Concluí esta missão</button>}
             <button type="button" onClick={() => navigateTo("vyra-ai")} className="rounded-xl border border-violet-300/40 px-3 py-2 text-xs font-semibold text-violet-100">Pedir orientação à MIKA</button>
-            <button type="button" onClick={() => navigateTo("agenda")} className="rounded-xl border border-white/20 px-3 py-2 text-xs font-semibold text-white">Abrir Agenda</button>
+            <button type="button" onClick={() => navigateTo("vyra-calendar")} className="rounded-xl border border-white/20 px-3 py-2 text-xs font-semibold text-white">Abrir Agenda</button>
           </div>
         </div>
         <div className="mt-3 space-y-2" aria-label="Missões da jornada">
