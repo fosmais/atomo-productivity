@@ -81,3 +81,22 @@ export async function getVerifiedAsaasSandboxPayment(paymentId: string): Promise
     externalReference: typeof payment.externalReference === "string" ? payment.externalReference : null,
   };
 }
+
+/**
+ * Conservative payment-to-subscription match. The caller must supply the
+ * subscription and customer IDs from trusted server-side persistence.
+ * This function never grants entitlements or mutates provider state.
+ */
+export function matchesAsaasSandboxSubscriptionPayment(
+  payment: Awaited<ReturnType<typeof getVerifiedAsaasSandboxPayment>>,
+  expected: { subscriptionId: string; customerId: string; monthlyPriceCents: number },
+): boolean {
+  if (!expected.subscriptionId || !expected.customerId ||
+      !Number.isSafeInteger(expected.monthlyPriceCents) || expected.monthlyPriceCents <= 0) {
+    return false;
+  }
+  return payment.subscription === expected.subscriptionId &&
+    payment.customer === expected.customerId &&
+    Math.round(payment.value * 100) === expected.monthlyPriceCents &&
+    (payment.status === "CONFIRMED" || payment.status === "RECEIVED");
+}
