@@ -17,6 +17,7 @@ export default function JourneyHomeCard() {
   const [available, setAvailable] = useState(false);
   const [error, setError] = useState("");
   const [newTitle, setNewTitle] = useState("");
+  const [journeyTitle, setJourneyTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [refresh, setRefresh] = useState(0);
   useEffect(() => {
@@ -42,6 +43,24 @@ export default function JourneyHomeCard() {
       .catch(() => { if (!cancelled) setError("Não foi possível carregar as missões."); });
     return () => { cancelled = true; };
   }, [selected, active, refresh]);
+  async function createJourney(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!journeyTitle.trim() || busy) return;
+    setBusy(true); setError("");
+    try {
+      const response = await fetch("/api/journeys", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: journeyTitle.trim() }),
+      });
+      if (!response.ok) throw new Error("Não foi possível criar sua jornada.");
+      const data = await response.json();
+      const created = data.journey as Journey;
+      setJourneys(current => [created, ...current]);
+      setSelected(created.id);
+      setJourneyTitle("");
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Erro ao criar jornada."); }
+    finally { setBusy(false); }
+  }
   async function addMission(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selected || !newTitle.trim() || busy) return;
@@ -102,7 +121,12 @@ export default function JourneyHomeCard() {
           <input aria-label="Nova missão" placeholder="Qual é seu próximo passo?" maxLength={160} value={newTitle} onChange={event => setNewTitle(event.target.value)} className="min-w-0 flex-1 rounded-xl border border-white/20 bg-slate-950 px-3 py-2 text-sm text-white placeholder:text-slate-400" />
           <button type="submit" disabled={busy || !newTitle.trim()} className="rounded-xl border border-amber-400/50 px-3 py-2 text-xs font-semibold text-amber-100 disabled:opacity-50">+ Missão</button>
         </form>
-      </> : <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-200">Comece pelas suas metas atuais. Em breve a MIKA poderá transformar cada meta em uma trilha personalizada.</div>}
+      </> : <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-200"><p>Qual objetivo você quer transformar em uma jornada?</p>
+        <form onSubmit={event => void createJourney(event)} className="mt-3 flex flex-wrap gap-2">
+          <input aria-label="Nome da nova jornada" placeholder="Ex.: Correr meus primeiros 5 km" maxLength={120} value={journeyTitle} onChange={event => setJourneyTitle(event.target.value)} className="min-w-0 flex-1 rounded-xl border border-white/20 bg-slate-950 px-3 py-2 text-sm text-white placeholder:text-slate-400" />
+          <button type="submit" disabled={busy || !journeyTitle.trim()} className="rounded-xl bg-amber-400 px-3 py-2 text-xs font-bold text-slate-950 disabled:opacity-50">Criar jornada</button>
+        </form>
+        <p className="mt-2 text-xs text-slate-400">Sua jornada começa privada. Depois, você poderá adicionar missões.</p></div>}
       {error && <p role="alert" className="mt-2 text-xs text-rose-200">{error}</p>}
       <div className="mt-4 flex flex-wrap gap-2">
         <button type="button" onClick={() => navigateToQuickAction?.("goals")} className="rounded-xl bg-amber-400 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-amber-300">{journey ? "Ver minhas metas" : "Definir minha meta"}</button>
