@@ -44,3 +44,8 @@ test("caps long journeys at 52 weeks", () => {
   assert.equal(draft.weeks, 52);
   assert.equal(draft.missions.length, 104);
 });
+
+test("generated mission titles respect database length limit", () => {
+  const draft = createJourneyDraft({ title: "x".repeat(120) }, today);
+  assert.ok(draft.missions.every((m) => m.title.length <= 160));
+});
