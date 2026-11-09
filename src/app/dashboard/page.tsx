@@ -47,6 +47,7 @@ import FinanceWorkspace from "./finance-workspace";
 import HealthWorkspace from "./health-workspace";
 import ThemePreferences from "./theme-preferences";
 import MikaResolveMyDay from "./mika-resolve-my-day";
+import MikaJourneyPlanner from "./mika-journey-planner";
 
 async function DashboardContent() {
   await connection();
@@ -102,6 +103,7 @@ async function DashboardContent() {
             <section className="min-w-0 rounded-2xl border border-white/15 bg-slate-900/75 p-3 sm:p-5" aria-label="Conversa com a MYKA">
               <CopilotChat />
             </section>
+            <MikaJourneyPlanner />
           </div>
         </VyraSection>
       </VyraModule>
