@@ -16,6 +16,9 @@ export default function JourneyHomeCard() {
   const [progress, setProgress] = useState<JourneyProgress | null>(null);
   const [available, setAvailable] = useState(false);
   const [error, setError] = useState("");
+  const [newTitle, setNewTitle] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [refresh, setRefresh] = useState(0);
   useEffect(() => {
     if (active !== "home") return;
     let cancelled = false;
@@ -38,7 +41,28 @@ export default function JourneyHomeCard() {
       .then(data => { if (!cancelled) { setMissions(data.missions ?? []); setProgress(data.progress); } })
       .catch(() => { if (!cancelled) setError("Não foi possível carregar as missões."); });
     return () => { cancelled = true; };
-  }, [selected, active]);
+  }, [selected, active, refresh]);
+  async function addMission(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected || !newTitle.trim() || busy) return;
+    setBusy(true); setError("");
+    try {
+      const response = await fetch(`/api/journeys/${encodeURIComponent(selected)}/missions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: newTitle.trim() }) });
+      if (!response.ok) throw new Error("Não foi possível adicionar a missão.");
+      setNewTitle(""); setRefresh(value => value + 1);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Erro ao salvar missão."); }
+    finally { setBusy(false); }
+  }
+  async function toggleMission(mission: Mission) {
+    if (!selected || busy) return;
+    setBusy(true); setError("");
+    try {
+      const response = await fetch(`/api/journeys/${encodeURIComponent(selected)}/missions/${encodeURIComponent(mission.id)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: mission.status === "completed" ? "pending" : "completed" }) });
+      if (!response.ok) throw new Error("Não foi possível atualizar a missão.");
+      setRefresh(value => value + 1);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Erro ao atualizar missão."); }
+    finally { setBusy(false); }
+  }
   if (active !== "home" || !available) return null;
   const journey = journeys.find(item => item.id === selected);
   const next = missions.find(item => item.status !== "completed");
@@ -68,6 +92,16 @@ export default function JourneyHomeCard() {
           <p className="text-[10px] uppercase tracking-wider text-amber-200">Próxima missão</p>
           <p className="mt-1 text-sm font-semibold text-white">{next?.title ?? (progress?.total ? "Todas as missões concluídas!" : "Sua primeira missão ainda não foi definida")}</p>
         </div>
+        <div className="mt-3 space-y-2" aria-label="Missões da jornada">
+          {missions.slice(0, 5).map(mission => <label key={mission.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white">
+            <input type="checkbox" checked={mission.status === "completed"} disabled={busy} onChange={() => void toggleMission(mission)} className="h-4 w-4 accent-amber-400" />
+            <span className={mission.status === "completed" ? "text-slate-400 line-through" : ""}>{mission.title}</span>
+          </label>)}
+        </div>
+        <form onSubmit={event => void addMission(event)} className="mt-3 flex flex-wrap gap-2">
+          <input aria-label="Nova missão" placeholder="Qual é seu próximo passo?" maxLength={160} value={newTitle} onChange={event => setNewTitle(event.target.value)} className="min-w-0 flex-1 rounded-xl border border-white/20 bg-slate-950 px-3 py-2 text-sm text-white placeholder:text-slate-400" />
+          <button type="submit" disabled={busy || !newTitle.trim()} className="rounded-xl border border-amber-400/50 px-3 py-2 text-xs font-semibold text-amber-100 disabled:opacity-50">+ Missão</button>
+        </form>
       </> : <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-200">Comece pelas suas metas atuais. Em breve a MIKA poderá transformar cada meta em uma trilha personalizada.</div>}
       {error && <p role="alert" className="mt-2 text-xs text-rose-200">{error}</p>}
       <div className="mt-4 flex flex-wrap gap-2">
