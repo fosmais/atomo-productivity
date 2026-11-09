@@ -657,7 +657,7 @@ setConversationId(data.conversationId);
         )}
         {!historyLoading && messages.length === 0 && (
           <div className="space-y-3 text-sm text-slate-300">
-            <p>Olá! Sou a MYKA. Como posso ajudar?</p>
+            <p>Olá! Sou a MIKA, sua inteligência pessoal. Vamos entender suas prioridades e transformar seus planos em próximos passos?</p>
             <div className="grid gap-2 sm:grid-cols-2">
               {[
                 { label: "Planejar meu dia", prompt: "Ajude-me a organizar minhas prioridades e tarefas de hoje." },
@@ -666,7 +666,7 @@ setConversationId(data.conversationId);
                 { label: "Objetivo de investimento", prompt: "Quero planejar investimentos para alcançar meu objetivo financeiro." },
               ].map(suggestion => <button key={suggestion.label} type="button" onClick={() => setInput(suggestion.prompt)} className="rounded-xl border border-violet-400/25 bg-violet-500/10 px-3 py-3 text-left text-sm text-violet-100 transition hover:border-violet-300/70 focus-visible:outline-2 focus-visible:outline-violet-400">{suggestion.label} <span aria-hidden="true">↗</span></button>)}
             </div>
-            <p className="text-xs text-slate-400">A MYKA sugere ações; confirme antes de salvar tarefas ou compromissos. Para decisões financeiras, confira os riscos e suas necessidades.</p>
+            <p className="text-xs text-slate-400">A MIKA analisa e sugere próximos passos; confirme antes de salvar tarefas ou compromissos. Para decisões financeiras, confira os riscos e suas necessidades.</p>
           </div>
         )}
 
@@ -946,8 +946,8 @@ setConversationId(data.conversationId);
           value={input}
           onChange={(event) => setInput(event.target.value)}
           maxLength={1500}
-          placeholder="Pergunte algo à Myka..."
-          aria-label="Mensagem para a Myka"
+          placeholder="Converse com a MIKA..."
+          aria-label="Mensagem para a MIKA"
           className="min-w-0 w-full flex-1 rounded-xl border border-white/10 bg-slate-800/80 px-3 py-3 text-base text-white outline-none transition focus:border-violet-400/60 focus:ring-2 focus:ring-violet-500/20 sm:px-4"
         />
 
