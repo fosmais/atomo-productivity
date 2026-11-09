@@ -684,7 +684,7 @@ setConversationId(data.conversationId);
               }
             >
               <p className="mb-1 text-xs font-semibold">
-                {message.role === "user" ? "Você" : "Myka"}
+                {message.role === "user" ? "Você" : "MIKA"}
               </p>
 
               <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-sm leading-relaxed">
@@ -692,6 +692,16 @@ setConversationId(data.conversationId);
               </p>
             </div>
             </div>
+            {message.role === "assistant" &&
+              index > 0 &&
+              messages[index - 1]?.role === "user" &&
+              /\\buber\\b/i.test(messages[index - 1].content) &&
+              /(abrir|abra|chamar|pedir|solicitar|corrida|viagem)/i.test(messages[index - 1].content) && (
+                <div className="ml-10 rounded-xl border border-violet-400/30 bg-violet-950/30 p-3 text-sm sm:ml-12">
+                  <p className="mb-2 text-violet-100">Posso abrir o site do Uber para você escolher o destino e confirmar a viagem. Nenhuma corrida foi solicitada pela MIKA.</p>
+                  <a href="https://m.uber.com/looking" target="_blank" rel="noopener noreferrer" className="inline-flex rounded-lg bg-violet-600 px-4 py-2 font-semibold text-white hover:bg-violet-500">Abrir Uber para solicitar viagem ↗</a>
+                </div>
+              )}
                         {message.role === "assistant" &&
   Array.isArray(message.proposedTasks) &&
   message.proposedTasks.length > 0 && (
