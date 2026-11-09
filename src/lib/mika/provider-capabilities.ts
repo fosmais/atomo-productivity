@@ -71,3 +71,35 @@ export function evaluateMikaProviderAction(
   // The integration must still prove a real server-side adapter exists.
   return { allowed: false, code: "ADAPTER_REQUIRED" };
 }
+
+/**
+ * Advertised capabilities are intentionally conservative. Provider connection
+ * state must be fetched from the authenticated server-side integration, never
+ * inferred from this static catalog.
+ */
+export const MIKA_PROVIDER_CATALOG = {
+  google_calendar: {
+    label: "Google Agenda",
+    capabilities: ["read_data"] as const,
+    integration: "oauth_api",
+    note: "OAuth atual concede leitura de eventos; escrita não autorizada.",
+  },
+  uber: {
+    label: "Uber",
+    capabilities: ["open_app"] as const,
+    integration: "external_link",
+    note: "Abrir o aplicativo não cria uma corrida ou reserva.",
+  },
+} as const;
+
+export function describeMikaProvider(providerId: string) {
+  if (Object.prototype.hasOwnProperty.call(MIKA_PROVIDER_CATALOG, providerId)) {
+    return MIKA_PROVIDER_CATALOG[providerId as keyof typeof MIKA_PROVIDER_CATALOG];
+  }
+  return {
+    label: providerId,
+    capabilities: [] as readonly MikaProviderCapability[],
+    integration: "not_configured" as const,
+    note: "Nenhuma integração verificada para este aplicativo.",
+  };
+}
