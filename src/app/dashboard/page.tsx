@@ -109,7 +109,7 @@ async function DashboardContent() {
     id="vyra-tasks"
     eyebrow="ORGANIZAÇÃO"
     title="Minhas tarefas e planos"
-    description="Organize suas tarefas, planeje seu dia e avance com a MIKA."
+    description="Tire planos do papel: organize prioridades, acompanhe tarefas e converse com a MIKA para decidir seus próximos passos."
   >
     <TaskPlanningCards
       tasks={<div className="min-w-0 space-y-4">
@@ -181,17 +181,17 @@ async function DashboardContent() {
       </VyraSection>
 </VyraModule>
       <VyraModule id="vyra-finance">
-        <VyraSection id="vyra-finance" eyebrow="MYRYRA FINANCE" title="Seu dinheiro, com mais clareza." description="Organize receitas e despesas sem precisar conectar um banco.">
+        <VyraSection id="vyra-finance" eyebrow="MYRYRA FINANCE" title="Seu dinheiro, com mais clareza." description="Tenha clareza sobre receitas, despesas e objetivos. A MIKA pode ajudar você a refletir sobre seus próximos passos financeiros, sem conexão bancária.">
           <FinanceWorkspace />
         </VyraSection>
       </VyraModule>
       <VyraModule id="vyra-health">
-        <VyraSection id="vyra-health" eyebrow="MYRYRA SAÚDE" title="Bem-estar com a MIKA." description="Comece com seus objetivos e preferências para construir uma rotina saudável.">
+        <VyraSection id="vyra-health" eyebrow="MYRYRA SAÚDE" title="Bem-estar com a MIKA." description="Cuide do corpo e da mente com objetivos, hábitos e acompanhamento. A MIKA ajuda você a planejar uma rotina que faça sentido para sua vida.">
           <HealthWorkspace />
         </VyraSection>
       </VyraModule>
       <VyraModule id="vyra-guide">
-        <VyraSection id="vyra-guide" eyebrow="COMO FUNCIONA" title="Conheça a MYRYRA" description="Descubra as ferramentas e encontre o melhor caminho para começar.">
+        <VyraSection id="vyra-guide" eyebrow="COMO FUNCIONA" title="Conheça a MYRYRA" description="Conheça cada ferramenta da MYRYRA e descubra como a MIKA pode ajudar você a usar sua rotina a seu favor.">
           <MyryraGuide />
         </VyraSection>
       </VyraModule>
