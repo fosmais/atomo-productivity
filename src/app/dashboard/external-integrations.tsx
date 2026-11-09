@@ -3,17 +3,15 @@
 import ManualTaskImport from "./manual-task-import";
 import ManualCalendarImport from "./manual-calendar-import";
 import GoogleTasksImport from "./google-tasks-import";
-import TodoistImport from "./todoist-import";
-import MicrosoftCalendarPreview from "./microsoft-calendar-preview";
 
 const integrations = [
   {
     name: "Todoist",
     subtitle: "Tarefas e projetos",
     description: "Conecte sua conta para consultar tarefas e importar somente as selecionadas.",
-    status: "Fluxo de teste · requer configuração",
-    connectUrl: "/api/todoist/connect",
-    connectLabel: "Conectar Todoist",
+    status: "Configuração pendente",
+    connectUrl: null,
+    connectLabel: null,
     sectionId: "myryra-todoist-import",
     docsUrl: "https://developer.todoist.com/",
   },
@@ -21,7 +19,7 @@ const integrations = [
     name: "Google Tasks",
     subtitle: "Listas e tarefas",
     description: "Consulte suas listas Google e confirme quais tarefas deseja importar.",
-    status: "Fluxo de teste · requer autorização",
+    status: "Consulta com autorização",
     connectUrl: "/api/google/connect",
     connectLabel: "Autorizar Google Tasks",
     sectionId: "myryra-google-tasks-import",
@@ -31,7 +29,7 @@ const integrations = [
     name: "Microsoft Outlook",
     subtitle: "Calendário profissional",
     description: "Consulta de compromissos via Microsoft Graph, com autorização do usuário.",
-    status: "Consulta desenvolvida · aguardando homologação",
+    status: "Em breve",
     connectUrl: null,
     connectLabel: null,
     sectionId: "myryra-microsoft-calendar",
@@ -44,7 +42,7 @@ export default function ExternalIntegrations() {
     <section className="space-y-4" aria-label="Integrações externas">
       <p className="text-sm leading-6 text-slate-300">
         Conecte suas ferramentas e escolha o que importar. A MYRYRA não modifica tarefas externas nesta etapa.
-        Google Tasks e Todoist possuem fluxos de teste. Outlook possui consulta somente leitura, pendente de configuração e homologação.
+        Google Tasks pode ser consultado após autorização. Todoist e Outlook aguardam configuração e homologação antes de serem oferecidos para conexão.
       </p>
       <div className="grid gap-3 lg:grid-cols-3">
         {integrations.map(integration => (
@@ -66,9 +64,7 @@ export default function ExternalIntegrations() {
                   Consultar e importar
                 </a>
               </div>
-            ) : integration.sectionId ? (
-              <a href={`#${integration.sectionId}`} className="text-sm font-medium text-violet-200 underline underline-offset-4">Ver consulta Outlook em homologação</a>
-            ) : <p className="text-xs text-slate-400">Disponível após homologação da integração.</p>}
+            ) : <p className="text-xs text-slate-400">Conexão disponível após homologação.</p>}
             <a href={integration.docsUrl} target="_blank" rel="noopener noreferrer"
               className="text-sm font-medium text-violet-300 underline underline-offset-4 hover:text-violet-100">
               Documentação da API
@@ -77,8 +73,7 @@ export default function ExternalIntegrations() {
         ))}
       </div>
       <div id="myryra-google-tasks-import" className="scroll-mt-24"><GoogleTasksImport /></div>
-      <div id="myryra-todoist-import" className="scroll-mt-24"><TodoistImport /></div>
-      <div id="myryra-microsoft-calendar" className="scroll-mt-24"><MicrosoftCalendarPreview /></div>
+      {/* Fluxos Todoist e Outlook ficam ocultos até a configuração OAuth e homologação. */}
       <ManualTaskImport />
       <ManualCalendarImport />
       <p className="text-xs leading-5 text-slate-400">
