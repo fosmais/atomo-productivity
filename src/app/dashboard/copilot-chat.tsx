@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import MykaPortrait from "@/components/myka-portrait";
+import MikaAgentMode from "./mika-agent-mode";
 import type { FormEvent } from "react";
 import TaskConfirmation from "./task-confirmation";
 import { useVyraActiveModule } from "./vyra-module-context";
@@ -632,6 +633,7 @@ setConversationId(data.conversationId);
 
   return (
     <section className="min-w-0 rounded-2xl border border-violet-400/20 bg-gradient-to-b from-slate-900 to-slate-950 p-3 text-white shadow-xl shadow-violet-950/20 sm:p-7">
+      <MikaAgentMode />
       <div className="mb-5">
         <p className="text-xs font-semibold uppercase tracking-[.2em] text-violet-300">
           Myka AI
