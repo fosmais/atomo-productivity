@@ -29,3 +29,16 @@ test('MIKA executor locks proposal and disallows anonymous and service-role call
  assert.match(executor, /REVOKE ALL ON FUNCTION public\.mika_execute_approved_task\(uuid,uuid\) FROM PUBLIC, anon, service_role/i);
  assert.match(executor, /GRANT EXECUTE ON FUNCTION public\.mika_execute_approved_task\(uuid,uuid\) TO authenticated/i);
 });
+
+test('MIKA concurrency harness is staging-only and requires synthetic authenticated fixtures', () => {
+ const harness = fs.readFileSync(path.join(__dirname, '../scripts/mika-concurrency-staging.cjs'), 'utf8');
+ assert.match(harness, /xanavauqzsrgvdfhcrsm\\.supabase\\.co/);
+ assert.match(harness, /claims\\.role !== 'authenticated'/);
+ assert.match(harness, /auth\\.getUser/);
+ assert.match(harness, /MIKA-STAGING-TEST/);
+ assert.match(harness, /Promise\\.all/);
+ assert.match(harness, /already_executed/);
+ assert.match(harness, /Exactly one succeeded audit event/);
+ assert.match(harness, /Exactly one task persisted/);
+ assert.doesNotMatch(harness, /service_role_key|SUPABASE_SERVICE_ROLE_KEY/);
+});
