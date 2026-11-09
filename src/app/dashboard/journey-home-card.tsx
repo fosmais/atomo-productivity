@@ -40,14 +40,14 @@ export default function JourneyHomeCard() {
     return () => { cancelled = true; };
   }, [active]);
   useEffect(() => {
-    if (!selected || active !== "home") return;
+    if (!selected || active !== "home") { setMissions([]); setProgress(null); return; }
     let cancelled = false;
     setMissions([]);
     setProgress(null);
     fetch(`/api/journeys/${encodeURIComponent(selected)}/missions`, { cache: "no-store" })
       .then(async response => { if (!response.ok) throw new Error("Missões indisponíveis."); return response.json(); })
       .then(data => { if (!cancelled) { setMissions(data.missions ?? []); setProgress(data.progress); } })
-      .catch(() => { if (!cancelled) setError("Não foi possível carregar as missões."); });
+      .catch(() => { if (!cancelled) { setMissions([]); setProgress(null); setError("Não foi possível carregar as missões."); } });
     return () => { cancelled = true; };
   }, [selected, active, refresh]);
   async function previewPlan() {
