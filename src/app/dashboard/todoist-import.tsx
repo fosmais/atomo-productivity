@@ -10,13 +10,14 @@ export default function TodoistImport() {
   const [tasks, setTasks] = useState<TodoistTask[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [needsConnection, setNeedsConnection] = useState(false);
   const selected = tasks.filter(task => selectedIds.includes(task.id));
 
   async function load() {
-    setBusy(true); setMessage(""); setNeedsConnection(false);
+    setBusy(true); setMessage(""); setNeedsConnection(false); setLoaded(false); setHasMore(false);
     try {
       const response = await fetch("/api/todoist/tasks", { cache: "no-store" });
       const data = await response.json();
@@ -29,6 +30,7 @@ export default function TodoistImport() {
         throw new Error("Conecte o Todoist para consultar suas tarefas.");
       }
       setTasks(data.tasks);
+      setHasMore(data.hasMore === true);
       setSelectedIds([]);
       setLoaded(true);
     } catch (error) {
@@ -64,7 +66,8 @@ export default function TodoistImport() {
     <button type="button" disabled={busy} onClick={() => void load()} className="rounded-lg bg-violet-600 px-3 py-2 text-sm text-white disabled:opacity-50">{busy ? "Aguarde..." : "Consultar Todoist"}</button>
     {needsConnection && <a href="/api/todoist/connect" className="ml-3 text-sm text-violet-300 underline">Conectar Todoist</a>}
     {loaded && <div className="space-y-2">
-      <p className="text-xs text-slate-300">{tasks.length} tarefa(s) encontradas; {selected.length} selecionadas.</p>
+      <p className="text-xs text-slate-300">{tasks.length} tarefa(s) exibidas; {selected.length} selecionadas.</p>
+      {hasMore && <p role="status" className="text-xs text-amber-200">Há mais tarefas no Todoist. Esta consulta mostra somente a primeira página; não selecione todas esperando importar o restante.</p>}
       <button type="button" onClick={() => setSelectedIds(tasks.map(task => task.id))} className="text-xs text-violet-300 underline">Selecionar todas</button>
       <button type="button" onClick={() => setSelectedIds([])} className="ml-3 text-xs text-violet-300 underline">Limpar seleção</button>
       <ul className="max-h-56 overflow-y-auto text-sm text-slate-300">{tasks.map(task => <li key={task.id} className="border-b border-white/10 py-1">
