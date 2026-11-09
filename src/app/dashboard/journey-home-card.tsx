@@ -131,9 +131,18 @@ export default function JourneyHomeCard() {
         <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/15" role="progressbar" aria-label="Progresso da jornada" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress?.percent ?? 0}>
           <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${progress?.percent ?? 0}%` }} />
         </div>
-        <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3">
-          <p className="text-[10px] uppercase tracking-wider text-amber-200">Próxima missão</p>
-          <p className="mt-1 text-sm font-semibold text-white">{next?.title ?? (progress?.total ? "Todas as missões concluídas!" : "Sua primeira missão ainda não foi definida")}</p>
+        <div className="mt-4 rounded-xl border border-amber-300/25 bg-gradient-to-r from-amber-400/10 to-violet-400/10 p-4">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-amber-200">✦ Sua missão de agora</p>
+            <span className="rounded-full border border-amber-300/25 px-2 py-1 text-[10px] text-amber-100">Um passo de cada vez</span>
+          </div>
+          <p className="mt-2 text-base font-semibold text-white">{next?.title ?? (progress?.total ? "Você concluiu todas as missões. Celebre sua evolução!" : "Sua primeira missão ainda não foi definida")}</p>
+          <p className="mt-1 text-xs text-slate-300">{next ? "O futuro que você deseja começa com uma ação possível hoje." : "A MIKA pode ajudar você a definir seu próximo passo."}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {next && <button type="button" disabled={busy} onClick={() => void toggleMission(next)} className="rounded-xl bg-amber-400 px-3 py-2 text-xs font-bold text-slate-950 disabled:opacity-50">✓ Concluí esta missão</button>}
+            <button type="button" onClick={() => navigateTo("vyra-ai")} className="rounded-xl border border-violet-300/40 px-3 py-2 text-xs font-semibold text-violet-100">Pedir orientação à MIKA</button>
+            <button type="button" onClick={() => navigateTo("agenda")} className="rounded-xl border border-white/20 px-3 py-2 text-xs font-semibold text-white">Abrir Agenda</button>
+          </div>
         </div>
         <div className="mt-3 space-y-2" aria-label="Missões da jornada">
           {missions.slice(0, 5).map(mission => <label key={mission.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white">
