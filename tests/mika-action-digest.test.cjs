@@ -29,3 +29,11 @@ test("rejects invalid action identities and nonfinite numbers", () => {
   assert.throws(() => mikaActionDigest({ ...base, userId: "" }));
   assert.throws(() => mikaActionDigest({ ...base, payload: { minutes: Infinity } }));
 });
+
+
+test("rejects values that JSON would silently omit or coerce", () => {
+  for (const value of [undefined, () => "hidden", Symbol("hidden"), 1n, NaN, Infinity]) {
+    assert.throws(() => mikaActionDigest({ ...base, payload: { title: "Safe", hidden: value } }));
+  }
+  assert.throws(() => mikaActionDigest({ ...base, payload: undefined }));
+});
