@@ -65,3 +65,24 @@ Transformar **Minha Meta Atual** em jornadas pessoais e compartilhadas, com plan
 - O Score deve refletir indicadores explicáveis de evolução, sem punição por condições pessoais ou períodos de inatividade. MYRAs recompensam marcos verificáveis, não o tempo de tela.
 - A identidade visual pode usar Sol, órbitas e planetas como metáfora, mas a interface deve continuar simples, responsiva, acessível e em cards.
 - Roadmap J1 deve preparar a associação opcional entre jornadas e itens de módulos existentes, sem migração destrutiva nem alteração automática de dados.
+
+## Backlog consolidado MVP2 — Journey como núcleo (aprovado em 09/11/2026)
+
+| ID | Prioridade | Entrega | Dependências / aceite |
+| --- | --- | --- | --- |
+| JRN-01 | P0 | Fundação de jornadas pessoais, missões e progresso | CRUD, RLS, estados, isolamento e feature flag; API inicial em desenvolvimento, não homologada |
+| JRN-02 | P0 | Concluir/reabrir missões e progresso consistente | Contagem server-side, idempotência e testes |
+| JRN-03 | P0 | Journey como núcleo da Home | Card jornada atual, próxima missão, progresso e atalhos contextuais; manter módulos independentes |
+| JRN-04 | P0 | MIKA Journey Coach | Criar e adaptar trilhas com prévia e confirmação do usuário |
+| JRN-05 | P0 | Vínculos opcionais com Agenda e Tarefas | Sem duplicação destrutiva nem execução automática |
+| JRN-06 | P1 | Conexões com Finanças, Saúde e Foco | Permissões por módulo, privacidade e consentimento explícito |
+| JRN-07 | P1 | MYRA virtual | Ledger idempotente, regras transparentes, limites, reversões e antifraude; sem valor financeiro |
+| JRN-08 | P1 | Medalhas, níveis e recompensas digitais | Catálogo cosmético, histórico e acessibilidade |
+| JRN-09 | P1 | Journey Together | Convites opt-in, papéis, trilhas compartilhadas, progresso coletivo e isolamento de dados |
+| JRN-10 | P1 | Compartilhamento de conquistas | Cards para WhatsApp/redes, prévia e privacidade padrão |
+| JRN-11 | P1 | MYRYRA Score conectado ao Journey | Indicadores explicáveis, sem penalização por inatividade |
+| JRN-12 | P1 | Identidade visual heliocêntrica | Journey=Sol, ferramentas=planetas, MIKA=orquestradora; UI compacta e responsiva |
+| JRN-13 | P0 | Homologação integrada Preview | Testes de regressão, mobile, segurança, custos e rollout controlado |
+| JRN-14 | P2 | Benefícios de parceiros para MYRA | **Pós-MVP2**; depende de acordos, avaliação jurídica e modelo comercial |
+
+**Ordem de execução:** JRN-01 → JRN-02 → JRN-03 → JRN-04 → JRN-05 → JRN-06/07/08 → JRN-09/10/11/12 → JRN-13. JRN-14 permanece planejado fora da MVP2. Não ativar Journey para usuários sem homologação; não alterar pagamentos reais ou gate LGPD.
