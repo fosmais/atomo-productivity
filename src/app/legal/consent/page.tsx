@@ -12,6 +12,10 @@ export default function LegalConsentPage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   async function load() {
+    // Invalidate prior versions before any asynchronous refresh can fail.
+    setStatus(null);
+    setTerms(false);
+    setPrivacy(false);
     const response = await fetch("/api/legal/acceptance-status", { cache: "no-store" });
     if (response.status === 401) { window.location.assign("/login"); return; }
     const result = (await response.json()) as Status;
