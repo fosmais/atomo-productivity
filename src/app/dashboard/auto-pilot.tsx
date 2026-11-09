@@ -158,7 +158,7 @@ export default function AutoPilot() {
       });
       if (reservationError) {
         if (reservationError.code === "PGRST202" || reservationError.code === "42883") {
-          throw new Error("A confirmação segura ainda não está disponível. É necessário aplicar a migração 28.9 no Supabase.");
+          throw new Error("A reserva segura não está disponível neste ambiente. Verifique se as migrações do AutoPilot foram aplicadas.");
         }
         throw new Error(reservationError.message);
       }
