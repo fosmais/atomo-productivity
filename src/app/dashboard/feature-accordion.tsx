@@ -55,6 +55,7 @@ export function FeatureAccordion({ id, title, description, userId, defaultOpen =
     let journeyCapture = false;
     if (id === "capture") { try { journeyCapture = Boolean(sessionStorage.getItem("myryra:journey-task-prefill:v1")); } catch { /* optional */ } }
     node.open = oauthCallback || journeyCapture || storedOpen(userId, id, defaultOpen);
+    if (journeyCapture) { try { sessionStorage.removeItem("myryra:journey-task-prefill:v1"); } catch { /* optional */ } }
     if (oauthCallback) {
       window.requestAnimationFrame(() => {
         node.scrollIntoView({ behavior: "smooth", block: "center" });
