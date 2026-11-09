@@ -52,6 +52,9 @@ const EXTERNAL_APP_LINKS = [
   { name: "WhatsApp", pattern: /\bwhats?app\b/i, url: "https://wa.me/", action: "Abrir WhatsApp" },
   { name: "Google Maps", pattern: /\b(google maps|maps)\b/i, url: "https://www.google.com/maps", action: "Abrir Google Maps" },
   { name: "YouTube", pattern: /\byoutube\b/i, url: "https://www.youtube.com/", action: "Abrir YouTube" },
+  { name: "Google Calendar", pattern: /\b(google calendar|agenda do google)\b/i, url: "https://calendar.google.com/", action: "Abrir Google Calendar" },
+  { name: "Waze", pattern: /\bwaze\b/i, url: "https://www.waze.com/live-map/", action: "Abrir Waze" },
+  { name: "99", pattern: /\b(99|99app)\b/i, url: "https://99app.com/", action: "Abrir 99" },
 ] as const;
 
 function appLinkForMessage(messages: ChatMessage[], index: number) {
@@ -60,7 +63,7 @@ function appLinkForMessage(messages: ChatMessage[], index: number) {
   const previous = messages[index - 1];
   if (previous?.role !== "user") return null;
   const text = previous.content.trim();
-  const request = /\b(abrir|abra|abre|acesse|acessar|iniciar|coloque|tocar|reproduzir|chamar|pedir|solicitar|corrida|viagem)\b/i;
+  const request = /\b(abrir|abra|abre|acesse|acessar|iniciar|coloque|tocar|reproduzir|chamar|pedir|solicitar|corrida|viagem|navegar|agendar|enviar)\b/i;
   const explicitApp = EXTERNAL_APP_LINKS.find((app) => app.pattern.test(text));
   if (explicitApp && request.test(text)) return explicitApp;
   // Continue a recent app request when the user supplies a destination or approval.
