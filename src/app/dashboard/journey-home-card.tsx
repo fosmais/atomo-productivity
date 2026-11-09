@@ -24,6 +24,7 @@ export default function JourneyHomeCard() {
   const [plan, setPlan] = useState<{ source: string; stages: { title: string; week: number; missions: string[] }[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [showCreator, setShowCreator] = useState(false);
+  const [showAllMissions, setShowAllMissions] = useState(false);
   const [refresh, setRefresh] = useState(0);
   useEffect(() => {
     if (active !== "home") return;
@@ -31,7 +32,7 @@ export default function JourneyHomeCard() {
     fetch("/api/journeys", { cache: "no-store" }).then(async response => {
       if (!response.ok) throw new Error(response.status === 404 ? "disabled" : "Não foi possível carregar suas jornadas.");
       const data = await response.json();
-      if (!cancelled) { setAvailable(true); setJourneys(data.journeys ?? []); setSelected((data.journeys ?? [])[0]?.id ?? ""); }
+      if (!cancelled) { setAvailable(true); setJourneys(data.journeys ?? []); setSelected(current => (data.journeys ?? []).some((journey: Journey) => journey.id === current) ? current : (data.journeys ?? [])[0]?.id ?? ""); }
     }).catch((cause: Error) => {
       if (!cancelled && cause.message !== "disabled") { setAvailable(true); setError(cause.message); }
     });
@@ -118,7 +119,7 @@ export default function JourneyHomeCard() {
           <p className="mt-1 text-xs text-slate-300">{journey ? "Cada missão é um passo em direção ao seu objetivo." : "Transforme uma meta em uma jornada de pequenas conquistas."}</p>
         </div>
         {journeys.length > 1 && <label className="text-xs text-slate-300">Minha jornada
-          <select className="ml-2 max-w-40 rounded-lg border border-white/20 bg-slate-900 px-2 py-2 text-white" value={selected} onChange={event => { setError(""); setSelected(event.target.value); }}>
+          <select className="ml-2 max-w-40 rounded-lg border border-white/20 bg-slate-900 px-2 py-2 text-white" value={selected} onChange={event => { setError(""); setShowAllMissions(false); setSelected(event.target.value); }}>
             {journeys.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}
           </select>
         </label>}
@@ -145,11 +146,12 @@ export default function JourneyHomeCard() {
           </div>
         </div>
         <div className="mt-3 space-y-2" aria-label="Missões da jornada">
-          {missions.slice(0, 5).map(mission => <label key={mission.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white">
+          {(showAllMissions ? missions : missions.slice(0, 5)).map(mission => <label key={mission.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white">
             <input type="checkbox" checked={mission.status === "completed"} disabled={busy} onChange={() => void toggleMission(mission)} className="h-4 w-4 accent-amber-400" />
             <span className={mission.status === "completed" ? "text-slate-400 line-through" : ""}>{mission.title}</span>
           </label>)}
         </div>
+        {missions.length > 5 && <button type="button" onClick={() => setShowAllMissions(value => !value)} className="mt-2 rounded-lg border border-white/20 px-3 py-2 text-xs text-slate-200">{showAllMissions ? "Mostrar menos missões" : `Ver todas as ${missions.length} missões`}</button>}
         <form onSubmit={event => void addMission(event)} className="mt-3 flex flex-wrap gap-2">
           <input aria-label="Nova missão" placeholder="Qual é seu próximo passo?" maxLength={160} value={newTitle} onChange={event => setNewTitle(event.target.value)} className="min-w-0 flex-1 rounded-xl border border-white/20 bg-slate-950 px-3 py-2 text-sm text-white placeholder:text-slate-400" />
           <button type="submit" disabled={busy || !newTitle.trim()} className="rounded-xl border border-amber-400/50 px-3 py-2 text-xs font-semibold text-amber-100 disabled:opacity-50">+ Missão</button>
