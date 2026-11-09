@@ -74,14 +74,13 @@ export async function POST(request: Request) {
     }, { status: 422, headers });
   }
 
-  // Do not create another recurring subscription when an existing provider
-  // subscription is already recorded, regardless of entitlement feature flags.
+  // A user can have only one billing_subscriptions row, regardless of provider.
+  // Block any existing row before creating a remote recurring subscription.
   try {
     const { data: existing, error: subscriptionError } = await createSupabaseAdmin()
       .from("billing_subscriptions")
       .select("provider_subscription_id, status")
       .eq("user_id", user.id)
-      .eq("provider", "asaas")
       .maybeSingle();
     if (subscriptionError) throw subscriptionError;
     // The table has a unique user_id constraint. Even a canceled row must be
