@@ -63,10 +63,9 @@ export default function JourneyHomeCard() {
     if (!journeyTitle.trim() || busy) return;
     setBusy(true); setError("");
     try {
-      const proposed = plan?.stages.flatMap(stage => stage.missions.map(title => title.trim()).filter(Boolean)) ?? [];
       const response = await fetch("/api/journeys", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: journeyTitle.trim(), missions: proposed }),
+        body: JSON.stringify({ title: journeyTitle.trim() }),
       });
       if (!response.ok) throw new Error("Não foi possível criar sua jornada.");
       const data = await response.json();
@@ -74,7 +73,19 @@ export default function JourneyHomeCard() {
       setJourneys(current => [created, ...current]);
       setSelected(created.id);
       setJourneyTitle(""); setShowCreator(false);
+      const proposed = plan?.stages.flatMap(stage => stage.missions.map(title => title.trim()).filter(Boolean)) ?? [];
       setPlan(null);
+      if (proposed.length) {
+        const missionResponse = await fetch(`/api/journeys/${encodeURIComponent(created.id)}/missions/bulk`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ titles: proposed }),
+        });
+        if (!missionResponse.ok) {
+          setError("Jornada criada, mas não foi possível salvar as missões. Confira a jornada antes de tentar novamente.");
+          setRefresh(value => value + 1);
+          return;
+        }
+      }
       setRefresh(value => value + 1);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Erro ao criar jornada."); }
     finally { setBusy(false); }
