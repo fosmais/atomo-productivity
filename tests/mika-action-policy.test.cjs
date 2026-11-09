@@ -40,3 +40,13 @@ test("external bookings and payments remain blocked even with approval", () => {
     assert.equal(authorizeMikaAction({ ...request, kind, approval }, now).reason, "blocked_external_action");
   }
 });
+
+
+test("unknown action types fail closed even with matching approval", () => {
+  assert.equal(authorizeMikaAction({ ...request, kind: "transfer_funds", approval }, now).reason, "blocked_external_action");
+});
+test("missing identity or invalid digest cannot bypass approval checks", () => {
+  assert.equal(authorizeMikaAction({ ...request, userId: "", approval }, now).reason, "approval_mismatch");
+  assert.equal(authorizeMikaAction({ ...request, payloadDigest: "not-a-digest", approval }, now).reason, "approval_mismatch");
+  assert.equal(authorizeMikaAction({ ...request, kind: "read_daily_plan", actionId: "" }, now).reason, "approval_mismatch");
+});
