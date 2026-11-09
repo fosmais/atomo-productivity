@@ -12,8 +12,22 @@ export async function POST(request: Request) {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return NextResponse.json({ error: "Autenticação necessária." }, { status: 401, headers });
 
+  const mediaType = (request.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+  if (mediaType !== "application/json") {
+    return NextResponse.json({ error: "Content-Type application/json obrigatório." }, { status: 415, headers });
+  }
+  const declaredSize = Number(request.headers.get("content-length") ?? 0);
+  if (declaredSize > 8192) {
+    return NextResponse.json({ error: "Requisição muito grande." }, { status: 413, headers });
+  }
   let payload: unknown;
-  try { payload = await request.json(); } catch {
+  try {
+    const raw = await request.text();
+    if (new TextEncoder().encode(raw).byteLength > 8192) {
+      return NextResponse.json({ error: "Requisição muito grande." }, { status: 413, headers });
+    }
+    payload = JSON.parse(raw);
+  } catch {
     return NextResponse.json({ error: "JSON inválido." }, { status: 400, headers });
   }
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
