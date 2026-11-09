@@ -46,6 +46,30 @@ function isTaskProposal(
   );
 }
 
+const EXTERNAL_APP_LINKS = [
+  { name: "Uber", pattern: /\buber\b/i, url: "https://m.uber.com/looking", action: "Abrir Uber" },
+  { name: "Spotify", pattern: /\bspotify\b/i, url: "https://open.spotify.com/", action: "Abrir Spotify" },
+  { name: "WhatsApp", pattern: /\bwhats?app\b/i, url: "https://wa.me/", action: "Abrir WhatsApp" },
+  { name: "Google Maps", pattern: /\b(google maps|maps)\b/i, url: "https://www.google.com/maps", action: "Abrir Google Maps" },
+  { name: "YouTube", pattern: /\byoutube\b/i, url: "https://www.youtube.com/", action: "Abrir YouTube" },
+] as const;
+
+function appLinkForMessage(messages: ChatMessage[], index: number) {
+  const message = messages[index];
+  if (message?.role !== "assistant" || index < 1) return null;
+  const previous = messages[index - 1];
+  if (previous?.role !== "user") return null;
+  const explicit = /\b(abrir|abra|abre|acesse|acessar|iniciar|coloque|tocar|reproduzir|chamar|pedir|solicitar)\b/i.test(previous.content);
+  const continuation = /^(segue|seguir|sim|pode|continue|continuar|ok|vamos|confirmo)[!. ]*$/i.test(previous.content.trim());
+  if (explicit) return EXTERNAL_APP_LINKS.find((app) => app.pattern.test(previous.content)) ?? null;
+  if (continuation) {
+    const prior = messages.slice(Math.max(0, index - 6), index - 1).reverse()
+      .find((item) => item.role === "user" && EXTERNAL_APP_LINKS.some((app) => app.pattern.test(item.content) && /\b(abrir|abra|abre|acesse|acessar|iniciar|coloque|tocar|reproduzir|chamar|pedir|solicitar)\b/i.test(item.content)));
+    return prior ? EXTERNAL_APP_LINKS.find((app) => app.pattern.test(prior.content)) ?? null : null;
+  }
+  return null;
+}
+
 export default function CopilotChat() {
 function isEventProposal(
   value: unknown
@@ -692,24 +716,12 @@ setConversationId(data.conversationId);
               </p>
             </div>
             </div>
-            {message.role === "assistant" &&
-              index > 0 &&
-              messages[index - 1]?.role === "user" &&
-              (
-                (/\buber\b/i.test(messages[index - 1].content) &&
-                  /(abrir|abra|chamar|pedir|solicitar|corrida|viagem)/i.test(messages[index - 1].content)) ||
-                (/^(segue|seguir|sim|pode|continue|continuar|ok|vamos|confirmo)[!. ]*$/i.test(messages[index - 1].content.trim()) &&
-                  messages.slice(Math.max(0, index - 6), index - 1).some((previous) =>
-                    previous.role === "user" &&
-                    /\buber\b/i.test(previous.content) &&
-                    /(abrir|abra|chamar|pedir|solicitar|corrida|viagem)/i.test(previous.content)
-                  ))
-              ) && (
-                <div className="ml-10 rounded-xl border border-violet-400/30 bg-violet-950/30 p-3 text-sm sm:ml-12">
-                  <p className="mb-2 text-violet-100">Posso abrir o site do Uber para você escolher o destino e confirmar a viagem. Nenhuma corrida foi solicitada pela MIKA.</p>
-                  <a href="https://m.uber.com/looking" target="_blank" rel="noopener noreferrer" className="inline-flex rounded-lg bg-violet-600 px-4 py-2 font-semibold text-white hover:bg-violet-500">Abrir Uber para solicitar viagem ↗</a>
-                </div>
-              )}
+            {appLinkForMessage(messages, index) && (
+              <div className="ml-10 rounded-xl border border-violet-400/30 bg-violet-950/30 p-3 text-sm sm:ml-12">
+                <p className="mb-2 text-violet-100">A MIKA pode encaminhar você ao serviço solicitado. A abertura depende do dispositivo; ações dentro do aplicativo precisam ser confirmadas por você e podem exigir uma integração específica.</p>
+                <a href={appLinkForMessage(messages, index)!.url} target="_blank" rel="noopener noreferrer" className="inline-flex rounded-lg bg-violet-600 px-4 py-2 font-semibold text-white hover:bg-violet-500">{appLinkForMessage(messages, index)!.action} ↗</a>
+              </div>
+            )}
                         {message.role === "assistant" &&
   Array.isArray(message.proposedTasks) &&
   message.proposedTasks.length > 0 && (
