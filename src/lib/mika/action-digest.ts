@@ -7,6 +7,9 @@ import { createHash } from "node:crypto";
  */
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 function normalize(value: JsonValue): JsonValue {
+  if (value === undefined || typeof value === "function" || typeof value === "symbol" || typeof value === "bigint") {
+    throw new Error("Unsupported JSON payload value");
+  }
   if (Array.isArray(value)) return value.map(normalize);
   if (value !== null && typeof value === "object") {
     return Object.fromEntries(Object.keys(value).sort().map(key => [key, normalize(value[key])]));
@@ -16,6 +19,7 @@ function normalize(value: JsonValue): JsonValue {
 }
 export function mikaActionDigest(input: { userId: string; actionId: string; kind: string; payload: JsonValue }): string {
   if (!input.userId || !input.actionId || !input.kind) throw new Error("Missing action identity");
+  if (input.payload === undefined) throw new Error("Missing action payload");
   const serialized = JSON.stringify(normalize({
     version: 1, userId: input.userId, actionId: input.actionId, kind: input.kind, payload: input.payload
   }));
