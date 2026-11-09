@@ -59,15 +59,22 @@ function appLinkForMessage(messages: ChatMessage[], index: number) {
   if (message?.role !== "assistant" || index < 1) return null;
   const previous = messages[index - 1];
   if (previous?.role !== "user") return null;
-  const explicit = /\b(abrir|abra|abre|acesse|acessar|iniciar|coloque|tocar|reproduzir|chamar|pedir|solicitar)\b/i.test(previous.content);
-  const continuation = /^(segue|seguir|sim|pode|continue|continuar|ok|vamos|confirmo)[!. ]*$/i.test(previous.content.trim());
-  if (explicit) return EXTERNAL_APP_LINKS.find((app) => app.pattern.test(previous.content)) ?? null;
-  if (continuation) {
-    const prior = messages.slice(Math.max(0, index - 6), index - 1).reverse()
-      .find((item) => item.role === "user" && EXTERNAL_APP_LINKS.some((app) => app.pattern.test(item.content) && /\b(abrir|abra|abre|acesse|acessar|iniciar|coloque|tocar|reproduzir|chamar|pedir|solicitar)\b/i.test(item.content)));
-    return prior ? EXTERNAL_APP_LINKS.find((app) => app.pattern.test(prior.content)) ?? null : null;
-  }
-  return null;
+  const text = previous.content.trim();
+  const request = /\b(abrir|abra|abre|acesse|acessar|iniciar|coloque|tocar|reproduzir|chamar|pedir|solicitar|corrida|viagem)\b/i;
+  const explicitApp = EXTERNAL_APP_LINKS.find((app) => app.pattern.test(text));
+  if (explicitApp && request.test(text)) return explicitApp;
+  // Continue a recent app request when the user supplies a destination or approval.
+  // Never infer an app from an unrelated conversation.
+  const recentRequest = messages.slice(Math.max(0, index - 8), index - 1).reverse()
+    .find((item) => item.role === "user" && request.test(item.content) &&
+      EXTERNAL_APP_LINKS.some((app) => app.pattern.test(item.content)));
+  if (!recentRequest) return null;
+  const app = EXTERNAL_APP_LINKS.find((candidate) => candidate.pattern.test(recentRequest.content));
+  if (!app) return null;
+  const approval = /^(segue|seguir|sim|pode|continue|continuar|ok|vamos|confirmo)[!. ]*$/i.test(text);
+  const destination = app.name === "Uber" &&
+    /\b(corrida|viagem|destino|para|ate|até|avenida|av\.?|rua|aeroporto|estacao|estação)\b/i.test(text);
+  return approval || destination ? app : null;
 }
 
 export default function CopilotChat() {
