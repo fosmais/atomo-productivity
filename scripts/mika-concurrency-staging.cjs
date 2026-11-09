@@ -9,6 +9,7 @@
  * MIKA_TEST_ACCESS_TOKEN=... MIKA_TEST_PROPOSAL_ID=... MIKA_TEST_PLAN_ID=...
  * node scripts/mika-concurrency-staging.cjs
  */
+/* eslint-disable @typescript-eslint/no-require-imports -- standalone Node CommonJS staging harness */
 const assert = require('node:assert/strict');
 const { createClient } = require('@supabase/supabase-js');
 
