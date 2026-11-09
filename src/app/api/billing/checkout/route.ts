@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { asaasSandboxReady, createAsaasSandboxMonthlySubscription } from "@/lib/billing/asaas";
 import { ensureAsaasSandboxCustomerForAuthenticatedUser } from "@/lib/billing/asaas-customer-links";
 import { reserveAsaasCheckoutAttempt, advanceAsaasCheckoutAttempt } from "@/lib/billing/asaas-checkout-attempts";
@@ -73,6 +74,30 @@ export async function POST(request: Request) {
     }, { status: 422, headers });
   }
 
+  // Do not create another recurring subscription when an existing provider
+  // subscription is already recorded, regardless of entitlement feature flags.
+  try {
+    const { data: existing, error: subscriptionError } = await createSupabaseAdmin()
+      .from("billing_subscriptions")
+      .select("provider_subscription_id, status")
+      .eq("user_id", user.id)
+      .eq("provider", "asaas")
+      .maybeSingle();
+    if (subscriptionError) throw subscriptionError;
+    if (existing?.provider_subscription_id &&
+        existing.status !== "canceled" && existing.status !== "cancelled") {
+      return NextResponse.json({
+        error: "Existe uma assinatura registrada. Consulte o suporte antes de contratar novamente.",
+        code: "EXISTING_SUBSCRIPTION",
+      }, { status: 409, headers });
+    }
+  } catch {
+    return NextResponse.json({
+      error: "Não foi possível verificar assinaturas existentes.",
+      code: "SUBSCRIPTION_CHECK_UNAVAILABLE",
+    }, { status: 503, headers });
+  }
+
   let attemptId: string;
   try {
     const attempt = await reserveAsaasCheckoutAttempt(user.id, planId as "pro" | "premium");
@@ -126,16 +151,3 @@ export async function POST(request: Request) {
 export async function GET() {
   return NextResponse.json({ error: "Método não permitido." }, { status: 405, headers });
 }
-
-/* Previous preflight response retained below for historical reference.
-  return NextResponse.json({
-    provider: "asaas",
-    environment: "sandbox",
-    plan: { id: plan.id, monthlyPriceCents: plan.monthlyPriceCents, currency: plan.currency, aiMessagesPerDay: plan.aiMessagesPerDay },
-    code: "CHECKOUT_NOT_IMPLEMENTED",
-    error: "Pré-validação concluída. Cadastro do cliente, recorrência e conciliação de pagamentos ainda precisam ser implementados.",
-    chargeCreated: false,
-  }, { status: 501, headers });
-}
-
-*/
