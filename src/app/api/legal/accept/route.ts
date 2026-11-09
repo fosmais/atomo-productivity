@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Confirmação explícita obrigatória." }, { status: 400, headers });
   }
   const versions = body.versions as Record<string, unknown>;
-  if (requiredTypes.some((type) => typeof versions[type] !== "string" || !versions[type])) {
+  if (requiredTypes.some((type) => typeof versions[type] !== "string" || !(versions[type] as string).trim() || (versions[type] as string).length > 80)) {
     return NextResponse.json({ error: "Versões dos documentos obrigatórias." }, { status: 400, headers });
   }
   try {
