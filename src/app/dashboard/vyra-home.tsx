@@ -6,6 +6,7 @@ import { loadVyraMetrics } from "./vyra-metrics-service";
 import { getCompletionRate, type VyraMetrics } from "./vyra-metrics";
 import { getCloudEvents } from "@/lib/event-cloud";
 import WhatNowCard from "./what-now-card";
+import JourneyHomeCard from "./journey-home-card";
 
 const shortcuts = [
   { label: "Agenda", icon: "▦", module: "vyra-calendar" },
@@ -71,6 +72,7 @@ export default function VyraHome() {
 
   return (
     <main className="flex min-w-0 flex-col gap-3 " aria-label="Início MYRYRA">
+      <JourneyHomeCard />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-300">MYRYRA · HOJE</p>
