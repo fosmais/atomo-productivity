@@ -16,6 +16,9 @@ export default function LegalConsentPage() {
     if (response.status === 401) { window.location.assign("/login"); return; }
     const result = (await response.json()) as Status;
     setStatus(result);
+    // A refreshed document version must require a fresh, explicit confirmation.
+    setTerms(false);
+    setPrivacy(false);
     if (!response.ok) setMessage(result.error ?? "Documentos legais ainda não disponíveis.");
   }
   useEffect(() => { void load().catch(() => setMessage("Não foi possível consultar os documentos.")); }, []);
