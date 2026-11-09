@@ -18,6 +18,8 @@ export default function JourneyHomeCard() {
   const [error, setError] = useState("");
   const [newTitle, setNewTitle] = useState("");
   const [journeyTitle, setJourneyTitle] = useState("");
+  const [weeks, setWeeks] = useState(8);
+  const [plan, setPlan] = useState<{ stages: { title: string; week: number; missions: string[] }[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [refresh, setRefresh] = useState(0);
   useEffect(() => {
@@ -43,6 +45,16 @@ export default function JourneyHomeCard() {
       .catch(() => { if (!cancelled) setError("Não foi possível carregar as missões."); });
     return () => { cancelled = true; };
   }, [selected, active, refresh]);
+  async function previewPlan() {
+    if (!journeyTitle.trim() || busy) return;
+    setBusy(true); setError(""); setPlan(null);
+    try {
+      const response = await fetch("/api/journeys/plan-preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ goal: journeyTitle.trim(), weeks }) });
+      if (!response.ok) throw new Error("Não foi possível preparar a trilha.");
+      setPlan(await response.json());
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Erro na prévia."); }
+    finally { setBusy(false); }
+  }
   async function createJourney(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!journeyTitle.trim() || busy) return;
@@ -57,7 +69,7 @@ export default function JourneyHomeCard() {
       const created = data.journey as Journey;
       setJourneys(current => [created, ...current]);
       setSelected(created.id);
-      setJourneyTitle("");
+      setJourneyTitle(""); setPlan(null);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Erro ao criar jornada."); }
     finally { setBusy(false); }
   }
@@ -123,9 +135,21 @@ export default function JourneyHomeCard() {
         </form>
       </> : <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-200"><p>Qual objetivo você quer transformar em uma jornada?</p>
         <form onSubmit={event => void createJourney(event)} className="mt-3 flex flex-wrap gap-2">
-          <input aria-label="Nome da nova jornada" placeholder="Ex.: Correr meus primeiros 5 km" maxLength={120} value={journeyTitle} onChange={event => setJourneyTitle(event.target.value)} className="min-w-0 flex-1 rounded-xl border border-white/20 bg-slate-950 px-3 py-2 text-sm text-white placeholder:text-slate-400" />
+          <input aria-label="Nome da nova jornada" placeholder="Ex.: Correr meus primeiros 5 km" maxLength={120} value={journeyTitle} onChange={event => { setJourneyTitle(event.target.value); setPlan(null); }} className="min-w-0 flex-1 rounded-xl border border-white/20 bg-slate-950 px-3 py-2 text-sm text-white placeholder:text-slate-400" />
           <button type="submit" disabled={busy || !journeyTitle.trim()} className="rounded-xl bg-amber-400 px-3 py-2 text-xs font-bold text-slate-950 disabled:opacity-50">Criar jornada</button>
         </form>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <label className="text-xs text-slate-300">Prazo em semanas <input type="number" min={1} max={52} value={weeks} onChange={event => { setWeeks(Number(event.target.value)); setPlan(null); }} className="ml-2 w-16 rounded-lg border border-white/20 bg-slate-950 p-2 text-white" /></label>
+          <button type="button" disabled={busy || !journeyTitle.trim() || weeks < 1 || weeks > 52} onClick={() => void previewPlan()} className="rounded-xl border border-violet-400/50 px-3 py-2 text-xs text-violet-100 disabled:opacity-50">Ver sugestão de trilha</button>
+        </div>
+        {plan && <div className="mt-3 space-y-2" aria-label="Prévia da trilha">
+          <p className="text-xs text-amber-200">Sugestão automática inicial, ainda sem personalização da MIKA. Não será salva sem sua confirmação.</p>
+          {plan.stages.map((stage, index) => <div key={index} className="rounded-lg border border-white/10 p-2">
+            <p className="font-semibold">Semana {stage.week}: {stage.title}</p>
+            <ul className="list-inside list-disc text-xs text-slate-300">{stage.missions.map(mission => <li key={mission}>{mission}</li>)}</ul>
+          </div>)}
+          <p className="text-xs text-slate-400">Criar jornada salva apenas o objetivo; adicione as missões depois.</p>
+        </div>}
         <p className="mt-2 text-xs text-slate-400">Sua jornada começa privada. Depois, você poderá adicionar missões.</p></div>}
       {error && <p role="alert" className="mt-2 text-xs text-rose-200">{error}</p>}
       <div className="mt-4 flex flex-wrap gap-2">
