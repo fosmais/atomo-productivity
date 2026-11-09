@@ -6,13 +6,26 @@ import { createHash } from "node:crypto";
  * The digest binds the exact action, owner and normalized payload to approval.
  */
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
-function normalize(value: JsonValue): JsonValue {
+function normalize(value: JsonValue, ancestors = new Set<object>()): JsonValue {
   if (value === undefined || typeof value === "function" || typeof value === "symbol" || typeof value === "bigint") {
     throw new Error("Unsupported JSON payload value");
   }
-  if (Array.isArray(value)) return value.map(normalize);
+  if (Array.isArray(value)) {
+    if (ancestors.has(value)) throw new Error("Circular JSON payload");
+    ancestors.add(value);
+    try {
+      if (Array.from({ length: value.length }, (_, i) => i).some(i => !(i in value))) throw new Error("Sparse JSON array");
+      return value.map(item => normalize(item, ancestors));
+    } finally { ancestors.delete(value); }
+  }
   if (value !== null && typeof value === "object") {
-    return Object.fromEntries(Object.keys(value).sort().map(key => [key, normalize(value[key])]));
+    if (Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null) {
+      throw new Error("Non-plain JSON object");
+    }
+    if (ancestors.has(value)) throw new Error("Circular JSON payload");
+    ancestors.add(value);
+    try { return Object.fromEntries(Object.keys(value).sort().map(key => [key, normalize(value[key], ancestors)])); }
+    finally { ancestors.delete(value); }
   }
   if (typeof value === "number" && !Number.isFinite(value)) throw new Error("Invalid JSON number");
   return value;
