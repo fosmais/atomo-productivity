@@ -81,7 +81,6 @@ export default function QuickCapture() {
     try {
       const pending = sessionStorage.getItem("myryra:journey-task-prefill:v1");
       if (pending) {
-        sessionStorage.removeItem("myryra:journey-task-prefill:v1");
         prefillMission(new CustomEvent("myryra:journey-prefill-task", { detail: { title: pending } }));
       }
     } catch { /* optional */ }
