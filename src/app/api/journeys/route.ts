@@ -69,6 +69,23 @@ export async function POST(request: Request) {
         Number.isNaN(Date.parse(input.target_date)) || new Date(input.target_date).toISOString().slice(0, 10) !== input.target_date))) {
     return NextResponse.json({ error: "Título, descrição ou data inválidos." }, { status: 400, headers });
   }
+  if (input.missions !== undefined) {
+    if (!Array.isArray(input.missions) || input.missions.length < 1 || input.missions.length > 30 ||
+        !input.missions.every(title => typeof title === "string" && title.trim().length > 0 && title.trim().length <= 160)) {
+      return NextResponse.json({ error: "Missões inválidas." }, { status: 400, headers });
+    }
+    const { data: journeyId, error: createError } = await supabase.rpc("myryra_create_journey_with_missions", {
+      p_title: input.title.trim(),
+      p_description: typeof input.description === "string" ? input.description.trim() : null,
+      p_target_date: typeof input.target_date === "string" ? input.target_date : null,
+      p_missions: (input.missions as string[]).map(title => title.trim()),
+    });
+    if (createError || !journeyId) return NextResponse.json({ error: "Não foi possível salvar a jornada e suas missões." }, { status: 503, headers });
+    const { data: journey, error: lookupError } = await supabase.from("myryra_journeys")
+      .select("id,title,description,status,visibility,target_date,created_at").eq("id", journeyId).eq("owner_id", user.id).single();
+    if (lookupError || !journey) return NextResponse.json({ error: "Jornada salva, mas consulta indisponível." }, { status: 503, headers });
+    return NextResponse.json({ journey }, { status: 201, headers });
+  }
   const { data, error } = await supabase.from("myryra_journeys").insert({
     owner_id: user.id, title: input.title.trim(),
     description: typeof input.description === "string" ? input.description.trim() : null,
