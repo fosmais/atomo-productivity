@@ -144,7 +144,12 @@ export default function JourneyHomeCard() {
             <span className="rounded-full border border-amber-300/25 px-2 py-1 text-[10px] text-amber-100">Um passo de cada vez</span>
           </div>
           <p className="mt-2 text-base font-semibold text-white">{next?.title ?? (progress?.total ? "Você concluiu todas as missões. Celebre sua evolução!" : "Sua primeira missão ainda não foi definida")}</p>
-          <p className="mt-1 text-xs text-slate-300">{next ? "O futuro que você deseja começa com uma ação possível hoje." : "A MIKA pode ajudar você a definir seu próximo passo."}</p>
+          <p className="mt-1 text-xs text-slate-300">{next ? "O futuro que você deseja começa com uma ação possível hoje." : progress?.total ? "Você chegou a um marco importante. Pode iniciar uma nova jornada ou definir novos desafios." : "A MIKA pode ajudar você a definir seu próximo passo."}</p>
+          {progress?.total && progress.completed === progress.total ? <div role="status" className="mt-3 rounded-xl border border-amber-300/40 bg-amber-400/10 p-3">
+            <p className="text-sm font-bold text-amber-100">★ Você chegou lá!</p>
+            <p className="mt-1 text-xs text-slate-200">Cada missão concluída ajudou a construir esta conquista. Sua evolução continua.</p>
+            <button type="button" disabled={busy} onClick={() => { setShowCreator(true); setPlan(null); setError(""); }} className="mt-3 rounded-lg bg-amber-400 px-3 py-2 text-xs font-bold text-slate-950 disabled:opacity-50">Começar minha próxima jornada</button>
+          </div> : null}
           <div className="mt-3 flex flex-wrap gap-2">
             {next && <button type="button" disabled={busy} onClick={() => void toggleMission(next)} className="rounded-xl bg-amber-400 px-3 py-2 text-xs font-bold text-slate-950 disabled:opacity-50">✓ Concluí esta missão</button>}
             <button type="button" onClick={() => navigateTo("vyra-ai")} className="rounded-xl border border-violet-300/40 px-3 py-2 text-xs font-semibold text-violet-100">Pedir orientação à MIKA</button>
