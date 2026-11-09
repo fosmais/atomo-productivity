@@ -69,7 +69,23 @@ export default function JourneyHomeCard() {
       const created = data.journey as Journey;
       setJourneys(current => [created, ...current]);
       setSelected(created.id);
-      setJourneyTitle(""); setPlan(null);
+      setJourneyTitle("");
+      const proposed = plan?.stages.flatMap(stage => stage.missions) ?? [];
+      setPlan(null);
+      let saved = 0;
+      for (const title of proposed) {
+        const missionResponse = await fetch(`/api/journeys/${encodeURIComponent(created.id)}/missions`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title }),
+        });
+        if (!missionResponse.ok) {
+          setError(`Jornada criada. ${saved} de ${proposed.length} missões adicionadas. Confira a lista antes de continuar para evitar duplicações.`);
+          setRefresh(value => value + 1);
+          return;
+        }
+        saved += 1;
+      }
+      setRefresh(value => value + 1);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Erro ao criar jornada."); }
     finally { setBusy(false); }
   }
@@ -136,7 +152,7 @@ export default function JourneyHomeCard() {
       </> : <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-200"><p>Qual objetivo você quer transformar em uma jornada?</p>
         <form onSubmit={event => void createJourney(event)} className="mt-3 flex flex-wrap gap-2">
           <input aria-label="Nome da nova jornada" placeholder="Ex.: Correr meus primeiros 5 km" maxLength={120} value={journeyTitle} onChange={event => { setJourneyTitle(event.target.value); setPlan(null); }} className="min-w-0 flex-1 rounded-xl border border-white/20 bg-slate-950 px-3 py-2 text-sm text-white placeholder:text-slate-400" />
-          <button type="submit" disabled={busy || !journeyTitle.trim()} className="rounded-xl bg-amber-400 px-3 py-2 text-xs font-bold text-slate-950 disabled:opacity-50">Criar jornada</button>
+          <button type="submit" disabled={busy || !journeyTitle.trim()} className="rounded-xl bg-amber-400 px-3 py-2 text-xs font-bold text-slate-950 disabled:opacity-50">{plan ? "Confirmar jornada e missões" : "Criar jornada sem trilha"}</button>
         </form>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <label className="text-xs text-slate-300">Prazo em semanas <input type="number" min={1} max={52} value={weeks} onChange={event => { setWeeks(Number(event.target.value)); setPlan(null); }} className="ml-2 w-16 rounded-lg border border-white/20 bg-slate-950 p-2 text-white" /></label>
@@ -148,7 +164,7 @@ export default function JourneyHomeCard() {
             <p className="font-semibold">Semana {stage.week}: {stage.title}</p>
             <ul className="list-inside list-disc text-xs text-slate-300">{stage.missions.map(mission => <li key={mission}>{mission}</li>)}</ul>
           </div>)}
-          <p className="text-xs text-slate-400">Criar jornada salva apenas o objetivo; adicione as missões depois.</p>
+          <p className="text-xs text-slate-400">Ao confirmar, a jornada e as missões sugeridas serão criadas. Revise a proposta antes de continuar.</p>
         </div>}
         <p className="mt-2 text-xs text-slate-400">Sua jornada começa privada. Depois, você poderá adicionar missões.</p></div>}
       {error && <p role="alert" className="mt-2 text-xs text-rose-200">{error}</p>}
