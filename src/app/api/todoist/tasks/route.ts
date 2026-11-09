@@ -4,7 +4,7 @@ import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { decryptTodoistToken } from "@/lib/todoist-token-crypto";
 
 /** Read-only Todoist connection status and task preview. */
-export async function GET() {
+export async function GET(request: Request) {
   await connection();
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
@@ -13,6 +13,9 @@ export async function GET() {
   if (assurance.error) return NextResponse.json({ error: "MFA indisponível." }, { status: 503 });
   if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2")
     return NextResponse.json({ error: "Segundo fator obrigatório." }, { status: 403 });
+  const cursor = new URL(request.url).searchParams.get("cursor");
+  if (cursor && (cursor.length > 2048 || /[\u0000-\u001f]/.test(cursor)))
+    return NextResponse.json({ error: "Cursor de paginação inválido." }, { status: 400 });
   const admin = createSupabaseAdmin();
   const { data: saved, error: lookupError } = await admin.from("todoist_connections")
     .select("encrypted_access_token").eq("user_id", user.id).maybeSingle();
@@ -20,7 +23,10 @@ export async function GET() {
   if (!saved) return NextResponse.json({ connected: false, tasks: [] }, { headers: { "Cache-Control": "no-store" } });
   try {
     const token = decryptTodoistToken(saved.encrypted_access_token);
-    const response = await fetch("https://api.todoist.com/api/v1/tasks?limit=200", {
+    const url = new URL("https://api.todoist.com/api/v1/tasks");
+    url.searchParams.set("limit", "200");
+    if (cursor) url.searchParams.set("cursor", cursor);
+    const response = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store", signal: AbortSignal.timeout(10000),
     });
@@ -40,7 +46,8 @@ export async function GET() {
     });
     const nextCursor = payload && !Array.isArray(payload) && typeof payload === "object"
       ? (payload as { next_cursor?: unknown }).next_cursor : null;
-    return NextResponse.json({ connected: true, tasks, hasMore: typeof nextCursor === "string" && nextCursor.length > 0 },
+    return NextResponse.json({ connected: true, tasks, nextCursor: typeof nextCursor === "string" && nextCursor.length <= 2048 ? nextCursor : null,
+      hasMore: typeof nextCursor === "string" && nextCursor.length > 0 && nextCursor.length <= 2048 },
       { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Não foi possível consultar tarefas do Todoist." }, { status: 502 });
