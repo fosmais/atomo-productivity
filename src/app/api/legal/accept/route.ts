@@ -16,7 +16,11 @@ export async function POST(request: Request) {
   if (mediaType !== "application/json") {
     return NextResponse.json({ error: "Content-Type application/json obrigatório." }, { status: 415, headers });
   }
-  const declaredSize = Number(request.headers.get("content-length") ?? 0);
+  const lengthHeader = request.headers.get("content-length");
+  const declaredSize = lengthHeader === null ? 0 : Number(lengthHeader);
+  if (!Number.isSafeInteger(declaredSize) || declaredSize < 0) {
+    return NextResponse.json({ error: "Tamanho da requisição inválido." }, { status: 400, headers });
+  }
   if (declaredSize > 8192) {
     return NextResponse.json({ error: "Requisição muito grande." }, { status: 413, headers });
   }
