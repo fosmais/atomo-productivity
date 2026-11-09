@@ -38,10 +38,44 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Informe um objetivo e um prazo entre 1 e 52 semanas." }, { status: 400, headers });
   }
   const clean = goal.trim();
+  const normalized = clean.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const category = /italiano|ingles|espanhol|frances|idioma|lingua/.test(normalized) ? "language"
+    : /correr|corrida|maratona|5 km|10 km|quilometro/.test(normalized) ? "running"
+    : /economizar|juntar|poupar|reserva|dinheiro|r\\$|investir/.test(normalized) ? "savings"
+    : /mudar de pais|morar fora|imigrar|mudanca de pais|italia|exterior/.test(normalized) ? "relocation"
+    : "general";
+  const templates: Record<string, [string[], string[], string[]]> = {
+    language: [
+      ["Avaliar seu nível atual e definir uma rotina de estudo", "Escolher materiais e praticar 10 minutos de vocabulário"],
+      ["Praticar escuta e conversação em sessões semanais", "Registrar novas palavras e revisar os pontos difíceis"],
+      ["Realizar uma conversa ou exercício de nível compatível", "Revisar sua evolução e planejar a próxima etapa"],
+    ],
+    running: [
+      ["Avaliar seu condicionamento e definir uma distância inicial segura", "Reservar dias de treino e descanso na agenda"],
+      ["Evoluir gradualmente a distância, respeitando a recuperação", "Registrar treinos e ajustar o ritmo conforme seu conforto"],
+      ["Realizar um treino de avaliação sem ultrapassar seus limites", "Revisar sua evolução e definir o próximo ciclo"],
+    ],
+    savings: [
+      ["Definir valor-alvo e prazo para sua reserva", "Levantar receitas, despesas e quanto pode poupar"],
+      ["Estabelecer uma contribuição periódica compatível com o orçamento", "Revisar gastos e acompanhar o valor acumulado"],
+      ["Comparar o valor acumulado com a meta", "Revisar o plano financeiro para o próximo período"],
+    ],
+    relocation: [
+      ["Escolher país e pesquisar requisitos oficiais de residência", "Mapear documentação, idioma e orçamento necessário"],
+      ["Organizar uma lista de documentos e prazos", "Planejar custos, moradia e oportunidades com fontes verificadas"],
+      ["Revisar pendências e confirmar requisitos atualizados", "Preparar o próximo conjunto de providências"],
+    ],
+    general: [
+      ["Definir um resultado mensurável para: " + clean, "Reservar tempo na semana para avançar"],
+      ["Executar uma pequena ação relacionada ao objetivo", "Revisar obstáculos e ajustar o plano"],
+      ["Revisar o que foi conquistado", "Definir a próxima etapa da jornada"],
+    ],
+  };
+  const steps = templates[category];
   const stages = [
-    { title: "Preparar a jornada", week: 1, missions: ["Definir um resultado concreto para: " + clean, "Reservar tempo na semana para avançar"] },
-    { title: "Criar consistência", week: Math.min(weeks, Math.max(1, Math.ceil(weeks / 3))), missions: ["Executar uma pequena ação relacionada ao objetivo", "Revisar obstáculos e ajustar o plano"] },
-    { title: "Consolidar o progresso", week: weeks, missions: ["Revisar o que foi conquistado", "Definir a próxima etapa da jornada"] },
+    { title: "Preparar a jornada", week: 1, missions: steps[0] },
+    { title: "Criar consistência", week: Math.min(weeks, Math.max(1, Math.ceil(weeks / 3))), missions: steps[1] },
+    { title: "Consolidar o progresso", week: weeks, missions: steps[2] },
   ];
-  return NextResponse.json({ goal: clean, weeks, source: "deterministic_fallback", requiresConfirmation: true, persisted: false, stages }, { headers });
+  return NextResponse.json({ goal: clean, weeks, source: "category_template", category, requiresConfirmation: true, persisted: false, stages }, { headers });
 }
