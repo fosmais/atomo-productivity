@@ -84,8 +84,10 @@ export async function POST(request: Request) {
       .eq("provider", "asaas")
       .maybeSingle();
     if (subscriptionError) throw subscriptionError;
-    if (existing?.provider_subscription_id &&
-        existing.status !== "canceled" && existing.status !== "cancelled") {
+    // The table has a unique user_id constraint. Even a canceled row must be
+    // reconciled or replaced before another provider subscription is created.
+    // Block any existing row to prevent a remote subscription followed by a DB insert failure.
+    if (existing) {
       return NextResponse.json({
         error: "Existe uma assinatura registrada. Consulte o suporte antes de contratar novamente.",
         code: "EXISTING_SUBSCRIPTION",
