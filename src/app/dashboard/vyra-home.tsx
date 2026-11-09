@@ -110,7 +110,7 @@ export default function VyraHome() {
         <p className="mt-3 text-sm leading-relaxed text-violet-200" aria-label="Inspiração do dia">{today ? dailyMessages[dayOfYear(today)%dailyMessages.length] : "Um dia de cada vez. Grandes mudanças começam com pequenos passos."}</p>
         <div className="mt-4 grid grid-cols-2 gap-2">
           <button type="button" onClick={() => navigateToQuickAction?.("capture")} className="rounded-xl bg-violet-600 px-3 py-3 text-sm font-semibold text-white hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-violet-400">+ Criar tarefa</button>
-          <button type="button" onClick={() => navigateTo("vyra-ai")} className="rounded-xl border border-violet-400/35 bg-violet-500/15 px-3 py-3 text-sm font-semibold text-violet-100 hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">✦ MIKA</button>
+          <button type="button" onClick={() => navigateTo("vyra-ai")} className="rounded-xl border border-violet-400/35 bg-violet-500/15 px-3 py-3 text-sm font-semibold text-violet-100 hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">✦ Falar com a MIKA</button>
         </div>
       </section>
 
