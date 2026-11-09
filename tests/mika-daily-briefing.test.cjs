@@ -75,3 +75,9 @@ test("counts nonblocking events without consuming focus time", () => {
   assert.equal(plan.conflicts.length, 0);
   assert.equal(plan.focusSuggestion.startsAt, "2026-11-08T12:00:00.000Z");
 });
+
+
+test("daily plan API excludes soft-deleted tasks before generating suggestions", () => {
+  const route = fs.readFileSync(path.join(__dirname, "../src/app/api/mika/daily-plan/route.ts"), "utf8");
+  assert.match(route, /from\("tasks"\)[^;]*\.is\("deleted_at", null\)/);
+});
