@@ -17,6 +17,9 @@ export default function JourneyTrail() {
   const [celebratedMission, setCelebratedMission] = useState<string | null>(null);
   const [earnedMyra, setEarnedMyra] = useState(false);
   const [error, setError] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [goalTitle, setGoalTitle] = useState("");
+  const [goalDate, setGoalDate] = useState("");
   const [replan, setReplan] = useState<{ previewOnly: boolean; preserved: { completed: { id: string; title: string }[]; existingMissionCount: number }; proposed: { title: string; week: number }[] } | null>(null);
   useEffect(() => {
     let alive = true;
@@ -35,6 +38,7 @@ export default function JourneyTrail() {
   useEffect(() => {
     if (!selected) return;
     setReplan(null);
+    setEditing(false);
     let alive = true;
     fetch("/api/journeys/" + encodeURIComponent(selected), { cache: "no-store" })
       .then(async r => { if (!r.ok) throw new Error("Não foi possível carregar as missões."); return r.json(); })
@@ -64,6 +68,28 @@ export default function JourneyTrail() {
     };
     void loadBalance();
   }, []);
+  async function changeGoal(archive: boolean) {
+    if (!selected || busy) return;
+    if (archive && !window.confirm("Excluir esta meta da sua lista? O histórico de conquistas e as MYRAs serão preservados.")) return;
+    setBusy("goal"); setError("");
+    try {
+      const response = await fetch("/api/journeys/" + encodeURIComponent(selected), {
+        method: archive ? "DELETE" : "PATCH",
+        headers: { "Content-Type": "application/json" },
+        ...(!archive ? { body: JSON.stringify({ title: goalTitle, targetDate: goalDate || null }) } : {}),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível alterar a meta.");
+      if (archive) {
+        const remaining = journeys.filter(j => j.id !== selected);
+        setJourneys(remaining); setSelected(remaining[0]?.id ?? ""); setMissions([]);
+      } else {
+        setJourneys(old => old.map(j => j.id === selected ? { ...j, ...payload.journey } : j));
+      }
+      setEditing(false); setReplan(null);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Falha ao alterar a meta."); }
+    finally { setBusy(""); }
+  }
   async function previewReplan() {
     if (!selected || busy) return;
     setBusy("replan"); setError("");
@@ -157,6 +183,16 @@ export default function JourneyTrail() {
         <p className="text-xs uppercase tracking-widest text-violet-300">Destino escolhido</p>
         <h3 className="mt-1 text-2xl font-bold">✧ {current.title}</h3>
         <p className="mt-1 text-sm text-slate-300">{current.target_date ? "Meta: " + current.target_date : "Uma conquista de cada vez"}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button type="button" disabled={!!busy} onClick={() => { setGoalTitle(current.title); setGoalDate(current.target_date ?? ""); setEditing(v => !v); }} className="rounded-lg border border-violet-300/40 px-3 py-2 text-xs font-semibold text-violet-100">✎ Editar meta</button>
+          <button type="button" disabled={!!busy} onClick={() => void changeGoal(true)} className="rounded-lg border border-rose-300/40 px-3 py-2 text-xs font-semibold text-rose-200">Excluir meta</button>
+        </div>
+        {editing && <div className="mt-3 space-y-3 rounded-xl border border-violet-300/20 bg-slate-950/70 p-3">
+          <label className="block text-xs text-slate-200">Nome da meta<input value={goalTitle} maxLength={120} onChange={e => setGoalTitle(e.target.value)} className="mt-1 w-full rounded-lg border border-white/20 bg-slate-900 p-2 text-sm text-white" /></label>
+          <label className="block text-xs text-slate-200">Data-alvo (opcional)<input type="date" value={goalDate} onChange={e => setGoalDate(e.target.value)} className="mt-1 w-full rounded-lg border border-white/20 bg-slate-900 p-2 text-sm text-white" /></label>
+          <p className="text-xs text-slate-400">Alterar o nome ou a data não modifica as missões existentes. Para isso, use o replanejamento.</p>
+          <div className="flex gap-2"><button type="button" disabled={!!busy || !goalTitle.trim()} onClick={() => void changeGoal(false)} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Salvar alterações</button><button type="button" onClick={() => setEditing(false)} className="rounded-lg border border-white/20 px-3 py-2 text-xs text-white">Cancelar</button></div>
+        </div>}
         <div className="mt-4 flex items-center justify-between text-sm"><span>{done} de {missions.length} missões</span><strong>{percent}%</strong></div>
         <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-700" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label="Progresso da jornada"><div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-400 transition-all duration-500" style={{ width: percent + "%" }} /></div>
       </div>}
