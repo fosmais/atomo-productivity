@@ -14,6 +14,17 @@ export default function JourneyAchievementCard({ journeyId, title, completedCoun
   const [gallery, setGallery] = useState<{ id: string; title: string; message: string | null; photo_url: string | null }[]>([]);
   const endpoint = "/api/journeys/" + encodeURIComponent(journeyId) + "/achievements";
   useEffect(() => { let alive = true; fetch(endpoint, { cache: "no-store" }).then(r => r.ok ? r.json() : null).then(data => { if (alive && Array.isArray(data?.achievements)) setGallery(data.achievements); }).catch(() => {}); return () => { alive = false; }; }, [endpoint]);
+  async function removeAchievement(id: string) {
+    if (!window.confirm("Excluir este registro e sua foto da galeria? Suas missões e MYRAs serão mantidas.")) return;
+    setFeedback("");
+    try {
+      const response = await fetch(endpoint + "/" + encodeURIComponent(id), { method: "DELETE" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Não foi possível excluir.");
+      setGallery(items => items.filter(item => item.id !== id));
+      setFeedback(data.photoCleanupPending ? "Registro excluído; a remoção da foto precisa ser concluída." : "Conquista removida da galeria. Suas MYRAs foram preservadas.");
+    } catch (error) { setFeedback(error instanceof Error ? error.message : "Falha ao excluir."); }
+  }
   async function save() {
     if (saving) return;
     setSaving(true); setFeedback("");
@@ -87,7 +98,7 @@ export default function JourneyAchievementCard({ journeyId, title, completedCoun
         Compartilhar minha conquista
       </button>
       <p className="text-xs text-slate-400">Fotos salvas ficam privadas. O compartilhamento é sempre uma ação sua; não publicamos sua foto automaticamente.</p>
-      {gallery.length > 0 && <div className="space-y-2"><p className="text-sm font-semibold text-violet-100">Minha galeria de conquistas</p>{gallery.map(item => <div key={item.id} className="rounded-xl border border-white/10 bg-white/5 p-3">{item.photo_url && <img src={item.photo_url} alt={"Foto da conquista " + item.title} className="max-h-48 w-full rounded-lg object-contain" /> }<p className="mt-2 text-sm font-semibold">{item.title}</p>{item.message && <p className="text-xs text-slate-300">{item.message}</p>}</div>)}</div>}
+      {gallery.length > 0 && <div className="space-y-2"><p className="text-sm font-semibold text-violet-100">Minha galeria de conquistas</p>{gallery.map(item => <div key={item.id} className="rounded-xl border border-white/10 bg-white/5 p-3">{item.photo_url && <img src={item.photo_url} alt={"Foto da conquista " + item.title} className="max-h-48 w-full rounded-lg object-contain" /> }<p className="mt-2 text-sm font-semibold">{item.title}</p>{item.message && <p className="text-xs text-slate-300">{item.message}</p>}<button type="button" onClick={() => void removeAchievement(item.id)} className="mt-3 rounded-lg border border-rose-300/40 px-3 py-2 text-xs text-rose-200">Excluir da galeria</button></div>)}</div>}
       {feedback && <p role="status" className="text-xs text-amber-200">{feedback}</p>}
     </div>
   );
