@@ -60,3 +60,13 @@ test("travel goals generate specific and progressive milestones", () => {
   assert.ok(draft.missions.every((m) => !/Definir e executar uma ação concreta|Registrar o resultado e escolher o próximo passo/.test(m.title)));
   assert.ok(draft.missions.every((m) => m.title.length <= 160));
 });
+
+test("study abroad goals avoid generic filler and include school and migration preparation", () => {
+  const draft = createJourneyDraft({ title: "Intercâmbio Malta", targetDate: "2027-04-30", weeklyAvailabilityDays: 3 }, today);
+  assert.equal(draft.missions.length, draft.weeks * 2);
+  assert.match(draft.missions[0].title, /objetivo do intercâmbio/);
+  assert.ok(draft.missions.some((m) => /escolas|matrícula/.test(m.title)));
+  assert.ok(draft.missions.some((m) => /migratórios|passaporte/.test(m.title)));
+  assert.ok(draft.missions.every((m) => !/Definir e executar uma ação concreta|Registrar o resultado e escolher o próximo passo/.test(m.title)));
+  assert.ok(draft.missions.every((m) => m.title.length <= 160));
+});
