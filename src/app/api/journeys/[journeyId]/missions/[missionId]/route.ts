@@ -39,11 +39,19 @@ export async function PATCH(request: Request, context: Context) {
   if (journeyError) return NextResponse.json({ error: "Falha ao verificar jornada." }, { status: 500 });
   if (!journey) return NextResponse.json({ error: "Jornada não encontrada." }, { status: 404 });
 
+  const { data: existingCredit, error: creditLookupError } = status === "completed"
+    ? await supabase.from("myryra_journey_myra_ledger").select("mission_id").eq("owner_id", user.id).eq("mission_id", missionId).maybeSingle()
+    : { data: null, error: null };
+  if (creditLookupError) return NextResponse.json({ error: "Falha ao verificar recompensa." }, { status: 500 });
+
   const { data: mission, error: updateError } = await supabase.from("myryra_journey_missions")
     .update({ status, completed_at: status === "completed" ? new Date().toISOString() : null })
     .eq("id", missionId).eq("journey_id", journeyId)
     .select("id,title,status,completed_at").maybeSingle();
   if (updateError) return NextResponse.json({ error: "Não foi possível atualizar a missão." }, { status: 500 });
   if (!mission) return NextResponse.json({ error: "Missão não encontrada." }, { status: 404 });
-  return NextResponse.json({ mission }, { headers: { "Cache-Control": "private, no-store" } });
+  const { data: confirmedCredit, error: rewardError } = status === "completed" && !existingCredit
+    ? await supabase.from("myryra_journey_myra_ledger").select("mission_id").eq("owner_id", user.id).eq("mission_id", missionId).maybeSingle()
+    : { data: null, error: null };
+  return NextResponse.json({ mission, myraAwarded: !rewardError && !!confirmedCredit && !existingCredit }, { headers: { "Cache-Control": "private, no-store" } });
 }
