@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import { Suspense } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import MikaJourneyPlanner from "../dashboard/mika-journey-planner";
 
-export default async function JourneyPage() {
+async function JourneyContent() {
   await connection();
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
@@ -30,4 +31,8 @@ export default async function JourneyPage() {
       </div>
     </main>
   );
+}
+
+export default function JourneyPage() {
+  return <Suspense fallback={<main className="min-h-screen bg-slate-950 p-6 text-slate-300">Carregando MYRYRA Journey...</main>}><JourneyContent /></Suspense>;
 }
