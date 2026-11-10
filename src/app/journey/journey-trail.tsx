@@ -387,7 +387,17 @@ export default function JourneyTrail() {
                     <button type="button" disabled={savingExercise === m.id} onClick={() => void saveExercise(m)} className="rounded-lg border border-violet-300/40 px-3 py-2 text-xs font-semibold text-violet-100 disabled:opacity-40">{savingExercise === m.id ? "Salvando..." : "Salvar resposta"}</button>
                     {exerciseMessage[m.id] && <p role="status" className="text-xs text-violet-100">{exerciseMessage[m.id]}</p>}
                     <button type="button" disabled={(exerciseAnswers[m.id] ?? "").trim().length < 30 || !!feedbackBusy} onClick={() => void evaluateExercise(m)} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">{feedbackBusy === m.id ? "MIKA está avaliando..." : "Avaliar com a MIKA"}</button>
-                    {aiFeedback[m.id] && <div role="status" className="whitespace-pre-wrap rounded-lg border border-violet-300/30 bg-violet-800/20 p-3 text-xs leading-relaxed text-white">{aiFeedback[m.id]}</div>}
+                    {aiFeedback[m.id] && <div role="status" className="space-y-3 rounded-lg border border-violet-300/30 bg-violet-800/20 p-3 text-xs leading-relaxed text-white">
+                      <p className="whitespace-pre-wrap">{aiFeedback[m.id]}</p>
+                      <div className="rounded-lg border border-amber-300/30 bg-amber-300/10 p-3">
+                        <p className="font-semibold text-amber-100">Próxima ação sugerida</p>
+                        <p className="mt-1">Reserve 20 minutos para revisar esta aula, aplicar a orientação da MIKA e refazer o exercício. A atividade não será adicionada à agenda sem sua confirmação.</p>
+                        <button type="button" onClick={() => {
+                          const proposal = "Revisão MIKA · " + lesson.heading + "\\nDuração sugerida: 20 minutos\\nObjetivo: aplicar o feedback e refazer o exercício.\\n\\n" + aiFeedback[m.id];
+                          void navigator.clipboard.writeText(proposal).then(() => setExerciseMessage(old => ({ ...old, [m.id]: "Proposta copiada. Você pode usá-la para criar uma tarefa na Agenda." }))).catch(() => setExerciseMessage(old => ({ ...old, [m.id]: "Não foi possível copiar a proposta." })));
+                        }} className="mt-2 rounded-lg border border-amber-200/50 px-3 py-2 font-semibold text-amber-100">Copiar proposta de revisão</button>
+                      </div>
+                    </div>}
                     <button type="button" disabled={(exerciseAnswers[m.id] ?? "").trim().length < 30} onClick={() => setShowReview(m.id)} className="rounded-lg border border-amber-300/40 bg-amber-300/10 px-3 py-2 text-xs font-semibold text-amber-100 disabled:opacity-40">Revisar minha resposta</button>
                     {showReview === m.id && <div role="status" className="space-y-2 rounded-lg border border-violet-300/30 bg-violet-900/20 p-3 text-xs"><p className="font-bold text-white">Checklist para autoavaliação</p><p>✓ Você respondeu ao que foi pedido no exercício?</p><p>✓ Incluiu um exemplo concreto e explicou seu raciocínio?</p><p>✓ Consegue identificar uma limitação ou algo que ainda precisa pesquisar?</p><p className="text-amber-200">Esta revisão é orientativa, não uma correção por IA. A resposta não foi enviada nem salva no servidor. Só marque a missão concluída depois de realizar a prática.</p></div>}<p className="text-xs text-slate-400">Este conteúdo é introdutório. Realize o exercício antes de marcar a missão como concluída.</p></div>; })()}
                   </div>}
