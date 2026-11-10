@@ -26,6 +26,7 @@ export default function MikaReviewCalendar({ title }: { title: string }) {
   const [googleChecked, setGoogleChecked] = useState<boolean | null>(null);
   const [destination, setDestination] = useState<"myryra" | "google">("myryra");
   const [reconnectUrl, setReconnectUrl] = useState<string | null>(null);
+  const [createdEventUrl, setCreatedEventUrl] = useState<string | null>(null);
   async function suggestTimes() {
     if (suggesting || confirmed) return;
     setSuggesting(true);
@@ -62,6 +63,7 @@ export default function MikaReviewCalendar({ title }: { title: string }) {
     setWorking(true);
     setMessage("");
     setReconnectUrl(null);
+    setCreatedEventUrl(null);
     try {
       const [events, google] = await Promise.all([getCloudEvents(), getGoogleBusy()]);
       const overlapping = hasConflict(startDate.getTime(), endDate.getTime(), events, google.events);
@@ -76,9 +78,10 @@ export default function MikaReviewCalendar({ title }: { title: string }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title: title.slice(0, 200), startsAt: startDate.toISOString(), endsAt: endDate.toISOString() }),
         });
-        const result: { error?: string; code?: string; reconnectUrl?: string; alreadyExists?: boolean } = await response.json();
+        const result: { error?: string; code?: string; reconnectUrl?: string; alreadyExists?: boolean; url?: string } = await response.json();
         if (result.code === "GOOGLE_CALENDAR_RECONNECT_REQUIRED" || result.code === "GOOGLE_WRITE_CONSENT_REQUIRED") setReconnectUrl("/api/google/connect?allow_event_creation=1");
         if (!response.ok) throw new Error(result.error || "Não foi possível criar o evento no Google.");
+        if (typeof result.url === "string" && /^https:\/\/calendar\.google\.com\//.test(result.url)) setCreatedEventUrl(result.url);
         setConfirmed(true);
         setMessage(result.alreadyExists ? "Esse treinamento já estava no Google Calendar." : "Treinamento criado no Google Calendar.");
         return;
@@ -105,5 +108,6 @@ export default function MikaReviewCalendar({ title }: { title: string }) {
     <p className="text-slate-200">As sugestões consideram compromissos e bloqueios MYRYRA e, quando conectado, os eventos Google. O treinamento será criado somente no destino escolhido, após sua confirmação.</p>
     {googleChecked === false && <p role="status" className="text-amber-100">Google Calendar não conectado: os horários foram verificados apenas na MYRYRA. Confira seus outros calendários antes de confirmar.</p>}
     {message && <p role="status">{message}</p>}
+    {createdEventUrl && <a href={createdEventUrl} target="_blank" rel="noopener noreferrer" className="inline-block rounded-lg border border-emerald-200/50 px-3 py-2 font-semibold text-emerald-100">Ver treinamento no Google Calendar</a>}
   </div>;
 }
