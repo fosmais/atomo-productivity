@@ -79,3 +79,29 @@ test("rejects invalid mission payload before RPC", async () => {
   await assert.rejects(saveConfirmedJourney(client, { ...draft, missions: [{ title: "", status: "pending" }] }, true, key), /inválido/);
   assert.equal(calls.length, 0);
 });
+
+test("two simultaneous confirmations forward the same idempotency key", async () => {
+  const calls = [];
+  let release;
+  const barrier = new Promise((resolve) => { release = resolve; });
+  const client = {
+    auth: { getUser: async () => ({ data: { user: { id: "user-1" } }, error: null }) },
+    rpc: async (name, params) => {
+      calls.push({ name, params });
+      await barrier;
+      return { data: [{ journey_id: "journey-1", mission_count: 1 }], error: null };
+    },
+  };
+  const first = saveConfirmedJourney(client, draft, true, key);
+  const second = saveConfirmedJourney(client, draft, true, key);
+  await new Promise((resolve) => setImmediate(resolve));
+  release();
+  const results = await Promise.all([first, second]);
+  assert.deepEqual(results, [
+    { id: "journey-1", missionCount: 1 },
+    { id: "journey-1", missionCount: 1 },
+  ]);
+  assert.equal(calls.length, 2);
+  assert.ok(calls.every((call) => call.name === "myryra_confirm_journey_atomic"));
+  assert.ok(calls.every((call) => call.params.p_confirmation_key === key));
+});
