@@ -21,14 +21,14 @@ async function JourneyContent() {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-300">MYRYRA · JOURNEY</p>
           <h1 className="mt-3 text-3xl font-bold sm:text-4xl">Seu sonho merece um caminho.</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Transforme um objetivo em pequenas missões, acompanhe sua evolução e avance no seu ritmo com a MIKA.</p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="mt-5 hidden gap-3 sm:grid sm:grid-cols-3">
             <div className="rounded-xl border border-white/10 bg-white/5 p-4"><p className="text-xl">✦</p><h2 className="mt-2 font-semibold">Escolha um sonho</h2><p className="mt-1 text-xs text-slate-300">Defina onde quer chegar.</p></div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-4"><p className="text-xl">◇</p><h2 className="mt-2 font-semibold">Construa seu caminho</h2><p className="mt-1 text-xs text-slate-300">Revise as missões antes de confirmar.</p></div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-4"><p className="text-xl">◎</p><h2 className="mt-2 font-semibold">Celebre cada avanço</h2><p className="mt-1 text-xs text-slate-300">Marque missões realizadas e veja seu progresso.</p></div>
           </div>
         </header>
         <JourneyTrail />
-        <details className="rounded-2xl border border-violet-400/20 bg-slate-900/60 p-4">
+        <details id="journey-create-details" className="rounded-2xl border border-violet-400/20 bg-slate-900/60 p-4">
           <summary className="cursor-pointer text-sm font-semibold text-violet-200">✦ Criar outra jornada ou planejar um novo sonho</summary>
           <div className="mt-4"><MikaJourneyPlanner /></div>
         </details>
