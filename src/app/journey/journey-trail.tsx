@@ -67,6 +67,17 @@ export default function JourneyTrail() {
     setBusy(mission.id);
     setError("");
     try {
+      // Confirm a new ledger credit instead of assuming that completing a mission earns MYRAs.
+      let balanceBefore: number | null = null;
+      if (mission.status !== "completed") {
+        try {
+          const beforeResponse = await fetch("/api/journeys/myra", { cache: "no-store" });
+          if (beforeResponse.ok) {
+            const before = await beforeResponse.json();
+            if (typeof before.balance === "number") balanceBefore = before.balance;
+          }
+        } catch { /* Mission updates remain available when rewards cannot be verified. */ }
+      }
       const r = await fetch("/api/journeys/" + encodeURIComponent(selected) + "/missions/" + encodeURIComponent(mission.id), {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: mission.status === "completed" ? "pending" : "completed" })
@@ -74,13 +85,26 @@ export default function JourneyTrail() {
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || "Não foi possível atualizar a missão.");
       setMissions(old => old.map(m => m.id === mission.id ? { ...m, status: data.mission.status } : m));
-      void refreshMyra();
+      setEarnedMyra(false);
       if (data.mission.status === "completed") {
-        setEarnedMyra(!myraHistory.some(entry => entry.mission_id === mission.id));
         setCelebratedMission(mission.id);
+        try {
+          const afterResponse = await fetch("/api/journeys/myra", { cache: "no-store" });
+          if (afterResponse.ok) {
+            const after = await afterResponse.json();
+            if (typeof after.balance === "number") {
+              setMyraBalance(after.balance);
+              if (Array.isArray(after.recent)) setMyraHistory(after.recent);
+              if (balanceBefore !== null && after.balance === balanceBefore + 10 &&
+                Array.isArray(after.recent) && after.recent.some((entry: MyraEntry) => entry.mission_id === mission.id)) {
+                setEarnedMyra(true);
+              }
+            }
+          }
+        } catch { /* Never show unverified reward credits. */ }
       } else {
-        setEarnedMyra(false);
         setCelebratedMission(null);
+        void refreshMyra();
       }
     } catch (e) { setError(e instanceof Error ? e.message : "Falha ao atualizar."); }
     finally { setBusy(""); }
