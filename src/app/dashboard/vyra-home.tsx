@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useVyraActiveModule, useVyraNavigation } from "./vyra-module-context";
 import { loadVyraMetrics } from "./vyra-metrics-service";
 import { getCompletionRate, type VyraMetrics } from "./vyra-metrics";
@@ -139,7 +140,7 @@ export default function VyraHome() {
         </div>
       </details>
 
-      <section aria-label="Explore seu universo">
+      <Link href="/journey" className="flex items-center gap-3 rounded-2xl border border-violet-400/40 bg-gradient-to-r from-violet-900/70 to-slate-900 p-4 transition hover:border-violet-300" aria-label="Abrir MYRYRA Journey">\n        <span className="text-3xl text-violet-200" aria-hidden="true">✧</span>\n        <span className="min-w-0 flex-1"><span className="block text-sm font-bold text-white">MYRYRA Journey</span><span className="block text-xs text-violet-200">Seus sonhos, missões e conquistas em um só lugar</span></span>\n        <span aria-hidden="true" className="text-violet-200">→</span>\n      </Link>\n\n      <section aria-label="Explore seu universo">
         <h2 className="mb-3 text-base font-semibold text-white">Explore seu universo</h2>
         <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:grid-cols-3">
           {portals.map(item => <button key={item.label} type="button" onClick={() => navigateTo(item.module)} className="flex min-h-24 min-w-0 flex-col items-start justify-center gap-2 rounded-xl border border-violet-400/15 bg-slate-900/65 p-3 text-left transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
