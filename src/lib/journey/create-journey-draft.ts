@@ -164,19 +164,21 @@ export function createJourneyDraft(goal: JourneyGoal, today = new Date()): Journ
       : weeklyChecks[(week - 1) % weeklyChecks.length];
     const steps = isStudyAbroad ? studyAbroadSteps : travelSteps;
     const travelStep = steps[Math.min(steps.length - 1, Math.floor((week - 1) * steps.length / weeks))];
-    const aiLesson = aiLessons[Math.min(aiLessons.length - 1, Math.floor((week - 1) * aiLessons.length / weeks))];
-    missions.push({
-      id: `week-${week}-plan`,
-      title: isStudyAbroad || isTravel ? `Semana ${week}: ${travelStep[0]}` : isAiEducation ? `Semana ${week}: Aula prática — ${aiLesson[0]}` : `Semana ${week}: ${stage}. ${weeklyAction} (${days} dia(s) disponíveis)`.slice(0, 160),
-      week,
-      status: "pending",
-    });
-    missions.push({
-      id: `week-${week}-review`,
-      title: isStudyAbroad || isTravel ? `Semana ${week}: ${travelStep[1]}` : isAiEducation ? `Semana ${week}: Exercício — ${aiLesson[1]}` : `Semana ${week}: ${weeklyReview}`.slice(0, 160),
-      week,
-      status: "pending",
-    });
+    if (isAiEducation) {
+      // Distribute all eight topics across the available weeks; for short plans,
+      // multiple lessons fit in one week without silently dropping modules.
+      const first = Math.floor(((week - 1) * aiLessons.length) / weeks);
+      const last = Math.floor((week * aiLessons.length) / weeks);
+      const indices = last > first ? Array.from({ length: last - first }, (_, offset) => first + offset) : [Math.min(aiLessons.length - 1, first)];
+      for (const lessonIndex of indices) {
+        const lesson = aiLessons[lessonIndex];
+        missions.push({ id: `week-${week}-module-${lessonIndex}-lesson`, title: `Semana ${week}: Aula prática — ${lesson[0]}`, week, status: "pending" });
+        missions.push({ id: `week-${week}-module-${lessonIndex}-exercise`, title: `Semana ${week}: Exercício — ${lesson[1]}`, week, status: "pending" });
+      }
+    } else {
+      missions.push({ id: `week-${week}-plan`, title: isStudyAbroad || isTravel ? `Semana ${week}: ${travelStep[0]}` : `Semana ${week}: ${stage}. ${weeklyAction} (${days} dia(s) disponíveis)`.slice(0, 160), week, status: "pending" });
+      missions.push({ id: `week-${week}-review`, title: isStudyAbroad || isTravel ? `Semana ${week}: ${travelStep[1]}` : `Semana ${week}: ${weeklyReview}`.slice(0, 160), week, status: "pending" });
+    }
   }
   return { title, ...(goal.targetDate ? { targetDate: goal.targetDate } : {}), plannedOn: today.toISOString().slice(0, 10), weeks, missions, requiresUserConfirmation: true };
 }
