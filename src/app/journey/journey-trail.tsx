@@ -17,6 +17,7 @@ export default function JourneyTrail() {
   const [celebratedMission, setCelebratedMission] = useState<string | null>(null);
   const [earnedMyra, setEarnedMyra] = useState(false);
   const [error, setError] = useState("");
+  const [replan, setReplan] = useState<{ previewOnly: boolean; preserved: { completed: { id: string; title: string }[]; existingMissionCount: number }; proposed: { title: string; week: number }[] } | null>(null);
   useEffect(() => {
     let alive = true;
     fetch("/api/journeys", { cache: "no-store" }).then(async r => {
@@ -33,6 +34,7 @@ export default function JourneyTrail() {
   }, []);
   useEffect(() => {
     if (!selected) return;
+    setReplan(null);
     let alive = true;
     fetch("/api/journeys/" + encodeURIComponent(selected), { cache: "no-store" })
       .then(async r => { if (!r.ok) throw new Error("Não foi possível carregar as missões."); return r.json(); })
@@ -62,6 +64,17 @@ export default function JourneyTrail() {
     };
     void loadBalance();
   }, []);
+  async function previewReplan() {
+    if (!selected || busy) return;
+    setBusy("replan"); setError("");
+    try {
+      const response = await fetch("/api/journeys/" + encodeURIComponent(selected) + "/replan-preview", { method: "POST", cache: "no-store" });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível preparar a prévia.");
+      setReplan(payload);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Falha ao preparar a prévia."); }
+    finally { setBusy(""); }
+  }
   async function complete(mission: Mission) {
     if (busy) return;
     setBusy(mission.id);
@@ -146,6 +159,18 @@ export default function JourneyTrail() {
         <p className="mt-1 text-sm text-slate-300">{current.target_date ? "Meta: " + current.target_date : "Uma conquista de cada vez"}</p>
         <div className="mt-4 flex items-center justify-between text-sm"><span>{done} de {missions.length} missões</span><strong>{percent}%</strong></div>
         <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-700" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label="Progresso da jornada"><div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-400 transition-all duration-500" style={{ width: percent + "%" }} /></div>
+      </div>}
+      {current && missions.length > 0 && <div className="mt-4 rounded-2xl border border-violet-400/30 bg-slate-900/70 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div><p className="text-sm font-bold text-violet-100">✨ Replanejar com a MIKA</p><p className="mt-1 text-xs text-slate-300">Veja uma proposta mais objetiva sem alterar seu progresso.</p></div>
+          <button type="button" disabled={!!busy} onClick={() => void previewReplan()} className="rounded-xl border border-violet-300/40 bg-violet-700/50 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{busy === "replan" ? "Preparando..." : "Visualizar novo caminho"}</button>
+        </div>
+        {replan && <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
+          <p className="text-sm font-semibold text-emerald-200">🔒 Prévia segura: {replan.preserved.completed.length} conquista(s) preservada(s). Nenhuma MYRA foi alterada.</p>
+          <p className="text-xs text-slate-300">Jornada atual: {replan.preserved.existingMissionCount} missões · Proposta: {replan.proposed.length} missões. Esta visualização não substitui a jornada existente.</p>
+          <ol className="max-h-72 space-y-2 overflow-y-auto pr-1">{replan.proposed.map((m, i) => <li key={i} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100"><span className="mr-2 text-violet-300">{i + 1}.</span>{m.title}</li>)}</ol>
+          <button type="button" onClick={() => setReplan(null)} className="rounded-lg border border-white/20 px-3 py-2 text-xs text-slate-200">Fechar prévia</button>
+        </div>}
       </div>}
       {celebratedMission && !finished && <div role="status" className="mt-5 rounded-2xl border border-amber-300/50 bg-gradient-to-r from-violet-900/90 to-fuchsia-900/80 p-4 text-center shadow-[0_0_35px_rgba(232,121,249,0.2)]"><div aria-hidden="true" className="relative mx-auto flex h-20 w-28 items-center justify-center"><span className="absolute left-0 top-2 text-2xl motion-safe:animate-bounce">✨</span><span className="text-5xl motion-safe:animate-bounce">🪙</span><span className="absolute right-0 top-0 text-2xl motion-safe:animate-pulse">⭐</span><span className="absolute bottom-0 right-3 text-xl motion-safe:animate-bounce">✨</span></div><p className="mt-2 text-lg font-bold text-amber-200">Missão conquistada!</p>{earnedMyra && <p className="mt-2 text-2xl font-black text-amber-300 motion-safe:animate-pulse">+10 MYRAs 🪙</p>}<p className="mt-1 text-sm text-violet-100">A MIKA está celebrando seu progresso. Continue avançando pelo mapa!</p><button type="button" onClick={() => setCelebratedMission(null)} className="mt-3 rounded-xl border border-white/30 px-4 py-2 text-xs font-semibold text-white">Continuar minha aventura</button></div>}
       {current && finished && !loading && (
