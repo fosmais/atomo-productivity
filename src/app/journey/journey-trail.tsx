@@ -157,7 +157,18 @@ export default function JourneyTrail() {
   const windowEnd = showAllMissions ? missions.length : Math.min(missions.length, Math.max(7, focusIndex + 5));
   const visibleMissions = missions.slice(windowStart, windowEnd);
   const chapterSize = 8;
-  const chapterNames = ["🌱 Descoberta", "🧭 Preparação", "🚀 Em movimento", "✨ Rumo à conquista"];
+  const goalWords = (current?.title ?? "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase();
+  const chapterNames = /intercambio|estudar no exterior|estudar fora/.test(goalWords)
+    ? ["🎓 Escolher o programa", "📋 Documentos e orçamento", "✈️ Preparar a viagem", "🌍 Começar os estudos"]
+    : /viagem|viajar|ferias|turismo|visitar|roteiro|passagens/.test(goalWords)
+      ? ["🗺️ Escolher o destino", "💰 Planejar os custos", "🧳 Organizar a viagem", "✈️ Preparar o embarque"]
+      : /italian|ingles|espanhol|frances|idioma|lingua/.test(goalWords)
+        ? ["📚 Construir a base", "🗣️ Praticar o idioma", "🎧 Ganhar fluência", "🏅 Demonstrar evolução"]
+        : /corr|caminh|maraton|quilometr/.test(goalWords)
+          ? ["👟 Começar com segurança", "🏃 Criar consistência", "📈 Evoluir o ritmo", "🏅 Celebrar a distância"]
+          : /economiz|poup|junt|guardar dinheiro|reserva financeira/.test(goalWords)
+            ? ["💰 Organizar as contas", "📊 Planejar os aportes", "🌱 Construir a reserva", "🎯 Revisar o objetivo"]
+            : ["🌱 Descoberta", "🧭 Preparação", "🚀 Em movimento", "✨ Rumo à conquista"];
   const chapterCount = Math.ceil(missions.length / chapterSize);
   const chapterFor = (index: number) => Math.floor(index / chapterSize);
   const chapterName = (chapter: number) => chapterNames[Math.min(3, Math.floor(chapter * 4 / Math.max(1, chapterCount)))];
