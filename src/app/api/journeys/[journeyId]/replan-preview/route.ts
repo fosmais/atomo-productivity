@@ -24,12 +24,24 @@ export async function POST(_request: Request, context: Context) {
   if (missionError) return NextResponse.json({ error: "Falha ao consultar missões." }, { status: 500 });
   const completed = (missions ?? []).filter(m => m.status === "completed");
   // A short, practical preview is preferable to reproducing 50 generic cards.
-  const draft = createJourneyDraft({ title: journey.title });
+  // Keep the original deadline when it is still actionable.
+  // Expired deadlines must not crash the preview.
+  const today = new Date();
+  const todayUtc = today.toISOString().slice(0, 10);
+  const targetDate = journey.target_date && journey.target_date >= todayUtc
+    ? journey.target_date : undefined;
+  const draft = createJourneyDraft({ title: journey.title, targetDate }, today);
   return NextResponse.json({
     previewOnly: true,
     journeyId,
     preserved: { completed: completed.map(m => ({ id: m.id, title: m.title })), existingMissionCount: missions?.length ?? 0 },
     proposed: draft.missions.map(m => ({ title: m.title, week: m.week })),
+    planning: {
+      targetDate: targetDate ?? null,
+      originalTargetDate: journey.target_date,
+      deadlineNeedsReview: Boolean(journey.target_date && !targetDate),
+      remainingMissions: (missions ?? []).filter(m => m.status !== "completed").length,
+    },
     message: "Prévia apenas. Nenhuma missão, conquista ou MYRA foi alterada.",
   }, { headers: { "Cache-Control": "private, no-store" } });
 }
