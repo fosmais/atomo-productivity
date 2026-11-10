@@ -4,10 +4,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 const ts = require("typescript");
 const Module = require("node:module");
-
 const filename = path.join(__dirname, "../src/lib/journey/save-confirmed-journey.ts");
-const source = fs.readFileSync(filename, "utf8");
-const compiled = ts.transpileModule(source, {
+const compiled = ts.transpileModule(fs.readFileSync(filename, "utf8"), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText;
 const mod = new Module(filename, module);
@@ -15,182 +13,69 @@ mod.filename = filename;
 mod.paths = module.paths;
 mod._compile(compiled, filename);
 const { saveConfirmedJourney } = mod.exports;
+const key = "b00d7a13-4d5a-4d12-9b21-5b4f91234567";
 const draft = {
   title: "Aprender italiano",
   requiresUserConfirmation: true,
   missions: [{ id: "week-1-plan", title: "Praticar italiano", week: 1, status: "pending" }],
 };
-
-function fakeClient({ authenticated = true, missionError = null, cleanupError = null } = {}) {
+function fakeClient({ authenticated = true, error = null, data = [{ journey_id: "journey-1", mission_count: 1 }] } = {}) {
   const calls = [];
-  const client = {
-    auth: { getUser: async () => ({
-      data: { user: authenticated ? { id: "user-1" } : null },
-      error: null,
-    }) },
-    from(table) {
-      const query = {
-        insert(rows) {
-          calls.push({ table, operation: "insert", rows });
-          if (table === "myryra_journey_missions") return Promise.resolve({ error: missionError });
-          return query;
-        },
-        select() { return query; },
-        single: async () => ({ data: { id: "journey-1" }, error: null }),
-        delete() { calls.push({ table, operation: "delete" }); return query; },
-        eq(column, value) {
-          calls.push({ table, operation: "filter", column, value });
-          if (column === "owner_id") return Promise.resolve({ error: cleanupError });
-          return query;
-        },
-      };
-      return query;
+  return {
+    calls,
+    client: {
+      auth: { getUser: async () => ({ data: { user: authenticated ? { id: "user-1" } : null }, error: null }) },
+      rpc: async (name, params) => { calls.push({ name, params }); return { data, error }; },
     },
   };
-  return { client, calls };
 }
-
-test("does not write without explicit confirmation", async () => {
+test("requires explicit confirmation without a database write", async () => {
   const { client, calls } = fakeClient();
-  await assert.rejects(saveConfirmedJourney(client, draft, false), /Confirme/);
+  await assert.rejects(saveConfirmedJourney(client, draft, false, key), /Confirme/);
   assert.equal(calls.length, 0);
 });
-
-test("does not write for unauthenticated user", async () => {
+test("requires authentication without a database write", async () => {
   const { client, calls } = fakeClient({ authenticated: false });
-  await assert.rejects(saveConfirmedJourney(client, draft, true), /Autenticação/);
+  await assert.rejects(saveConfirmedJourney(client, draft, true, key), /Autenticação/);
   assert.equal(calls.length, 0);
 });
-
-test("persists journey and missions for authenticated user", async () => {
+test("requires a valid confirmation key", async () => {
   const { client, calls } = fakeClient();
-  const result = await saveConfirmedJourney(client, draft, true);
-  assert.deepEqual(result, { id: "journey-1", missionCount: 1 });
-  assert.equal(calls.filter((c) => c.operation === "insert").length, 2);
-  assert.equal(calls[0].rows.owner_id, "user-1");
-  assert.equal(calls[1].rows[0].journey_id, "journey-1");
+  await assert.rejects(saveConfirmedJourney(client, draft, true), /Chave de confirmação necessária/);
+  await assert.rejects(saveConfirmedJourney(client, draft, true, "invalid"), /Chave de confirmação inválida/);
+  assert.equal(calls.length, 0);
 });
-
-test("cleans up journey if mission insert fails", async () => {
-  const { client, calls } = fakeClient({ missionError: { message: "insert failed" } });
-  await assert.rejects(saveConfirmedJourney(client, draft, true), /revertida/);
-  assert.ok(calls.some((c) => c.operation === "delete"));
-});
-
-test("reports orphaned journey if cleanup fails", async () => {
-  const { client } = fakeClient({
-    missionError: { message: "insert failed" },
-    cleanupError: { message: "cleanup failed" },
+test("persists the journey and missions through a single atomic RPC", async () => {
+  const { client, calls } = fakeClient();
+  const saved = await saveConfirmedJourney(client, draft, true, key);
+  assert.deepEqual(saved, { id: "journey-1", missionCount: 1 });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].name, "myryra_confirm_journey_atomic");
+  assert.deepEqual(calls[0].params, {
+    p_title: draft.title, p_target_date: null, p_confirmation_key: key,
+    p_mission_titles: ["Praticar italiano"],
   });
-  await assert.rejects(saveConfirmedJourney(client, draft, true), /journey-1/);
 });
-
-test("persists the confirmed target date", async () => {
+test("passes the target date to the atomic RPC", async () => {
   const { client, calls } = fakeClient();
-  await saveConfirmedJourney(client, { ...draft, targetDate: "2027-06-01" }, true);
-  assert.equal(calls[0].rows.target_date, "2027-06-01");
+  await saveConfirmedJourney(client, { ...draft, targetDate: "2027-06-01" }, true, key);
+  assert.equal(calls[0].params.p_target_date, "2027-06-01");
 });
-
-test("rejects malformed target dates before any database write", async () => {
+test("rejects malformed dates before any database write", async () => {
   const { client, calls } = fakeClient();
-  await assert.rejects(saveConfirmedJourney(client, { ...draft, targetDate: "2027-02-30" }, true), /inválido/);
+  await assert.rejects(saveConfirmedJourney(client, { ...draft, targetDate: "2027-02-30" }, true, key), /inválido/);
   assert.equal(calls.length, 0);
 });
-
-test("stores confirmation key with journey and not with missions", async () => {
-  const { client, calls } = fakeClient();
-  const key = "b00d7a13-4d5a-4d12-9b21-5b4f91234567";
-  await saveConfirmedJourney(client, draft, true, key);
-  assert.equal(calls[0].rows.confirmation_key, key);
-  assert.equal(calls[1].rows[0].confirmation_key, undefined);
+test("propagates RPC failure without claiming success", async () => {
+  const { client } = fakeClient({ error: { code: "22023", message: "different missions" }, data: null });
+  await assert.rejects(saveConfirmedJourney(client, draft, true, key), /Não foi possível salvar/);
 });
-
-test("rejects malformed confirmation key before writing", async () => {
+test("rejects malformed RPC response", async () => {
+  const { client } = fakeClient({ data: [{ journey_id: "journey-1", mission_count: 0 }] });
+  await assert.rejects(saveConfirmedJourney(client, draft, true, key), /Não foi possível salvar/);
+});
+test("rejects invalid mission payload before RPC", async () => {
   const { client, calls } = fakeClient();
-  await assert.rejects(saveConfirmedJourney(client, draft, true, "not-a-uuid"), /Chave de confirmação inválida/);
+  await assert.rejects(saveConfirmedJourney(client, { ...draft, missions: [{ title: "", status: "pending" }] }, true, key), /inválido/);
   assert.equal(calls.length, 0);
-});
-
-test("returns existing journey on duplicate confirmation without inserting missions twice", async () => {
-  const key = "b00d7a13-4d5a-4d12-9b21-5b4f91234567";
-  const calls = [];
-  const client = {
-    auth: { getUser: async () => ({ data: { user: { id: "user-1" } }, error: null }) },
-    from(table) {
-      const query = {
-        insert(rows) { calls.push({ table, operation: "insert", rows }); return query; },
-        select() { return query; },
-        single: async () => ({ data: null, error: { code: "23505" } }),
-        eq(column, value) { calls.push({ table, operation: "filter", column, value }); return query; },
-        maybeSingle: async () => ({ data: { id: "existing-1", title: draft.title, target_date: null }, error: null }),
-      };
-      if (table === "myryra_journey_missions") {
-        query.select = () => ({ eq: () => Promise.resolve({ data: draft.missions.map(m => ({ title: m.title })), error: null }) });
-      }
-      return query;
-    },
-  };
-  const result = await saveConfirmedJourney(client, draft, true, key);
-  assert.deepEqual(result, { id: "existing-1", missionCount: 1 });
-  assert.equal(calls.filter(c => c.table === "myryra_journey_missions" && c.operation === "insert").length, 0);
-});
-
-test("does not accept incomplete duplicate confirmation as successful", async () => {
-  const key = "b00d7a13-4d5a-4d12-9b21-5b4f91234567";
-  const client = {
-    auth: { getUser: async () => ({ data: { user: { id: "user-1" } }, error: null }) },
-    from(table) {
-      const query = {
-        insert() { return query; },
-        select() { return query; },
-        single: async () => ({ data: null, error: { code: "23505" } }),
-        eq() { return query; },
-        maybeSingle: async () => ({ data: { id: "existing-1", title: draft.title, target_date: null }, error: null }),
-      };
-      if (table === "myryra_journey_missions") {
-        query.select = () => ({ eq: () => Promise.resolve({ data: [], error: null }) });
-      }
-      return query;
-    },
-  };
-  await assert.rejects(saveConfirmedJourney(client, draft, true, key), /em processamento/);
-});
-
-test("rejects replay of a confirmation key for a different goal", async () => {
-  const key = "b00d7a13-4d5a-4d12-9b21-5b4f91234567";
-  const client = {
-    auth: { getUser: async () => ({ data: { user: { id: "user-1" } }, error: null }) },
-    from() {
-      const query = {
-        insert() { return query; },
-        select() { return query; },
-        single: async () => ({ data: null, error: { code: "23505" } }),
-        eq() { return query; },
-        maybeSingle: async () => ({ data: { id: "existing-1", title: "Outro objetivo", target_date: null }, error: null }),
-      };
-      return query;
-    },
-  };
-  await assert.rejects(saveConfirmedJourney(client, draft, true, key), /outro objetivo/);
-});
-
-test("rejects replay when mission titles differ despite matching counts", async () => {
-  const key = "b00d7a13-4d5a-4d12-9b21-5b4f91234567";
-  const client = {
-    auth: { getUser: async () => ({ data: { user: { id: "user-1" } }, error: null }) },
-    from(table) {
-      const query = {
-        insert() { return query; },
-        select() { return query; },
-        single: async () => ({ data: null, error: { code: "23505" } }),
-        eq() { return query; },
-        maybeSingle: async () => ({ data: { id: "existing-1", title: draft.title, target_date: null }, error: null }),
-      };
-      if (table === "myryra_journey_missions") {
-        query.select = () => ({ eq: () => Promise.resolve({ data: [{ title: "Missão diferente" }], error: null }) });
-      }
-      return query;
-    },
-  };
-  await assert.rejects(saveConfirmedJourney(client, draft, true, key), /planejamento diferente/);
 });
