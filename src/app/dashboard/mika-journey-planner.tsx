@@ -106,7 +106,29 @@ export default function MikaJourneyPlanner() {
           ...(confirm ? { confirmed: true, confirmationKey: confirmationKeyRef.current, plannedOn: draft?.plannedOn, ...(snapshotId ? { snapshotId } : {}) } : {}),
         }),
       });
-      const payload = await response.json();
+      let payload = await response.json();
+      // A falha da IA não pode impedir o usuário de criar uma jornada básica.
+      if (!confirm && useAI && (response.status === 429 || response.status === 503)) {
+        const fallback = await fetch("/api/journeys/draft", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, ...(targetDate ? { targetDate } : {}), weeklyAvailabilityDays: days }),
+        });
+        const fallbackPayload = await fallback.json();
+        if (fallback.ok) {
+          setDraft(fallbackPayload.draft);
+          setSnapshotId(null);
+          setSaved(false);
+          setMessage("A personalização com IA está temporariamente indisponível. Preparamos uma jornada automática para você revisar e salvar agora.");
+          return;
+        }
+        payload = fallbackPayload;
+        if (fallback.status === 429) {
+          setMessage("A criação automática está temporariamente ocupada. Aguarde um instante e tente novamente.");
+          return;
+        }
+        throw new Error(payload.error || "Não foi possível criar a jornada automática.");
+      }
       if (!response.ok) {
         if (response.status === 429) {
           const retrySeconds = Number(response.headers.get("Retry-After"));
