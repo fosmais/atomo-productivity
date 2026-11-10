@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+type SavedJourneySummary = { id: string; title: string; status: string; target_date: string | null };
 import type { JourneyDraft } from "@/lib/journey/create-journey-draft";
 
 export default function MikaJourneyPlanner() {
@@ -11,6 +12,24 @@ export default function MikaJourneyPlanner() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [saved, setSaved] = useState(false);
+  const [journeys, setJourneys] = useState<SavedJourneySummary[]>([]);
+  const [loadingJourneys, setLoadingJourneys] = useState(true);
+
+  async function refreshJourneys() {
+    try {
+      const response = await fetch("/api/journeys", { cache: "no-store" });
+      if (!response.ok) throw new Error("Falha ao carregar jornadas");
+      const payload = await response.json();
+      setJourneys(payload.journeys);
+    } catch {
+      setMessage("Não foi possível carregar suas jornadas.");
+    } finally {
+      setLoadingJourneys(false);
+    }
+  }
+
+  useEffect(() => { void refreshJourneys(); }, []);
+
 
   async function submit(confirm: boolean) {
     setBusy(true);
@@ -29,7 +48,8 @@ export default function MikaJourneyPlanner() {
       if (!response.ok) throw new Error(payload.error || "Não foi possível processar sua jornada.");
       if (confirm) {
         setSaved(true);
-        setMessage("Jornada salva. Acompanhe suas missões na área de evolução.");
+        setMessage("Jornada salva com sucesso.");
+        await refreshJourneys();
       } else {
         setDraft(payload.draft);
         setSaved(false);
@@ -88,6 +108,21 @@ export default function MikaJourneyPlanner() {
         </div>
       </div>}
       {message && <p role="status" className="mt-3 text-sm">{message}</p>}
+      <div className="mt-5 border-t border-white/15 pt-4">
+        <h4 className="font-semibold">Minhas jornadas</h4>
+        {loadingJourneys ? <p className="mt-2 text-sm text-slate-300">Carregando...</p> :
+          journeys.length === 0 ? <p className="mt-2 text-sm text-slate-300">Nenhuma jornada cadastrada.</p> :
+          <ul className="mt-2 space-y-2">
+            {journeys.map((journey) => (
+              <li key={journey.id} className="rounded-lg border border-white/15 p-3 text-sm">
+                <p className="font-medium">{journey.title}</p>
+                <p className="mt-1 text-xs text-slate-300">Status: {journey.status}
+                  {journey.target_date ? " · Meta: " + journey.target_date : ""}
+                </p>
+              </li>
+            ))}
+          </ul>}
+      </div>
     </section>
   );
 }
