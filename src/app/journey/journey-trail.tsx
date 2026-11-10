@@ -176,6 +176,16 @@ export default function JourneyTrail() {
     setFeedbackBusy(mission.id);
     setAiFeedback(old => ({ ...old, [mission.id]: "" }));
     try {
+      // Persist the exact submitted answer before requesting the tutor review.
+      // This keeps the saved draft and generated feedback in sync.
+      const saveResponse = await fetch("/api/journeys/learning", {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ journeyId: selected, missionId: mission.id, answer }),
+      });
+      if (!saveResponse.ok) {
+        const savePayload = await saveResponse.json().catch(() => ({}));
+        throw new Error(savePayload.error || "Não foi possível salvar a resposta antes da avaliação.");
+      }
       const response = await fetch("/api/journeys/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ journeyId: selected, missionId: mission.id, answer, exercise }) });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Não foi possível avaliar.");
