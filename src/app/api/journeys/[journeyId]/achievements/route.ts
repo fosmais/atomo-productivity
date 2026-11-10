@@ -6,6 +6,16 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const BUCKET = "journey-achievements";
 const TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 
+async function matchesImageSignature(file: File): Promise<boolean> {
+  const bytes = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+  if (file.type === "image/jpeg") return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  if (file.type === "image/png") return bytes.length >= 8 && [137, 80, 78, 71, 13, 10, 26, 10].every((byte, index) => bytes[index] === byte);
+  if (file.type === "image/webp") return bytes.length >= 12 &&
+    [82, 73, 70, 70].every((byte, index) => bytes[index] === byte) &&
+    [87, 69, 66, 80].every((byte, index) => bytes[index + 8] === byte);
+  return false;
+}
+
 async function authorize(journeyId: string) {
   if (!UUID.test(journeyId)) return { error: NextResponse.json({ error: "Jornada inválida." }, { status: 400 }) };
   const supabase = await createClient();
@@ -58,6 +68,8 @@ export async function POST(request: Request, context: Context) {
   if (image !== null && (!(image instanceof File) || !TYPES[image.type] || image.size === 0 || image.size > 5 * 1024 * 1024))
     return NextResponse.json({ error: "Foto inválida. Use JPG, PNG ou WebP de até 5 MB." }, { status: 400 });
   const photo = image instanceof File ? image : null;
+  if (photo && !(await matchesImageSignature(photo)))
+    return NextResponse.json({ error: "O conteúdo do arquivo não corresponde a uma imagem JPG, PNG ou WebP válida." }, { status: 400 });
   const path = photo ? user.id + "/" + journeyId + "/" + crypto.randomUUID() + "." + TYPES[photo.type] : null;
   if (photo && path) {
     const { error: uploadError } = await supabase.storage.from(BUCKET)
