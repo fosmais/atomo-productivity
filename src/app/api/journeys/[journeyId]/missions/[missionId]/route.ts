@@ -47,6 +47,22 @@ export async function PATCH(request: Request, context: Context) {
   if (existingMission.status === status)
     return NextResponse.json({ mission: existingMission, myraAwarded: false }, { headers: { "Cache-Control": "private, no-store" } });
 
+  // Learning missions must have a persisted MIKA review before they can be completed.
+  // This is a submission gate, NOT an assessment pass/fail decision.
+  const educationalMission = /IA, machine learning e IA generativa|diferença entre IA, ML e modelos generativos|treino, validação, teste|vazamento|vieses|classificação, regressão|métricas de avaliação|métricas adequadas|prompts estruturados|respostas de IA|embeddings|RAG|busca semântica|fontes verificáveis|LGPD|uso responsável|privacidade, segurança|riscos e controles|pequeno projeto aplicado|problema, dados, indicadores|protótipo viável|apresentar o projeto|demonstração curta/i;
+  if (status === "completed") {
+    const { data: missionDetails, error: detailsError } = await supabase.from("myryra_journey_missions")
+      .select("title").eq("id", missionId).eq("journey_id", journeyId).maybeSingle();
+    if (detailsError || !missionDetails) return NextResponse.json({ error: "Falha ao verificar conteúdo da missão." }, { status: 500 });
+    if (educationalMission.test(missionDetails.title)) {
+      const { data: learning, error: learningError } = await supabase.from("myryra_journey_learning_progress")
+        .select("answer,feedback").eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
+      if (learningError) return NextResponse.json({ error: "Não foi possível verificar a avaliação da MIKA." }, { status: 503 });
+      if (!learning?.answer?.trim() || !learning?.feedback?.trim())
+        return NextResponse.json({ error: "Antes de concluir esta aula, responda ao exercício e solicite a avaliação da MIKA. Sua avaliação precisa estar salva." }, { status: 409 });
+    }
+  }
+
   const { data: existingCredit, error: creditLookupError } = status === "completed"
     ? await supabase.from("myryra_journey_myra_ledger").select("mission_id").eq("owner_id", user.id).eq("mission_id", missionId).maybeSingle()
     : { data: null, error: null };
