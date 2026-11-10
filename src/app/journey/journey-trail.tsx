@@ -27,6 +27,8 @@ export default function JourneyTrail() {
   const [showReview, setShowReview] = useState<string | null>(null);
   const [aiFeedback, setAiFeedback] = useState<Record<string, string>>({});
   const [feedbackBusy, setFeedbackBusy] = useState<string | null>(null);
+  const [savingExercise, setSavingExercise] = useState<string | null>(null);
+  const [exerciseMessage, setExerciseMessage] = useState<Record<string, string>>({});
   const [replan, setReplan] = useState<{ previewOnly: boolean; revision: string; preserved: { completed: { id: string; title: string }[]; existingMissionCount: number }; proposed: { title: string; week: number }[]; planning?: { targetDate: string | null; originalTargetDate: string | null; deadlineNeedsReview: boolean; remainingMissions: number } } | null>(null);
   useEffect(() => {
     let alive = true;
@@ -125,6 +127,38 @@ export default function JourneyTrail() {
       void refreshMyra();
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Falha ao confirmar o replanejamento."); }
     finally { setBusy(""); }
+  }
+  useEffect(() => {
+    if (!selected) return;
+    let active = true;
+    fetch("/api/journeys/learning?journeyId=" + encodeURIComponent(selected), { cache: "no-store" })
+      .then(async response => { if (!response.ok) throw new Error("Histórico indisponível."); return response.json(); })
+      .then(payload => {
+        if (!active || !Array.isArray(payload.entries)) return;
+        const answers: Record<string, string> = {};
+        const feedback: Record<string, string> = {};
+        for (const entry of payload.entries) {
+          if (typeof entry.mission_id !== "string") continue;
+          if (typeof entry.answer === "string") answers[entry.mission_id] = entry.answer;
+          if (typeof entry.feedback === "string") feedback[entry.mission_id] = entry.feedback;
+        }
+        setExerciseAnswers(answers);
+        setAiFeedback(feedback);
+      }).catch(() => { if (active) setExerciseMessage({}); });
+    return () => { active = false; };
+  }, [selected]);
+  async function saveExercise(mission: Mission, feedback?: string) {
+    if (!selected || savingExercise) return;
+    setSavingExercise(mission.id);
+    try {
+      const response = await fetch("/api/journeys/learning", {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ journeyId: selected, missionId: mission.id, answer: exerciseAnswers[mission.id] ?? "", ...(feedback !== undefined ? { feedback } : {}) }),
+      });
+      if (!response.ok) throw new Error("Não foi possível salvar.");
+      setExerciseMessage(old => ({ ...old, [mission.id]: "Resposta salva na sua jornada." }));
+    } catch { setExerciseMessage(old => ({ ...old, [mission.id]: "Não foi possível salvar. Tente novamente." })); }
+    finally { setSavingExercise(null); }
   }
   async function evaluateExercise(mission: Mission) {
     const answer = (exerciseAnswers[mission.id] ?? "").trim();
@@ -344,6 +378,8 @@ export default function JourneyTrail() {
                     <button type="button" onClick={() => setOpenLesson(value => value === m.id ? null : m.id)} aria-expanded={openLesson === m.id} className="w-full text-left text-xs font-semibold text-amber-200">{openLesson === m.id ? "▾ Fechar treinamento" : "▸ Estudar com a MIKA · Aula e exercício"}</button>
                     {openLesson === m.id && (() => { const lesson = lessonFor(m.title)!; return <div className="mt-3 space-y-3 text-sm leading-relaxed text-slate-200"><p className="font-bold text-white">{lesson.heading}</p><p>{lesson.explanation}</p><p className="rounded-lg bg-violet-800/25 p-3">{lesson.example}</p><p className="font-semibold text-amber-100">Sua prática: {lesson.exercise}</p>
                     <label className="block space-y-2"><span className="block text-xs font-semibold text-violet-100">Sua resposta (rascunho local)</span><textarea value={exerciseAnswers[m.id] ?? ""} onChange={event => { setExerciseAnswers(old => ({ ...old, [m.id]: event.target.value.slice(0, 2000) })); setShowReview(null); setAiFeedback(oldFeedback => ({ ...oldFeedback, [m.id]: "" })); }} rows={4} maxLength={2000} placeholder="Registre seu raciocínio e os exemplos aqui..." className="w-full rounded-lg border border-violet-300/30 bg-slate-950 p-3 text-sm text-white placeholder:text-slate-400" /></label>
+                    <button type="button" disabled={savingExercise === m.id} onClick={() => void saveExercise(m, aiFeedback[m.id] ?? "")} className="rounded-lg border border-violet-300/40 px-3 py-2 text-xs font-semibold text-violet-100 disabled:opacity-40">{savingExercise === m.id ? "Salvando..." : "Salvar resposta"}</button>
+                    {exerciseMessage[m.id] && <p role="status" className="text-xs text-violet-100">{exerciseMessage[m.id]}</p>}
                     <button type="button" disabled={(exerciseAnswers[m.id] ?? "").trim().length < 30 || !!feedbackBusy} onClick={() => void evaluateExercise(m)} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">{feedbackBusy === m.id ? "MIKA está avaliando..." : "Avaliar com a MIKA"}</button>
                     {aiFeedback[m.id] && <div role="status" className="whitespace-pre-wrap rounded-lg border border-violet-300/30 bg-violet-800/20 p-3 text-xs leading-relaxed text-white">{aiFeedback[m.id]}</div>}
                     <button type="button" disabled={(exerciseAnswers[m.id] ?? "").trim().length < 30} onClick={() => setShowReview(m.id)} className="rounded-lg border border-amber-300/40 bg-amber-300/10 px-3 py-2 text-xs font-semibold text-amber-100 disabled:opacity-40">Revisar minha resposta</button>
