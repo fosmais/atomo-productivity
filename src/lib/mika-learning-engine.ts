@@ -172,3 +172,27 @@ export function assessInteractiveLesson(
   const score = Math.round((correct / lesson.exercises.length) * 100);
   return { score, correct, total: lesson.exercises.length, passed: score >= passThreshold, feedback };
 }
+
+/**
+ * Apply an assessed result to a lesson without mutating the original.
+ * Persist the returned lesson only in an authenticated server workflow.
+ * Failed attempts remain in progress and do not unlock completion rewards.
+ */
+export function applyLearningAssessment(
+  lesson: Lesson,
+  assessment: LearningAssessment
+): Lesson {
+  if (!lesson.id.trim() || !lesson.goalId.trim()) throw new Error("Invalid lesson identity");
+  if (lesson.status === "completed") return lesson;
+  if (!Number.isInteger(assessment.score) || assessment.score < 0 || assessment.score > 100)
+    throw new Error("Invalid assessment score");
+  if (!Number.isInteger(assessment.correct) || !Number.isInteger(assessment.total)
+      || assessment.total < 1 || assessment.correct < 0 || assessment.correct > assessment.total
+      || assessment.score !== Math.round(assessment.correct / assessment.total * 100))
+    throw new Error("Inconsistent assessment result");
+  return {
+    ...lesson,
+    status: assessment.passed ? "completed" : "in_progress",
+    score: assessment.score,
+  };
+}
