@@ -48,11 +48,14 @@ export async function PUT(request: Request) {
   if (missionError) return NextResponse.json({ error: "Erro ao consultar a missão." }, { status: 500 });
   if (!mission) return NextResponse.json({ error: "Missão não encontrada." }, { status: 404 });
   const { data: previous, error: readError } = await supabase.from("myryra_journey_learning_progress")
-    .select("answer,feedback").eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
+    .select("answer,feedback,assessment_score,assessment_passed,assessed_at").eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
   if (readError) return NextResponse.json({ error: "Não foi possível consultar a resposta anterior." }, { status: 503 });
   const { error } = await supabase.from("myryra_journey_learning_progress").upsert({
     mission_id: missionId, owner_id: user.id, answer,
     feedback: previous?.answer === answer ? previous.feedback : null,
+    assessment_score: previous?.answer === answer ? previous.assessment_score : null,
+    assessment_passed: previous?.answer === answer ? previous.assessment_passed : null,
+    assessed_at: previous?.answer === answer ? previous.assessed_at : null,
     updated_at: new Date().toISOString(),
   }, { onConflict: "mission_id" });
   if (error) return NextResponse.json({ error: "Não foi possível salvar o exercício." }, { status: 503 });
