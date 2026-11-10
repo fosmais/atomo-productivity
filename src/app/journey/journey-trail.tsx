@@ -162,6 +162,7 @@ export default function JourneyTrail() {
     if (!selected) return;
     setExerciseAnswers({});
     setAiFeedback({});
+    setAssessmentResults({});
     setExerciseMessage({});
     let active = true;
     fetch("/api/journeys/learning?journeyId=" + encodeURIComponent(selected), { cache: "no-store" })
@@ -170,13 +171,17 @@ export default function JourneyTrail() {
         if (!active || !Array.isArray(payload.entries)) return;
         const answers: Record<string, string> = {};
         const feedback: Record<string, string> = {};
+        const results: Record<string, { score: number; passed: boolean }> = {};
         for (const entry of payload.entries) {
           if (typeof entry.mission_id !== "string") continue;
           if (typeof entry.answer === "string") answers[entry.mission_id] = entry.answer;
           if (typeof entry.feedback === "string") feedback[entry.mission_id] = entry.feedback;
+          if (Number.isInteger(entry.assessment_score) && typeof entry.assessment_passed === "boolean")
+            results[entry.mission_id] = { score: entry.assessment_score, passed: entry.assessment_passed };
         }
         setExerciseAnswers(answers);
         setAiFeedback(feedback);
+        setAssessmentResults(results);
       }).catch(() => { if (active) setExerciseMessage({ history: "Não foi possível carregar o histórico desta jornada." }); });
     return () => { active = false; };
   }, [selected]);
