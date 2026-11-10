@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { getCloudEvents, saveCloudEvent } from "@/lib/event-cloud";
 
-type GoogleBusy = { start: string | null; end: string | null };
+type GoogleBusy = { start: string | null; end: string | null; status?: string | null; transparency?: string | null };
 async function getGoogleBusy(): Promise<{ connected: boolean; events: GoogleBusy[] }> {
   const response = await fetch("/api/google/events", { cache: "no-store" });
   if (!response.ok) throw new Error(response.status === 409 ? "Reconecte seu Google Calendar antes de agendar." : "Não foi possível verificar o Google Calendar. Tente novamente.");
@@ -13,7 +13,7 @@ async function getGoogleBusy(): Promise<{ connected: boolean; events: GoogleBusy
 }
 function hasConflict(start: number, end: number, events: { startsAt: string; endsAt: string; blocksTime: boolean }[], google: GoogleBusy[]) {
   return events.some(event => Date.parse(event.startsAt) < end && Date.parse(event.endsAt) > start)
-    || google.some(event => !event.start || !event.end || !Number.isFinite(Date.parse(event.start)) || !Number.isFinite(Date.parse(event.end)) || (Date.parse(event.start) < end && Date.parse(event.end) > start));
+    || google.some(event => event.status !== "cancelled" && event.transparency !== "transparent" && (!event.start || !event.end || !Number.isFinite(Date.parse(event.start)) || !Number.isFinite(Date.parse(event.end)) || (Date.parse(event.start) < end && Date.parse(event.end) > start)));
 }
 
 export default function MikaReviewCalendar({ title }: { title: string }) {
