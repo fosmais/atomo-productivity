@@ -10,6 +10,25 @@ export default function JourneyAchievementCard({ journeyId, title, completedCoun
   const [preview, setPreview] = useState("");
   const [message, setMessage] = useState("Cada passo valeu a pena!");
   const [feedback, setFeedback] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [gallery, setGallery] = useState<{ id: string; title: string; message: string | null; photo_url: string | null }[]>([]);
+  const endpoint = "/api/journeys/" + encodeURIComponent(journeyId) + "/achievements";
+  useEffect(() => { let alive = true; fetch(endpoint, { cache: "no-store" }).then(r => r.ok ? r.json() : null).then(data => { if (alive && Array.isArray(data?.achievements)) setGallery(data.achievements); }).catch(() => {}); return () => { alive = false; }; }, [endpoint]);
+  async function save() {
+    if (saving) return;
+    setSaving(true); setFeedback("");
+    try {
+      const body = new FormData(); body.set("message", message);
+      if (photo) body.set("photo", photo);
+      const response = await fetch(endpoint, { method: "POST", body });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Falha ao salvar.");
+      setFeedback("Conquista salva na sua galeria privada.");
+      const refreshed = await fetch(endpoint, { cache: "no-store" });
+      if (refreshed.ok) { const payload = await refreshed.json(); if (Array.isArray(payload.achievements)) setGallery(payload.achievements); }
+    } catch (error) { setFeedback(error instanceof Error ? error.message : "Não foi possível salvar."); }
+    finally { setSaving(false); }
+  }
   useEffect(() => {
     if (!photo) { setPreview(""); return; }
     const url = URL.createObjectURL(photo);
@@ -62,11 +81,13 @@ export default function JourneyAchievementCard({ journeyId, title, completedCoun
         <textarea value={message} maxLength={300} onChange={event => setMessage(event.target.value)}
           rows={2} className="mt-2 w-full rounded-xl border border-white/20 bg-slate-900 p-3 text-sm text-white" />
       </label>
+      <button type="button" disabled={saving} onClick={() => void save()} className="w-full rounded-xl border border-amber-300/60 px-4 py-3 text-sm font-bold text-amber-100 disabled:opacity-50">{saving ? "Salvando..." : "Salvar na minha galeria"}</button>
       <button type="button" onClick={() => void share()}
         className="w-full rounded-xl bg-amber-300 px-4 py-3 text-sm font-bold text-slate-950">
         Compartilhar minha conquista
       </button>
-      <p className="text-xs text-slate-400">A foto fica somente neste dispositivo durante esta sessão e não é salva na MYRYRA nesta versão. Compartilhe apenas o que desejar tornar público.</p>
+      <p className="text-xs text-slate-400">Fotos salvas ficam privadas. O compartilhamento é sempre uma ação sua; não publicamos sua foto automaticamente.</p>
+      {gallery.length > 0 && <div className="space-y-2"><p className="text-sm font-semibold text-violet-100">Minha galeria de conquistas</p>{gallery.map(item => <div key={item.id} className="rounded-xl border border-white/10 bg-white/5 p-3">{item.photo_url && <img src={item.photo_url} alt={"Foto da conquista " + item.title} className="max-h-48 w-full rounded-lg object-contain" /> }<p className="mt-2 text-sm font-semibold">{item.title}</p>{item.message && <p className="text-xs text-slate-300">{item.message}</p>}</div>)}</div>}
       {feedback && <p role="status" className="text-xs text-amber-200">{feedback}</p>}
     </div>
   );
