@@ -39,3 +39,12 @@ test("Calendar selection does not silently create Google events", () => {
   assert.match(ui, /onClick=\{\(\) => void confirm\(\)\}/);
   assert.match(ui, /GOOGLE_CALENDAR_RECONNECT_REQUIRED/);
 });
+
+test("Generated Google Calendar event ID uses supported base32hex characters", () => {
+  const route = read("src/app/api/google/events/create/route.ts");
+  const match = route.match(/const eventId = "([^"]+)" \+ createHash\("sha256"\)/);
+  assert.ok(match, "Event ID should use a deterministic SHA-256 prefix");
+  assert.match(match[1], /^[0-9a-v]+$/, "Google event ID prefix must be base32hex compatible");
+  const generated = match[1] + require("node:crypto").createHash("sha256").update("example").digest("hex").slice(0, 40);
+  assert.match(generated, /^[0-9a-v]{5,1024}$/);
+});
