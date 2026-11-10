@@ -68,9 +68,17 @@ export default function JourneyTrail() {
   useEffect(() => {
     if (!selected) return;
     let alive = true;
+    setLoading(true);
+    setError("");
+    setMissions([]);
     fetch("/api/journeys/" + encodeURIComponent(selected), { cache: "no-store" })
-      .then(async r => { return readJourneyJson(r, "Não foi possível carregar as missões"); })
-      .then(data => { if (alive) { if (!Array.isArray(data.missions)) throw new Error("O servidor não retornou uma lista de missões válida."); setMissions(data.missions as Mission[]); } })
+      .then(r => readJourneyJson(r, "Não foi possível carregar as missões"))
+      .then(data => {
+        if (!alive) return;
+        if (!Array.isArray(data.missions)) throw new Error("O servidor não retornou uma lista de missões válida.");
+        setMissions(data.missions as Mission[]);
+        if (!data.missions.length) setError("Esta jornada ainda não tem missões. Crie ou replaneje a trilha para começar.");
+      })
       .catch(e => { if (alive) setError(e instanceof Error ? e.message : "Falha ao carregar."); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
