@@ -28,6 +28,7 @@ export default function JourneyTrail() {
   const [exerciseAnswers, setExerciseAnswers] = useState<Record<string, string>>({});
   const [showReview, setShowReview] = useState<string | null>(null);
   const [aiFeedback, setAiFeedback] = useState<Record<string, string>>({});
+  const [assessmentResults, setAssessmentResults] = useState<Record<string, { score: number; passed: boolean }>>({});
   const [feedbackBusy, setFeedbackBusy] = useState<string | null>(null);
   const [proposedReview, setProposedReview] = useState<string | null>(null);
   const [reviewDueDates, setReviewDueDates] = useState<Record<string, string>>({});
@@ -239,6 +240,7 @@ export default function JourneyTrail() {
     if (!exercise) return;
     setFeedbackBusy(mission.id);
     setAiFeedback(old => ({ ...old, [mission.id]: "" }));
+    setAssessmentResults(old => { const next = { ...old }; delete next[mission.id]; return next; });
     try {
       // Persist the exact submitted answer before requesting the tutor review.
       // This keeps the saved draft and generated feedback in sync.
@@ -258,15 +260,17 @@ export default function JourneyTrail() {
       // Only a persisted review may unlock the client-side completion guidance.
       // Keep unsaved feedback visible, but do not treat it as proof of assessment.
       setAiFeedback(old => ({ ...old, [mission.id]: payload.saved === true ? feedback : "" }));
-      setExerciseMessage(old => ({ ...old, [mission.id]: payload.saved === true ? "Avaliação salva automaticamente." : "A MIKA respondeu, mas a avaliação não foi salva. Solicite novamente antes de concluir a aula." }));
+      if (payload.saved === true && Number.isInteger(payload.score) && typeof payload.passed === "boolean")
+        setAssessmentResults(old => ({ ...old, [mission.id]: { score: payload.score, passed: payload.passed } }));
+      setExerciseMessage(old => ({ ...old, [mission.id]: payload.saved === true ? `Avaliação salva: ${payload.score}/100 — ${payload.passed ? "aprovado! Você pode concluir a aula." : "revise o feedback e tente novamente (mínimo 70)."}` : "A MIKA respondeu, mas a avaliação não foi salva. Solicite novamente antes de concluir a aula." }));
     } catch (cause) { setExerciseMessage(old => ({ ...old, [mission.id]: cause instanceof Error ? cause.message : "Falha na avaliação." })); }
     finally { setFeedbackBusy(null); }
   }
   async function complete(mission: Mission) {
     if (busy) return;
-    if (mission.status !== "completed" && lessonFor(mission.title) && !aiFeedback[mission.id]?.trim()) {
+    if (mission.status !== "completed" && lessonFor(mission.title) && (!aiFeedback[mission.id]?.trim() || assessmentResults[mission.id]?.passed !== true)) {
       setOpenLesson(mission.id);
-      setError("Para concluir esta aula, abra o treinamento, responda ao exercício e peça a avaliação da MIKA. A avaliação deve ser salva.");
+      setError("Para concluir esta aula, abra o treinamento, responda ao exercício e peça a avaliação da MIKA. A avaliação deve ser salva e alcançar pelo menos 70 pontos.");
       return;
     }
     setBusy(mission.id);
