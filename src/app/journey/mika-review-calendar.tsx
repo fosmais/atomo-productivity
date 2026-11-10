@@ -12,7 +12,7 @@ async function getGoogleBusy(): Promise<{ connected: boolean; events: GoogleBusy
   return { connected: data.connected === true, events: data.events };
 }
 function hasConflict(start: number, end: number, events: { startsAt: string; endsAt: string; blocksTime: boolean }[], google: GoogleBusy[]) {
-  return events.some(event => Date.parse(event.startsAt) < end && Date.parse(event.endsAt) > start)
+  return events.some(event => event.blocksTime && Date.parse(event.startsAt) < end && Date.parse(event.endsAt) > start)
     || google.some(event => event.status !== "cancelled" && event.transparency !== "transparent" && (!event.start || !event.end || !Number.isFinite(Date.parse(event.start)) || !Number.isFinite(Date.parse(event.end)) || (Date.parse(event.start) < end && Date.parse(event.end) > start)));
 }
 
