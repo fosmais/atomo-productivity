@@ -84,3 +84,15 @@ test("reports orphaned journey if cleanup fails", async () => {
   });
   await assert.rejects(saveConfirmedJourney(client, draft, true), /journey-1/);
 });
+
+test("persists the confirmed target date", async () => {
+  const { client, calls } = fakeClient();
+  await saveConfirmedJourney(client, { ...draft, targetDate: "2027-06-01" }, true);
+  assert.equal(calls[0].rows.target_date, "2027-06-01");
+});
+
+test("rejects malformed target dates before any database write", async () => {
+  const { client, calls } = fakeClient();
+  await assert.rejects(saveConfirmedJourney(client, { ...draft, targetDate: "2027-02-30" }, true), /inválido/);
+  assert.equal(calls.length, 0);
+});
