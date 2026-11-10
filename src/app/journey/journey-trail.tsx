@@ -9,6 +9,7 @@ export default function JourneyTrail() {
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [selected, setSelected] = useState("");
   const [missions, setMissions] = useState<Mission[]>([]);
+  const [myraBalance, setMyraBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [celebratedMission, setCelebratedMission] = useState<string | null>(null);
@@ -37,6 +38,15 @@ export default function JourneyTrail() {
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, [selected]);
+  async function refreshMyra() {
+    try {
+      const response = await fetch("/api/journeys/myra", { cache: "no-store" });
+      if (!response.ok) return;
+      const payload = await response.json();
+      if (typeof payload.balance === "number") setMyraBalance(payload.balance);
+    } catch { /* Balance can be retried after a mission. */ }
+  }
+  useEffect(() => { void refreshMyra(); }, []);
   async function complete(mission: Mission) {
     if (busy) return;
     setBusy(mission.id);
@@ -49,6 +59,7 @@ export default function JourneyTrail() {
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || "Não foi possível atualizar a missão.");
       setMissions(old => old.map(m => m.id === mission.id ? { ...m, status: data.mission.status } : m));
+      void refreshMyra();
       if (data.mission.status === "completed") setCelebratedMission(mission.id);
       else setCelebratedMission(null);
     } catch (e) { setError(e instanceof Error ? e.message : "Falha ao atualizar."); }
@@ -79,7 +90,7 @@ export default function JourneyTrail() {
     <section aria-label="Mapa da minha jornada" className="overflow-hidden rounded-3xl border border-violet-400/30 bg-gradient-to-b from-violet-950/80 via-slate-900 to-slate-950 p-4 sm:p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-300">✦ Meu universo em evolução</p><h2 className="mt-2 text-2xl font-bold">O mapa da sua jornada</h2></div>
-        <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-sm text-amber-200" title="Moedas MYRA ainda não disponíveis">◈ MYRA · Em breve</div>
+        <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-sm font-semibold text-amber-200" title="Moedas virtuais de conquistas, sem valor monetário">◈ {myraBalance === null ? "MYRA · Carregando" : myraBalance + " MYRAs"}</div>
       </div>
       {journeys.length > 1 && <label className="mt-5 block text-sm text-slate-300">Escolha sua aventura
         <select className="mt-2 w-full rounded-xl border border-violet-400/30 bg-slate-900 p-3 text-white" value={selected} onChange={e => setSelected(e.target.value)}>
@@ -106,7 +117,7 @@ export default function JourneyTrail() {
               <button type="button" onClick={() => void shareVictory()} className="rounded-xl bg-amber-300 px-5 py-3 text-sm font-bold text-slate-950 transition-transform active:scale-95">✨ Compartilhar conquista</button>
               <button type="button" onClick={() => { const details = document.getElementById("journey-create-details") as HTMLDetailsElement | null; if (details) { details.open = true; details.scrollIntoView({ behavior: "smooth", block: "start" }); } }} className="rounded-xl border border-white/40 bg-white/10 px-5 py-3 text-sm font-semibold text-white">🚀 Começar outra aventura</button>
             </div>
-            <p className="mt-4 text-xs text-violet-200">MYRAs ainda não são creditadas. O compartilhamento divulga apenas esta conquista, sem detalhes das missões.</p>
+            <p className="mt-4 text-xs text-violet-200">Cada missão concluída rende 10 MYRAs uma única vez. O compartilhamento não revela detalhes das missões.</p>
           </div>
         </div>
       )}
@@ -147,7 +158,7 @@ export default function JourneyTrail() {
           </div>
         </div>}
       {error && <p role="alert" className="mt-4 text-sm text-rose-300">{error}</p>}
-      <p className="mt-5 text-center text-xs text-slate-400">As missões só são concluídas quando você confirma. MYRAs e jornadas compartilhadas serão ativadas em uma etapa futura.</p>
+      <p className="mt-5 text-center text-xs text-slate-400">Cada missão concluída vale 10 MYRAs virtuais, uma única vez. As moedas não possuem valor monetário.</p>
     </section>
   );
 }
