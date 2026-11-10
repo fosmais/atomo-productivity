@@ -46,7 +46,17 @@ export default function JourneyTrail() {
       if (typeof payload.balance === "number") setMyraBalance(payload.balance);
     } catch { /* Balance can be retried after a mission. */ }
   }
-  useEffect(() => { void refreshMyra(); }, []);
+  useEffect(() => {
+    const loadBalance = async () => {
+      try {
+        const response = await fetch("/api/journeys/myra", { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (typeof payload.balance === "number") setMyraBalance(payload.balance);
+      } catch { /* Balance remains unavailable until retry. */ }
+    };
+    void loadBalance();
+  }, []);
   async function complete(mission: Mission) {
     if (busy) return;
     setBusy(mission.id);
