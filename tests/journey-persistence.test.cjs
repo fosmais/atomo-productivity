@@ -159,7 +159,8 @@ test("starter missions adapt to the goal without changing the confirmation contr
 test("unrecognized goals receive actionable neutral missions", () => {
   const result = createJourneyDraft({ title: "Organizar documentos" }, new Date("2026-11-09T12:00:00Z"));
   assert.match(result.missions[0].title, /Definir e executar uma ação concreta/);
-  assert.match(result.missions[1].title, /Registrar o resultado/);
+  assert.match(result.missions[1].title, /Registrar o ponto de partida e escolher como medir o progresso/);
+  assert.notEqual(result.missions[1].title, result.missions[3].title, "Weekly reviews should evolve rather than repeat");
 });
 
 test("four-stage journey progression changes actions without changing reviewed missions", () => {
