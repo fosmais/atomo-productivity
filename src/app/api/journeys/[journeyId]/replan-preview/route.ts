@@ -31,11 +31,19 @@ export async function POST(_request: Request, context: Context) {
   const targetDate = journey.target_date && journey.target_date >= todayUtc
     ? journey.target_date : undefined;
   const draft = createJourneyDraft({ title: journey.title, targetDate }, today);
+  // Do not ask the user to redo an already completed mission.
+  // Compare normalized titles while keeping the original achievements untouched.
+  const normalizedTitle = (value: string) => value.normalize("NFD")
+    .replace(/[\\u0300-\\u036f]/g, "").trim().replace(/\\s+/g, " ").toLowerCase();
+  const completedTitles = new Set(completed.map(m => normalizedTitle(m.title)));
+  const proposed = draft.missions
+    .filter(m => !completedTitles.has(normalizedTitle(m.title)))
+    .map(m => ({ title: m.title, week: m.week }));
   return NextResponse.json({
     previewOnly: true,
     journeyId,
     preserved: { completed: completed.map(m => ({ id: m.id, title: m.title })), existingMissionCount: missions?.length ?? 0 },
-    proposed: draft.missions.map(m => ({ title: m.title, week: m.week })),
+    proposed,
     planning: {
       targetDate: targetDate ?? null,
       originalTargetDate: journey.target_date,
