@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import JourneyAchievementCard from "./journey-achievement-card";
 
 type Journey = { id: string; title: string; status: string; target_date: string | null };
 type Mission = { id: string; title: string; status: string; week?: number };
@@ -264,8 +265,8 @@ export default function JourneyTrail() {
             <h3 className="mt-2 text-3xl font-extrabold text-white sm:text-4xl">Você conseguiu!</h3>
             <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-violet-100">Sua jornada <strong>{current.title}</strong> chegou ao destino. Foram <strong>{done} missões concluídas</strong>. Cada passo fez parte dessa conquista.</p>
             <p className="mt-3 text-sm font-medium text-amber-200">✦ MIKA: que conquista incrível! Celebre este momento. Seu próximo sonho já pode começar.</p>
+            <JourneyAchievementCard key={current.id} journeyId={current.id} title={current.title} completedCount={done} />
             <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <button type="button" onClick={() => void shareVictory()} className="rounded-xl bg-amber-300 px-5 py-3 text-sm font-bold text-slate-950 transition-transform active:scale-95">✨ Compartilhar conquista</button>
               <button type="button" onClick={() => { const details = document.getElementById("journey-create-details") as HTMLDetailsElement | null; if (details) { details.open = true; details.scrollIntoView({ behavior: "smooth", block: "start" }); } }} className="rounded-xl border border-white/40 bg-white/10 px-5 py-3 text-sm font-semibold text-white">🚀 Começar outra aventura</button>
             </div>
             <p className="mt-4 text-xs text-violet-200">Cada missão concluída rende 10 MYRAs uma única vez. O compartilhamento não revela detalhes das missões.</p>
