@@ -156,10 +156,12 @@ export function assessInteractiveLesson(
   if (!Number.isFinite(passThreshold) || passThreshold < 0 || passThreshold > 100)
     throw new Error("Invalid pass threshold");
   const answerMap = new Map<string, number>();
-  const exerciseIds = new Set(lesson.exercises.map(exercise => exercise.id));
+  const exercisesById = new Map(lesson.exercises.map(exercise => [exercise.id, exercise] as const));
   for (const answer of answers) {
-    if (!exerciseIds.has(answer.exerciseId) || answerMap.has(answer.exerciseId) || !Number.isInteger(answer.choice))
-      throw new Error("Unknown, duplicate or invalid exercise answer");
+    const exercise = exercisesById.get(answer.exerciseId);
+    if (!exercise || answerMap.has(answer.exerciseId) || !Number.isInteger(answer.choice)
+        || answer.choice < 0 || answer.choice >= exercise.choices.length)
+      throw new Error("Unknown, duplicate or out-of-range exercise answer");
     answerMap.set(answer.exerciseId, answer.choice);
   }
   if (answerMap.size !== lesson.exercises.length) throw new Error("All exercises must be answered");
