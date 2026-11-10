@@ -53,6 +53,7 @@ export function createJourneyDraft(goal: JourneyGoal, today = new Date()): Journ
   const normalized = title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   // Travel goals need concrete, sequential decisions rather than generic weekly filler.
   // This intentionally runs before the language-learning match (e.g. "viagem para Itália").
+  const isStudyAbroad = /intercambio|estudar no exterior|estudar fora|curso no exterior/.test(normalized);
   const isTravel = /viagem|viajar|ferias|turismo|visitar|roteiro|passagens/.test(normalized);
   const travelSteps = [
     ["Escolher as cidades e o tipo de experiência desejada", "Anotar as cidades favoritas e decidir quais priorizar"],
@@ -80,6 +81,33 @@ export function createJourneyDraft(goal: JourneyGoal, today = new Date()): Journ
     ["Planejar imprevistos e contatos de emergência", "Anotar alternativas de transporte e suporte"],
     ["Conferir o checklist final de embarque", "Revisar documentos, bagagem e horários"],
     ["Celebrar a preparação e visualizar o destino", "Registrar o que foi realizado e os próximos passos reais"],
+  ];
+  const studyAbroadSteps = [
+    ["Definir o objetivo do intercâmbio: idioma, curso ou formação", "Anotar resultados desejados e critérios para escolher o programa"],
+    ["Pesquisar escolas e programas no destino", "Selecionar três opções com informações verificáveis"],
+    ["Comparar duração, carga horária e datas de início", "Escolher uma janela compatível com trabalho e orçamento"],
+    ["Levantar custos de curso, matrícula e materiais", "Montar uma estimativa de investimento em educação"],
+    ["Pesquisar custo de vida no destino", "Estimar gastos com moradia, alimentação e transporte"],
+    ["Comparar programas e condições de cancelamento", "Organizar vantagens, limitações e dúvidas para as escolas"],
+    ["Solicitar informações oficiais das escolas selecionadas", "Registrar respostas e requisitos de matrícula"],
+    ["Verificar requisitos migratórios para nacionalidade e duração", "Conferir orientações oficiais e listar documentos necessários"],
+    ["Conferir validade do passaporte e documentos pessoais", "Preparar uma lista de pendências documentais"],
+    ["Definir o orçamento completo e uma reserva para imprevistos", "Revisar valores estimados e capacidade de pagamento"],
+    ["Pesquisar acomodação estudantil e outras opções", "Comparar segurança, deslocamento e condições contratuais"],
+    ["Verificar transporte entre acomodação e escola", "Estimar duração e custo do deslocamento diário"],
+    ["Comparar passagens aéreas e janelas de chegada", "Registrar alternativas sem realizar compra automática"],
+    ["Avaliar cobertura de saúde e seguro aplicável", "Conferir exigências da escola e autoridades competentes"],
+    ["Reunir comprovantes solicitados pela escola", "Verificar o que falta antes de enviar qualquer documentação"],
+    ["Revisar contrato, taxas e política de reembolso do curso", "Decidir sobre matrícula somente após conferir as condições"],
+    ["Organizar cronograma de pagamentos e reservas", "Verificar prazos e autorizar individualmente cada compromisso"],
+    ["Planejar rotina de estudos e prática do idioma", "Definir sessões semanais realistas de preparação"],
+    ["Pesquisar cultura local e orientações para estudantes", "Anotar costumes, segurança e contatos úteis"],
+    ["Planejar chegada ao aeroporto e transporte inicial", "Guardar alternativas de traslado e rotas até a acomodação"],
+    ["Organizar meios de pagamento e conectividade", "Preparar opções para internet e gastos cotidianos"],
+    ["Preparar bagagem conforme clima e regras de transporte", "Conferir itens essenciais e limites da companhia"],
+    ["Conferir matrícula, hospedagem e documentos de entrada", "Revisar confirmações e pendências sem presumir aprovações"],
+    ["Montar checklist dos primeiros dias no destino", "Planejar orientação na escola, transporte e necessidades básicas"],
+    ["Revisar a preparação final para o intercâmbio", "Celebrar o avanço e identificar o que ainda exige confirmação"],
   ];
   let action = `Definir e executar uma ação concreta para: ${title}`;
   let review = "Registrar o resultado e escolher o próximo passo";
@@ -113,16 +141,17 @@ export function createJourneyDraft(goal: JourneyGoal, today = new Date()): Journ
     const stageIndex = Math.min(3, Math.floor(((week - 1) * 4) / weeks));
     const stage = stages[stageIndex];
     const weeklyAction = progression?.[stageIndex] ?? action;
-    const travelStep = travelSteps[Math.min(travelSteps.length - 1, Math.floor((week - 1) * travelSteps.length / weeks))];
+    const steps = isStudyAbroad ? studyAbroadSteps : travelSteps;
+    const travelStep = steps[Math.min(steps.length - 1, Math.floor((week - 1) * steps.length / weeks))];
     missions.push({
       id: `week-${week}-plan`,
-      title: isTravel ? `Semana ${week}: ${travelStep[0]}` : `Semana ${week}: ${stage}. ${weeklyAction} (${days} dia(s) disponíveis)`.slice(0, 160),
+      title: isStudyAbroad || isTravel ? `Semana ${week}: ${travelStep[0]}` : `Semana ${week}: ${stage}. ${weeklyAction} (${days} dia(s) disponíveis)`.slice(0, 160),
       week,
       status: "pending",
     });
     missions.push({
       id: `week-${week}-review`,
-      title: isTravel ? `Semana ${week}: ${travelStep[1]}` : `Semana ${week}: ${review}`.slice(0, 160),
+      title: isStudyAbroad || isTravel ? `Semana ${week}: ${travelStep[1]}` : `Semana ${week}: ${review}`.slice(0, 160),
       week,
       status: "pending",
     });
