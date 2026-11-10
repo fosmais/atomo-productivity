@@ -24,6 +24,7 @@ export default function MikaReviewCalendar({ title }: { title: string }) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [suggesting, setSuggesting] = useState(false);
   const [googleChecked, setGoogleChecked] = useState<boolean | null>(null);
+  const [calendarDestination, setCalendarDestination] = useState<"myryra" | "google">("myryra");
   async function suggestTimes() {
     if (suggesting || confirmed) return;
     setSuggesting(true);
@@ -76,6 +77,7 @@ export default function MikaReviewCalendar({ title }: { title: string }) {
   }
   return <div className="mt-3 space-y-2 rounded-lg border border-emerald-300/30 p-3">
     <label className="block font-semibold text-emerald-100">Reservar 20 minutos na Agenda MYRYRA</label>
+    <p className="text-slate-200">Destino disponível: Agenda MYRYRA. A gravação no Google Calendar requer autorização adicional e ainda não está habilitada.</p>
     <button type="button" disabled={suggesting || working || confirmed} onClick={() => void suggestTimes()} className="rounded-lg border border-violet-200/50 px-3 py-2 font-semibold text-violet-100 disabled:opacity-40">{suggesting ? "Consultando agenda..." : "Sugerir horários livres"}</button>
     {suggestions.length > 0 && <div className="flex flex-wrap gap-2">{suggestions.map(slot => <button type="button" key={slot} disabled={working || confirmed} onClick={() => setStart(slot)} className="rounded-lg border border-emerald-200/40 px-3 py-2 text-emerald-100">{new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(slot))}</button>)}</div>}
     <input aria-label="Início do treinamento" type="datetime-local" value={start} disabled={working || confirmed} onChange={event => setStart(event.target.value)} className="max-w-full rounded-lg border border-slate-500 bg-slate-900 p-2 text-white" />
