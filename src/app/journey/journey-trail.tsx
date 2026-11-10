@@ -15,6 +15,7 @@ export default function JourneyTrail() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [celebratedMission, setCelebratedMission] = useState<string | null>(null);
+  const [earnedMyra, setEarnedMyra] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
     let alive = true;
@@ -74,8 +75,13 @@ export default function JourneyTrail() {
       if (!r.ok) throw new Error(data.error || "Não foi possível atualizar a missão.");
       setMissions(old => old.map(m => m.id === mission.id ? { ...m, status: data.mission.status } : m));
       void refreshMyra();
-      if (data.mission.status === "completed") setCelebratedMission(mission.id);
-      else setCelebratedMission(null);
+      if (data.mission.status === "completed") {
+        setEarnedMyra(!myraHistory.some(entry => entry.mission_id === mission.id));
+        setCelebratedMission(mission.id);
+      } else {
+        setEarnedMyra(false);
+        setCelebratedMission(null);
+      }
     } catch (e) { setError(e instanceof Error ? e.message : "Falha ao atualizar."); }
     finally { setBusy(""); }
   }
@@ -117,7 +123,7 @@ export default function JourneyTrail() {
         <div className="mt-4 flex items-center justify-between text-sm"><span>{done} de {missions.length} missões</span><strong>{percent}%</strong></div>
         <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-700" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label="Progresso da jornada"><div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-400 transition-all duration-500" style={{ width: percent + "%" }} /></div>
       </div>}
-      {celebratedMission && !finished && <div role="status" className="mt-5 rounded-2xl border border-amber-300/50 bg-gradient-to-r from-violet-900/90 to-fuchsia-900/80 p-4 text-center shadow-[0_0_35px_rgba(232,121,249,0.2)]"><span aria-hidden="true" className="block text-4xl motion-safe:animate-bounce">🌟</span><p className="mt-2 text-lg font-bold text-amber-200">Missão conquistada!</p><p className="mt-1 text-sm text-violet-100">A MIKA está celebrando seu progresso. Continue avançando pelo mapa!</p><button type="button" onClick={() => setCelebratedMission(null)} className="mt-3 rounded-xl border border-white/30 px-4 py-2 text-xs font-semibold text-white">Continuar minha aventura</button></div>}
+      {celebratedMission && !finished && <div role="status" className="mt-5 rounded-2xl border border-amber-300/50 bg-gradient-to-r from-violet-900/90 to-fuchsia-900/80 p-4 text-center shadow-[0_0_35px_rgba(232,121,249,0.2)]"><div aria-hidden="true" className="relative mx-auto flex h-20 w-28 items-center justify-center"><span className="absolute left-0 top-2 text-2xl motion-safe:animate-bounce">✨</span><span className="text-5xl motion-safe:animate-bounce">🪙</span><span className="absolute right-0 top-0 text-2xl motion-safe:animate-pulse">⭐</span><span className="absolute bottom-0 right-3 text-xl motion-safe:animate-bounce">✨</span></div><p className="mt-2 text-lg font-bold text-amber-200">Missão conquistada!</p>{earnedMyra && <p className="mt-2 text-2xl font-black text-amber-300 motion-safe:animate-pulse">+10 MYRAs 🪙</p>}<p className="mt-1 text-sm text-violet-100">A MIKA está celebrando seu progresso. Continue avançando pelo mapa!</p><button type="button" onClick={() => setCelebratedMission(null)} className="mt-3 rounded-xl border border-white/30 px-4 py-2 text-xs font-semibold text-white">Continuar minha aventura</button></div>}
       {current && finished && !loading && (
         <div role="status" aria-label="Jornada concluída" className="relative mt-6 overflow-hidden rounded-3xl border border-amber-300/50 bg-gradient-to-br from-amber-500/25 via-fuchsia-700/25 to-violet-900/80 p-6 text-center shadow-[0_0_60px_rgba(217,70,239,0.18)] sm:p-9">
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-50" style={{ backgroundImage: "radial-gradient(circle at 20% 20%, #fbbf24 1px, transparent 2px), radial-gradient(circle at 80% 60%, #e879f9 1px, transparent 2px)", backgroundSize: "37px 43px, 53px 61px" }} />
