@@ -36,8 +36,8 @@ export async function PUT(request: Request) {
   let body: unknown;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
   if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
-  const { journeyId, missionId, answer, feedback } = body as Record<string, unknown>;
-  if (typeof journeyId !== "string" || !uuid.test(journeyId) || typeof missionId !== "string" || !uuid.test(missionId) || typeof answer !== "string" || answer.length > 2000 || (feedback !== undefined && (typeof feedback !== "string" || feedback.length > 5000)))
+  const { journeyId, missionId, answer } = body as Record<string, unknown>;
+  if (typeof journeyId !== "string" || !uuid.test(journeyId) || typeof missionId !== "string" || !uuid.test(missionId) || typeof answer !== "string" || answer.length > 2000)
     return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
   const { supabase, user, status } = await authenticate();
   if (!user) return NextResponse.json({ error: "Acesso não autorizado." }, { status });
@@ -48,7 +48,7 @@ export async function PUT(request: Request) {
   if (missionError) return NextResponse.json({ error: "Erro ao consultar a missão." }, { status: 500 });
   if (!mission) return NextResponse.json({ error: "Missão não encontrada." }, { status: 404 });
   const { error } = await supabase.from("myryra_journey_learning_progress").upsert({
-    mission_id: missionId, owner_id: user.id, answer, feedback: feedback ?? null, updated_at: new Date().toISOString(),
+    mission_id: missionId, owner_id: user.id, answer, feedback: null, updated_at: new Date().toISOString(),
   }, { onConflict: "mission_id" });
   if (error) return NextResponse.json({ error: "Não foi possível salvar o exercício." }, { status: 503 });
   return NextResponse.json({ saved: true }, { headers: { "Cache-Control": "private, no-store" } });
