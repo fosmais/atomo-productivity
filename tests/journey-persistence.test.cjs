@@ -134,3 +134,30 @@ test("rebuilding the confirmed journey on its original day preserves missions", 
   assert.equal(confirmedNextDay.weeks, reviewed.weeks);
   assert.equal(recomputedNextDay.plannedOn, "2026-11-10");
 });
+
+test("starter missions adapt to the goal without changing the confirmation contract", () => {
+  const examples = [
+    ["Aprender italiano", /vocabulário, escuta e conversação/],
+    ["Correr 10 km", /treino progressivo de caminhada ou corrida/],
+    ["Juntar R$ 30 mil", /valor viável para guardar/],
+    ["Mudar de país", /requisito prático da mudança/],
+  ];
+  for (const [title, expected] of examples) {
+    const result = createJourneyDraft({ title, weeklyAvailabilityDays: 3 }, new Date("2026-11-09T12:00:00Z"));
+    assert.equal(result.requiresUserConfirmation, true);
+    assert.equal(result.missions.length, 8);
+    assert.match(result.missions[0].title, expected);
+    assert.equal(result.missions[0].status, "pending");
+    assert.ok(result.missions.every((mission) => mission.title.length <= 160));
+    assert.deepEqual(
+      result.missions,
+      createJourneyDraft({ title, weeklyAvailabilityDays: 3 }, new Date("2026-11-09T18:00:00Z")).missions,
+    );
+  }
+});
+
+test("unrecognized goals receive actionable neutral missions", () => {
+  const result = createJourneyDraft({ title: "Organizar documentos" }, new Date("2026-11-09T12:00:00Z"));
+  assert.match(result.missions[0].title, /Definir e executar uma ação concreta/);
+  assert.match(result.missions[1].title, /Registrar o resultado/);
+});
