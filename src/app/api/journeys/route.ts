@@ -16,6 +16,7 @@ export async function GET() {
     .from("myryra_journeys")
     .select("id,title,status,target_date,created_at")
     .eq("owner_id", user.id)
+    .neq("status", "archived")
     .order("created_at", { ascending: false })
     .limit(20);
   if (queryError) {
