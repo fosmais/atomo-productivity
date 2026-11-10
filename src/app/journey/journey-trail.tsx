@@ -20,6 +20,7 @@ export default function JourneyTrail() {
   const [editing, setEditing] = useState(false);
   const [goalTitle, setGoalTitle] = useState("");
   const [goalDate, setGoalDate] = useState("");
+  const [showAllMissions, setShowAllMissions] = useState(false);
   const [replan, setReplan] = useState<{ previewOnly: boolean; preserved: { completed: { id: string; title: string }[]; existingMissionCount: number }; proposed: { title: string; week: number }[] } | null>(null);
   useEffect(() => {
     let alive = true;
@@ -150,6 +151,11 @@ export default function JourneyTrail() {
   const percent = missions.length ? Math.round(done / missions.length * 100) : 0;
   const current = journeys.find(j => j.id === selected);
   const finished = missions.length > 0 && done === missions.length;
+  const firstPending = missions.findIndex(m => m.status !== "completed");
+  const focusIndex = firstPending === -1 ? Math.max(0, missions.length - 1) : firstPending;
+  const windowStart = showAllMissions ? 0 : Math.max(0, focusIndex - 2);
+  const windowEnd = showAllMissions ? missions.length : Math.min(missions.length, Math.max(7, focusIndex + 5));
+  const visibleMissions = missions.slice(windowStart, windowEnd);
   async function shareVictory() {
     if (!current || !finished) return;
     const message = "🏆 Concluí minha jornada " + current.title + " na MYRYRA! " + done + " missões realizadas. ✨";
@@ -174,7 +180,7 @@ export default function JourneyTrail() {
         <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-sm font-semibold text-amber-200" title="Moedas virtuais de conquistas, sem valor monetário">◈ {myraBalance === null ? "MYRA · Carregando" : myraBalance + " MYRAs"}</div>
       </div>
       {journeys.length > 1 && <label className="mt-5 block text-sm text-slate-300">Escolha sua aventura
-        <select className="mt-2 w-full rounded-xl border border-violet-400/30 bg-slate-900 p-3 text-white" value={selected} onChange={e => { setSelected(e.target.value); setReplan(null); setEditing(false); }}>
+        <select className="mt-2 w-full rounded-xl border border-violet-400/30 bg-slate-900 p-3 text-white" value={selected} onChange={e => { setSelected(e.target.value); setReplan(null); setEditing(false); setShowAllMissions(false); }}>
           {journeys.map(j => <option key={j.id} value={j.id}>{j.title}</option>)}
         </select></label>}
       {current && <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -230,7 +236,8 @@ export default function JourneyTrail() {
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-70" style={{ backgroundImage: "radial-gradient(circle at 12% 18%, #f0abfc 1px, transparent 2px), radial-gradient(circle at 77% 42%, #fbbf24 1px, transparent 2px), radial-gradient(circle at 48% 78%, #93c5fd 1px, transparent 2px)", backgroundSize: "83px 97px, 131px 113px, 97px 151px" }} />
           <div className="relative mb-7 text-center">
             <span className="inline-flex rounded-full border border-amber-300/40 bg-amber-300/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-amber-200">✦ O início da aventura</span>
-            <p className="mt-2 text-xs text-violet-200">Cada parada é uma conquista no caminho do seu sonho.</p>
+            <p className="mt-2 text-xs text-violet-200">Seu próximo passo em destaque. Avance no seu ritmo.</p>
+            {missions.length > 7 && <p className="mt-2 text-xs text-amber-200">🧭 Mostrando etapas {windowStart + 1}–{windowEnd} de {missions.length}</p>}
           </div>
           <div className="relative">
             <svg aria-hidden="true" viewBox="0 0 100 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 h-full w-full overflow-visible">
@@ -238,7 +245,8 @@ export default function JourneyTrail() {
               <path d="M 50 0 C 50 8, 16 8, 16 17 S 84 27, 84 35 S 16 45, 16 53 S 84 63, 84 71 S 16 81, 16 89 S 50 97, 50 100" fill="none" stroke="#e879f9" strokeWidth=".6" opacity=".4" vectorEffect="non-scaling-stroke" />
             </svg>
             <ol className="relative space-y-5">
-              {missions.map((m, i) => {
+              {visibleMissions.map((m, localIndex) => {
+                const i = windowStart + localIndex;
                 const completed = m.status === "completed";
                 const next = !completed && missions.slice(0, i).every(x => x.status === "completed");
                 return <li key={m.id} className={"flex " + (i % 2 ? "justify-end" : "justify-start")}>
@@ -254,6 +262,9 @@ export default function JourneyTrail() {
                 </li>;
               })}
             </ol>
+            {missions.length > 7 && <div className="relative mt-6 flex flex-wrap justify-center gap-3">
+              <button type="button" onClick={() => setShowAllMissions(value => !value)} className="rounded-xl border border-violet-300/40 bg-violet-700/40 px-4 py-3 text-sm font-semibold text-white">{showAllMissions ? "✨ Voltar ao meu próximo passo" : "🗺️ Explorar todas as " + missions.length + " etapas"}</button>
+            </div>}
           </div>
           <div className="relative mx-auto mt-8 w-fit rounded-2xl border border-amber-300/50 bg-amber-300/15 px-6 py-4 text-center shadow-[0_0_35px_rgba(251,191,36,0.12)]">
             <span className="block text-3xl" aria-hidden="true">{finished ? "🏆" : "🏰"}</span>
