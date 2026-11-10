@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   try {
     // Rebuild the plan server-side; never trust client-submitted missions or ownership.
     draft = input.snapshotId ? undefined : createJourneyDraft({
-      title: input.title,
+      title: input.title as string,
       targetDate: input.targetDate as string | undefined,
       weeklyAvailabilityDays: input.weeklyAvailabilityDays as number | undefined,
     }, parsed);
