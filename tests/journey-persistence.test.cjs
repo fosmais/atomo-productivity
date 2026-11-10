@@ -181,3 +181,20 @@ test("four-stage journey progression changes actions without changing reviewed m
     assert.deepEqual(preview.missions, createJourneyDraft(goal, new Date("2026-11-09T18:00:00Z")).missions);
   }
 });
+
+test("replan preview preserves the active deadline and flags expired deadlines", () => {
+  const route = fs.readFileSync(path.join(__dirname, "../src/app/api/journeys/[journeyId]/replan-preview/route.ts"), "utf8");
+  assert.match(route, /journey\.target_date && journey\.target_date >= todayUtc/);
+  assert.match(route, /createJourneyDraft\(\{ title: journey\.title, targetDate \}, today\)/);
+  assert.match(route, /deadlineNeedsReview: Boolean\(journey\.target_date && !targetDate\)/);
+  assert.match(route, /remainingMissions: \(missions \?\? \[\]\)\.filter\(m => m\.status !== "completed"\)\.length/);
+  assert.match(route, /previewOnly: true/);
+  assert.doesNotMatch(route, /supabase\.from\([^)]*\)\.(?:update|delete|insert|upsert)\(/);
+});
+
+test("journey UI warns when the deadline must be reviewed", () => {
+  const ui = fs.readFileSync(path.join(__dirname, "../src/app/journey/journey-trail.tsx"), "utf8");
+  assert.match(ui, /replan\.planning\?\.deadlineNeedsReview/);
+  assert.match(ui, /Edite a data da meta/);
+  assert.match(ui, /replan\.planning\?\.targetDate/);
+});
