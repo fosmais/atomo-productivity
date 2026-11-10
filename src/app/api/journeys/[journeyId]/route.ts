@@ -35,7 +35,7 @@ async function changeJourney(request: Request, context: Context, archive: boolea
   const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (assurance.error || (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2"))
     return NextResponse.json({ error: "Verificação adicional necessária." }, { status: 403 });
-  let updates: { title?: string; target_date?: string | null; status?: string; updated_at: string } = { updated_at: new Date().toISOString() };
+  const updates: { title?: string; target_date?: string | null; status?: string; updated_at: string } = { updated_at: new Date().toISOString() };
   if (archive) {
     updates.status = "archived";
   } else {
