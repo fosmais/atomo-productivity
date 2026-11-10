@@ -63,12 +63,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "A prévia por IA aceita jornadas de até 12 semanas." }, { status: 400 });
   }
   try {
-    const draft = await generateSuggestedJourney(base);
-    const snapshotId = await storeJourneySnapshot(supabase, draft);
+    let draft;
+    try {
+      draft = await generateSuggestedJourney(base);
+    } catch (cause) {
+      console.error("[journey-ai-preview] generation_failed", { category: cause instanceof Error ? cause.name : "unknown" });
+      return NextResponse.json({ error: "Não foi possível preparar a sugestão da MIKA. Tente novamente." }, { status: 503 });
+    }
+    let snapshotId: string;
+    try {
+      snapshotId = await storeJourneySnapshot(supabase, draft);
+    } catch (cause) {
+      console.error("[journey-ai-preview] snapshot_failed", { category: cause instanceof Error ? cause.name : "unknown" });
+      return NextResponse.json({ error: "Não foi possível salvar a prévia. Tente novamente." }, { status: 503 });
+    }
     return NextResponse.json({ draft, snapshotId, saved: false, expiresInSeconds: 900 }, {
       headers: { "Cache-Control": "no-store" },
     });
-  } catch {
+  } catch (cause) {
+    console.error("[journey-ai-preview] unexpected_failure", { category: cause instanceof Error ? cause.name : "unknown" });
     return NextResponse.json({ error: "Não foi possível gerar a prévia por IA. Tente novamente." }, { status: 503 });
   }
 }
