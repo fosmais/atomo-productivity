@@ -53,18 +53,23 @@ export function createJourneyDraft(goal: JourneyGoal, today = new Date()): Journ
   const normalized = title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   let action = `Definir e executar uma ação concreta para: ${title}`;
   let review = "Registrar o resultado e escolher o próximo passo";
+  let progression: string[] | undefined;
   if (/italian|ingles|espanhol|frances|idioma|lingua|language/.test(normalized)) {
     action = "Praticar vocabulário, escuta e conversação no idioma escolhido";
     review = "Revisar o vocabulário aprendido e registrar uma conversa ou exercício";
+    progression = [action, "Praticar frases úteis e escutar diálogos curtos", "Conversar ou escrever sobre situações reais", "Revisar dificuldades e demonstrar o que aprendeu"];
   } else if (/corr|caminh|maraton|quilometr|\b5\s?km\b|\b10\s?km\b/.test(normalized)) {
     action = "Realizar um treino progressivo de caminhada ou corrida conforme seu condicionamento";
     review = "Registrar distância, duração e recuperação antes do próximo treino";
+    progression = [action, "Alternar treinos leves e recuperação respeitando os limites", "Ajustar gradualmente duração ou distância sem forçar", "Revisar evolução e planejar o próximo ciclo de treinos"];
   } else if (/economiz|poup|junt|guardar dinheiro|reserva financeira/.test(normalized)) {
     action = "Definir um valor viável para guardar e revisar despesas da semana";
     review = "Conferir o valor reservado e ajustar a meta sem comprometer gastos essenciais";
+    progression = [action, "Separar uma quantia possível e anotar gastos", "Revisar despesas e manter aportes sustentáveis", "Conferir o acumulado e recalcular o próximo período"];
   } else if (/muda|morar fora|imigra|outro pais/.test(normalized)) {
     action = "Pesquisar um requisito prático da mudança e registrar a próxima providência";
     review = "Atualizar o checklist de documentos, prazos e orçamento da mudança";
+    progression = [action, "Organizar documentos e estimar custos e prazos", "Verificar exigências oficiais e pendências prioritárias", "Revisar checklist e definir próximos passos da mudança"];
   }
   // Stages are deterministic so confirmation reconstructs the exact reviewed preview.
   const stages = [
@@ -75,10 +80,12 @@ export function createJourneyDraft(goal: JourneyGoal, today = new Date()): Journ
   ];
   const missions: JourneyMission[] = [];
   for (let week = 1; week <= weeks; week++) {
-    const stage = stages[Math.min(3, Math.floor(((week - 1) * 4) / weeks))];
+    const stageIndex = Math.min(3, Math.floor(((week - 1) * 4) / weeks));
+    const stage = stages[stageIndex];
+    const weeklyAction = progression?.[stageIndex] ?? action;
     missions.push({
       id: `week-${week}-plan`,
-      title: `Semana ${week}: ${stage}. ${action} (${days} dia(s) disponíveis)`.slice(0, 160),
+      title: `Semana ${week}: ${stage}. ${weeklyAction} (${days} dia(s) disponíveis)`.slice(0, 160),
       week,
       status: "pending",
     });
