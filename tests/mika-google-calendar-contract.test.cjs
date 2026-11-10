@@ -57,3 +57,12 @@ test("MIKA availability excludes cancelled and transparent Google events", () =>
   assert.match(api, /event\.status !== "cancelled"/);
   assert.match(api, /event\.transparency !== "transparent"/);
 });
+
+test("Idempotent Google retry is checked before MYRYRA local conflicts", () => {
+  const route = read("src/app/api/google/events/create/route.ts");
+  const lookup = route.indexOf('calendar.events.get({ calendarId: "primary", eventId })');
+  const local = route.indexOf('const { data: localEvents, error: localError }');
+  const insertion = route.indexOf("calendar.events.insert({");
+  assert.ok(lookup >= 0 && local > lookup && insertion > local,
+    "Existing event lookup must precede local conflict check and insertion");
+});
