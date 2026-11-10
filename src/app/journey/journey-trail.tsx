@@ -37,8 +37,6 @@ export default function JourneyTrail() {
   }, []);
   useEffect(() => {
     if (!selected) return;
-    setReplan(null);
-    setEditing(false);
     let alive = true;
     fetch("/api/journeys/" + encodeURIComponent(selected), { cache: "no-store" })
       .then(async r => { if (!r.ok) throw new Error("Não foi possível carregar as missões."); return r.json(); })
@@ -176,7 +174,7 @@ export default function JourneyTrail() {
         <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-sm font-semibold text-amber-200" title="Moedas virtuais de conquistas, sem valor monetário">◈ {myraBalance === null ? "MYRA · Carregando" : myraBalance + " MYRAs"}</div>
       </div>
       {journeys.length > 1 && <label className="mt-5 block text-sm text-slate-300">Escolha sua aventura
-        <select className="mt-2 w-full rounded-xl border border-violet-400/30 bg-slate-900 p-3 text-white" value={selected} onChange={e => setSelected(e.target.value)}>
+        <select className="mt-2 w-full rounded-xl border border-violet-400/30 bg-slate-900 p-3 text-white" value={selected} onChange={e => { setSelected(e.target.value); setReplan(null); setEditing(false); }}>
           {journeys.map(j => <option key={j.id} value={j.id}>{j.title}</option>)}
         </select></label>}
       {current && <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
