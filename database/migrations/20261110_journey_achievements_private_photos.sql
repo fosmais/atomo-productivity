@@ -24,12 +24,12 @@ create policy "achievement_owner_insert" on public.myryra_journey_achievements
  for insert to authenticated with check (
  owner_id=(select auth.uid()) and exists(
  select 1 from public.myryra_journeys j where j.id=journey_id
- and j.owner_id=(select auth.uid()) and j.status='completed'));
+ and j.owner_id=(select auth.uid()) and exists (select 1 from public.myryra_journey_missions m where m.journey_id=j.id) and not exists (select 1 from public.myryra_journey_missions m where m.journey_id=j.id and m.status<>'completed')));
 create policy "achievement_owner_update" on public.myryra_journey_achievements
  for update to authenticated using(owner_id=(select auth.uid()))
  with check(owner_id=(select auth.uid()) and exists(
  select 1 from public.myryra_journeys j where j.id=journey_id
- and j.owner_id=(select auth.uid()) and j.status='completed'));
+ and j.owner_id=(select auth.uid()) and exists (select 1 from public.myryra_journey_missions m where m.journey_id=j.id) and not exists (select 1 from public.myryra_journey_missions m where m.journey_id=j.id and m.status<>'completed')));
 create policy "achievement_owner_delete" on public.myryra_journey_achievements
  for delete to authenticated using(owner_id=(select auth.uid()));
 grant select,insert,update,delete on public.myryra_journey_achievements to authenticated;
