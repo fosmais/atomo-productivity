@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createJourneyDraft } from "@/lib/journey/create-journey-draft";
 import { saveConfirmedJourney } from "@/lib/journey/save-confirmed-journey";
+import { loadJourneySnapshot } from "@/lib/journey/journey-snapshot-store";
 
 export async function POST(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";
@@ -25,15 +26,17 @@ export async function POST(request: Request) {
   }
   if (typeof input.confirmationKey !== "string" ||
       !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.confirmationKey) ||
-      typeof input.title !== "string" ||
-      typeof input.plannedOn !== "string" ||
+      (input.snapshotId === undefined && typeof input.title !== "string") ||
+      (input.snapshotId !== undefined && (typeof input.snapshotId !== "string" ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.snapshotId))) ||
+      (input.snapshotId === undefined && typeof input.plannedOn !== "string") ||
       (input.targetDate !== undefined && typeof input.targetDate !== "string") ||
       (input.weeklyAvailabilityDays !== undefined && typeof input.weeklyAvailabilityDays !== "number")) {
     return NextResponse.json({ error: "Dados da jornada inválidos." }, { status: 400 });
   }
   // Preserve the exact day used to generate the draft the user reviewed.
   // Reject stale or future planning dates rather than silently changing missions.
-  const plannedOn = input.plannedOn as string;
+  const plannedOn = input.snapshotId ? new Date().toISOString().slice(0, 10) : input.plannedOn as string;
   const parsed = /^\d{4}-\d{2}-\d{2}$/.test(plannedOn) ? new Date(plannedOn + "T12:00:00Z") : new Date(NaN);
   const today = new Date();
   const todayDay = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
@@ -45,7 +48,7 @@ export async function POST(request: Request) {
   let draft;
   try {
     // Rebuild the plan server-side; never trust client-submitted missions or ownership.
-    draft = createJourneyDraft({
+    draft = input.snapshotId ? undefined : createJourneyDraft({
       title: input.title,
       targetDate: input.targetDate as string | undefined,
       weeklyAvailabilityDays: input.weeklyAvailabilityDays as number | undefined,
@@ -64,7 +67,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Verificação adicional necessária." }, { status: 403 });
   }
   try {
-    const saved = await saveConfirmedJourney(supabase, draft, true, input.confirmationKey);
+    // For AI drafts, load the exact server-side preview instead of trusting client missions.
+    const confirmedDraft = input.snapshotId
+      ? await loadJourneySnapshot(supabase, input.snapshotId as string)
+      : draft;
+    if (!confirmedDraft) throw new Error("Prévia inválida.");
+    const saved = await saveConfirmedJourney(supabase, confirmedDraft, true, input.confirmationKey);
     return NextResponse.json({ journey: saved, saved: true }, {
       status: 201,
       headers: { "Cache-Control": "no-store" },
