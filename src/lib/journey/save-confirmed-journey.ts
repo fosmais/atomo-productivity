@@ -30,54 +30,20 @@ export async function saveConfirmedJourney(
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) throw new Error("Autenticação necessária.");
 
-  const { data: journey, error: journeyError } = await supabase
-    .from("myryra_journeys")
-    .insert({ owner_id: user.id, title: draft.title, target_date: draft.targetDate ?? null, status: "active", visibility: "private", ...(confirmationKey ? { confirmation_key: confirmationKey } : {}) })
-    .select("id")
-    .single();
-  if (journeyError || !journey) {
-    if (confirmationKey && journeyError?.code === "23505") {
-      const { data: existing, error: existingError } = await supabase
-        .from("myryra_journeys")
-        .select("id,title,target_date")
-        .eq("owner_id", user.id)
-        .eq("confirmation_key", confirmationKey)
-        .maybeSingle();
-      if (!existingError && existing) {
-        if (existing.title !== draft.title || existing.target_date !== (draft.targetDate ?? null)) {
-          throw new Error("Esta confirmação já foi usada para outro objetivo.");
-        }
-        const { data: storedMissions, error: missionsReadError } = await supabase
-          .from("myryra_journey_missions")
-          .select("title")
-          .eq("journey_id", existing.id);
-        if (!missionsReadError && storedMissions && storedMissions.length === draft.missions.length) {
-          const expectedTitles = draft.missions.map((mission) => mission.title).sort();
-          const storedTitles = storedMissions.map((mission) => mission.title).sort();
-          if (expectedTitles.every((title, index) => title === storedTitles[index])) {
-            return { id: existing.id, missionCount: storedMissions.length };
-          }
-          throw new Error("Esta confirmação já foi usada para um planejamento diferente.");
-        }
-        throw new Error("Confirmação em processamento. Aguarde antes de tentar novamente.");
-      }
-    }
-    throw new Error("Não foi possível salvar a jornada.");
-  }
+  if (!confirmationKey) throw new Error("Chave de confirmação necessária.");
 
-  const { error: missionsError } = await supabase.from("myryra_journey_missions")
-    .insert(draft.missions.map((mission) => ({
-      journey_id: journey.id,
-      title: mission.title,
-      status: "pending",
-    })));
-  if (missionsError) {
-    // Best-effort cleanup; if it fails, surface the orphaned journey ID
-    // to allow reconciliation rather than silently claiming rollback.
-    const { error: cleanupError } = await supabase.from("myryra_journeys")
-      .delete().eq("id", journey.id).eq("owner_id", user.id);
-    if (cleanupError) throw new Error(`Missões não salvas; verificar jornada ${journey.id}.`);
-    throw new Error("Não foi possível salvar as missões; jornada revertida.");
+  // A single PostgreSQL RPC transaction creates the journey and all missions,
+  // or rolls everything back. SECURITY INVOKER preserves the table RLS policies.
+  const { data, error } = await supabase.rpc("myryra_confirm_journey_atomic", {
+    p_title: draft.title,
+    p_target_date: draft.targetDate ?? null,
+    p_confirmation_key: confirmationKey,
+    p_mission_titles: draft.missions.map((mission) => mission.title),
+  });
+  if (error || !Array.isArray(data) || data.length !== 1 ||
+      typeof data[0]?.journey_id !== "string" ||
+      data[0]?.mission_count !== draft.missions.length) {
+    throw new Error("Não foi possível salvar a jornada e suas missões.");
   }
-  return { id: journey.id, missionCount: draft.missions.length };
+  return { id: data[0].journey_id, missionCount: data[0].mission_count };
 }
