@@ -12,7 +12,30 @@ export default function JourneyAchievementCard({ journeyId, title, completedCoun
   const [feedback, setFeedback] = useState("");
   const [saving, setSaving] = useState(false);
   const [gallery, setGallery] = useState<{ id: string; title: string; message: string | null; photo_url: string | null }[]>([]);
+  const [shareFiles, setShareFiles] = useState<Record<string, File>>({});
   const endpoint = "/api/journeys/" + encodeURIComponent(journeyId) + "/achievements";
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    const photos = gallery.filter(item => item.photo_url);
+    void Promise.all(photos.map(async item => {
+      try {
+        const response = await fetch(item.photo_url!, { signal: controller.signal });
+        if (!response.ok) return null;
+        const blob = await response.blob();
+        const type = blob.type;
+        if (!["image/jpeg", "image/png", "image/webp"].includes(type)) return null;
+        const extension = type === "image/png" ? "png" : type === "image/webp" ? "webp" : "jpg";
+        return { id: item.id, file: new File([blob], "conquista-myryra." + extension, { type }) };
+      } catch { return null; }
+    })).then(items => {
+      if (!active) return;
+      const ready: Record<string, File> = {};
+      for (const item of items) if (item) ready[item.id] = item.file;
+      setShareFiles(ready);
+    });
+    return () => { active = false; controller.abort(); };
+  }, [gallery]);
   useEffect(() => { let alive = true; fetch(endpoint, { cache: "no-store" }).then(r => r.ok ? r.json() : null).then(data => { if (alive && Array.isArray(data?.achievements)) setGallery(data.achievements); }).catch(() => {}); return () => { alive = false; }; }, [endpoint]);
   async function removeAchievement(id: string) {
     if (!window.confirm("Excluir este registro e sua foto da galeria? Suas missões e MYRAs serão mantidas.")) return;
@@ -60,32 +83,34 @@ export default function JourneyAchievementCard({ journeyId, title, completedCoun
   async function shareSaved(item: { id: string; title: string; message: string | null; photo_url: string | null }) {
     const text = "🏆 Concluí minha jornada " + item.title + " na MYRYRA! " + completedCount + " missões realizadas. " + (item.message ?? "");
     setFeedback("");
+    const file = shareFiles[item.id];
     try {
-      // Signed Storage links expire; refresh immediately before a user-initiated share.
-      const latestResponse = await fetch(endpoint, { cache: "no-store" });
-      if (!latestResponse.ok) throw new Error("Não foi possível atualizar a galeria.");
-      const latest = await latestResponse.json();
-      const current = Array.isArray(latest.achievements) ? latest.achievements.find((entry: { id: string }) => entry.id === item.id) : null;
-      if (!current) throw new Error("Esta conquista não está mais disponível.");
-      if (current.photo_url && navigator.share) {
-        const response = await fetch(current.photo_url, { cache: "no-store" });
-        if (!response.ok) throw new Error("Não foi possível recuperar a foto privada. Atualize a galeria e tente novamente.");
-        const blob = await response.blob();
-        const type = blob.type;
-        const extension = type === "image/png" ? "png" : type === "image/webp" ? "webp" : "jpg";
-        const file = new File([blob], "conquista-myryra." + extension, { type });
-        if (navigator.canShare?.({ files: [file] })) {
-          await navigator.share({ title: "Minha conquista MYRYRA", text, files: [file] });
-          return;
-        }
-      }
-      if (navigator.share) { await navigator.share({ title: "Minha conquista MYRYRA", text }); if (current.photo_url) setFeedback("Seu dispositivo compartilhou a mensagem sem anexar a foto."); }
-      else if (navigator.clipboard) { await navigator.clipboard.writeText(text); setFeedback("Mensagem copiada para compartilhar."); }
-      else setFeedback("Compartilhamento indisponível neste dispositivo.");
+      // The file is prepared before the tap: navigator.share must retain user activation on Android.
+      if (file && navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ title: "Minha conquista MYRYRA", text, files: [file] });
+      } else if (navigator.share) {
+        await navigator.share({ title: "Minha conquista MYRYRA", text });
+        if (item.photo_url) setFeedback("Mensagem compartilhada sem foto. Use o botão Baixar foto para enviá-la separadamente.");
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        setFeedback("Mensagem copiada para compartilhar.");
+      } else setFeedback("Compartilhamento indisponível neste dispositivo.");
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") return;
       setFeedback(error instanceof Error ? error.message : "Não foi possível compartilhar.");
     }
+  }
+  function downloadPhoto(item: { id: string; title: string }) {
+    const file = shareFiles[item.id];
+    if (!file) { setFeedback("A foto ainda está carregando. Tente novamente em instantes."); return; }
+    const url = URL.createObjectURL(file);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   async function share() {
     const text = "🏆 Concluí minha jornada " + title + " na MYRYRA! " + completedCount +
@@ -128,7 +153,7 @@ export default function JourneyAchievementCard({ journeyId, title, completedCoun
         Compartilhar minha conquista
       </button>
       <p className="text-xs text-slate-400">Fotos salvas ficam privadas. O compartilhamento é sempre uma ação sua; não publicamos sua foto automaticamente.</p>
-      {gallery.length > 0 && <div className="space-y-2"><p className="text-sm font-semibold text-violet-100">Minha galeria de conquistas</p>{gallery.map(item => <div key={item.id} className="rounded-xl border border-white/10 bg-white/5 p-3">{item.photo_url && <img src={item.photo_url} alt={"Foto da conquista " + item.title} className="max-h-48 w-full rounded-lg object-contain" /> }<p className="mt-2 text-sm font-semibold">{item.title}</p>{item.message && <p className="text-xs text-slate-300">{item.message}</p>}<div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => void shareSaved(item)} className="rounded-lg border border-amber-300/50 px-3 py-2 text-xs text-amber-100">Compartilhar</button><button type="button" onClick={() => void removeAchievement(item.id)} className="rounded-lg border border-rose-300/40 px-3 py-2 text-xs text-rose-200">Excluir da galeria</button></div></div>)}</div>}
+      {gallery.length > 0 && <div className="space-y-2"><p className="text-sm font-semibold text-violet-100">Minha galeria de conquistas</p>{gallery.map(item => <div key={item.id} className="rounded-xl border border-white/10 bg-white/5 p-3">{item.photo_url && <img src={item.photo_url} alt={"Foto da conquista " + item.title} className="max-h-48 w-full rounded-lg object-contain" /> }<p className="mt-2 text-sm font-semibold">{item.title}</p>{item.message && <p className="text-xs text-slate-300">{item.message}</p>}<div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => void shareSaved(item)} className="rounded-lg border border-amber-300/50 px-3 py-2 text-xs text-amber-100">Compartilhar</button>{item.photo_url && <button type="button" onClick={() => downloadPhoto(item)} className="rounded-lg border border-violet-300/40 px-3 py-2 text-xs text-violet-100">Baixar foto</button>}<button type="button" onClick={() => void removeAchievement(item.id)} className="rounded-lg border border-rose-300/40 px-3 py-2 text-xs text-rose-200">Excluir da galeria</button></div></div>)}</div>}
       {feedback && <p role="status" className="text-xs text-amber-200">{feedback}</p>}
     </div>
   );
