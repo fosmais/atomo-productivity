@@ -62,11 +62,6 @@ export async function POST(request: NextRequest) {
     const calendar = google.calendar({ version: "v3", auth: oauth });
     // Google Calendar IDs accept only base32hex characters (0-9, a-v); avoid the letter y.
     const eventId = "mika" + createHash("sha256").update(JSON.stringify([user.id, title, start, end])).digest("hex").slice(0, 40);
-    const { data: localEvents, error: localError } = await supabase.from("events")
-      .select("starts_at, ends_at").eq("user_id", user.id).is("deleted_at", null)
-      .lt("starts_at", new Date(end).toISOString()).gt("ends_at", new Date(start).toISOString()).limit(1);
-    if (localError) throw new Error("local_availability");
-    if ((localEvents ?? []).length) return NextResponse.json({ error: "Este horário já está ocupado na MYRYRA." }, { status: 409 });
     // Idempotent retries must succeed before checking the Google overlap.
     try {
       const existing = await calendar.events.get({ calendarId: "primary", eventId });
@@ -75,6 +70,11 @@ export async function POST(request: NextRequest) {
       const status = (lookupError as { code?: number; response?: { status?: number } }).response?.status ?? (lookupError as { code?: number }).code;
       if (status !== 404) throw lookupError;
     }
+    const { data: localEvents, error: localError } = await supabase.from("events")
+      .select("starts_at, ends_at").eq("user_id", user.id).is("deleted_at", null)
+      .lt("starts_at", new Date(end).toISOString()).gt("ends_at", new Date(start).toISOString()).limit(1);
+    if (localError) throw new Error("local_availability");
+    if ((localEvents ?? []).length) return NextResponse.json({ error: "Este horário já está ocupado na MYRYRA." }, { status: 409 });
     // Check every accessible Google calendar, matching the read-only availability view.
     const calendarIds: string[] = [];
     let calendarPage: string | undefined;
