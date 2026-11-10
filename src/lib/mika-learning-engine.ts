@@ -103,3 +103,72 @@ export function proposeLessonCalendarEntry(goal: LearningGoal, lesson: Lesson): 
     requiresUserApproval: true,
   };
 }
+
+/** A lesson must teach before assessing; answers are evaluated deterministically. */
+export interface LearningExercise {
+  id: string;
+  prompt: string;
+  choices: readonly string[];
+  correctChoice: number;
+  explanation: string;
+}
+export interface InteractiveLearningLesson {
+  lessonId: string;
+  introduction: string;
+  explanation: string;
+  workedExample: string;
+  exercises: readonly LearningExercise[];
+}
+export interface ExerciseAnswer {
+  exerciseId: string;
+  choice: number;
+}
+export interface LearningAssessment {
+  score: number;
+  correct: number;
+  total: number;
+  passed: boolean;
+  feedback: Array<{ exerciseId: string; correct: boolean; explanation: string }>;
+}
+export function validateInteractiveLesson(lesson: InteractiveLearningLesson): InteractiveLearningLesson {
+  if (!lesson.lessonId.trim() || !lesson.introduction.trim() || !lesson.explanation.trim() || !lesson.workedExample.trim())
+    throw new Error("Learning lesson requires an introduction, explanation and worked example");
+  if (!lesson.exercises.length || lesson.exercises.length > 20)
+    throw new Error("Learning lesson must contain 1 to 20 exercises");
+  const ids = new Set<string>();
+  for (const exercise of lesson.exercises) {
+    if (!exercise.id.trim() || ids.has(exercise.id) || !exercise.prompt.trim() || !exercise.explanation.trim())
+      throw new Error("Invalid or duplicate exercise");
+    if (exercise.choices.length < 2 || exercise.choices.length > 6 || exercise.choices.some(choice => !choice.trim()))
+      throw new Error("Each exercise must have 2 to 6 nonempty choices");
+    if (!Number.isInteger(exercise.correctChoice) || exercise.correctChoice < 0 || exercise.correctChoice >= exercise.choices.length)
+      throw new Error("Invalid exercise answer key");
+    ids.add(exercise.id);
+  }
+  return lesson;
+}
+export function assessInteractiveLesson(
+  lesson: InteractiveLearningLesson,
+  answers: readonly ExerciseAnswer[],
+  passThreshold = 70
+): LearningAssessment {
+  validateInteractiveLesson(lesson);
+  if (!Number.isFinite(passThreshold) || passThreshold < 0 || passThreshold > 100)
+    throw new Error("Invalid pass threshold");
+  const answerMap = new Map<string, number>();
+  const exerciseIds = new Set(lesson.exercises.map(exercise => exercise.id));
+  for (const answer of answers) {
+    if (!exerciseIds.has(answer.exerciseId) || answerMap.has(answer.exerciseId) || !Number.isInteger(answer.choice))
+      throw new Error("Unknown, duplicate or invalid exercise answer");
+    answerMap.set(answer.exerciseId, answer.choice);
+  }
+  if (answerMap.size !== lesson.exercises.length) throw new Error("All exercises must be answered");
+  const feedback = lesson.exercises.map(exercise => ({
+    exerciseId: exercise.id,
+    correct: answerMap.get(exercise.id) === exercise.correctChoice,
+    explanation: exercise.explanation,
+  }));
+  const correct = feedback.filter(item => item.correct).length;
+  const score = Math.round((correct / lesson.exercises.length) * 100);
+  return { score, correct, total: lesson.exercises.length, passed: score >= passThreshold, feedback };
+}
