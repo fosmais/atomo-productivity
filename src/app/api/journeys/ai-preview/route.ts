@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Verificação adicional necessária." }, { status: 403 });
   }
   try {
-    const limit = await checkConciergeRateLimit(user.id);
+    const limit = await checkConciergeRateLimit(`journey-ai:${user.id}`);
     if (!limit.allowed) {
       return NextResponse.json({ error: "Limite de requisições atingido." }, {
         status: 429,
