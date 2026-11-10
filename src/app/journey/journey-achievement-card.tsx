@@ -57,7 +57,7 @@ export default function JourneyAchievementCard({ journeyId, title, completedCoun
     }
     setPhoto(file);
   }
-  async function shareSaved(item: { title: string; message: string | null; photo_url: string | null }) {
+  async function shareSaved(item: { id: string; title: string; message: string | null; photo_url: string | null }) {
     const text = "🏆 Concluí minha jornada " + item.title + " na MYRYRA! " + completedCount + " missões realizadas. " + (item.message ?? "");
     setFeedback("");
     try {
