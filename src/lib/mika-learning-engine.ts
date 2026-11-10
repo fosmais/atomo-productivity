@@ -198,3 +198,43 @@ export function applyLearningAssessment(
     score: assessment.score,
   };
 }
+
+/**
+ * Build an actionable next step from a server-graded attempt.
+ * Only a trusted server assessment should be passed here; never use a
+ * client-provided score to unlock a lesson or issue MYRA rewards.
+ */
+export interface LearningNextStep {
+  action: "retry" | "advance";
+  message: string;
+  reviewExerciseIds: string[];
+  suggestedReviewMinutes: number;
+}
+export function planLearningNextStep(assessment: LearningAssessment): LearningNextStep {
+  if (!Number.isInteger(assessment.total) || assessment.total < 1
+      || !Number.isInteger(assessment.correct) || assessment.correct < 0
+      || assessment.correct > assessment.total
+      || !Number.isInteger(assessment.score)
+      || assessment.score !== Math.round(assessment.correct / assessment.total * 100)
+      || assessment.feedback.length !== assessment.total
+      || assessment.feedback.filter(item => item.correct).length !== assessment.correct
+      || new Set(assessment.feedback.map(item => item.exerciseId)).size !== assessment.total
+      || assessment.feedback.some(item => !item.exerciseId.trim() || !item.explanation.trim()))
+    throw new Error("Invalid learning assessment");
+  const reviewExerciseIds = assessment.feedback.filter(item => !item.correct).map(item => item.exerciseId);
+  if (!assessment.passed)
+    return {
+      action: "retry",
+      message: "Vamos revisar os conceitos das questões que precisam de reforço antes de tentar novamente.",
+      reviewExerciseIds,
+      suggestedReviewMinutes: Math.min(40, Math.max(10, reviewExerciseIds.length * 10)),
+    };
+  return {
+    action: "advance",
+    message: reviewExerciseIds.length
+      ? "Você concluiu a avaliação. Revise os pontos indicados antes da próxima aula."
+      : "Você concluiu a avaliação. Vamos avançar para o próximo desafio.",
+    reviewExerciseIds,
+    suggestedReviewMinutes: reviewExerciseIds.length ? 10 : 0,
+  };
+}
