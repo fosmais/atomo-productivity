@@ -15,6 +15,7 @@ declare
   v_journey public.myryra_journeys%rowtype;
   v_completed integer;
   v_removed integer;
+  v_preserved_linked integer;
   v_title text;
   v_clean text[] := array[]::text[];
 begin
@@ -42,7 +43,14 @@ begin
     where journey_id = p_journey_id for update;
   select count(*) into v_completed from public.myryra_journey_missions
     where journey_id = p_journey_id and status = 'completed';
-  if v_completed + array_length(p_mission_titles, 1) > 104 then
+  select count(*) into v_preserved_linked
+  from public.myryra_journey_missions m
+  where m.journey_id = p_journey_id and m.status = 'pending'
+    and (
+      exists (select 1 from public.myryra_journey_myra_ledger l where l.mission_id = m.id)
+      or exists (select 1 from public.myryra_journey_task_links t where t.mission_id = m.id)
+    );
+  if v_completed + v_preserved_linked + array_length(p_mission_titles, 1) > 104 then
     raise exception 'Too many missions' using errcode = '22023';
   end if;
 
@@ -53,31 +61,27 @@ begin
     v_title := btrim(v_title);
     if exists (select 1 from unnest(v_clean) as t(title) where lower(t.title) = lower(v_title))
       or exists (
-        select 1 from public.myryra_journey_missions
-        where journey_id = p_journey_id and status = 'completed'
-          and lower(btrim(title)) = lower(v_title)
+        select 1 from public.myryra_journey_missions m
+        where m.journey_id = p_journey_id
+          and lower(btrim(m.title)) = lower(v_title)
+          and (m.status = 'completed' or (
+            m.status = 'pending' and (
+              exists (select 1 from public.myryra_journey_myra_ledger l where l.mission_id = m.id)
+              or exists (select 1 from public.myryra_journey_task_links t where t.mission_id = m.id)
+            )
+          ))
       ) then
       raise exception 'Duplicate or completed mission' using errcode = '22023';
     end if;
     v_clean := array_append(v_clean, v_title);
   end loop;
 
-  -- Pending missions may be referenced by the MYRA ledger or task links.
-  -- Their foreign keys use ON DELETE CASCADE; refuse to erase linked records.
-  if exists (
-    select 1 from public.myryra_journey_missions m
+  -- Keep pending missions linked to tasks or MYRA records; remove only
+  -- unlinked pending missions. Never cascade-delete user history.
+  delete from public.myryra_journey_missions m
     where m.journey_id = p_journey_id and m.status = 'pending'
-      and (
-        exists (select 1 from public.myryra_journey_myra_ledger l where l.mission_id = m.id)
-        or exists (select 1 from public.myryra_journey_task_links t where t.mission_id = m.id)
-      )
-  ) then
-    raise exception 'Linked pending missions must be resolved before replanning'
-      using errcode = '23503';
-  end if;
-
-  delete from public.myryra_journey_missions
-    where journey_id = p_journey_id and status = 'pending';
+      and not exists (select 1 from public.myryra_journey_myra_ledger l where l.mission_id = m.id)
+      and not exists (select 1 from public.myryra_journey_task_links t where t.mission_id = m.id);
   get diagnostics v_removed = row_count;
   insert into public.myryra_journey_missions (journey_id, title, status)
     select p_journey_id, title, 'pending' from unnest(v_clean) as title;
@@ -90,6 +94,7 @@ begin
     'journeyId', p_journey_id,
     'preservedCompleted', v_completed,
     'replacedPending', v_removed,
+    'preservedLinkedPending', v_preserved_linked,
     'newPending', array_length(v_clean, 1)
   );
 end;
