@@ -33,6 +33,8 @@ export default function JourneyTrail() {
   const [reviewDueDates, setReviewDueDates] = useState<Record<string, string>>({});
   const [savedReviewTasks, setSavedReviewTasks] = useState<Record<string, boolean>>({});
   const [reviewSteps, setReviewSteps] = useState<Record<string, boolean[]>>({});
+  const [reviewSaveBusy, setReviewSaveBusy] = useState<string | null>(null);
+  const [reviewStatus, setReviewStatus] = useState<Record<string, string>>({});
   const [savingExercise, setSavingExercise] = useState<string | null>(null);
   const [exerciseMessage, setExerciseMessage] = useState<Record<string, string>>({});
   const [replan, setReplan] = useState<{ previewOnly: boolean; revision: string; preserved: { completed: { id: string; title: string }[]; existingMissionCount: number }; proposed: { title: string; week: number }[]; planning?: { targetDate: string | null; originalTargetDate: string | null; deadlineNeedsReview: boolean; remainingMissions: number } } | null>(null);
@@ -156,6 +158,46 @@ export default function JourneyTrail() {
       }).catch(() => { if (active) setExerciseMessage({ history: "Não foi possível carregar o histórico desta jornada." }); });
     return () => { active = false; };
   }, [selected]);
+  useEffect(() => {
+    if (!selected) return;
+    let active = true;
+    setReviewSteps({});
+    setReviewStatus({});
+    fetch("/api/journeys/review-steps?journeyId=" + encodeURIComponent(selected), { cache: "no-store" })
+      .then(async response => {
+        if (!response.ok) throw new Error("O progresso da revisão não pôde ser carregado.");
+        return response.json();
+      }).then(payload => {
+        if (!active || !Array.isArray(payload.entries)) return;
+        const restored: Record<string, boolean[]> = {};
+        for (const entry of payload.entries) {
+          if (typeof entry.mission_id === "string" && Array.isArray(entry.steps) &&
+              entry.steps.length === 3 && entry.steps.every((step: unknown) => typeof step === "boolean"))
+            restored[entry.mission_id] = entry.steps;
+        }
+        setReviewSteps(restored);
+      }).catch(() => {
+        if (active) setReviewStatus({ history: "Progresso não carregado. Suas novas marcações ainda não foram salvas." });
+      });
+    return () => { active = false; };
+  }, [selected]);
+  async function saveReviewSteps(missionId: string) {
+    if (!selected || reviewSaveBusy) return;
+    const journeyId = selected;
+    const steps = reviewSteps[missionId] ?? [false, false, false];
+    setReviewSaveBusy(missionId);
+    setReviewStatus(old => ({ ...old, [missionId]: "Salvando revisão..." }));
+    try {
+      const response = await fetch("/api/journeys/review-steps", {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ journeyId, missionId, steps }),
+      });
+      if (!response.ok) throw new Error("Não foi possível salvar. Tente novamente.");
+      setReviewStatus(old => ({ ...old, [missionId]: "Etapas salvas na sua jornada." }));
+    } catch {
+      setReviewStatus(old => ({ ...old, [missionId]: "Falha ao salvar. Suas marcações permanecem nesta sessão." }));
+    } finally { setReviewSaveBusy(null); }
+  }
   async function saveExercise(mission: Mission) {
     if (!selected || savingExercise) return;
     setSavingExercise(mission.id);
@@ -423,11 +465,12 @@ export default function JourneyTrail() {
                         <div className="mt-3 space-y-2" aria-label="Acompanhar revisão desta missão">
                           {["Retome a habilidade a reforçar (5 min)", "Resolva o novo exercício (10 min)", "Confira e registre dúvidas (5 min)"].map((step, index) => (
                             <label key={index} className="flex cursor-pointer items-start gap-2 text-amber-50">
-                              <input type="checkbox" className="mt-0.5 accent-amber-400" checked={reviewSteps[m.id]?.[index] ?? false} onChange={event => setReviewSteps(old => ({ ...old, [m.id]: Array.from({ length: 3 }, (_, i) => i === index ? event.target.checked : (old[m.id]?.[i] ?? false)) }))} />
+                              <input type="checkbox" className="mt-0.5 accent-amber-400" checked={reviewSteps[m.id]?.[index] ?? false} onChange={event => { setReviewSteps(old => ({ ...old, [m.id]: Array.from({ length: 3 }, (_, i) => i === index ? event.target.checked : (old[m.id]?.[i] ?? false)) })); setReviewStatus(old => ({ ...old, [m.id]: "Alterações não salvas." })); }} />
                               <span>{step}</span>
                             </label>
                           ))}
-                          <p role="status" className="text-amber-100">{(reviewSteps[m.id] ?? []).filter(Boolean).length} de 3 etapas concluídas nesta sessão. O acompanhamento ainda não é salvo na conta.</p>
+                          <p role="status" className="text-amber-100">{(reviewSteps[m.id] ?? []).filter(Boolean).length} de 3 etapas concluídas. {reviewStatus[m.id] ?? "Salve para retomar depois."}</p>
+                          <button type="button" disabled={reviewSaveBusy !== null} onClick={() => void saveReviewSteps(m.id)} className="rounded-lg border border-amber-200/50 px-3 py-2 font-semibold text-amber-100 disabled:opacity-40">{reviewSaveBusy === m.id ? "Salvando..." : "Salvar progresso da revisão"}</button>
                         </div>
                         <button type="button" onClick={() => {
                           const proposal = "Revisão MIKA · " + lesson.heading + "\\nDuração sugerida: 20 minutos\\nObjetivo: aplicar o feedback e refazer o exercício.\\n\\n" + aiFeedback[m.id];
