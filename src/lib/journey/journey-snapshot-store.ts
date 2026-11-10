@@ -1,5 +1,12 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { JourneyDraft } from "./create-journey-draft";
+
+function signature(ownerId: string, draft: JourneyDraft, expiresAt: string): string {
+  const key = process.env.JOURNEY_SNAPSHOT_SIGNING_KEY;
+  if (!key || Buffer.byteLength(key, "utf8") < 32) throw new Error("Assinatura não configurada.");
+  return createHmac("sha256", key).update(JSON.stringify({ ownerId, draft, expiresAt })).digest("hex");
+}
 
 const MAX_AGE_MS = 15 * 60 * 1000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -22,7 +29,7 @@ export async function storeJourneySnapshot(
   }
   const expiresAt = new Date(Date.now() + MAX_AGE_MS).toISOString();
   const { data, error } = await supabase.from("myryra_journey_draft_snapshots")
-    .insert({ owner_id: user.id, draft, expires_at: expiresAt })
+    .insert({ owner_id: user.id, draft, expires_at: expiresAt, signature: signature(user.id, draft, expiresAt) })
     .select("id").single();
   if (error || typeof data?.id !== "string" || !UUID.test(data.id)) {
     throw new Error("Não foi possível proteger a prévia.");
@@ -38,7 +45,7 @@ export async function loadJourneySnapshot(
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) throw new Error("Autenticação necessária.");
   const { data, error } = await supabase.from("myryra_journey_draft_snapshots")
-    .select("draft,expires_at")
+    .select("draft,expires_at,signature")
     .eq("id", snapshotId).eq("owner_id", user.id).maybeSingle();
   if (error || !data || typeof data.expires_at !== "string" ||
       !Number.isFinite(Date.parse(data.expires_at)) ||
@@ -58,5 +65,11 @@ export async function loadJourneySnapshot(
         m.title.length > 160 || m.status !== "pending")) {
     throw new Error("Prévia inválida.");
   }
+  if (typeof data.signature !== "string" || !/^[0-9a-f]{64}$/.test(data.signature)) {
+    throw new Error("Assinatura inválida.");
+  }
+  const expected = Buffer.from(signature(user.id, value as JourneyDraft, data.expires_at), "hex");
+  const actual = Buffer.from(data.signature, "hex");
+  if (!timingSafeEqual(expected, actual)) throw new Error("Origem da prévia não verificada.");
   return value as JourneyDraft;
 }
