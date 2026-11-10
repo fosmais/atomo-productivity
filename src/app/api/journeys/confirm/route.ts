@@ -23,7 +23,9 @@ export async function POST(request: Request) {
   if (input.confirmed !== true) {
     return NextResponse.json({ error: "Confirmação explícita necessária." }, { status: 400 });
   }
-  if (typeof input.title !== "string" ||
+  if (typeof input.confirmationKey !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.confirmationKey) ||
+      typeof input.title !== "string" ||
       (input.targetDate !== undefined && typeof input.targetDate !== "string") ||
       (input.weeklyAvailabilityDays !== undefined && typeof input.weeklyAvailabilityDays !== "number")) {
     return NextResponse.json({ error: "Dados da jornada inválidos." }, { status: 400 });
@@ -50,7 +52,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Verificação adicional necessária." }, { status: 403 });
   }
   try {
-    const saved = await saveConfirmedJourney(supabase, draft, true);
+    const saved = await saveConfirmedJourney(supabase, draft, true, input.confirmationKey);
     return NextResponse.json({ journey: saved, saved: true }, {
       status: 201,
       headers: { "Cache-Control": "no-store" },
