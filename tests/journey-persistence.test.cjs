@@ -105,3 +105,32 @@ test("two simultaneous confirmations forward the same idempotency key", async ()
   assert.ok(calls.every((call) => call.name === "myryra_confirm_journey_atomic"));
   assert.ok(calls.every((call) => call.params.p_confirmation_key === key));
 });
+
+const draftFilename = path.join(__dirname, "../src/lib/journey/create-journey-draft.ts");
+const draftCompiled = ts.transpileModule(fs.readFileSync(draftFilename, "utf8"), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText;
+const draftModule = new Module(draftFilename, module);
+draftModule.filename = draftFilename;
+draftModule.paths = module.paths;
+draftModule._compile(draftCompiled, draftFilename);
+const { createJourneyDraft } = draftModule.exports;
+
+test("journey preview records the original planning day", () => {
+  const planned = createJourneyDraft(
+    { title: "Aprender italiano", targetDate: "2027-01-31" },
+    new Date("2026-11-09T12:00:00Z"),
+  );
+  assert.equal(planned.plannedOn, "2026-11-09");
+  assert.equal(planned.weeks, 12);
+});
+
+test("rebuilding the confirmed journey on its original day preserves missions", () => {
+  const goal = { title: "Aprender italiano", targetDate: "2027-01-31", weeklyAvailabilityDays: 3 };
+  const reviewed = createJourneyDraft(goal, new Date("2026-11-09T12:00:00Z"));
+  const confirmedNextDay = createJourneyDraft(goal, new Date(reviewed.plannedOn + "T12:00:00Z"));
+  const recomputedNextDay = createJourneyDraft(goal, new Date("2026-11-10T12:00:00Z"));
+  assert.deepEqual(confirmedNextDay.missions, reviewed.missions);
+  assert.equal(confirmedNextDay.weeks, reviewed.weeks);
+  assert.equal(recomputedNextDay.plannedOn, "2026-11-10");
+});
