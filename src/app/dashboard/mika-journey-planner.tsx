@@ -11,6 +11,7 @@ export default function MikaJourneyPlanner() {
   const [draft, setDraft] = useState<JourneyDraft | null>(null);
   const [busy, setBusy] = useState(false);
   const submittingRef = useRef(false);
+  const confirmationKeyRef = useRef<string | null>(null);
   const [message, setMessage] = useState("");
   const [saved, setSaved] = useState(false);
   const [journeys, setJourneys] = useState<SavedJourneySummary[]>([]);
@@ -92,6 +93,7 @@ export default function MikaJourneyPlanner() {
     submittingRef.current = true;
     setBusy(true);
     setMessage("");
+    if (confirm && !confirmationKeyRef.current) confirmationKeyRef.current = crypto.randomUUID();
     try {
       const response = await fetch(confirm ? "/api/journeys/confirm" : "/api/journeys/draft", {
         method: "POST",
@@ -99,7 +101,7 @@ export default function MikaJourneyPlanner() {
         body: JSON.stringify({
           title, ...(targetDate ? { targetDate } : {}),
           weeklyAvailabilityDays: days,
-          ...(confirm ? { confirmed: true } : {}),
+          ...(confirm ? { confirmed: true, confirmationKey: confirmationKeyRef.current } : {}),
         }),
       });
       const payload = await response.json();
@@ -121,6 +123,7 @@ export default function MikaJourneyPlanner() {
   }
 
   function resetDraft() {
+    confirmationKeyRef.current = null;
     setDraft(null);
     setSaved(false);
     setMessage("");
