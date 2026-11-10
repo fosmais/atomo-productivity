@@ -31,6 +31,7 @@ export default function JourneyTrail() {
   const [feedbackBusy, setFeedbackBusy] = useState<string | null>(null);
   const [proposedReview, setProposedReview] = useState<string | null>(null);
   const [reviewDueDates, setReviewDueDates] = useState<Record<string, string>>({});
+  const [savedReviewTasks, setSavedReviewTasks] = useState<Record<string, boolean>>({});
   const [savingExercise, setSavingExercise] = useState<string | null>(null);
   const [exerciseMessage, setExerciseMessage] = useState<Record<string, string>>({});
   const [replan, setReplan] = useState<{ previewOnly: boolean; revision: string; preserved: { completed: { id: string; title: string }[]; existingMissionCount: number }; proposed: { title: string; week: number }[]; planning?: { targetDate: string | null; originalTargetDate: string | null; deadlineNeedsReview: boolean; remainingMissions: number } } | null>(null);
@@ -404,9 +405,10 @@ export default function JourneyTrail() {
                         <MikaReviewCalendar key={m.id} title={"Revisão MIKA: " + lesson.heading} />
                         {proposedReview === m.id && <div className="mt-3 space-y-2">
                           <label htmlFor={"review-date-" + m.id} className="block font-semibold text-emerald-100">Data desejada para a revisão (opcional)</label>
-                          <input id={"review-date-" + m.id} type="date" min={new Date().toLocaleDateString("en-CA")} value={reviewDueDates[m.id] ?? ""} onChange={event => setReviewDueDates(old => ({ ...old, [m.id]: event.target.value }))} className="rounded-lg border border-slate-500 bg-slate-900 p-2 text-white" />
+                          <input id={"review-date-" + m.id} type="date" disabled={savedReviewTasks[m.id] === true} min={(() => { const d = new Date(); return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, "0"), String(d.getDate()).padStart(2, "0")].join("-"); })()} value={reviewDueDates[m.id] ?? ""} onChange={event => setReviewDueDates(old => ({ ...old, [m.id]: event.target.value }))} className="rounded-lg border border-slate-500 bg-slate-900 p-2 text-white" />
                           <p className="text-slate-200">A tarefa será criada apenas após sua confirmação. O horário e a duração de 20 minutos ainda não são reservados no calendário.</p>
-                          <TaskConfirmation key={m.id + ":" + (reviewDueDates[m.id] ?? "")} task={{ title: ("Revisar com MIKA: " + lesson.heading).slice(0, 140), priority: "Média", dueDate: reviewDueDates[m.id] || null, completed: false }} onSaved={() => setExerciseMessage(old => ({ ...old, [m.id]: "Tarefa de revisão adicionada às tarefas da MYRYRA." }))} />
+                          {!savedReviewTasks[m.id] && <TaskConfirmation key={m.id + ":" + (reviewDueDates[m.id] ?? "")} task={{ title: ("Revisar com MIKA: " + lesson.heading).slice(0, 140), priority: "Média", dueDate: reviewDueDates[m.id] || null, completed: false }} onSaved={() => { setSavedReviewTasks(old => ({ ...old, [m.id]: true })); setExerciseMessage(old => ({ ...old, [m.id]: "Tarefa de revisão adicionada às tarefas da MYRYRA." })); }} />}
+                          {savedReviewTasks[m.id] && <p role="status" className="text-emerald-100">Tarefa de revisão criada. Para evitar duplicidade, esta confirmação foi encerrada.</p>}
                         </div>}
                       </div>
                     </div>}
