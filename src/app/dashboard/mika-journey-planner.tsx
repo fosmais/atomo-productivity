@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 type SavedJourneySummary = { id: string; title: string; status: string; target_date: string | null };
 import type { JourneyDraft } from "@/lib/journey/create-journey-draft";
 
@@ -10,6 +10,7 @@ export default function MikaJourneyPlanner() {
   const [days, setDays] = useState(3);
   const [draft, setDraft] = useState<JourneyDraft | null>(null);
   const [busy, setBusy] = useState(false);
+  const submittingRef = useRef(false);
   const [message, setMessage] = useState("");
   const [saved, setSaved] = useState(false);
   const [journeys, setJourneys] = useState<SavedJourneySummary[]>([]);
@@ -87,6 +88,8 @@ export default function MikaJourneyPlanner() {
 
 
   async function submit(confirm: boolean) {
+    if (submittingRef.current || (confirm && saved)) return;
+    submittingRef.current = true;
     setBusy(true);
     setMessage("");
     try {
@@ -112,6 +115,7 @@ export default function MikaJourneyPlanner() {
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Ocorreu um erro.");
     } finally {
+      submittingRef.current = false;
       setBusy(false);
     }
   }
