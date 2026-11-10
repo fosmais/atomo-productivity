@@ -14,7 +14,11 @@ export async function saveConfirmedJourney(
 ): Promise<SavedJourney> {
   if (!confirmed) throw new Error("Confirme a jornada antes de salvar.");
   if (!draft.requiresUserConfirmation || !draft.title.trim() ||
-      draft.title.length > 120 || draft.missions.length < 1 ||
+      draft.title.length > 120 ||
+      (draft.targetDate !== undefined && (!/^\d{4}-\d{2}-\d{2}$/.test(draft.targetDate) ||
+        Number.isNaN(Date.parse(draft.targetDate + "T12:00:00Z")) ||
+        new Date(draft.targetDate + "T12:00:00Z").toISOString().slice(0, 10) !== draft.targetDate)) ||
+      draft.missions.length < 1 ||
       draft.missions.length > 104 ||
       draft.missions.some((m) => !m.title.trim() || m.title.length > 160 || m.status !== "pending")) {
     throw new Error("Rascunho de jornada inválido.");
@@ -24,7 +28,7 @@ export async function saveConfirmedJourney(
 
   const { data: journey, error: journeyError } = await supabase
     .from("myryra_journeys")
-    .insert({ owner_id: user.id, title: draft.title, status: "active", visibility: "private" })
+    .insert({ owner_id: user.id, title: draft.title, target_date: draft.targetDate ?? null, status: "active", visibility: "private" })
     .select("id")
     .single();
   if (journeyError || !journey) throw new Error("Não foi possível salvar a jornada.");
