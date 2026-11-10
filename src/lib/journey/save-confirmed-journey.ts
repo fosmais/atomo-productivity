@@ -47,12 +47,17 @@ export async function saveConfirmedJourney(
         if (existing.title !== draft.title || existing.target_date !== (draft.targetDate ?? null)) {
           throw new Error("Esta confirmação já foi usada para outro objetivo.");
         }
-        const { count, error: countError } = await supabase
+        const { data: storedMissions, error: missionsReadError } = await supabase
           .from("myryra_journey_missions")
-          .select("id", { count: "exact", head: true })
+          .select("title")
           .eq("journey_id", existing.id);
-        if (!countError && count === draft.missions.length) {
-          return { id: existing.id, missionCount: count };
+        if (!missionsReadError && storedMissions && storedMissions.length === draft.missions.length) {
+          const expectedTitles = draft.missions.map((mission) => mission.title).sort();
+          const storedTitles = storedMissions.map((mission) => mission.title).sort();
+          if (expectedTitles.every((title, index) => title === storedTitles[index])) {
+            return { id: existing.id, missionCount: storedMissions.length };
+          }
+          throw new Error("Esta confirmação já foi usada para um planejamento diferente.");
         }
         throw new Error("Confirmação em processamento. Aguarde antes de tentar novamente.");
       }
