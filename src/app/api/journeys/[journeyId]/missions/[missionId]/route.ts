@@ -39,6 +39,14 @@ export async function PATCH(request: Request, context: Context) {
   if (journeyError) return NextResponse.json({ error: "Falha ao verificar jornada." }, { status: 500 });
   if (!journey) return NextResponse.json({ error: "Jornada não encontrada." }, { status: 404 });
 
+  // Verify the mission belongs to this authenticated user's journey before any ledger lookup or mutation.
+  const { data: existingMission, error: missionLookupError } = await supabase.from("myryra_journey_missions")
+    .select("id,status").eq("id", missionId).eq("journey_id", journeyId).maybeSingle();
+  if (missionLookupError) return NextResponse.json({ error: "Falha ao verificar missão." }, { status: 500 });
+  if (!existingMission) return NextResponse.json({ error: "Missão não encontrada." }, { status: 404 });
+  if (existingMission.status === status)
+    return NextResponse.json({ mission: existingMission, myraAwarded: false }, { headers: { "Cache-Control": "private, no-store" } });
+
   const { data: existingCredit, error: creditLookupError } = status === "completed"
     ? await supabase.from("myryra_journey_myra_ledger").select("mission_id").eq("owner_id", user.id).eq("mission_id", missionId).maybeSingle()
     : { data: null, error: null };
