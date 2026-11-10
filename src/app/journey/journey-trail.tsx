@@ -11,6 +11,7 @@ export default function JourneyTrail() {
   const [missions, setMissions] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
+  const [celebratedMission, setCelebratedMission] = useState<string | null>(null);
   const [error, setError] = useState("");
   useEffect(() => {
     let alive = true;
@@ -29,6 +30,7 @@ export default function JourneyTrail() {
   useEffect(() => {
     if (!selected) return;
     let alive = true;
+    setCelebratedMission(null);
     fetch("/api/journeys/" + encodeURIComponent(selected), { cache: "no-store" })
       .then(async r => { if (!r.ok) throw new Error("Não foi possível carregar as missões."); return r.json(); })
       .then(data => { if (alive) setMissions(Array.isArray(data.missions) ? data.missions : []); })
@@ -48,6 +50,8 @@ export default function JourneyTrail() {
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || "Não foi possível atualizar a missão.");
       setMissions(old => old.map(m => m.id === mission.id ? { ...m, status: data.mission.status } : m));
+      if (data.mission.status === "completed") setCelebratedMission(mission.id);
+      else setCelebratedMission(null);
     } catch (e) { setError(e instanceof Error ? e.message : "Falha ao atualizar."); }
     finally { setBusy(""); }
   }
@@ -89,6 +93,7 @@ export default function JourneyTrail() {
         <div className="mt-4 flex items-center justify-between text-sm"><span>{done} de {missions.length} missões</span><strong>{percent}%</strong></div>
         <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-700" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label="Progresso da jornada"><div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-400 transition-all duration-500" style={{ width: percent + "%" }} /></div>
       </div>}
+      {celebratedMission && !finished && <div role="status" className="mt-5 rounded-2xl border border-amber-300/50 bg-gradient-to-r from-violet-900/90 to-fuchsia-900/80 p-4 text-center shadow-[0_0_35px_rgba(232,121,249,0.2)]"><span aria-hidden="true" className="block text-4xl motion-safe:animate-bounce">🌟</span><p className="mt-2 text-lg font-bold text-amber-200">Missão conquistada!</p><p className="mt-1 text-sm text-violet-100">A MIKA está celebrando seu progresso. Continue avançando pelo mapa!</p><button type="button" onClick={() => setCelebratedMission(null)} className="mt-3 rounded-xl border border-white/30 px-4 py-2 text-xs font-semibold text-white">Continuar minha aventura</button></div>}
       {current && finished && !loading && (
         <div role="status" aria-label="Jornada concluída" className="relative mt-6 overflow-hidden rounded-3xl border border-amber-300/50 bg-gradient-to-br from-amber-500/25 via-fuchsia-700/25 to-violet-900/80 p-6 text-center shadow-[0_0_60px_rgba(217,70,239,0.18)] sm:p-9">
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-50" style={{ backgroundImage: "radial-gradient(circle at 20% 20%, #fbbf24 1px, transparent 2px), radial-gradient(circle at 80% 60%, #e879f9 1px, transparent 2px)", backgroundSize: "37px 43px, 53px 61px" }} />
