@@ -26,9 +26,21 @@ export async function POST(request: Request) {
   if (typeof input.confirmationKey !== "string" ||
       !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.confirmationKey) ||
       typeof input.title !== "string" ||
+      typeof input.plannedOn !== "string" ||
       (input.targetDate !== undefined && typeof input.targetDate !== "string") ||
       (input.weeklyAvailabilityDays !== undefined && typeof input.weeklyAvailabilityDays !== "number")) {
     return NextResponse.json({ error: "Dados da jornada inválidos." }, { status: 400 });
+  }
+  // Preserve the exact day used to generate the draft the user reviewed.
+  // Reject stale or future planning dates rather than silently changing missions.
+  const plannedOn = input.plannedOn as string;
+  const parsed = /^\d{4}-\d{2}-\d{2}$/.test(plannedOn) ? new Date(plannedOn + "T12:00:00Z") : new Date(NaN);
+  const today = new Date();
+  const todayDay = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  const plannedDay = Date.parse(plannedOn + "T00:00:00Z");
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== plannedOn ||
+      !Number.isFinite(plannedDay) || plannedDay > todayDay || todayDay - plannedDay > 7 * 86400000) {
+    return NextResponse.json({ error: "Prévia expirada ou inválida. Gere uma nova prévia." }, { status: 400 });
   }
   let draft;
   try {
@@ -37,7 +49,7 @@ export async function POST(request: Request) {
       title: input.title,
       targetDate: input.targetDate as string | undefined,
       weeklyAvailabilityDays: input.weeklyAvailabilityDays as number | undefined,
-    });
+    }, parsed);
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Objetivo inválido." }, { status: 400 });
   }
