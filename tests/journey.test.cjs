@@ -49,3 +49,14 @@ test("generated mission titles respect database length limit", () => {
   const draft = createJourneyDraft({ title: "x".repeat(120) }, today);
   assert.ok(draft.missions.every((m) => m.title.length <= 160));
 });
+
+test("travel goals generate specific and progressive milestones", () => {
+  const draft = createJourneyDraft({ title: "Viagem para Itália", targetDate: "2027-04-30", weeklyAvailabilityDays: 3 }, today);
+  assert.equal(draft.weeks, 25);
+  assert.equal(draft.missions.length, 50);
+  assert.match(draft.missions[0].title, /Escolher as cidades/);
+  assert.ok(draft.missions.some((m) => /passaporte|documentos/.test(m.title)));
+  assert.ok(draft.missions.some((m) => /orçamento|passagens/.test(m.title)));
+  assert.ok(draft.missions.every((m) => !/Definir e executar uma ação concreta|Registrar o resultado e escolher o próximo passo/.test(m.title)));
+  assert.ok(draft.missions.every((m) => m.title.length <= 160));
+});
