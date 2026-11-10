@@ -51,6 +51,36 @@ export function createJourneyDraft(goal: JourneyGoal, today = new Date()): Journ
   // Transparent, deterministic starter missions. These are not AI-generated.
   // Keep generation stable so the confirmation endpoint can reconstruct the reviewed plan.
   const normalized = title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  // Travel goals need concrete, sequential decisions rather than generic weekly filler.
+  // This intentionally runs before the language-learning match (e.g. "viagem para Itália").
+  const isTravel = /viagem|viajar|ferias|turismo|visitar|roteiro|passagens/.test(normalized);
+  const travelSteps = [
+    ["Escolher as cidades e o tipo de experiência desejada", "Anotar as cidades favoritas e decidir quais priorizar"],
+    ["Conferir o calendário e definir uma janela de datas", "Registrar datas possíveis e eventuais restrições"],
+    ["Estimar o orçamento total da viagem", "Separar limites para passagem, estadia, alimentação e passeios"],
+    ["Pesquisar a faixa de preço das passagens", "Comparar opções e registrar alertas de preço"],
+    ["Verificar validade do passaporte e documentos necessários", "Consultar fontes oficiais e listar pendências documentais"],
+    ["Pesquisar requisitos de entrada aplicáveis à viagem", "Salvar fontes oficiais e os prazos que precisam ser conferidos"],
+    ["Escolher a duração ideal em cada cidade", "Montar um primeiro roteiro com deslocamentos realistas"],
+    ["Pesquisar bairros e regiões para hospedagem", "Comparar localização, acesso ao transporte e custo"],
+    ["Pesquisar opções de transporte entre cidades", "Registrar alternativas de trem, ônibus ou voo e seus custos"],
+    ["Criar uma reserva financeira específica para a viagem", "Conferir quanto já foi reservado e o que falta"],
+    ["Listar experiências e atrações prioritárias", "Escolher o que exige reserva antecipada"],
+    ["Pesquisar a melhor época para cada passeio", "Ajustar o roteiro considerando horários e deslocamentos"],
+    ["Comparar hospedagens adequadas ao roteiro", "Selecionar opções com políticas de cancelamento claras"],
+    ["Definir uma estratégia para compra de passagens", "Revisar orçamento e decidir quando comprar, sem pressa"],
+    ["Revisar cobertura de seguro e necessidades pessoais", "Registrar dúvidas e conferir condições das opções"],
+    ["Planejar transporte local e chegada ao destino", "Anotar aeroportos, estações e trajetos até a hospedagem"],
+    ["Conferir meios de pagamento e custos no exterior", "Preparar alternativas de pagamento e orçamento diário"],
+    ["Pesquisar conectividade e aplicativos úteis", "Organizar mapas, reservas e contatos em um só lugar"],
+    ["Preparar uma lista de bagagem adequada à época", "Revisar itens essenciais e regras de transporte"],
+    ["Organizar comprovantes e documentos de viagem", "Salvar cópias acessíveis e conferir o que ainda falta"],
+    ["Revisar reservas, horários e políticas", "Identificar pendências sem marcar compras como concluídas"],
+    ["Criar um roteiro diário flexível", "Equilibrar passeios, refeições e tempo livre"],
+    ["Planejar imprevistos e contatos de emergência", "Anotar alternativas de transporte e suporte"],
+    ["Conferir o checklist final de embarque", "Revisar documentos, bagagem e horários"],
+    ["Celebrar a preparação e visualizar o destino", "Registrar o que foi realizado e os próximos passos reais"],
+  ];
   let action = `Definir e executar uma ação concreta para: ${title}`;
   let review = "Registrar o resultado e escolher o próximo passo";
   let progression: string[] | undefined;
@@ -83,15 +113,16 @@ export function createJourneyDraft(goal: JourneyGoal, today = new Date()): Journ
     const stageIndex = Math.min(3, Math.floor(((week - 1) * 4) / weeks));
     const stage = stages[stageIndex];
     const weeklyAction = progression?.[stageIndex] ?? action;
+    const travelStep = travelSteps[Math.min(travelSteps.length - 1, Math.floor((week - 1) * travelSteps.length / weeks))];
     missions.push({
       id: `week-${week}-plan`,
-      title: `Semana ${week}: ${stage}. ${weeklyAction} (${days} dia(s) disponíveis)`.slice(0, 160),
+      title: isTravel ? `Semana ${week}: ${travelStep[0]}` : `Semana ${week}: ${stage}. ${weeklyAction} (${days} dia(s) disponíveis)`.slice(0, 160),
       week,
       status: "pending",
     });
     missions.push({
       id: `week-${week}-review`,
-      title: `Semana ${week}: ${review}`.slice(0, 160),
+      title: isTravel ? `Semana ${week}: ${travelStep[1]}` : `Semana ${week}: ${review}`.slice(0, 160),
       week,
       status: "pending",
     });
