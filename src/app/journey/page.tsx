@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import MikaJourneyPlanner from "../dashboard/mika-journey-planner";
+import JourneyTrail from "./journey-trail";
 
 async function JourneyContent() {
   await connection();
@@ -26,7 +27,11 @@ async function JourneyContent() {
             <div className="rounded-xl border border-white/10 bg-white/5 p-4"><p className="text-xl">◎</p><h2 className="mt-2 font-semibold">Celebre cada avanço</h2><p className="mt-1 text-xs text-slate-300">Marque missões realizadas e veja seu progresso.</p></div>
           </div>
         </header>
-        <MikaJourneyPlanner />
+        <JourneyTrail />
+        <details className="rounded-2xl border border-violet-400/20 bg-slate-900/60 p-4">
+          <summary className="cursor-pointer text-sm font-semibold text-violet-200">✦ Criar outra jornada ou planejar um novo sonho</summary>
+          <div className="mt-4"><MikaJourneyPlanner /></div>
+        </details>
         <p className="text-center text-xs text-slate-400">MYRAs e jornadas compartilhadas estão planejadas para uma próxima etapa; nenhuma recompensa é concedida nesta versão.</p>
       </div>
     </main>
