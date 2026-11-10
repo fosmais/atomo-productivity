@@ -60,7 +60,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Autorize a criação de eventos no Google antes de continuar.", code: "GOOGLE_WRITE_CONSENT_REQUIRED" }, { status: 403 });
     }
     const calendar = google.calendar({ version: "v3", auth: oauth });
-    const eventId = "myryra" + createHash("sha256").update(JSON.stringify([user.id, title, start, end])).digest("hex").slice(0, 40);
+    // Google Calendar IDs accept only base32hex characters (0-9, a-v); avoid the letter y.
+    const eventId = "mika" + createHash("sha256").update(JSON.stringify([user.id, title, start, end])).digest("hex").slice(0, 40);
     const { data: localEvents, error: localError } = await supabase.from("events")
       .select("starts_at, ends_at").eq("user_id", user.id).is("deleted_at", null)
       .lt("starts_at", new Date(end).toISOString()).gt("ends_at", new Date(start).toISOString()).limit(1);
