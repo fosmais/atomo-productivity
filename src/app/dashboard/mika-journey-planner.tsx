@@ -23,6 +23,20 @@ export default function MikaJourneyPlanner() {
   const [missionBusy, setMissionBusy] = useState<string | null>(null);
   const [missionLoading, setMissionLoading] = useState(false);
 
+  async function readApiJson(response: Response, action: string): Promise<Record<string, any>> {
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!contentType.toLowerCase().includes("application/json")) {
+      throw new Error(action + ": o servidor retornou uma página em vez de dados. Atualize a sessão e tente novamente.");
+    }
+    let payload: unknown;
+    try { payload = await response.json(); }
+    catch { throw new Error(action + ": resposta JSON inválida."); }
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      throw new Error(action + ": resposta inesperada do servidor.");
+    }
+    return payload as Record<string, any>;
+  }
+
   async function openJourney(id: string) {
     if (expandedId === id) { setExpandedId(null); return; }
     setMissionLoading(true);
@@ -30,7 +44,7 @@ export default function MikaJourneyPlanner() {
     setMissions([]);
     try {
       const response = await fetch("/api/journeys/" + encodeURIComponent(id), { cache: "no-store" });
-      const payload = await response.json();
+      const payload = await readApiJson(response, "Não foi possível processar a jornada");
       if (!response.ok) throw new Error(payload.error || "Falha ao consultar missões.");
       setMissions(payload.missions);
     } catch (error) {
@@ -52,7 +66,7 @@ export default function MikaJourneyPlanner() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: status === "completed" ? "pending" : "completed" }),
       });
-      const payload = await response.json();
+      const payload = await readApiJson(response, "Não foi possível processar a jornada");
       if (!response.ok) throw new Error(payload.error || "Falha ao atualizar missão.");
       setMissions((current) => current.map((mission) =>
         mission.id === id ? { ...mission, status: payload.mission.status } : mission));
@@ -67,7 +81,7 @@ export default function MikaJourneyPlanner() {
     try {
       const response = await fetch("/api/journeys", { cache: "no-store" });
       if (!response.ok) throw new Error("Falha ao carregar jornadas");
-      const payload = await response.json();
+      const payload = await readApiJson(response, "Não foi possível processar a jornada");
       setJourneys(payload.journeys);
     } catch {
       setMessage("Não foi possível carregar suas jornadas.");
@@ -81,7 +95,7 @@ export default function MikaJourneyPlanner() {
     fetch("/api/journeys", { cache: "no-store" })
       .then(async (response) => {
         if (!response.ok) throw new Error("Falha ao carregar jornadas");
-        return response.json();
+        return readApiJson(response, "Não foi possível carregar as jornadas");
       })
       .then((payload) => { if (active) setJourneys(payload.journeys); })
       .catch(() => { if (active) setMessage("Não foi possível carregar suas jornadas."); })
@@ -106,7 +120,7 @@ export default function MikaJourneyPlanner() {
           ...(confirm ? { confirmed: true, confirmationKey: confirmationKeyRef.current, plannedOn: draft?.plannedOn, ...(snapshotId ? { snapshotId } : {}) } : {}),
         }),
       });
-      let payload = await response.json();
+      let payload = await readApiJson(response, "Não foi possível processar a jornada");
       // A falha da IA não pode impedir o usuário de criar uma jornada básica.
       if (!confirm && useAI && (response.status === 429 || response.status === 503)) {
         const fallback = await fetch("/api/journeys/draft", {
@@ -114,7 +128,7 @@ export default function MikaJourneyPlanner() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title, ...(targetDate ? { targetDate } : {}), weeklyAvailabilityDays: days }),
         });
-        const fallbackPayload = await fallback.json();
+        const fallbackPayload = await readApiJson(fallback, "Não foi possível criar a prévia alternativa");
         if (fallback.ok) {
           setDraft(fallbackPayload.draft);
           setSnapshotId(null);
