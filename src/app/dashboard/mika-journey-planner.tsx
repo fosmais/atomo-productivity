@@ -101,7 +101,7 @@ export default function MikaJourneyPlanner() {
         body: JSON.stringify({
           title, ...(targetDate ? { targetDate } : {}),
           weeklyAvailabilityDays: days,
-          ...(confirm ? { confirmed: true, confirmationKey: confirmationKeyRef.current } : {}),
+          ...(confirm ? { confirmed: true, confirmationKey: confirmationKeyRef.current, plannedOn: draft?.plannedOn } : {}),
         }),
       });
       const payload = await response.json();
