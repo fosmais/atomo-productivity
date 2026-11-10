@@ -110,3 +110,48 @@ test("rejects malformed confirmation key before writing", async () => {
   await assert.rejects(saveConfirmedJourney(client, draft, true, "not-a-uuid"), /Chave de confirmação inválida/);
   assert.equal(calls.length, 0);
 });
+
+test("returns existing journey on duplicate confirmation without inserting missions twice", async () => {
+  const key = "b00d7a13-4d5a-4d12-9b21-5b4f91234567";
+  const calls = [];
+  const client = {
+    auth: { getUser: async () => ({ data: { user: { id: "user-1" } }, error: null }) },
+    from(table) {
+      const query = {
+        insert(rows) { calls.push({ table, operation: "insert", rows }); return query; },
+        select() { return query; },
+        single: async () => ({ data: null, error: { code: "23505" } }),
+        eq(column, value) { calls.push({ table, operation: "filter", column, value }); return query; },
+        maybeSingle: async () => ({ data: { id: "existing-1", title: draft.title, target_date: null }, error: null }),
+      };
+      if (table === "myryra_journey_missions") {
+        query.select = () => ({ eq: () => Promise.resolve({ count: draft.missions.length, error: null }) });
+      }
+      return query;
+    },
+  };
+  const result = await saveConfirmedJourney(client, draft, true, key);
+  assert.deepEqual(result, { id: "existing-1", missionCount: 1 });
+  assert.equal(calls.filter(c => c.table === "myryra_journey_missions" && c.operation === "insert").length, 0);
+});
+
+test("does not accept incomplete duplicate confirmation as successful", async () => {
+  const key = "b00d7a13-4d5a-4d12-9b21-5b4f91234567";
+  const client = {
+    auth: { getUser: async () => ({ data: { user: { id: "user-1" } }, error: null }) },
+    from(table) {
+      const query = {
+        insert() { return query; },
+        select() { return query; },
+        single: async () => ({ data: null, error: { code: "23505" } }),
+        eq() { return query; },
+        maybeSingle: async () => ({ data: { id: "existing-1", title: draft.title, target_date: null }, error: null }),
+      };
+      if (table === "myryra_journey_missions") {
+        query.select = () => ({ eq: () => Promise.resolve({ count: 0, error: null }) });
+      }
+      return query;
+    },
+  };
+  await assert.rejects(saveConfirmedJourney(client, draft, true, key), /em processamento/);
+});
