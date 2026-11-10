@@ -181,8 +181,10 @@ export default function JourneyTrail() {
       if (!response.ok) throw new Error(payload.error || "Não foi possível avaliar.");
       const feedback = typeof payload.feedback === "string" ? payload.feedback.trim() : "";
       if (!feedback) throw new Error("A avaliação veio vazia. Tente novamente.");
-      setAiFeedback(old => ({ ...old, [mission.id]: feedback }));
-      setExerciseMessage(old => ({ ...old, [mission.id]: payload.saved ? "Avaliação salva automaticamente." : "Avaliação recebida, mas não foi possível salvá-la. Tente avaliar novamente." }));
+      // Only a persisted review may unlock the client-side completion guidance.
+      // Keep unsaved feedback visible, but do not treat it as proof of assessment.
+      setAiFeedback(old => ({ ...old, [mission.id]: payload.saved === true ? feedback : "" }));
+      setExerciseMessage(old => ({ ...old, [mission.id]: payload.saved === true ? "Avaliação salva automaticamente." : "A MIKA respondeu, mas a avaliação não foi salva. Solicite novamente antes de concluir a aula." }));
     } catch (cause) { setExerciseMessage(old => ({ ...old, [mission.id]: cause instanceof Error ? cause.message : "Falha na avaliação." })); }
     finally { setFeedbackBusy(null); }
   }
