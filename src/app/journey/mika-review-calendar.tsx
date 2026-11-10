@@ -24,6 +24,7 @@ export default function MikaReviewCalendar({ title }: { title: string }) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [suggesting, setSuggesting] = useState(false);
   const [googleChecked, setGoogleChecked] = useState<boolean | null>(null);
+  const [destination, setDestination] = useState<"myryra" | "google">("myryra");
   async function suggestTimes() {
     if (suggesting || confirmed) return;
     setSuggesting(true);
@@ -66,6 +67,19 @@ export default function MikaReviewCalendar({ title }: { title: string }) {
         setMessage("Há um compromisso ou bloqueio nesse horário. Escolha outro período.");
         return;
       }
+      if (destination === "google") {
+        if (!google.connected) { setMessage("Conecte o Google Calendar antes de agendar."); return; }
+        const response = await fetch("/api/google/events/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: title.slice(0, 200), startsAt: startDate.toISOString(), endsAt: endDate.toISOString() }),
+        });
+        const result: { error?: string; alreadyExists?: boolean } = await response.json();
+        if (!response.ok) throw new Error(result.error || "Não foi possível criar o evento no Google.");
+        setConfirmed(true);
+        setMessage(result.alreadyExists ? "Esse treinamento já estava no Google Calendar." : "Treinamento criado no Google Calendar.");
+        return;
+      }
       await saveCloudEvent({ title: title.slice(0, 200), startsAt: startDate.toISOString(), endsAt: endDate.toISOString(), category: "personal", eventType: "appointment", blocksTime: true, notes: "Treinamento MIKA · revisão de 20 minutos sugerida após exercício. Criado com autorização do usuário." });
       setConfirmed(true);
       setMessage("Treinamento de 20 minutos adicionado à Agenda MYRYRA.");
@@ -75,8 +89,9 @@ export default function MikaReviewCalendar({ title }: { title: string }) {
     } finally { setWorking(false); }
   }
   return <div className="mt-3 space-y-2 rounded-lg border border-emerald-300/30 p-3">
-    <label className="block font-semibold text-emerald-100">Reservar 20 minutos na Agenda MYRYRA</label>
-    <p className="text-slate-200">Destino disponível: Agenda MYRYRA. A gravação no Google Calendar ainda não está habilitada.</p>
+    <label className="block font-semibold text-emerald-100">Reservar 20 minutos de treinamento</label>
+    <label className="block text-slate-200">Salvar em <select aria-label="Destino do treinamento" value={destination} disabled={working || confirmed} onChange={event => setDestination(event.target.value as "myryra" | "google")} className="ml-2 rounded-lg border border-slate-500 bg-slate-900 p-2 text-white"><option value="myryra">Agenda MYRYRA</option><option value="google">Google Calendar</option></select></label>
+    <p className="text-slate-200">Escolha um único destino para evitar duplicidade. O Google exige autorização de criação de eventos.</p>
     <p className="text-slate-200">Opcional: você pode autorizar separadamente a criação de eventos no Google. Essa autorização não cria nenhum compromisso automaticamente.</p>
     <a href="/api/google/connect?allow_event_creation=1" className="inline-block rounded-lg border border-violet-200/50 px-3 py-2 text-violet-100">Autorizar criação de eventos no Google</a>
     <button type="button" disabled={suggesting || working || confirmed} onClick={() => void suggestTimes()} className="rounded-lg border border-violet-200/50 px-3 py-2 font-semibold text-violet-100 disabled:opacity-40">{suggesting ? "Consultando agenda..." : "Sugerir horários livres"}</button>
