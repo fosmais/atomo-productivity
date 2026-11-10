@@ -38,11 +38,24 @@ export default function JourneyTrail() {
   const [savingExercise, setSavingExercise] = useState<string | null>(null);
   const [exerciseMessage, setExerciseMessage] = useState<Record<string, string>>({});
   const [replan, setReplan] = useState<{ previewOnly: boolean; revision: string; preserved: { completed: { id: string; title: string }[]; existingMissionCount: number }; proposed: { title: string; week: number }[]; planning?: { targetDate: string | null; originalTargetDate: string | null; deadlineNeedsReview: boolean; remainingMissions: number } } | null>(null);
+  async function readJourneyJson(response: Response, context: string) {
+    const type = response.headers.get("content-type") ?? "";
+    if (!type.toLowerCase().includes("application/json")) {
+      throw new Error(context + ": o servidor retornou uma página em vez dos dados esperados. Tente novamente; se persistir, informe ao suporte.");
+    }
+    const data: unknown = await response.json().catch(() => {
+      throw new Error(context + ": resposta inválida do servidor.");
+    });
+    if (!response.ok) {
+      const detail = data && typeof data === "object" && "error" in data && typeof data.error === "string" ? data.error : "Falha na solicitação.";
+      throw new Error(context + ": " + detail);
+    }
+    return data as Record<string, unknown>;
+  }
   useEffect(() => {
     let alive = true;
     fetch("/api/journeys", { cache: "no-store" }).then(async r => {
-      if (!r.ok) throw new Error("Não foi possível carregar suas jornadas.");
-      return r.json();
+      return readJourneyJson(r, "Não foi possível carregar suas jornadas");
     }).then(data => {
       if (!alive) return;
       const items = Array.isArray(data.journeys) ? data.journeys as Journey[] : [];
@@ -56,8 +69,8 @@ export default function JourneyTrail() {
     if (!selected) return;
     let alive = true;
     fetch("/api/journeys/" + encodeURIComponent(selected), { cache: "no-store" })
-      .then(async r => { if (!r.ok) throw new Error("Não foi possível carregar as missões."); return r.json(); })
-      .then(data => { if (alive) setMissions(Array.isArray(data.missions) ? data.missions : []); })
+      .then(async r => { return readJourneyJson(r, "Não foi possível carregar as missões"); })
+      .then(data => { if (alive) { if (!Array.isArray(data.missions)) throw new Error("O servidor não retornou uma lista de missões válida."); setMissions(data.missions as Mission[]); } })
       .catch(e => { if (alive) setError(e instanceof Error ? e.message : "Falha ao carregar."); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
