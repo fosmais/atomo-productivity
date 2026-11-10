@@ -96,3 +96,17 @@ test("rejects malformed target dates before any database write", async () => {
   await assert.rejects(saveConfirmedJourney(client, { ...draft, targetDate: "2027-02-30" }, true), /inválido/);
   assert.equal(calls.length, 0);
 });
+
+test("stores confirmation key with journey and not with missions", async () => {
+  const { client, calls } = fakeClient();
+  const key = "b00d7a13-4d5a-4d12-9b21-5b4f91234567";
+  await saveConfirmedJourney(client, draft, true, key);
+  assert.equal(calls[0].rows.confirmation_key, key);
+  assert.equal(calls[1].rows[0].confirmation_key, undefined);
+});
+
+test("rejects malformed confirmation key before writing", async () => {
+  const { client, calls } = fakeClient();
+  await assert.rejects(saveConfirmedJourney(client, draft, true, "not-a-uuid"), /Chave de confirmação inválida/);
+  assert.equal(calls.length, 0);
+});
