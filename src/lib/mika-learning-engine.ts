@@ -210,17 +210,24 @@ export interface LearningNextStep {
   reviewExerciseIds: string[];
   suggestedReviewMinutes: number;
 }
-export function planLearningNextStep(assessment: LearningAssessment): LearningNextStep {
+export function planLearningNextStep(assessment: LearningAssessment, passThreshold = 70): LearningNextStep {
+  if (!Number.isFinite(passThreshold) || passThreshold < 0 || passThreshold > 100)
+    throw new Error("Invalid pass threshold");
   if (!Number.isInteger(assessment.total) || assessment.total < 1
       || !Number.isInteger(assessment.correct) || assessment.correct < 0
       || assessment.correct > assessment.total
       || !Number.isInteger(assessment.score)
       || assessment.score !== Math.round(assessment.correct / assessment.total * 100)
+      || typeof assessment.passed !== "boolean"
       || assessment.feedback.length !== assessment.total
       || assessment.feedback.filter(item => item.correct).length !== assessment.correct
       || new Set(assessment.feedback.map(item => item.exerciseId)).size !== assessment.total
       || assessment.feedback.some(item => !item.exerciseId.trim() || !item.explanation.trim()))
     throw new Error("Invalid learning assessment");
+  // Passing is a decision made by the trusted grading service. It must
+  // be consistent with the configured threshold, not an arbitrary flag.
+  if (assessment.passed !== (assessment.score >= passThreshold))
+    throw new Error("Inconsistent pass decision");
   const reviewExerciseIds = assessment.feedback.filter(item => !item.correct).map(item => item.exerciseId);
   if (!assessment.passed)
     return {
