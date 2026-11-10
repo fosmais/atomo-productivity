@@ -21,7 +21,7 @@ export default function JourneyTrail() {
   const [goalTitle, setGoalTitle] = useState("");
   const [goalDate, setGoalDate] = useState("");
   const [showAllMissions, setShowAllMissions] = useState(false);
-  const [replan, setReplan] = useState<{ previewOnly: boolean; preserved: { completed: { id: string; title: string }[]; existingMissionCount: number }; proposed: { title: string; week: number }[]; planning?: { targetDate: string | null; originalTargetDate: string | null; deadlineNeedsReview: boolean; remainingMissions: number } } | null>(null);
+  const [replan, setReplan] = useState<{ previewOnly: boolean; revision: string; preserved: { completed: { id: string; title: string }[]; existingMissionCount: number }; proposed: { title: string; week: number }[]; planning?: { targetDate: string | null; originalTargetDate: string | null; deadlineNeedsReview: boolean; remainingMissions: number } } | null>(null);
   useEffect(() => {
     let alive = true;
     fetch("/api/journeys", { cache: "no-store" }).then(async r => {
@@ -98,6 +98,26 @@ export default function JourneyTrail() {
       if (!response.ok) throw new Error(payload.error || "Não foi possível preparar a prévia.");
       setReplan(payload);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Falha ao preparar a prévia."); }
+    finally { setBusy(""); }
+  }
+  async function applyReplan() {
+    if (!selected || busy || !replan || !replan.revision || replan.planning?.deadlineNeedsReview) return;
+    if (!window.confirm("Confirmar o novo caminho? Missões concluídas e missões vinculadas serão preservadas. Missões pendentes sem vínculos serão substituídas.")) return;
+    setBusy("apply-replan"); setError("");
+    try {
+      const response = await fetch("/api/journeys/" + encodeURIComponent(selected) + "/replan-apply", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ revision: replan.revision }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível confirmar o novo caminho.");
+      const refreshed = await fetch("/api/journeys/" + encodeURIComponent(selected), { cache: "no-store" });
+      if (!refreshed.ok) throw new Error("Novo caminho salvo. Atualize a página para ver suas missões.");
+      const data = await refreshed.json();
+      setMissions(Array.isArray(data.missions) ? data.missions : []);
+      setReplan(null); setShowAllMissions(false);
+      void refreshMyra();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Falha ao confirmar o replanejamento."); }
     finally { setBusy(""); }
   }
   async function complete(mission: Mission) {
@@ -227,7 +247,11 @@ export default function JourneyTrail() {
           {replan.planning?.deadlineNeedsReview && <p role="alert" className="rounded-lg border border-amber-400/40 bg-amber-400/10 p-3 text-xs text-amber-100">⚠ O prazo original já passou. Esta prévia foi criada sem data-alvo. Edite a data da meta antes de decidir sobre um novo planejamento.</p>}
           {replan.planning?.targetDate && <p className="text-xs text-violet-200">Prazo considerado: {replan.planning.targetDate} · Missões ainda não concluídas: {replan.planning.remainingMissions}</p>}
           <ol className="max-h-72 space-y-2 overflow-y-auto pr-1">{replan.proposed.map((m, i) => <li key={i} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100"><span className="mr-2 text-violet-300">{i + 1}.</span>{m.title}</li>)}</ol>
-          <button type="button" onClick={() => setReplan(null)} className="rounded-lg border border-white/20 px-3 py-2 text-xs text-slate-200">Fechar prévia</button>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" disabled={!!busy || !replan.revision || !!replan.planning?.deadlineNeedsReview || replan.proposed.length === 0} onClick={() => void applyReplan()} className="rounded-lg bg-violet-600 px-4 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">{busy === "apply-replan" ? "Confirmando..." : "Confirmar novo caminho"}</button>
+            <button type="button" disabled={!!busy} onClick={() => setReplan(null)} className="rounded-lg border border-white/20 px-3 py-2 text-xs text-slate-200">Fechar prévia</button>
+          </div>
+          <p className="text-xs text-slate-400">A confirmação preserva conquistas, MYRAs e missões vinculadas. Missões pendentes sem vínculos poderão ser substituídas.</p>
         </div>}
       </div>}
       {celebratedMission && !finished && <div role="status" className="mt-5 rounded-2xl border border-amber-300/50 bg-gradient-to-r from-violet-900/90 to-fuchsia-900/80 p-4 text-center shadow-[0_0_35px_rgba(232,121,249,0.2)]"><div aria-hidden="true" className="relative mx-auto flex h-20 w-28 items-center justify-center"><span className="absolute left-0 top-2 text-2xl motion-safe:animate-bounce">✨</span><span className="text-5xl motion-safe:animate-bounce">🪙</span><span className="absolute right-0 top-0 text-2xl motion-safe:animate-pulse">⭐</span><span className="absolute bottom-0 right-3 text-xl motion-safe:animate-bounce">✨</span></div><p className="mt-2 text-lg font-bold text-amber-200">Missão conquistada!</p>{earnedMyra && <p className="mt-2 text-2xl font-black text-amber-300 motion-safe:animate-pulse">+10 MYRAs 🪙</p>}<p className="mt-1 text-sm text-violet-100">A MIKA está celebrando seu progresso. Continue avançando pelo mapa!</p><button type="button" onClick={() => setCelebratedMission(null)} className="mt-3 rounded-xl border border-white/30 px-4 py-2 text-xs font-semibold text-white">Continuar minha aventura</button></div>}
