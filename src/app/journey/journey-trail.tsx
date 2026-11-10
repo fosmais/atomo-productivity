@@ -174,7 +174,14 @@ export default function JourneyTrail() {
       const response = await fetch("/api/journeys/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ journeyId: selected, missionId: mission.id, answer, exercise }) });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Não foi possível avaliar.");
-      setAiFeedback(old => ({ ...old, [mission.id]: typeof payload.feedback === "string" ? payload.feedback : "Nenhuma avaliação recebida." }));
+      const feedback = typeof payload.feedback === "string" ? payload.feedback.trim() : "";
+      if (!feedback) throw new Error("A avaliação veio vazia. Tente novamente.");
+      setAiFeedback(old => ({ ...old, [mission.id]: feedback }));
+      const saveResponse = await fetch("/api/journeys/learning", {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ journeyId: selected, missionId: mission.id, answer, feedback }),
+      });
+      setExerciseMessage(old => ({ ...old, [mission.id]: saveResponse.ok ? "Avaliação salva automaticamente." : "Avaliação recebida, mas não salva. Use Salvar resposta para tentar novamente." }));
     } catch (cause) { setAiFeedback(old => ({ ...old, [mission.id]: cause instanceof Error ? cause.message : "Falha na avaliação." })); }
     finally { setFeedbackBusy(null); }
   }
