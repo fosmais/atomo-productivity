@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 type Props = { journeyId: string; title: string; completedCount: number };
 
-// Local preview only. A private Storage-backed gallery will be enabled after its migration is deployed.
+// Private gallery photos use short-lived signed URLs; sharing is explicitly user initiated.
 export default function JourneyAchievementCard({ journeyId, title, completedCount }: Props) {
   const [photo, setPhoto] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
@@ -57,6 +57,30 @@ export default function JourneyAchievementCard({ journeyId, title, completedCoun
     }
     setPhoto(file);
   }
+  async function shareSaved(item: { title: string; message: string | null; photo_url: string | null }) {
+    const text = "🏆 Concluí minha jornada " + item.title + " na MYRYRA! " + completedCount + " missões realizadas. " + (item.message ?? "");
+    setFeedback("");
+    try {
+      if (item.photo_url && navigator.share) {
+        const response = await fetch(item.photo_url, { cache: "no-store" });
+        if (!response.ok) throw new Error("Não foi possível recuperar a foto privada. Atualize a galeria e tente novamente.");
+        const blob = await response.blob();
+        const type = blob.type;
+        const extension = type === "image/png" ? "png" : type === "image/webp" ? "webp" : "jpg";
+        const file = new File([blob], "conquista-myryra." + extension, { type });
+        if (navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ title: "Minha conquista MYRYRA", text, files: [file] });
+          return;
+        }
+      }
+      if (navigator.share) { await navigator.share({ title: "Minha conquista MYRYRA", text }); if (item.photo_url) setFeedback("Seu dispositivo compartilhou a mensagem sem anexar a foto."); }
+      else if (navigator.clipboard) { await navigator.clipboard.writeText(text); setFeedback("Mensagem copiada para compartilhar."); }
+      else setFeedback("Compartilhamento indisponível neste dispositivo.");
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") return;
+      setFeedback(error instanceof Error ? error.message : "Não foi possível compartilhar.");
+    }
+  }
   async function share() {
     const text = "🏆 Concluí minha jornada " + title + " na MYRYRA! " + completedCount +
       " missões realizadas. " + message.trim();
@@ -98,7 +122,7 @@ export default function JourneyAchievementCard({ journeyId, title, completedCoun
         Compartilhar minha conquista
       </button>
       <p className="text-xs text-slate-400">Fotos salvas ficam privadas. O compartilhamento é sempre uma ação sua; não publicamos sua foto automaticamente.</p>
-      {gallery.length > 0 && <div className="space-y-2"><p className="text-sm font-semibold text-violet-100">Minha galeria de conquistas</p>{gallery.map(item => <div key={item.id} className="rounded-xl border border-white/10 bg-white/5 p-3">{item.photo_url && <img src={item.photo_url} alt={"Foto da conquista " + item.title} className="max-h-48 w-full rounded-lg object-contain" /> }<p className="mt-2 text-sm font-semibold">{item.title}</p>{item.message && <p className="text-xs text-slate-300">{item.message}</p>}<button type="button" onClick={() => void removeAchievement(item.id)} className="mt-3 rounded-lg border border-rose-300/40 px-3 py-2 text-xs text-rose-200">Excluir da galeria</button></div>)}</div>}
+      {gallery.length > 0 && <div className="space-y-2"><p className="text-sm font-semibold text-violet-100">Minha galeria de conquistas</p>{gallery.map(item => <div key={item.id} className="rounded-xl border border-white/10 bg-white/5 p-3">{item.photo_url && <img src={item.photo_url} alt={"Foto da conquista " + item.title} className="max-h-48 w-full rounded-lg object-contain" /> }<p className="mt-2 text-sm font-semibold">{item.title}</p>{item.message && <p className="text-xs text-slate-300">{item.message}</p>}<div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => void shareSaved(item)} className="rounded-lg border border-amber-300/50 px-3 py-2 text-xs text-amber-100">Compartilhar</button><button type="button" onClick={() => void removeAchievement(item.id)} className="rounded-lg border border-rose-300/40 px-3 py-2 text-xs text-rose-200">Excluir da galeria</button></div></div>)}</div>}
       {feedback && <p role="status" className="text-xs text-amber-200">{feedback}</p>}
     </div>
   );
