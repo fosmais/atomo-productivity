@@ -48,17 +48,35 @@ export function createJourneyDraft(goal: JourneyGoal, today = new Date()): Journ
     if (diff < 0) throw new Error("A data-alvo não pode estar no passado.");
     weeks = Math.max(1, Math.min(52, Math.ceil((diff + 1) / (7 * 86400000))));
   }
+  // Transparent, deterministic starter missions. These are not AI-generated.
+  // Keep generation stable so the confirmation endpoint can reconstruct the reviewed plan.
+  const normalized = title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  let action = `Definir e executar uma ação concreta para: ${title}`;
+  let review = "Registrar o resultado e escolher o próximo passo";
+  if (/italian|ingles|espanhol|frances|idioma|lingua|language/.test(normalized)) {
+    action = "Praticar vocabulário, escuta e conversação no idioma escolhido";
+    review = "Revisar o vocabulário aprendido e registrar uma conversa ou exercício";
+  } else if (/corr|caminh|maraton|quilometr|\b5\s?km\b|\b10\s?km\b/.test(normalized)) {
+    action = "Realizar um treino progressivo de caminhada ou corrida conforme seu condicionamento";
+    review = "Registrar distância, duração e recuperação antes do próximo treino";
+  } else if (/economiz|poup|junt|guardar dinheiro|reserva financeira/.test(normalized)) {
+    action = "Definir um valor viável para guardar e revisar despesas da semana";
+    review = "Conferir o valor reservado e ajustar a meta sem comprometer gastos essenciais";
+  } else if (/mudan|morar fora|imigra|outro pais/.test(normalized)) {
+    action = "Pesquisar um requisito prático da mudança e registrar a próxima providência";
+    review = "Atualizar o checklist de documentos, prazos e orçamento da mudança";
+  }
   const missions: JourneyMission[] = [];
   for (let week = 1; week <= weeks; week++) {
     missions.push({
       id: `week-${week}-plan`,
-      title: `Planejar uma ação concreta para: ${title}`.slice(0, 160),
+      title: `Semana ${week}: ${action} (${days} dia(s) disponíveis)`.slice(0, 160),
       week,
       status: "pending",
     });
     missions.push({
       id: `week-${week}-review`,
-      title: `Revisar progresso e ajustar o próximo passo (${days} dia(s)/semana disponíveis)`,
+      title: `Semana ${week}: ${review}`.slice(0, 160),
       week,
       status: "pending",
     });
