@@ -140,19 +140,18 @@ export default function VyraHome() {
         </div>
       </details>
 
-      <Link href="/journey" className="flex items-center gap-3 rounded-2xl border border-violet-400/40 bg-gradient-to-r from-violet-900/70 to-slate-900 p-4 transition hover:border-violet-300" aria-label="Abrir MYRYRA Journey">
-        <span className="text-3xl text-violet-200" aria-hidden="true">✧</span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-bold text-white">MYRYRA Journey</span>
-          <span className="block text-xs text-violet-200">Seus sonhos, missões e conquistas em um só lugar</span>
-        </span>
-        <span aria-hidden="true" className="text-violet-200">→</span>
+      <Link href="/journey" className="group relative isolate overflow-hidden rounded-3xl border border-fuchsia-400/40 bg-gradient-to-br from-violet-800/80 via-fuchsia-950/80 to-slate-950 p-5 shadow-[0_12px_35px_rgba(109,40,217,0.16)] transition hover:border-fuchsia-300 focus-visible:outline-2 focus-visible:outline-fuchsia-300 sm:p-7" aria-label="Entrar na aventura MYRYRA Journey">
+        <span aria-hidden="true" className="pointer-events-none absolute -right-8 -top-10 text-[9rem] leading-none text-fuchsia-300/10 transition-transform duration-700 group-hover:rotate-12">✧</span>
+        <span className="relative block text-[10px] font-bold uppercase tracking-[0.22em] text-fuchsia-200">✦ MYRYRA JOURNEY · SUA AVENTURA</span>
+        <span className="relative mt-2 block max-w-lg text-xl font-bold leading-snug text-white sm:text-2xl">Seus sonhos merecem mais do que uma lista de tarefas.</span>
+        <span className="relative mt-2 block max-w-lg text-sm leading-relaxed text-violet-100">Explore sua trilha, vença desafios e celebre cada conquista. Seu próximo capítulo começa aqui.</span>
+        <span className="relative mt-4 inline-flex items-center gap-2 rounded-xl border border-fuchsia-300/35 bg-white/15 px-4 py-2.5 text-sm font-semibold text-white transition group-hover:bg-white/25">Explorar minha jornada <span aria-hidden="true">→</span></span>
       </Link>
 
       <section aria-label="Explore seu universo">
         <h2 className="mb-3 text-base font-semibold text-white">Explore seu universo</h2>
-        <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:grid-cols-3">
-          {portals.map(item => <button key={item.label} type="button" onClick={() => navigateTo(item.module)} className="flex min-h-24 min-w-0 flex-col items-start justify-center gap-2 rounded-xl border border-violet-400/15 bg-slate-900/65 p-3 text-left transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
+          {portals.map(item => <button key={item.label} type="button" onClick={() => navigateTo(item.module)} className="flex min-h-24 min-w-0 flex-col items-start justify-center gap-1.5 rounded-xl border border-violet-400/15 bg-slate-900/65 p-3 text-left transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
             <span className="text-2xl text-violet-300" aria-hidden="true">{item.icon}</span>
             <span className="break-words text-sm font-semibold leading-snug text-white">{item.label}</span>
             <span className="break-words text-xs leading-snug text-slate-400">{item.subtitle}</span>
