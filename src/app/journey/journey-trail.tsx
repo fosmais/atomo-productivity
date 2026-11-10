@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 
 type Journey = { id: string; title: string; status: string; target_date: string | null };
 type Mission = { id: string; title: string; status: string; week?: number };
+type MyraEntry = { amount: number; created_at: string; mission_id: string; journey_id: string };
 
 export default function JourneyTrail() {
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [selected, setSelected] = useState("");
   const [missions, setMissions] = useState<Mission[]>([]);
   const [myraBalance, setMyraBalance] = useState<number | null>(null);
+  const [myraHistory, setMyraHistory] = useState<MyraEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [celebratedMission, setCelebratedMission] = useState<string | null>(null);
@@ -44,6 +46,7 @@ export default function JourneyTrail() {
       if (!response.ok) return;
       const payload = await response.json();
       if (typeof payload.balance === "number") setMyraBalance(payload.balance);
+      if (Array.isArray(payload.recent)) setMyraHistory(payload.recent);
     } catch { /* Balance can be retried after a mission. */ }
   }
   useEffect(() => {
@@ -53,6 +56,7 @@ export default function JourneyTrail() {
         if (!response.ok) return;
         const payload = await response.json();
         if (typeof payload.balance === "number") setMyraBalance(payload.balance);
+        if (Array.isArray(payload.recent)) setMyraHistory(payload.recent);
       } catch { /* Balance remains unavailable until retry. */ }
     };
     void loadBalance();
@@ -167,6 +171,19 @@ export default function JourneyTrail() {
             <span className="mt-1 block text-sm font-bold text-amber-100">{finished ? "Destino conquistado!" : "O destino dos seus sonhos"}</span>
           </div>
         </div>}
+      <details className="mt-5 rounded-2xl border border-amber-300/25 bg-amber-300/5 p-4">
+        <summary className="cursor-pointer text-sm font-semibold text-amber-200">🪙 Meu tesouro MYRA · Histórico de conquistas</summary>
+        <p className="mt-2 text-xs text-violet-200">Cada missão pode render 10 MYRAs apenas uma vez. Moedas virtuais, sem valor monetário.</p>
+        {myraBalance === null ? <p className="mt-3 text-sm text-slate-300">Carregando recompensas...</p> : myraHistory.length === 0 ?
+          <p className="mt-3 text-sm text-slate-300">Seu primeiro tesouro aparece quando você concluir uma missão.</p> :
+          <ol className="mt-3 space-y-2">
+            {myraHistory.map(entry => <li key={entry.mission_id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-violet-100">
+              <span><span aria-hidden="true">⭐ </span>Missão conquistada <span className="block text-[11px] text-slate-400">{new Date(entry.created_at).toLocaleDateString("pt-BR")}</span></span>
+              <strong className="whitespace-nowrap text-amber-200">+{entry.amount} MYRA</strong>
+            </li>)}
+          </ol>}
+        {myraHistory.length === 10 && <p className="mt-2 text-xs text-slate-400">Exibindo as 10 conquistas mais recentes.</p>}
+      </details>
       {error && <p role="alert" className="mt-4 text-sm text-rose-300">{error}</p>}
       <p className="mt-5 text-center text-xs text-slate-400">Cada missão concluída vale 10 MYRAs virtuais, uma única vez. As moedas não possuem valor monetário.</p>
     </section>
