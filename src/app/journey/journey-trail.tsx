@@ -188,6 +188,11 @@ export default function JourneyTrail() {
   }
   async function complete(mission: Mission) {
     if (busy) return;
+    if (mission.status !== "completed" && lessonFor(mission.title) && !aiFeedback[mission.id]?.trim()) {
+      setOpenLesson(mission.id);
+      setError("Para concluir esta aula, abra o treinamento, responda ao exercício e peça a avaliação da MIKA. A avaliação deve ser salva.");
+      return;
+    }
     setBusy(mission.id);
     setError("");
     try {
