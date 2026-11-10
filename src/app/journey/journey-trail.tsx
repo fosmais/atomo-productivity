@@ -32,6 +32,7 @@ export default function JourneyTrail() {
   const [proposedReview, setProposedReview] = useState<string | null>(null);
   const [reviewDueDates, setReviewDueDates] = useState<Record<string, string>>({});
   const [savedReviewTasks, setSavedReviewTasks] = useState<Record<string, boolean>>({});
+  const [reviewSteps, setReviewSteps] = useState<Record<string, boolean[]>>({});
   const [savingExercise, setSavingExercise] = useState<string | null>(null);
   const [exerciseMessage, setExerciseMessage] = useState<Record<string, string>>({});
   const [replan, setReplan] = useState<{ previewOnly: boolean; revision: string; preserved: { completed: { id: string; title: string }[]; existingMissionCount: number }; proposed: { title: string; week: number }[]; planning?: { targetDate: string | null; originalTargetDate: string | null; deadlineNeedsReview: boolean; remainingMissions: number } } | null>(null);
@@ -419,6 +420,15 @@ export default function JourneyTrail() {
                           <li>10 min — resolva o novo exercício proposto, sem consultar a resposta.</li>
                           <li>5 min — confira os critérios, corrija os erros e registre suas dúvidas.</li>
                         </ol>
+                        <div className="mt-3 space-y-2" aria-label="Acompanhar revisão desta missão">
+                          {["Retome a habilidade a reforçar (5 min)", "Resolva o novo exercício (10 min)", "Confira e registre dúvidas (5 min)"].map((step, index) => (
+                            <label key={index} className="flex cursor-pointer items-start gap-2 text-amber-50">
+                              <input type="checkbox" className="mt-0.5 accent-amber-400" checked={reviewSteps[m.id]?.[index] ?? false} onChange={event => setReviewSteps(old => ({ ...old, [m.id]: Array.from({ length: 3 }, (_, i) => i === index ? event.target.checked : (old[m.id]?.[i] ?? false)) }))} />
+                              <span>{step}</span>
+                            </label>
+                          ))}
+                          <p role="status" className="text-amber-100">{(reviewSteps[m.id] ?? []).filter(Boolean).length} de 3 etapas concluídas nesta sessão. O acompanhamento ainda não é salvo na conta.</p>
+                        </div>
                         <button type="button" onClick={() => {
                           const proposal = "Revisão MIKA · " + lesson.heading + "\\nDuração sugerida: 20 minutos\\nObjetivo: aplicar o feedback e refazer o exercício.\\n\\n" + aiFeedback[m.id];
                           void navigator.clipboard.writeText(proposal).then(() => setExerciseMessage(old => ({ ...old, [m.id]: "Proposta copiada. Você pode usá-la para criar uma tarefa na Agenda." }))).catch(() => setExerciseMessage(old => ({ ...old, [m.id]: "Não foi possível copiar a proposta." })));
