@@ -30,7 +30,6 @@ export default function JourneyTrail() {
   useEffect(() => {
     if (!selected) return;
     let alive = true;
-    setCelebratedMission(null);
     fetch("/api/journeys/" + encodeURIComponent(selected), { cache: "no-store" })
       .then(async r => { if (!r.ok) throw new Error("Não foi possível carregar as missões."); return r.json(); })
       .then(data => { if (alive) setMissions(Array.isArray(data.missions) ? data.missions : []); })
