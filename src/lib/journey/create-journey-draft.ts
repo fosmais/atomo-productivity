@@ -110,7 +110,7 @@ export function createJourneyDraft(goal: JourneyGoal, today = new Date()): Journ
     ["Revisar a preparação final para o intercâmbio", "Celebrar o avanço e identificar o que ainda exige confirmação"],
   ];
   // Concrete educational progression for AI study goals, instead of generic habit reminders.
-  const isAiEducation = /(?:\\bmba\\b.*(?:\\bia\\b|inteligencia artificial)|(?:\\bia\\b|inteligencia artificial).*(?:\\bmba\\b|curso|estud|aprender)|machine learning|ciencia de dados|data science)/.test(normalized);
+  const isAiEducation = /(?:\bmba\b.*(?:\bia\b|inteligencia artificial)|(?:\bia\b|inteligencia artificial).*(?:\bmba\b|curso|estud|aprender)|machine learning|ciencia de dados|data science)/.test(normalized);
   const aiLessons = [
     ["Entender IA, machine learning e IA generativa com três exemplos reais", "Explicar com suas palavras a diferença entre IA, ML e modelos generativos"],
     ["Estudar dados de treino, validação, teste e risco de vazamento", "Criar uma tabela simples de dados e identificar possíveis vieses"],
