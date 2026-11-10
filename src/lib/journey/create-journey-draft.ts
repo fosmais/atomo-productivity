@@ -15,6 +15,7 @@ export type JourneyDraft = {
   title: string;
   targetDate?: string;
   weeks: number;
+  plannedOn: string;
   missions: JourneyMission[];
   requiresUserConfirmation: true;
 };
@@ -62,5 +63,5 @@ export function createJourneyDraft(goal: JourneyGoal, today = new Date()): Journ
       status: "pending",
     });
   }
-  return { title, ...(goal.targetDate ? { targetDate: goal.targetDate } : {}), weeks, missions, requiresUserConfirmation: true };
+  return { title, ...(goal.targetDate ? { targetDate: goal.targetDate } : {}), plannedOn: today.toISOString().slice(0, 10), weeks, missions, requiresUserConfirmation: true };
 }
