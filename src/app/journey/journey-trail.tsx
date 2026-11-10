@@ -413,7 +413,12 @@ export default function JourneyTrail() {
                       <p className="whitespace-pre-wrap">{aiFeedback[m.id]}</p>
                       <div className="rounded-lg border border-amber-300/30 bg-amber-300/10 p-3">
                         <p className="font-semibold text-amber-100">Próxima ação sugerida</p>
-                        <p className="mt-1">Reserve 20 minutos para revisar esta aula, aplicar a orientação da MIKA e refazer o exercício. A atividade não será adicionada à agenda sem sua confirmação.</p>
+                        <p className="mt-1">Plano de reforço desta missão: use a orientação personalizada acima e pratique por 20 minutos. Nenhuma atividade será adicionada à agenda sem sua confirmação.</p>
+                        <ol className="mt-2 list-inside list-decimal space-y-1 text-amber-50">
+                          <li>5 min — retome a habilidade a reforçar identificada pela MIKA.</li>
+                          <li>10 min — resolva o novo exercício proposto, sem consultar a resposta.</li>
+                          <li>5 min — confira os critérios, corrija os erros e registre suas dúvidas.</li>
+                        </ol>
                         <button type="button" onClick={() => {
                           const proposal = "Revisão MIKA · " + lesson.heading + "\\nDuração sugerida: 20 minutos\\nObjetivo: aplicar o feedback e refazer o exercício.\\n\\n" + aiFeedback[m.id];
                           void navigator.clipboard.writeText(proposal).then(() => setExerciseMessage(old => ({ ...old, [m.id]: "Proposta copiada. Você pode usá-la para criar uma tarefa na Agenda." }))).catch(() => setExerciseMessage(old => ({ ...old, [m.id]: "Não foi possível copiar a proposta." })));
