@@ -54,6 +54,24 @@ export default function JourneyTrail() {
   const done = missions.filter(m => m.status === "completed").length;
   const percent = missions.length ? Math.round(done / missions.length * 100) : 0;
   const current = journeys.find(j => j.id === selected);
+  const finished = missions.length > 0 && done === missions.length;
+  async function shareVictory() {
+    if (!current || !finished) return;
+    const message = "🏆 Concluí minha jornada " + current.title + " na MYRYRA! " + done + " missões realizadas. ✨";
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "Minha conquista MYRYRA", text: message, url: "https://myryra.com/journey" });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(message + " https://myryra.com/journey");
+        setError("Mensagem de conquista copiada para compartilhar.");
+      } else {
+        setError("Compartilhamento não disponível neste navegador.");
+      }
+    } catch (cause) {
+      if (cause instanceof Error && cause.name === "AbortError") return;
+      setError("Não foi possível compartilhar. Tente novamente.");
+    }
+  }
   return (
     <section aria-label="Mapa da minha jornada" className="overflow-hidden rounded-3xl border border-violet-400/30 bg-gradient-to-b from-violet-950/80 via-slate-900 to-slate-950 p-4 sm:p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -71,6 +89,23 @@ export default function JourneyTrail() {
         <div className="mt-4 flex items-center justify-between text-sm"><span>{done} de {missions.length} missões</span><strong>{percent}%</strong></div>
         <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-700" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label="Progresso da jornada"><div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-400 transition-all duration-500" style={{ width: percent + "%" }} /></div>
       </div>}
+      {current && finished && !loading && (
+        <div role="status" aria-label="Jornada concluída" className="relative mt-6 overflow-hidden rounded-3xl border border-amber-300/50 bg-gradient-to-br from-amber-500/25 via-fuchsia-700/25 to-violet-900/80 p-6 text-center shadow-[0_0_60px_rgba(217,70,239,0.18)] sm:p-9">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-50" style={{ backgroundImage: "radial-gradient(circle at 20% 20%, #fbbf24 1px, transparent 2px), radial-gradient(circle at 80% 60%, #e879f9 1px, transparent 2px)", backgroundSize: "37px 43px, 53px 61px" }} />
+          <div className="relative">
+            <div className="text-5xl motion-safe:animate-bounce" aria-hidden="true">🏆</div>
+            <p className="mt-3 text-xs font-bold uppercase tracking-[0.25em] text-amber-200">Destino alcançado</p>
+            <h3 className="mt-2 text-3xl font-extrabold text-white sm:text-4xl">Você conseguiu!</h3>
+            <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-violet-100">Sua jornada <strong>{current.title}</strong> chegou ao destino. Foram <strong>{done} missões concluídas</strong>. Cada passo fez parte dessa conquista.</p>
+            <p className="mt-3 text-sm font-medium text-amber-200">✦ MIKA: que conquista incrível! Celebre este momento. Seu próximo sonho já pode começar.</p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <button type="button" onClick={() => void shareVictory()} className="rounded-xl bg-amber-300 px-5 py-3 text-sm font-bold text-slate-950 transition-transform active:scale-95">✨ Compartilhar conquista</button>
+              <button type="button" onClick={() => { const details = document.getElementById("journey-create-details") as HTMLDetailsElement | null; if (details) { details.open = true; details.scrollIntoView({ behavior: "smooth", block: "start" }); } }} className="rounded-xl border border-white/40 bg-white/10 px-5 py-3 text-sm font-semibold text-white">🚀 Começar outra aventura</button>
+            </div>
+            <p className="mt-4 text-xs text-violet-200">MYRAs ainda não são creditadas. O compartilhamento divulga apenas esta conquista, sem detalhes das missões.</p>
+          </div>
+        </div>
+      )}
       {loading ? <p className="mt-6 text-sm text-slate-300">Preparando seu mapa...</p> : !journeys.length ?
         <p className="mt-6 text-sm text-slate-300">Sua aventura começa com um sonho. Crie sua primeira jornada abaixo.</p> :
         <div className="relative mx-auto mt-8 max-w-xl pb-4">
@@ -92,7 +127,7 @@ export default function JourneyTrail() {
               </li>;
             })}
           </ol>
-          <div className="relative mx-auto mt-7 w-fit rounded-full border border-amber-400/40 bg-amber-400/10 px-5 py-3 text-center text-sm font-semibold text-amber-100">🏆 Seu próximo marco</div>
+          <div className="relative mx-auto mt-7 w-fit rounded-full border border-amber-400/40 bg-amber-400/10 px-5 py-3 text-center text-sm font-semibold text-amber-100">{finished ? "🏆 Destino alcançado!" : "🏆 Seu próximo marco"}</div>
         </div>}
       {error && <p role="alert" className="mt-4 text-sm text-rose-300">{error}</p>}
       <p className="mt-5 text-center text-xs text-slate-400">As missões só são concluídas quando você confirma. MYRAs e jornadas compartilhadas serão ativadas em uma etapa futura.</p>
