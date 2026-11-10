@@ -14,6 +14,50 @@ export default function MikaJourneyPlanner() {
   const [saved, setSaved] = useState(false);
   const [journeys, setJourneys] = useState<SavedJourneySummary[]>([]);
   const [loadingJourneys, setLoadingJourneys] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [missions, setMissions] = useState<{ id: string; title: string; status: string }[]>([]);
+  const [missionBusy, setMissionBusy] = useState<string | null>(null);
+  const [missionLoading, setMissionLoading] = useState(false);
+
+  async function openJourney(id: string) {
+    if (expandedId === id) { setExpandedId(null); return; }
+    setMissionLoading(true);
+    setExpandedId(id);
+    setMissions([]);
+    try {
+      const response = await fetch("/api/journeys/" + encodeURIComponent(id), { cache: "no-store" });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Falha ao consultar missões.");
+      setMissions(payload.missions);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Falha ao consultar missões.");
+      setExpandedId(null);
+    } finally {
+      setMissionLoading(false);
+    }
+  }
+
+  async function toggleMission(id: string, status: string) {
+    if (!expandedId || missionBusy) return;
+    setMissionBusy(id);
+    setMessage("");
+    try {
+      const response = await fetch("/api/journeys/" + encodeURIComponent(expandedId) +
+        "/missions/" + encodeURIComponent(id), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: status === "completed" ? "pending" : "completed" }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Falha ao atualizar missão.");
+      setMissions((current) => current.map((mission) =>
+        mission.id === id ? { ...mission, status: payload.mission.status } : mission));
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Falha ao atualizar missão.");
+    } finally {
+      setMissionBusy(null);
+    }
+  }
 
   async function refreshJourneys() {
     try {
@@ -119,6 +163,38 @@ export default function MikaJourneyPlanner() {
                 <p className="mt-1 text-xs text-slate-300">Status: {journey.status}
                   {journey.target_date ? " · Meta: " + journey.target_date : ""}
                 </p>
+                <button type="button" onClick={() => void openJourney(journey.id)}
+                  className="mt-2 rounded-lg border border-white/30 px-3 py-1.5 text-xs">
+                  {expandedId === journey.id ? "Fechar missões" : "Ver missões"}
+                </button>
+                {expandedId === journey.id && (
+                  <div className="mt-3 space-y-2">
+                    {missionLoading ? <p className="text-slate-300">Carregando missões...</p> :
+                      <>
+                        <p className="text-xs text-slate-300">
+                          {missions.filter((m) => m.status === "completed").length} de {missions.length} missões concluídas
+                        </p>
+                        <progress aria-label="Progresso da jornada" className="w-full"
+                          max={Math.max(1, missions.length)}
+                          value={missions.filter((m) => m.status === "completed").length} />
+                        <ul className="max-h-64 space-y-2 overflow-auto">
+                          {missions.map((mission) => (
+                            <li key={mission.id} className="flex items-start gap-2">
+                              <input type="checkbox" className="mt-1"
+                                aria-label={"Concluir missão: " + mission.title}
+                                checked={mission.status === "completed"}
+                                disabled={missionBusy !== null}
+                                onChange={() => void toggleMission(mission.id, mission.status)} />
+                              <span className={mission.status === "completed" ? "text-slate-400 line-through" : ""}>
+                                {mission.title}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    }
+                  </div>
+                )}
               </li>
             ))}
           </ul>}
