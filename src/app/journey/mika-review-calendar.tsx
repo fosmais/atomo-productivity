@@ -3,6 +3,19 @@
 import { useState } from "react";
 import { getCloudEvents, saveCloudEvent } from "@/lib/event-cloud";
 
+type GoogleBusy = { start: string | null; end: string | null };
+async function getGoogleBusy(): Promise<GoogleBusy[]> {
+  const response = await fetch("/api/google/events", { cache: "no-store" });
+  if (!response.ok) throw new Error(response.status === 409 ? "Reconecte seu Google Calendar antes de agendar." : "Não foi possível verificar o Google Calendar. Tente novamente.");
+  const data: { connected?: boolean; events?: GoogleBusy[] } = await response.json();
+  if (!Array.isArray(data.events)) throw new Error("Resposta inesperada do Google Calendar.");
+  return data.events;
+}
+function hasConflict(start: number, end: number, events: { startsAt: string; endsAt: string; blocksTime: boolean }[], google: GoogleBusy[]) {
+  return events.some(event => event.blocksTime && Date.parse(event.startsAt) < end && Date.parse(event.endsAt) > start)
+    || google.some(event => event.start && event.end && Date.parse(event.start) < end && Date.parse(event.end) > start);
+}
+
 export default function MikaReviewCalendar({ title }: { title: string }) {
   const [start, setStart] = useState("");
   const [working, setWorking] = useState(false);
@@ -15,7 +28,7 @@ export default function MikaReviewCalendar({ title }: { title: string }) {
     setSuggesting(true);
     setMessage("");
     try {
-      const events = await getCloudEvents();
+      const [events, google] = await Promise.all([getCloudEvents(), getGoogleBusy()]);
       const slots: string[] = [];
       const now = new Date();
       for (let dayOffset = 0; dayOffset < 7 && slots.length < 3; dayOffset++) {
@@ -23,7 +36,7 @@ export default function MikaReviewCalendar({ title }: { title: string }) {
           const candidate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + dayOffset, hour, 0);
           const end = candidate.getTime() + 20 * 60_000;
           if (candidate.getTime() < Date.now() + 30 * 60_000) continue;
-          if (events.some(event => event.blocksTime && Date.parse(event.startsAt) < end && Date.parse(event.endsAt) > candidate.getTime())) continue;
+          if (hasConflict(candidate.getTime(), end, events, google)) continue;
           const local = [candidate.getFullYear(), String(candidate.getMonth() + 1).padStart(2, "0"), String(candidate.getDate()).padStart(2, "0")].join("-") + "T" + String(hour).padStart(2, "0") + ":00";
           slots.push(local);
           if (slots.length === 3) break;
@@ -45,10 +58,10 @@ export default function MikaReviewCalendar({ title }: { title: string }) {
     setWorking(true);
     setMessage("");
     try {
-      const events = await getCloudEvents();
-      const overlapping = events.some(event => event.blocksTime && Date.parse(event.startsAt) < endDate.getTime() && Date.parse(event.endsAt) > startDate.getTime());
+      const [events, google] = await Promise.all([getCloudEvents(), getGoogleBusy()]);
+      const overlapping = hasConflict(startDate.getTime(), endDate.getTime(), events, google);
       if (overlapping) {
-        setMessage("Há um bloqueio na sua agenda nesse horário. Escolha outro período.");
+        setMessage("Há um compromisso ou bloqueio nesse horário. Escolha outro período.");
         return;
       }
       await saveCloudEvent({ title: title.slice(0, 200), startsAt: startDate.toISOString(), endsAt: endDate.toISOString(), category: "personal", eventType: "appointment", blocksTime: true, notes: "Treinamento MIKA · revisão de 20 minutos sugerida após exercício. Criado com autorização do usuário." });
@@ -65,7 +78,7 @@ export default function MikaReviewCalendar({ title }: { title: string }) {
     {suggestions.length > 0 && <div className="flex flex-wrap gap-2">{suggestions.map(slot => <button type="button" key={slot} disabled={working || confirmed} onClick={() => setStart(slot)} className="rounded-lg border border-emerald-200/40 px-3 py-2 text-emerald-100">{new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(slot))}</button>)}</div>}
     <input aria-label="Início do treinamento" type="datetime-local" value={start} disabled={working || confirmed} onChange={event => setStart(event.target.value)} className="max-w-full rounded-lg border border-slate-500 bg-slate-900 p-2 text-white" />
     <button type="button" disabled={working || confirmed || !start} onClick={() => void confirm()} className="rounded-lg border border-emerald-200/50 px-3 py-2 font-semibold text-emerald-100 disabled:opacity-40">{working ? "Verificando disponibilidade..." : confirmed ? "Agendado" : "Confirmar na Agenda"}</button>
-    <p className="text-slate-200">As sugestões consideram somente os bloqueios registrados na MYRYRA, não os eventos externos. Confira seus outros calendários. O compromisso é criado somente após sua confirmação.</p>
+    <p className="text-slate-200">As sugestões verificam bloqueios MYRYRA e eventos do Google Calendar conectado. A criação do compromisso ocorre somente na MYRYRA, após sua confirmação.</p>
     {message && <p role="status">{message}</p>}
   </div>;
 }
