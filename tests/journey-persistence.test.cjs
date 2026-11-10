@@ -125,7 +125,7 @@ test("returns existing journey on duplicate confirmation without inserting missi
         maybeSingle: async () => ({ data: { id: "existing-1", title: draft.title, target_date: null }, error: null }),
       };
       if (table === "myryra_journey_missions") {
-        query.select = () => ({ eq: () => Promise.resolve({ count: draft.missions.length, error: null }) });
+        query.select = () => ({ eq: () => Promise.resolve({ data: draft.missions.map(m => ({ title: m.title })), error: null }) });
       }
       return query;
     },
@@ -148,7 +148,7 @@ test("does not accept incomplete duplicate confirmation as successful", async ()
         maybeSingle: async () => ({ data: { id: "existing-1", title: draft.title, target_date: null }, error: null }),
       };
       if (table === "myryra_journey_missions") {
-        query.select = () => ({ eq: () => Promise.resolve({ count: 0, error: null }) });
+        query.select = () => ({ eq: () => Promise.resolve({ data: [], error: null }) });
       }
       return query;
     },
@@ -172,4 +172,25 @@ test("rejects replay of a confirmation key for a different goal", async () => {
     },
   };
   await assert.rejects(saveConfirmedJourney(client, draft, true, key), /outro objetivo/);
+});
+
+test("rejects replay when mission titles differ despite matching counts", async () => {
+  const key = "b00d7a13-4d5a-4d12-9b21-5b4f91234567";
+  const client = {
+    auth: { getUser: async () => ({ data: { user: { id: "user-1" } }, error: null }) },
+    from(table) {
+      const query = {
+        insert() { return query; },
+        select() { return query; },
+        single: async () => ({ data: null, error: { code: "23505" } }),
+        eq() { return query; },
+        maybeSingle: async () => ({ data: { id: "existing-1", title: draft.title, target_date: null }, error: null }),
+      };
+      if (table === "myryra_journey_missions") {
+        query.select = () => ({ eq: () => Promise.resolve({ data: [{ title: "Missão diferente" }], error: null }) });
+      }
+      return query;
+    },
+  };
+  await assert.rejects(saveConfirmedJourney(client, draft, true, key), /planejamento diferente/);
 });
