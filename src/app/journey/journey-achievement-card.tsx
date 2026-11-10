@@ -61,8 +61,14 @@ export default function JourneyAchievementCard({ journeyId, title, completedCoun
     const text = "🏆 Concluí minha jornada " + item.title + " na MYRYRA! " + completedCount + " missões realizadas. " + (item.message ?? "");
     setFeedback("");
     try {
-      if (item.photo_url && navigator.share) {
-        const response = await fetch(item.photo_url, { cache: "no-store" });
+      // Signed Storage links expire; refresh immediately before a user-initiated share.
+      const latestResponse = await fetch(endpoint, { cache: "no-store" });
+      if (!latestResponse.ok) throw new Error("Não foi possível atualizar a galeria.");
+      const latest = await latestResponse.json();
+      const current = Array.isArray(latest.achievements) ? latest.achievements.find((entry: { id: string }) => entry.id === item.id) : null;
+      if (!current) throw new Error("Esta conquista não está mais disponível.");
+      if (current.photo_url && navigator.share) {
+        const response = await fetch(current.photo_url, { cache: "no-store" });
         if (!response.ok) throw new Error("Não foi possível recuperar a foto privada. Atualize a galeria e tente novamente.");
         const blob = await response.blob();
         const type = blob.type;
@@ -73,7 +79,7 @@ export default function JourneyAchievementCard({ journeyId, title, completedCoun
           return;
         }
       }
-      if (navigator.share) { await navigator.share({ title: "Minha conquista MYRYRA", text }); if (item.photo_url) setFeedback("Seu dispositivo compartilhou a mensagem sem anexar a foto."); }
+      if (navigator.share) { await navigator.share({ title: "Minha conquista MYRYRA", text }); if (current.photo_url) setFeedback("Seu dispositivo compartilhou a mensagem sem anexar a foto."); }
       else if (navigator.clipboard) { await navigator.clipboard.writeText(text); setFeedback("Mensagem copiada para compartilhar."); }
       else setFeedback("Compartilhamento indisponível neste dispositivo.");
     } catch (error) {
