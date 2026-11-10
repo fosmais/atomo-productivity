@@ -72,7 +72,18 @@ export default function MikaJourneyPlanner() {
     }
   }
 
-  useEffect(() => { void refreshJourneys(); }, []);
+  useEffect(() => {
+    let active = true;
+    fetch("/api/journeys", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Falha ao carregar jornadas");
+        return response.json();
+      })
+      .then((payload) => { if (active) setJourneys(payload.journeys); })
+      .catch(() => { if (active) setMessage("Não foi possível carregar suas jornadas."); })
+      .finally(() => { if (active) setLoadingJourneys(false); });
+    return () => { active = false; };
+  }, []);
 
 
   async function submit(confirm: boolean) {
