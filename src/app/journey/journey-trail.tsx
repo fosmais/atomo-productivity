@@ -156,6 +156,11 @@ export default function JourneyTrail() {
   const windowStart = showAllMissions ? 0 : Math.max(0, focusIndex - 2);
   const windowEnd = showAllMissions ? missions.length : Math.min(missions.length, Math.max(7, focusIndex + 5));
   const visibleMissions = missions.slice(windowStart, windowEnd);
+  const chapterSize = 8;
+  const chapterNames = ["🌱 Descoberta", "🧭 Preparação", "🚀 Em movimento", "✨ Rumo à conquista"];
+  const chapterCount = Math.ceil(missions.length / chapterSize);
+  const chapterFor = (index: number) => Math.floor(index / chapterSize);
+  const chapterName = (chapter: number) => chapterNames[Math.min(3, Math.floor(chapter * 4 / Math.max(1, chapterCount)))];
   async function shareVictory() {
     if (!current || !finished) return;
     const message = "🏆 Concluí minha jornada " + current.title + " na MYRYRA! " + done + " missões realizadas. ✨";
@@ -249,7 +254,13 @@ export default function JourneyTrail() {
                 const i = windowStart + localIndex;
                 const completed = m.status === "completed";
                 const next = !completed && missions.slice(0, i).every(x => x.status === "completed");
-                return <li key={m.id} className={"flex " + (i % 2 ? "justify-end" : "justify-start")}>
+                return <li key={m.id} className="space-y-4">
+                  {(localIndex === 0 || chapterFor(i) !== chapterFor(i - 1)) && <div className="mx-auto w-fit rounded-2xl border border-fuchsia-300/35 bg-indigo-950/95 px-4 py-3 text-center shadow-lg">
+                    <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-200">Capítulo {chapterFor(i) + 1} de {chapterCount}</p>
+                    <p className="mt-1 text-sm font-semibold text-white">{chapterName(chapterFor(i))}</p>
+                    <p className="mt-1 text-xs text-violet-200">{missions.slice(chapterFor(i) * chapterSize, Math.min(missions.length, (chapterFor(i) + 1) * chapterSize)).filter(item => item.status === "completed").length} conquistas realizadas neste capítulo</p>
+                  </div>}
+                  <div className={"flex " + (i % 2 ? "justify-end" : "justify-start")}>
                   <button type="button" disabled={!!busy} onClick={() => void complete(m)}
                     aria-label={(completed ? "Reabrir missão: " : "Concluir missão: ") + m.title}
                     className={"group relative w-[78%] min-w-0 rounded-2xl border p-4 text-left shadow-xl backdrop-blur-md transition-all duration-300 hover:-translate-y-1 active:scale-[.98] disabled:opacity-60 sm:w-[69%] " +
@@ -259,6 +270,7 @@ export default function JourneyTrail() {
                     <span className="mt-2 block break-words text-sm font-semibold leading-relaxed text-white sm:text-base">{m.title}</span>
                     <span className={"mt-3 inline-flex rounded-full px-3 py-1 text-[11px] font-bold " + (completed ? "bg-emerald-400/20 text-emerald-200" : next ? "bg-amber-300/20 text-amber-200" : "bg-white/10 text-violet-200")}>{completed ? "✓ Conquista realizada" : next ? "✦ Sua próxima missão" : "◇ Aguardando sua vez"}</span>
                   </button>
+                  </div>
                 </li>;
               })}
             </ol>
