@@ -41,13 +41,12 @@ export default function JourneyAchievementCard({ journeyId, title, completedCoun
     finally { setSaving(false); }
   }
   useEffect(() => {
-    if (!photo) { setPreview(""); return; }
-    const url = URL.createObjectURL(photo);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [photo, journeyId]);
+    return () => { if (preview) URL.revokeObjectURL(preview); };
+  }, [preview]);
   function choosePhoto(file?: File) {
     setFeedback("");
+    setPhoto(null);
+    setPreview("");
     if (!file) return;
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       setFeedback("Escolha uma imagem JPG, PNG ou WebP."); return;
@@ -56,6 +55,7 @@ export default function JourneyAchievementCard({ journeyId, title, completedCoun
       setFeedback("A imagem deve ter no máximo 5 MB."); return;
     }
     setPhoto(file);
+    setPreview(URL.createObjectURL(file));
   }
   async function shareSaved(item: { id: string; title: string; message: string | null; photo_url: string | null }) {
     const text = "🏆 Concluí minha jornada " + item.title + " na MYRYRA! " + completedCount + " missões realizadas. " + (item.message ?? "");
@@ -116,7 +116,7 @@ export default function JourneyAchievementCard({ journeyId, title, completedCoun
       {preview && <div className="space-y-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={preview} alt="Prévia da foto da conquista" className="max-h-64 w-full rounded-xl object-contain" />
-        <button type="button" onClick={() => { setPhoto(null); setFeedback(""); }} className="text-xs text-rose-200 underline">Remover foto</button>
+        <button type="button" onClick={() => { setPhoto(null); setPreview(""); setFeedback(""); }} className="text-xs text-rose-200 underline">Remover foto</button>
       </div>}
       <label className="block text-xs text-violet-100">Sua mensagem
         <textarea value={message} maxLength={300} onChange={event => setMessage(event.target.value)}
