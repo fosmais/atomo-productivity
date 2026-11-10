@@ -23,6 +23,7 @@ export default function MikaJourneyPlanner() {
   const [missionBusy, setMissionBusy] = useState<string | null>(null);
   const [missionLoading, setMissionLoading] = useState(false);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async function readApiJson(response: Response, action: string): Promise<Record<string, any>> {
     const contentType = response.headers.get("content-type") ?? "";
     if (!contentType.toLowerCase().includes("application/json")) {
@@ -34,6 +35,7 @@ export default function MikaJourneyPlanner() {
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
       throw new Error(action + ": resposta inesperada do servidor.");
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return payload as Record<string, any>;
   }
 
