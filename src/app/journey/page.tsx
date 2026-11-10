@@ -32,7 +32,7 @@ async function JourneyContent() {
           <summary className="cursor-pointer text-sm font-semibold text-violet-200">✦ Criar outra jornada ou planejar um novo sonho</summary>
           <div className="mt-4"><MikaJourneyPlanner /></div>
         </details>
-        <p className="text-center text-xs text-slate-400">MYRAs e jornadas compartilhadas estão planejadas para uma próxima etapa; nenhuma recompensa é concedida nesta versão.</p>
+        <p className="text-center text-xs text-slate-400">Conclua missões para conquistar MYRAs virtuais. Jornadas compartilhadas estão em desenvolvimento; MYRAs não possuem valor monetário.</p>
       </div>
     </main>
   );
