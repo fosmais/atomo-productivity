@@ -415,8 +415,8 @@ export default function JourneyTrail() {
                         <p className="font-semibold text-amber-100">Próxima ação sugerida</p>
                         <p className="mt-1">Reserve 20 minutos para revisar esta aula, aplicar a orientação da MIKA e refazer o exercício. A atividade não será adicionada à agenda sem sua confirmação.</p>
                         <button type="button" onClick={() => {
-                          const proposal = "Revisão MIKA · " + lesson.heading + "\\nDuração sugerida: 20 minutos\\nMissão: " + m.title + "\\nObjetivo: executar o plano de reforço personalizado abaixo, verificar a aprendizagem e refazer o exercício.\\n\\n" + aiFeedback[m.id];
-                          void navigator.clipboard.writeText(proposal).then(() => setExerciseMessage(old => ({ ...old, [m.id]: "Plano personalizado copiado, incluindo a missão e o feedback. Você pode utilizá-lo na sua revisão." }))).catch(() => setExerciseMessage(old => ({ ...old, [m.id]: "Não foi possível copiar a proposta." })));
+                          const proposal = "Revisão MIKA · " + lesson.heading + "\\nDuração sugerida: 20 minutos\\nObjetivo: aplicar o feedback e refazer o exercício.\\n\\n" + aiFeedback[m.id];
+                          void navigator.clipboard.writeText(proposal).then(() => setExerciseMessage(old => ({ ...old, [m.id]: "Proposta copiada. Você pode usá-la para criar uma tarefa na Agenda." }))).catch(() => setExerciseMessage(old => ({ ...old, [m.id]: "Não foi possível copiar a proposta." })));
                         }} className="mt-2 rounded-lg border border-amber-200/50 px-3 py-2 font-semibold text-amber-100">Copiar proposta de revisão</button>
                         <button type="button" onClick={() => setProposedReview(old => old === m.id ? null : m.id)} className="mt-2 ml-2 rounded-lg border border-emerald-200/50 px-3 py-2 font-semibold text-emerald-100">{proposedReview === m.id ? "Ocultar confirmação" : "Adicionar tarefa de revisão"}</button>
                         <MikaReviewCalendar key={m.id} title={"Revisão MIKA: " + lesson.heading} />
