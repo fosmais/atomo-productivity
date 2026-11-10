@@ -56,10 +56,10 @@ export async function PATCH(request: Request, context: Context) {
     if (detailsError || !missionDetails) return NextResponse.json({ error: "Falha ao verificar conteúdo da missão." }, { status: 500 });
     if (educationalMission.test(missionDetails.title)) {
       const { data: learning, error: learningError } = await supabase.from("myryra_journey_learning_progress")
-        .select("answer,feedback").eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
+        .select("answer,feedback,assessment_passed,assessment_score").eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
       if (learningError) return NextResponse.json({ error: "Não foi possível verificar a avaliação da MIKA." }, { status: 503 });
-      if (!learning?.answer?.trim() || !learning?.feedback?.trim())
-        return NextResponse.json({ error: "Antes de concluir esta aula, responda ao exercício e solicite a avaliação da MIKA. Sua avaliação precisa estar salva." }, { status: 409 });
+      if (!learning?.answer?.trim() || !learning?.feedback?.trim() || learning.assessment_passed !== true || typeof learning.assessment_score !== "number" || learning.assessment_score < 70)
+        return NextResponse.json({ error: "Para concluir esta aula, responda ao exercício e obtenha pelo menos 70 pontos na avaliação salva da MIKA. Se necessário, revise o conteúdo e tente novamente." }, { status: 409 });
     }
   }
 
