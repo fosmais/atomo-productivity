@@ -23,6 +23,8 @@ export default function JourneyTrail() {
   const [goalDate, setGoalDate] = useState("");
   const [showAllMissions, setShowAllMissions] = useState(false);
   const [openLesson, setOpenLesson] = useState<string | null>(null);
+  const [exerciseAnswers, setExerciseAnswers] = useState<Record<string, string>>({});
+  const [showReview, setShowReview] = useState<string | null>(null);
   const [replan, setReplan] = useState<{ previewOnly: boolean; revision: string; preserved: { completed: { id: string; title: string }[]; existingMissionCount: number }; proposed: { title: string; week: number }[]; planning?: { targetDate: string | null; originalTargetDate: string | null; deadlineNeedsReview: boolean; remainingMissions: number } } | null>(null);
   useEffect(() => {
     let alive = true;
@@ -323,7 +325,10 @@ export default function JourneyTrail() {
                   </div>
                   {lessonFor(m.title) && <div className="mx-auto w-[92%] rounded-xl border border-violet-300/25 bg-slate-900/80 p-3 sm:w-[85%]">
                     <button type="button" onClick={() => setOpenLesson(value => value === m.id ? null : m.id)} aria-expanded={openLesson === m.id} className="w-full text-left text-xs font-semibold text-amber-200">{openLesson === m.id ? "▾ Fechar treinamento" : "▸ Estudar com a MIKA · Aula e exercício"}</button>
-                    {openLesson === m.id && (() => { const lesson = lessonFor(m.title)!; return <div className="mt-3 space-y-3 text-sm leading-relaxed text-slate-200"><p className="font-bold text-white">{lesson.heading}</p><p>{lesson.explanation}</p><p className="rounded-lg bg-violet-800/25 p-3">{lesson.example}</p><p className="font-semibold text-amber-100">Sua prática: {lesson.exercise}</p><p className="text-xs text-slate-400">Este conteúdo é introdutório. Realize o exercício antes de marcar a missão como concluída.</p></div>; })()}
+                    {openLesson === m.id && (() => { const lesson = lessonFor(m.title)!; return <div className="mt-3 space-y-3 text-sm leading-relaxed text-slate-200"><p className="font-bold text-white">{lesson.heading}</p><p>{lesson.explanation}</p><p className="rounded-lg bg-violet-800/25 p-3">{lesson.example}</p><p className="font-semibold text-amber-100">Sua prática: {lesson.exercise}</p>
+                    <label className="block space-y-2"><span className="block text-xs font-semibold text-violet-100">Sua resposta (rascunho local)</span><textarea value={exerciseAnswers[m.id] ?? ""} onChange={event => { setExerciseAnswers(old => ({ ...old, [m.id]: event.target.value.slice(0, 2000) })); setShowReview(null); }} rows={4} maxLength={2000} placeholder="Registre seu raciocínio e os exemplos aqui..." className="w-full rounded-lg border border-violet-300/30 bg-slate-950 p-3 text-sm text-white placeholder:text-slate-400" /></label>
+                    <button type="button" disabled={(exerciseAnswers[m.id] ?? "").trim().length < 30} onClick={() => setShowReview(m.id)} className="rounded-lg border border-amber-300/40 bg-amber-300/10 px-3 py-2 text-xs font-semibold text-amber-100 disabled:opacity-40">Revisar minha resposta</button>
+                    {showReview === m.id && <div role="status" className="space-y-2 rounded-lg border border-violet-300/30 bg-violet-900/20 p-3 text-xs"><p className="font-bold text-white">Checklist para autoavaliação</p><p>✓ Você respondeu ao que foi pedido no exercício?</p><p>✓ Incluiu um exemplo concreto e explicou seu raciocínio?</p><p>✓ Consegue identificar uma limitação ou algo que ainda precisa pesquisar?</p><p className="text-amber-200">Esta revisão é orientativa, não uma correção por IA. A resposta não foi enviada nem salva no servidor. Só marque a missão concluída depois de realizar a prática.</p></div>}<p className="text-xs text-slate-400">Este conteúdo é introdutório. Realize o exercício antes de marcar a missão como concluída.</p></div>; })()}
                   </div>}
                 </li>;
               })}
