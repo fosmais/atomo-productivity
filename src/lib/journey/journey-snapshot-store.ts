@@ -2,10 +2,19 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { JourneyDraft } from "./create-journey-draft";
 
+function canonicalJson(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return "[" + value.map(canonicalJson).join(",") + "]";
+  const entries = Object.entries(value as Record<string, unknown>)
+    .filter(([, item]) => item !== undefined)
+    .sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0);
+  return "{" + entries.map(([key, item]) => JSON.stringify(key) + ":" + canonicalJson(item)).join(",") + "}";
+}
+
 function signature(ownerId: string, draft: JourneyDraft, expiresAt: string): string {
   const key = process.env.JOURNEY_SNAPSHOT_SIGNING_KEY;
   if (!key || Buffer.byteLength(key, "utf8") < 32) throw new Error("Assinatura não configurada.");
-  return createHmac("sha256", key).update(JSON.stringify({ ownerId, draft, expiresAt })).digest("hex");
+  return createHmac("sha256", key).update(canonicalJson({ ownerId, draft, expiresAt })).digest("hex");
 }
 
 const MAX_AGE_MS = 15 * 60 * 1000;
