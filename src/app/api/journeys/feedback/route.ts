@@ -37,7 +37,16 @@ export async function POST(request: Request) {
       input: JSON.stringify({ goal: journey.title, mission: mission.title, exercise: exercise.trim(), studentAnswer: answer.trim() }),
       max_output_tokens: 450,
     });
-    return NextResponse.json({ feedback: response.output_text }, { headers: { "Cache-Control": "private, no-store" } });
+    const feedback = response.output_text?.trim();
+    if (!feedback) return NextResponse.json({ error: "A avaliação não retornou conteúdo." }, { status: 503 });
+    const { error: saveError } = await supabase.from("myryra_journey_learning_progress").upsert({
+      mission_id: missionId, owner_id: user.id, answer: answer.trim(), feedback, updated_at: new Date().toISOString(),
+    }, { onConflict: "mission_id" });
+    if (saveError) {
+      console.error("MIKA Journey feedback persistence failed", saveError.code);
+      return NextResponse.json({ feedback, saved: false }, { headers: { "Cache-Control": "private, no-store" } });
+    }
+    return NextResponse.json({ feedback, saved: true }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("MIKA Journey feedback unavailable", error);
     return NextResponse.json({ error: "Não foi possível avaliar a resposta agora." }, { status: 503 });
