@@ -20,8 +20,9 @@ export async function POST(_request: Request, context: Context) {
   if (journeyError) return NextResponse.json({ error: "Falha ao consultar jornada." }, { status: 500 });
   if (!journey) return NextResponse.json({ error: "Jornada não encontrada." }, { status: 404 });
   const { data: missions, error: missionError } = await supabase.from("myryra_journey_missions")
-    .select("id,title,status").eq("journey_id", journeyId).order("created_at", { ascending: true }).limit(104);
+    .select("id,title,status").eq("journey_id", journeyId).order("created_at", { ascending: true }).limit(105);
   if (missionError) return NextResponse.json({ error: "Falha ao consultar missões." }, { status: 500 });
+  if ((missions ?? []).length > 104) return NextResponse.json({ error: "Jornada excede o limite de missões. Revise a meta antes de replanejar." }, { status: 409 });
   const completed = (missions ?? []).filter(m => m.status === "completed");
   // A short, practical preview is preferable to reproducing 50 generic cards.
   // Keep the original deadline when it is still actionable.
