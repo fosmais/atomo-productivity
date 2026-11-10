@@ -107,7 +107,16 @@ export default function MikaJourneyPlanner() {
         }),
       });
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Não foi possível processar sua jornada.");
+      if (!response.ok) {
+        if (response.status === 429) {
+          const retrySeconds = Number(response.headers.get("Retry-After"));
+          const wait = Number.isFinite(retrySeconds) && retrySeconds > 0
+            ? ` Tente novamente em aproximadamente ${Math.ceil(retrySeconds / 60)} minuto(s).`
+            : " Aguarde antes de tentar novamente.";
+          throw new Error((payload.error || "Limite de requisições atingido.") + wait);
+        }
+        throw new Error(payload.error || "Não foi possível processar sua jornada.");
+      }
       if (confirm) {
         setSaved(true);
         setMessage("Jornada salva com sucesso.");
