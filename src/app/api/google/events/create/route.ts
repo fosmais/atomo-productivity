@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
+import { createHash } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { createGoogleOAuthClient } from "@/lib/google-calendar";
@@ -43,15 +44,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Autorize a criação de eventos no Google antes de continuar.", code: "GOOGLE_WRITE_CONSENT_REQUIRED" }, { status: 403 });
     }
     const calendar = google.calendar({ version: "v3", auth: oauth });
-    const result = await calendar.events.insert({
+    const eventId = "myryra" + createHash("sha256").update(JSON.stringify([user.id, title, start, end])).digest("hex").slice(0, 40);
+    let result;
+    try {
+      result = await calendar.events.insert({
       calendarId: "primary",
       requestBody: {
+        id: eventId,
         summary: title,
         description: "Revisão de aprendizagem MIKA · MYRYRA. Criada após confirmação explícita.",
         start: { dateTime: new Date(start).toISOString() },
         end: { dateTime: new Date(end).toISOString() },
       },
-    });
+      });
+    } catch (insertError) {
+      const status = (insertError as { code?: number; response?: { status?: number } }).response?.status ?? (insertError as { code?: number }).code;
+      if (status !== 409) throw insertError;
+      const existing = await calendar.events.get({ calendarId: "primary", eventId });
+      return NextResponse.json({ created: false, alreadyExists: true, id: existing.data.id, url: existing.data.htmlLink }, { headers: { "Cache-Control": "private, no-store" } });
+    }
     return NextResponse.json({ created: true, id: result.data.id, url: result.data.htmlLink }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("MIKA Google Calendar event creation failed", error instanceof Error ? error.name : "unknown");
