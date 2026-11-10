@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import JourneyAchievementCard from "./journey-achievement-card";
 import TaskConfirmation from "../dashboard/task-confirmation";
+import MikaReviewCalendar from "./mika-review-calendar";
 
 type Journey = { id: string; title: string; status: string; target_date: string | null };
 type Mission = { id: string; title: string; status: string; week?: number };
@@ -400,6 +401,7 @@ export default function JourneyTrail() {
                           void navigator.clipboard.writeText(proposal).then(() => setExerciseMessage(old => ({ ...old, [m.id]: "Proposta copiada. Você pode usá-la para criar uma tarefa na Agenda." }))).catch(() => setExerciseMessage(old => ({ ...old, [m.id]: "Não foi possível copiar a proposta." })));
                         }} className="mt-2 rounded-lg border border-amber-200/50 px-3 py-2 font-semibold text-amber-100">Copiar proposta de revisão</button>
                         <button type="button" onClick={() => setProposedReview(old => old === m.id ? null : m.id)} className="mt-2 ml-2 rounded-lg border border-emerald-200/50 px-3 py-2 font-semibold text-emerald-100">{proposedReview === m.id ? "Ocultar confirmação" : "Adicionar tarefa de revisão"}</button>
+                        <MikaReviewCalendar key={m.id} title={"Revisão MIKA: " + lesson.heading} />
                         {proposedReview === m.id && <div className="mt-3 space-y-2">
                           <label htmlFor={"review-date-" + m.id} className="block font-semibold text-emerald-100">Data desejada para a revisão (opcional)</label>
                           <input id={"review-date-" + m.id} type="date" min={new Date().toLocaleDateString("en-CA")} value={reviewDueDates[m.id] ?? ""} onChange={event => setReviewDueDates(old => ({ ...old, [m.id]: event.target.value }))} className="rounded-lg border border-slate-500 bg-slate-900 p-2 text-white" />
