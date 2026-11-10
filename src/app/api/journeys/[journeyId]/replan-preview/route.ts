@@ -16,7 +16,7 @@ export async function POST(_request: Request, context: Context) {
   if (assurance.error || (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2"))
     return NextResponse.json({ error: "Verificação adicional necessária." }, { status: 403 });
   const { data: journey, error: journeyError } = await supabase.from("myryra_journeys")
-    .select("id,title,target_date").eq("id", journeyId).eq("owner_id", user.id).maybeSingle();
+    .select("id,title,target_date").eq("id", journeyId).eq("owner_id", user.id).neq("status", "archived").maybeSingle();
   if (journeyError) return NextResponse.json({ error: "Falha ao consultar jornada." }, { status: 500 });
   if (!journey) return NextResponse.json({ error: "Jornada não encontrada." }, { status: 404 });
   const { data: missions, error: missionError } = await supabase.from("myryra_journey_missions")
