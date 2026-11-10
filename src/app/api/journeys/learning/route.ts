@@ -25,7 +25,7 @@ export async function GET(request: Request) {
   if (missionsError) return NextResponse.json({ error: "Erro ao consultar missões." }, { status: 500 });
   const ids = (missions ?? []).map(m => m.id);
   if (!ids.length) return NextResponse.json({ entries: [] }, { headers: { "Cache-Control": "private, no-store" } });
-  const { data, error: progressError } = await supabase.from("myryra_journey_learning_progress").select("mission_id,answer,feedback").eq("owner_id", user.id).in("mission_id", ids);
+  const { data, error: progressError } = await supabase.from("myryra_journey_learning_progress").select("mission_id,answer,feedback,assessment_score,assessment_passed,assessment_attempts,assessed_at").eq("owner_id", user.id).in("mission_id", ids);
   if (progressError) return NextResponse.json({ error: "Histórico de aprendizagem indisponível." }, { status: 503 });
   return NextResponse.json({ entries: data ?? [] }, { headers: { "Cache-Control": "private, no-store" } });
 }
