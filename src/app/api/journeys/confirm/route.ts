@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       ? await loadJourneySnapshot(supabase, input.snapshotId as string)
       : draft;
     if (!confirmedDraft) throw new Error("Prévia inválida.");
-    const saved = await saveConfirmedJourney(supabase, confirmedDraft, true, input.confirmationKey);
+    const saved = await saveConfirmedJourney(supabase, confirmedDraft, true, input.confirmationKey, input.snapshotId as string | undefined);
     return NextResponse.json({ journey: saved, saved: true }, {
       status: 201,
       headers: { "Cache-Control": "no-store" },
