@@ -11,7 +11,11 @@ export async function saveConfirmedJourney(
   supabase: SupabaseClient,
   draft: JourneyDraft,
   confirmed: boolean,
+  confirmationKey?: string,
 ): Promise<SavedJourney> {
+  if (confirmationKey !== undefined && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(confirmationKey)) {
+    throw new Error("Chave de confirmação inválida.");
+  }
   if (!confirmed) throw new Error("Confirme a jornada antes de salvar.");
   if (!draft.requiresUserConfirmation || !draft.title.trim() ||
       draft.title.length > 120 ||
@@ -28,10 +32,33 @@ export async function saveConfirmedJourney(
 
   const { data: journey, error: journeyError } = await supabase
     .from("myryra_journeys")
-    .insert({ owner_id: user.id, title: draft.title, target_date: draft.targetDate ?? null, status: "active", visibility: "private" })
+    .insert({ owner_id: user.id, title: draft.title, target_date: draft.targetDate ?? null, status: "active", visibility: "private", ...(confirmationKey ? { confirmation_key: confirmationKey } : {}) })
     .select("id")
     .single();
-  if (journeyError || !journey) throw new Error("Não foi possível salvar a jornada.");
+  if (journeyError || !journey) {
+    if (confirmationKey && journeyError?.code === "23505") {
+      const { data: existing, error: existingError } = await supabase
+        .from("myryra_journeys")
+        .select("id,title,target_date")
+        .eq("owner_id", user.id)
+        .eq("confirmation_key", confirmationKey)
+        .maybeSingle();
+      if (!existingError && existing) {
+        if (existing.title !== draft.title || existing.target_date !== (draft.targetDate ?? null)) {
+          throw new Error("Esta confirmação já foi usada para outro objetivo.");
+        }
+        const { count, error: countError } = await supabase
+          .from("myryra_journey_missions")
+          .select("id", { count: "exact", head: true })
+          .eq("journey_id", existing.id);
+        if (!countError && count === draft.missions.length) {
+          return { id: existing.id, missionCount: count };
+        }
+        throw new Error("Confirmação em processamento. Aguarde antes de tentar novamente.");
+      }
+    }
+    throw new Error("Não foi possível salvar a jornada.");
+  }
 
   const { error: missionsError } = await supabase.from("myryra_journey_missions")
     .insert(draft.missions.map((mission) => ({
