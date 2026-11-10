@@ -155,3 +155,21 @@ test("does not accept incomplete duplicate confirmation as successful", async ()
   };
   await assert.rejects(saveConfirmedJourney(client, draft, true, key), /em processamento/);
 });
+
+test("rejects replay of a confirmation key for a different goal", async () => {
+  const key = "b00d7a13-4d5a-4d12-9b21-5b4f91234567";
+  const client = {
+    auth: { getUser: async () => ({ data: { user: { id: "user-1" } }, error: null }) },
+    from() {
+      const query = {
+        insert() { return query; },
+        select() { return query; },
+        single: async () => ({ data: null, error: { code: "23505" } }),
+        eq() { return query; },
+        maybeSingle: async () => ({ data: { id: "existing-1", title: "Outro objetivo", target_date: null }, error: null }),
+      };
+      return query;
+    },
+  };
+  await assert.rejects(saveConfirmedJourney(client, draft, true, key), /outro objetivo/);
+});
