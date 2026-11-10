@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createJourneyDraft } from "@/lib/journey/create-journey-draft";
+import { checkConciergeRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -9,9 +10,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Autenticação necessária." }, { status: 401 });
   }
   const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (assurance.error ||
-      (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2")) {
+  if (assurance.error) {
+    return NextResponse.json({ error: "Verificação de sessão indisponível." }, { status: 503 });
+  }
+  if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
     return NextResponse.json({ error: "Verificação adicional necessária." }, { status: 403 });
+  }
+  // Reuse the existing shared limiter before enabling costly AI generation.
+  let limit;
+  try {
+    limit = await checkConciergeRateLimit(user.id);
+  } catch {
+    return NextResponse.json({ error: "Serviço temporariamente indisponível." }, { status: 503 });
+  }
+  if (!limit.allowed) {
+    return NextResponse.json({ error: "Limite de requisições atingido." }, {
+      status: 429,
+      headers: { "Retry-After": String(Math.max(1, Math.ceil((limit.reset - Date.now()) / 1000))) },
+    });
   }
   const contentType = request.headers.get("content-type") ?? "";
   if (!contentType.toLowerCase().startsWith("application/json")) {
