@@ -58,9 +58,26 @@ export async function POST(request: NextRequest) {
       const status = (lookupError as { code?: number; response?: { status?: number } }).response?.status ?? (lookupError as { code?: number }).code;
       if (status !== 404) throw lookupError;
     }
-    const busy = await calendar.events.list({ calendarId: "primary", timeMin: new Date(start).toISOString(), timeMax: new Date(end).toISOString(), singleEvents: true, maxResults: 100 });
-    if (busy.data.nextPageToken || (busy.data.items ?? []).some(event => event.status !== "cancelled" && event.transparency !== "transparent" && (event.start?.dateTime || event.start?.date))) {
-      return NextResponse.json({ error: "Este horário já está ocupado no Google Calendar principal." }, { status: 409 });
+    // Check every selected Google calendar; do not silently assume the primary is the only one.
+    const calendarIds: string[] = [];
+    let calendarPage: string | undefined;
+    const seenPages = new Set<string>();
+    do {
+      const page = await calendar.calendarList.list({ maxResults: 100, pageToken: calendarPage });
+      for (const entry of page.data.items ?? []) {
+        if (entry.id && entry.selected !== false) calendarIds.push(entry.id);
+      }
+      const next = page.data.nextPageToken ?? undefined;
+      if (next && seenPages.has(next)) throw new Error("google_calendar_pagination");
+      if (next) seenPages.add(next);
+      calendarPage = next;
+    } while (calendarPage);
+    if (!calendarIds.includes("primary") && calendarIds.length === 0) throw new Error("google_calendar_list_empty");
+    for (const calendarId of calendarIds) {
+      const busy = await calendar.events.list({ calendarId, timeMin: new Date(start).toISOString(), timeMax: new Date(end).toISOString(), singleEvents: true, maxResults: 100 });
+      if (busy.data.nextPageToken || (busy.data.items ?? []).some(event => event.status !== "cancelled" && event.transparency !== "transparent" && (event.start?.dateTime || event.start?.date))) {
+        return NextResponse.json({ error: "Este horário já está ocupado em um dos seus calendários Google." }, { status: 409 });
+      }
     }
     let result;
     try {
