@@ -110,23 +110,18 @@ export function createJourneyDraft(goal: JourneyGoal, today = new Date()): Journ
     ["Revisar a preparação final para o intercâmbio", "Celebrar o avanço e identificar o que ainda exige confirmação"],
   ];
   let action = `Definir e executar uma ação concreta para: ${title}`;
-  let review = "Registrar o resultado e escolher o próximo passo";
   let progression: string[] | undefined;
   if (/italian|ingles|espanhol|frances|idioma|lingua|language/.test(normalized)) {
     action = "Praticar vocabulário, escuta e conversação no idioma escolhido";
-    review = "Revisar o vocabulário aprendido e registrar uma conversa ou exercício";
     progression = [action, "Praticar frases úteis e escutar diálogos curtos", "Conversar ou escrever sobre situações reais", "Revisar dificuldades e demonstrar o que aprendeu"];
   } else if (/corr|caminh|maraton|quilometr|\b5\s?km\b|\b10\s?km\b/.test(normalized)) {
     action = "Realizar um treino progressivo de caminhada ou corrida conforme seu condicionamento";
-    review = "Registrar distância, duração e recuperação antes do próximo treino";
     progression = [action, "Alternar treinos leves e recuperação respeitando os limites", "Ajustar gradualmente duração ou distância sem forçar", "Revisar evolução e planejar o próximo ciclo de treinos"];
   } else if (/economiz|poup|junt|guardar dinheiro|reserva financeira/.test(normalized)) {
     action = "Definir um valor viável para guardar e revisar despesas da semana";
-    review = "Conferir o valor reservado e ajustar a meta sem comprometer gastos essenciais";
     progression = [action, "Separar uma quantia possível e anotar gastos", "Revisar despesas e manter aportes sustentáveis", "Conferir o acumulado e recalcular o próximo período"];
   } else if (/muda|morar fora|imigra|outro pais/.test(normalized)) {
     action = "Pesquisar um requisito prático da mudança e registrar a próxima providência";
-    review = "Atualizar o checklist de documentos, prazos e orçamento da mudança";
     progression = [action, "Organizar documentos e estimar custos e prazos", "Verificar exigências oficiais e pendências prioritárias", "Revisar checklist e definir próximos passos da mudança"];
   }
   // Stages are deterministic so confirmation reconstructs the exact reviewed preview.
@@ -141,6 +136,20 @@ export function createJourneyDraft(goal: JourneyGoal, today = new Date()): Journ
     const stageIndex = Math.min(3, Math.floor(((week - 1) * 4) / weeks));
     const stage = stages[stageIndex];
     const weeklyAction = progression?.[stageIndex] ?? action;
+    const weeklyChecks = [
+      "Registrar o ponto de partida e identificar um obstáculo real",
+      "Anotar o que foi realizado e o que ainda precisa de atenção",
+      "Comparar o resultado com a semana anterior e ajustar uma ação",
+      "Revisar o tempo dedicado e escolher uma melhoria viável",
+      "Registrar uma evidência concreta do progresso alcançado",
+      "Identificar o principal aprendizado e definir o próximo passo",
+      "Conferir se o ritmo cabe na rotina e ajustar o planejamento",
+      "Revisar os avanços do ciclo e definir uma pequena conquista seguinte",
+    ];
+    const weeklyReview = progression
+      ? weeklyChecks[(week - 1) % weeklyChecks.length]
+      : week === 1 ? "Registrar o ponto de partida e escolher como medir o progresso"
+      : weeklyChecks[(week - 1) % weeklyChecks.length];
     const steps = isStudyAbroad ? studyAbroadSteps : travelSteps;
     const travelStep = steps[Math.min(steps.length - 1, Math.floor((week - 1) * steps.length / weeks))];
     missions.push({
@@ -151,7 +160,7 @@ export function createJourneyDraft(goal: JourneyGoal, today = new Date()): Journ
     });
     missions.push({
       id: `week-${week}-review`,
-      title: isStudyAbroad || isTravel ? `Semana ${week}: ${travelStep[1]}` : `Semana ${week}: ${review}`.slice(0, 160),
+      title: isStudyAbroad || isTravel ? `Semana ${week}: ${travelStep[1]}` : `Semana ${week}: ${weeklyReview}`.slice(0, 160),
       week,
       status: "pending",
     });
