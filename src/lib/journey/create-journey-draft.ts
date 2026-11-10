@@ -109,6 +109,18 @@ export function createJourneyDraft(goal: JourneyGoal, today = new Date()): Journ
     ["Montar checklist dos primeiros dias no destino", "Planejar orientação na escola, transporte e necessidades básicas"],
     ["Revisar a preparação final para o intercâmbio", "Celebrar o avanço e identificar o que ainda exige confirmação"],
   ];
+  // Concrete educational progression for AI study goals, instead of generic habit reminders.
+  const isAiEducation = /(?:\\bmba\\b.*(?:\\bia\\b|inteligencia artificial)|(?:\\bia\\b|inteligencia artificial).*(?:\\bmba\\b|curso|estud|aprender)|machine learning|ciencia de dados|data science)/.test(normalized);
+  const aiLessons = [
+    ["Entender IA, machine learning e IA generativa com três exemplos reais", "Explicar com suas palavras a diferença entre IA, ML e modelos generativos"],
+    ["Estudar dados de treino, validação, teste e risco de vazamento", "Criar uma tabela simples de dados e identificar possíveis vieses"],
+    ["Aprender classificação, regressão e métricas de avaliação", "Escolher métricas adequadas para dois problemas de negócio"],
+    ["Praticar prompts estruturados com contexto, objetivo e critérios", "Comparar duas respostas de IA e registrar limitações e melhorias"],
+    ["Explorar embeddings, busca semântica e RAG", "Desenhar um fluxo de perguntas e respostas com fontes verificáveis"],
+    ["Estudar privacidade, segurança, LGPD e uso responsável da IA", "Revisar um caso de uso e listar riscos e controles necessários"],
+    ["Planejar um pequeno projeto aplicado de IA", "Definir problema, dados, indicadores e um protótipo viável"],
+    ["Apresentar o projeto e avaliar o aprendizado", "Produzir uma demonstração curta e registrar próximos estudos"],
+  ];
   let action = `Definir e executar uma ação concreta para: ${title}`;
   let progression: string[] | undefined;
   if (/italian|ingles|espanhol|frances|idioma|lingua|language/.test(normalized)) {
@@ -152,15 +164,16 @@ export function createJourneyDraft(goal: JourneyGoal, today = new Date()): Journ
       : weeklyChecks[(week - 1) % weeklyChecks.length];
     const steps = isStudyAbroad ? studyAbroadSteps : travelSteps;
     const travelStep = steps[Math.min(steps.length - 1, Math.floor((week - 1) * steps.length / weeks))];
+    const aiLesson = aiLessons[Math.min(aiLessons.length - 1, Math.floor((week - 1) * aiLessons.length / weeks))];
     missions.push({
       id: `week-${week}-plan`,
-      title: isStudyAbroad || isTravel ? `Semana ${week}: ${travelStep[0]}` : `Semana ${week}: ${stage}. ${weeklyAction} (${days} dia(s) disponíveis)`.slice(0, 160),
+      title: isStudyAbroad || isTravel ? `Semana ${week}: ${travelStep[0]}` : isAiEducation ? `Semana ${week}: Aula prática — ${aiLesson[0]}` : `Semana ${week}: ${stage}. ${weeklyAction} (${days} dia(s) disponíveis)`.slice(0, 160),
       week,
       status: "pending",
     });
     missions.push({
       id: `week-${week}-review`,
-      title: isStudyAbroad || isTravel ? `Semana ${week}: ${travelStep[1]}` : `Semana ${week}: ${weeklyReview}`.slice(0, 160),
+      title: isStudyAbroad || isTravel ? `Semana ${week}: ${travelStep[1]}` : isAiEducation ? `Semana ${week}: Exercício — ${aiLesson[1]}` : `Semana ${week}: ${weeklyReview}`.slice(0, 160),
       week,
       status: "pending",
     });
