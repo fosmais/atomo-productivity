@@ -12,6 +12,7 @@ export async function saveConfirmedJourney(
   draft: JourneyDraft,
   confirmed: boolean,
   confirmationKey?: string,
+  snapshotId?: string,
 ): Promise<SavedJourney> {
   if (confirmationKey !== undefined && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(confirmationKey)) {
     throw new Error("Chave de confirmação inválida.");
@@ -34,11 +35,12 @@ export async function saveConfirmedJourney(
 
   // A single PostgreSQL RPC transaction creates the journey and all missions,
   // or rolls everything back. SECURITY INVOKER preserves the table RLS policies.
-  const { data, error } = await supabase.rpc("myryra_confirm_journey_atomic", {
+  const { data, error } = await supabase.rpc(snapshotId ? "myryra_confirm_journey_snapshot_atomic" : "myryra_confirm_journey_atomic", {
     p_title: draft.title,
     p_target_date: draft.targetDate ?? null,
     p_confirmation_key: confirmationKey,
     p_mission_titles: draft.missions.map((mission) => mission.title),
+    ...(snapshotId ? { p_snapshot_id: snapshotId } : {}),
   });
   if (error || !Array.isArray(data) || data.length !== 1 ||
       typeof data[0]?.journey_id !== "string" ||
