@@ -115,7 +115,22 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({ created: true, id: result.data.id, url: result.data.htmlLink }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
+    const status = (error as { code?: number | string; response?: { status?: number } }).response?.status ?? (error as { code?: number | string }).code;
+    const message = error instanceof Error ? error.message : "";
+    if (status === 401 || message.includes("invalid_grant") || message.includes("google_access_token_unavailable")) {
+      return NextResponse.json({
+        error: "A autorização do Google expirou ou foi revogada. Reconecte sua conta.",
+        code: "GOOGLE_CALENDAR_RECONNECT_REQUIRED",
+        reconnectUrl: "/api/google/connect?allow_event_creation=1",
+      }, { status: 409, headers: { "Cache-Control": "private, no-store" } });
+    }
+    if (status === 403) {
+      return NextResponse.json({
+        error: "O Google recusou a criação do evento. Verifique as permissões da sua conta.",
+        code: "GOOGLE_CALENDAR_PERMISSION_DENIED",
+      }, { status: 403, headers: { "Cache-Control": "private, no-store" } });
+    }
     console.error("MIKA Google Calendar event creation failed", error instanceof Error ? error.name : "unknown");
-    return NextResponse.json({ error: "Não foi possível criar o evento no Google. Confira sua conexão e tente novamente." }, { status: 503 });
+    return NextResponse.json({ error: "Não foi possível criar o evento no Google. Tente novamente." }, { status: 503 });
   }
 }
