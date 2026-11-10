@@ -108,26 +108,39 @@ export default function JourneyTrail() {
       )}
       {loading ? <p className="mt-6 text-sm text-slate-300">Preparando seu mapa...</p> : !journeys.length ?
         <p className="mt-6 text-sm text-slate-300">Sua aventura começa com um sonho. Crie sua primeira jornada abaixo.</p> :
-        <div className="relative mx-auto mt-8 max-w-xl pb-4">
-          <div aria-hidden="true" className="absolute bottom-10 left-1/2 top-3 w-1 -translate-x-1/2 rounded-full bg-gradient-to-b from-fuchsia-500 via-violet-600 to-slate-700" />
-          <ol className="relative space-y-7">
-            {missions.map((m, i) => {
-              const completed = m.status === "completed";
-              const next = !completed && missions.slice(0, i).every(x => x.status === "completed");
-              return <li key={m.id} className={"flex " + (i % 2 ? "justify-end" : "justify-start")}>
-                <button type="button" disabled={!!busy} onClick={() => void complete(m)}
-                  aria-label={(completed ? "Reabrir missão: " : "Concluir missão: ") + m.title}
-                  className={"relative w-[47%] min-w-0 rounded-2xl border p-3 text-left shadow-lg transition-transform active:scale-95 disabled:opacity-60 " +
-                    (completed ? "border-emerald-400/50 bg-emerald-950/70" : next ? "border-fuchsia-400 bg-violet-800/80 shadow-fuchsia-900/30" : "border-white/15 bg-slate-800/90")}>
-                  <span className="text-xl">{completed ? "✦" : next ? "🚀" : "◇"}</span>
-                  <span className="mt-1 block text-[10px] font-bold uppercase tracking-wider text-violet-200">Missão {i + 1}</span>
-                  <span className="mt-1 block break-words text-xs leading-relaxed sm:text-sm">{m.title}</span>
-                  <span className="mt-2 block text-[11px] font-semibold text-violet-200">{completed ? "✓ Concluída" : next ? "Sua próxima conquista" : "Toque ao concluir"}</span>
-                </button>
-              </li>;
-            })}
-          </ol>
-          <div className="relative mx-auto mt-7 w-fit rounded-full border border-amber-400/40 bg-amber-400/10 px-5 py-3 text-center text-sm font-semibold text-amber-100">{finished ? "🏆 Destino alcançado!" : "🏆 Seu próximo marco"}</div>
+        <div className="relative mx-auto mt-7 max-w-2xl overflow-hidden rounded-[2rem] border border-violet-300/15 bg-gradient-to-b from-indigo-950 via-violet-950/70 to-slate-950 px-3 py-7 sm:px-7">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-70" style={{ backgroundImage: "radial-gradient(circle at 12% 18%, #f0abfc 1px, transparent 2px), radial-gradient(circle at 77% 42%, #fbbf24 1px, transparent 2px), radial-gradient(circle at 48% 78%, #93c5fd 1px, transparent 2px)", backgroundSize: "83px 97px, 131px 113px, 97px 151px" }} />
+          <div className="relative mb-7 text-center">
+            <span className="inline-flex rounded-full border border-amber-300/40 bg-amber-300/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-amber-200">✦ O início da aventura</span>
+            <p className="mt-2 text-xs text-violet-200">Cada parada é uma conquista no caminho do seu sonho.</p>
+          </div>
+          <div className="relative">
+            <svg aria-hidden="true" viewBox="0 0 100 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 h-full w-full overflow-visible">
+              <path d="M 50 0 C 50 8, 16 8, 16 17 S 84 27, 84 35 S 16 45, 16 53 S 84 63, 84 71 S 16 81, 16 89 S 50 97, 50 100" fill="none" stroke="#a78bfa" strokeWidth="1.8" strokeDasharray="2 2" opacity=".65" vectorEffect="non-scaling-stroke" />
+              <path d="M 50 0 C 50 8, 16 8, 16 17 S 84 27, 84 35 S 16 45, 16 53 S 84 63, 84 71 S 16 81, 16 89 S 50 97, 50 100" fill="none" stroke="#e879f9" strokeWidth=".6" opacity=".4" vectorEffect="non-scaling-stroke" />
+            </svg>
+            <ol className="relative space-y-5">
+              {missions.map((m, i) => {
+                const completed = m.status === "completed";
+                const next = !completed && missions.slice(0, i).every(x => x.status === "completed");
+                return <li key={m.id} className={"flex " + (i % 2 ? "justify-end" : "justify-start")}>
+                  <button type="button" disabled={!!busy} onClick={() => void complete(m)}
+                    aria-label={(completed ? "Reabrir missão: " : "Concluir missão: ") + m.title}
+                    className={"group relative w-[78%] min-w-0 rounded-2xl border p-4 text-left shadow-xl backdrop-blur-md transition-all duration-300 hover:-translate-y-1 active:scale-[.98] disabled:opacity-60 sm:w-[69%] " +
+                      (completed ? "border-emerald-300/60 bg-emerald-950/90 shadow-emerald-900/20" : next ? "border-amber-300/80 bg-violet-800/95 shadow-fuchsia-600/20 ring-2 ring-fuchsia-400/25" : "border-violet-300/25 bg-slate-900/95")}>
+                    <span aria-hidden="true" className={"absolute -top-3 " + (i % 2 ? "-right-2" : "-left-2") + " flex h-9 w-9 items-center justify-center rounded-full border-2 border-violet-200/70 bg-violet-800 text-lg shadow-lg"}>{completed ? "⭐" : next ? "🚀" : "🔮"}</span>
+                    <span className="block text-[10px] font-bold uppercase tracking-[.18em] text-violet-200">Etapa {i + 1} · {m.week ? "Semana " + m.week : "Sua missão"}</span>
+                    <span className="mt-2 block break-words text-sm font-semibold leading-relaxed text-white sm:text-base">{m.title}</span>
+                    <span className={"mt-3 inline-flex rounded-full px-3 py-1 text-[11px] font-bold " + (completed ? "bg-emerald-400/20 text-emerald-200" : next ? "bg-amber-300/20 text-amber-200" : "bg-white/10 text-violet-200")}>{completed ? "✓ Conquista realizada" : next ? "✦ Sua próxima missão" : "◇ Aguardando sua vez"}</span>
+                  </button>
+                </li>;
+              })}
+            </ol>
+          </div>
+          <div className="relative mx-auto mt-8 w-fit rounded-2xl border border-amber-300/50 bg-amber-300/15 px-6 py-4 text-center shadow-[0_0_35px_rgba(251,191,36,0.12)]">
+            <span className="block text-3xl" aria-hidden="true">{finished ? "🏆" : "🏰"}</span>
+            <span className="mt-1 block text-sm font-bold text-amber-100">{finished ? "Destino conquistado!" : "O destino dos seus sonhos"}</span>
+          </div>
         </div>}
       {error && <p role="alert" className="mt-4 text-sm text-rose-300">{error}</p>}
       <p className="mt-5 text-center text-xs text-slate-400">As missões só são concluídas quando você confirma. MYRAs e jornadas compartilhadas serão ativadas em uma etapa futura.</p>
