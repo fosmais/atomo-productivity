@@ -182,9 +182,13 @@ export function assessInteractiveLesson(
  */
 export function applyLearningAssessment(
   lesson: Lesson,
-  assessment: LearningAssessment
+  assessment: LearningAssessment,
+  passThreshold = 70
 ): Lesson {
   if (!lesson.id.trim() || !lesson.goalId.trim()) throw new Error("Invalid lesson identity");
+  // Validate the complete grading decision even when this lesson is already complete.
+  // Never accept a caller-supplied passed flag that contradicts the actual score.
+  planLearningNextStep(assessment, passThreshold);
   if (lesson.status === "completed") return lesson;
   if (!Number.isInteger(assessment.score) || assessment.score < 0 || assessment.score > 100)
     throw new Error("Invalid assessment score");
