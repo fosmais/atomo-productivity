@@ -130,6 +130,9 @@ export default function JourneyTrail() {
   }
   useEffect(() => {
     if (!selected) return;
+    setExerciseAnswers({});
+    setAiFeedback({});
+    setExerciseMessage({});
     let active = true;
     fetch("/api/journeys/learning?journeyId=" + encodeURIComponent(selected), { cache: "no-store" })
       .then(async response => { if (!response.ok) throw new Error("Histórico indisponível."); return response.json(); })
@@ -144,7 +147,7 @@ export default function JourneyTrail() {
         }
         setExerciseAnswers(answers);
         setAiFeedback(feedback);
-      }).catch(() => { if (active) setExerciseMessage({}); });
+      }).catch(() => { if (active) setExerciseMessage({ history: "Não foi possível carregar o histórico desta jornada." }); });
     return () => { active = false; };
   }, [selected]);
   async function saveExercise(mission: Mission, feedback?: string) {
