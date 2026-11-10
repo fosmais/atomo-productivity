@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { createGoogleOAuthClient } from "@/lib/google-calendar";
-import { decryptGoogleToken } from "@/lib/google-token-crypto";
+import { decryptGoogleToken, encryptGoogleToken } from "@/lib/google-token-crypto";
 
 const WRITE_SCOPE = "https://www.googleapis.com/auth/calendar.events";
 
@@ -39,7 +39,23 @@ export async function POST(request: NextRequest) {
     const accessToken = decryptGoogleToken(connection.encrypted_access_token);
     const refreshToken = connection.encrypted_refresh_token ? decryptGoogleToken(connection.encrypted_refresh_token) : undefined;
     oauth.setCredentials({ access_token: accessToken, refresh_token: refreshToken, expiry_date: connection.token_expires_at ? Date.parse(connection.token_expires_at) : undefined });
-    const tokenInfo = await oauth.getTokenInfo(accessToken);
+    // Refresh expired access tokens before checking granted permissions.
+    // Persist rotated credentials without exposing them to the browser.
+    let tokenSave = Promise.resolve();
+    oauth.on("tokens", tokens => {
+      const update: Record<string, string> = { updated_at: new Date().toISOString() };
+      if (tokens.access_token) update.encrypted_access_token = encryptGoogleToken(tokens.access_token);
+      if (tokens.refresh_token) update.encrypted_refresh_token = encryptGoogleToken(tokens.refresh_token);
+      if (tokens.expiry_date) update.token_expires_at = new Date(tokens.expiry_date).toISOString();
+      tokenSave = tokenSave.then(async () => {
+        const { error: saveError } = await admin.from("google_calendar_connections").update(update).eq("user_id", user.id);
+        if (saveError) throw new Error("google_token_persistence");
+      });
+    });
+    const refreshed = await oauth.getAccessToken();
+    if (!refreshed.token) throw new Error("google_access_token_unavailable");
+    await tokenSave;
+    const tokenInfo = await oauth.getTokenInfo(refreshed.token);
     if (!tokenInfo.scopes.includes(WRITE_SCOPE)) {
       return NextResponse.json({ error: "Autorize a criação de eventos no Google antes de continuar.", code: "GOOGLE_WRITE_CONSENT_REQUIRED" }, { status: 403 });
     }
