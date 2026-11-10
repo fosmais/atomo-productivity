@@ -60,7 +60,15 @@ export async function loadJourneySnapshot(
   if (value.requiresUserConfirmation !== true || typeof value.title !== "string" ||
       !Number.isInteger(value.weeks) || !Array.isArray(value.missions) ||
       value.missions.length !== (value.weeks as number) * 2 ||
-      value.missions.length > 104 || value.missions.some((m) =>
+      (value.weeks as number) < 1 || (value.weeks as number) > 52 ||
+      !value.title.trim() || value.title.length > 120 ||
+      typeof value.plannedOn !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(value.plannedOn) ||
+      !Number.isFinite(Date.parse(value.plannedOn + "T12:00:00Z")) ||
+      new Date(value.plannedOn + "T12:00:00Z").toISOString().slice(0, 10) !== value.plannedOn ||
+      value.missions.length > 104 ||
+      new Set(value.missions.map((m) => m?.id)).size !== value.missions.length ||
+      value.missions.some((m) =>
         !m || typeof m.title !== "string" || !m.title.trim() ||
         m.title.length > 160 || m.status !== "pending")) {
     throw new Error("Prévia inválida.");
