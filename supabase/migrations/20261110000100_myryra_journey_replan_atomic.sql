@@ -62,6 +62,20 @@ begin
     v_clean := array_append(v_clean, v_title);
   end loop;
 
+  -- Pending missions may be referenced by the MYRA ledger or task links.
+  -- Their foreign keys use ON DELETE CASCADE; refuse to erase linked records.
+  if exists (
+    select 1 from public.myryra_journey_missions m
+    where m.journey_id = p_journey_id and m.status = 'pending'
+      and (
+        exists (select 1 from public.myryra_journey_myra_ledger l where l.mission_id = m.id)
+        or exists (select 1 from public.myryra_journey_task_links t where t.mission_id = m.id)
+      )
+  ) then
+    raise exception 'Linked pending missions must be resolved before replanning'
+      using errcode = '23503';
+  end if;
+
   delete from public.myryra_journey_missions
     where journey_id = p_journey_id and status = 'pending';
   get diagnostics v_removed = row_count;
