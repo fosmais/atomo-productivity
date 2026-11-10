@@ -62,7 +62,7 @@ export function createJourneyDraft(goal: JourneyGoal, today = new Date()): Journ
   } else if (/economiz|poup|junt|guardar dinheiro|reserva financeira/.test(normalized)) {
     action = "Definir um valor viável para guardar e revisar despesas da semana";
     review = "Conferir o valor reservado e ajustar a meta sem comprometer gastos essenciais";
-  } else if (/mudan|morar fora|imigra|outro pais/.test(normalized)) {
+  } else if (/muda|morar fora|imigra|outro pais/.test(normalized)) {
     action = "Pesquisar um requisito prático da mudança e registrar a próxima providência";
     review = "Atualizar o checklist de documentos, prazos e orçamento da mudança";
   }
