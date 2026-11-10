@@ -150,13 +150,13 @@ export default function JourneyTrail() {
       }).catch(() => { if (active) setExerciseMessage({ history: "Não foi possível carregar o histórico desta jornada." }); });
     return () => { active = false; };
   }, [selected]);
-  async function saveExercise(mission: Mission, feedback?: string) {
+  async function saveExercise(mission: Mission) {
     if (!selected || savingExercise) return;
     setSavingExercise(mission.id);
     try {
       const response = await fetch("/api/journeys/learning", {
         method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ journeyId: selected, missionId: mission.id, answer: exerciseAnswers[mission.id] ?? "", ...(feedback !== undefined ? { feedback } : {}) }),
+        body: JSON.stringify({ journeyId: selected, missionId: mission.id, answer: exerciseAnswers[mission.id] ?? "" }),
       });
       if (!response.ok) throw new Error("Não foi possível salvar.");
       setExerciseMessage(old => ({ ...old, [mission.id]: "Resposta salva na sua jornada." }));
@@ -177,11 +177,7 @@ export default function JourneyTrail() {
       const feedback = typeof payload.feedback === "string" ? payload.feedback.trim() : "";
       if (!feedback) throw new Error("A avaliação veio vazia. Tente novamente.");
       setAiFeedback(old => ({ ...old, [mission.id]: feedback }));
-      const saveResponse = await fetch("/api/journeys/learning", {
-        method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ journeyId: selected, missionId: mission.id, answer, feedback }),
-      });
-      setExerciseMessage(old => ({ ...old, [mission.id]: saveResponse.ok ? "Avaliação salva automaticamente." : "Avaliação recebida, mas não salva. Use Salvar resposta para tentar novamente." }));
+      setExerciseMessage(old => ({ ...old, [mission.id]: payload.saved ? "Avaliação salva automaticamente." : "Avaliação recebida, mas não foi possível salvá-la. Tente avaliar novamente." }));
     } catch (cause) { setAiFeedback(old => ({ ...old, [mission.id]: cause instanceof Error ? cause.message : "Falha na avaliação." })); }
     finally { setFeedbackBusy(null); }
   }
@@ -388,7 +384,7 @@ export default function JourneyTrail() {
                     <button type="button" onClick={() => setOpenLesson(value => value === m.id ? null : m.id)} aria-expanded={openLesson === m.id} className="w-full text-left text-xs font-semibold text-amber-200">{openLesson === m.id ? "▾ Fechar treinamento" : "▸ Estudar com a MIKA · Aula e exercício"}</button>
                     {openLesson === m.id && (() => { const lesson = lessonFor(m.title)!; return <div className="mt-3 space-y-3 text-sm leading-relaxed text-slate-200"><p className="font-bold text-white">{lesson.heading}</p><p>{lesson.explanation}</p><p className="rounded-lg bg-violet-800/25 p-3">{lesson.example}</p><p className="font-semibold text-amber-100">Sua prática: {lesson.exercise}</p>
                     <label className="block space-y-2"><span className="block text-xs font-semibold text-violet-100">Sua resposta (rascunho local)</span><textarea value={exerciseAnswers[m.id] ?? ""} onChange={event => { setExerciseAnswers(old => ({ ...old, [m.id]: event.target.value.slice(0, 2000) })); setShowReview(null); setAiFeedback(oldFeedback => ({ ...oldFeedback, [m.id]: "" })); }} rows={4} maxLength={2000} placeholder="Registre seu raciocínio e os exemplos aqui..." className="w-full rounded-lg border border-violet-300/30 bg-slate-950 p-3 text-sm text-white placeholder:text-slate-400" /></label>
-                    <button type="button" disabled={savingExercise === m.id} onClick={() => void saveExercise(m, aiFeedback[m.id] ?? "")} className="rounded-lg border border-violet-300/40 px-3 py-2 text-xs font-semibold text-violet-100 disabled:opacity-40">{savingExercise === m.id ? "Salvando..." : "Salvar resposta"}</button>
+                    <button type="button" disabled={savingExercise === m.id} onClick={() => void saveExercise(m)} className="rounded-lg border border-violet-300/40 px-3 py-2 text-xs font-semibold text-violet-100 disabled:opacity-40">{savingExercise === m.id ? "Salvando..." : "Salvar resposta"}</button>
                     {exerciseMessage[m.id] && <p role="status" className="text-xs text-violet-100">{exerciseMessage[m.id]}</p>}
                     <button type="button" disabled={(exerciseAnswers[m.id] ?? "").trim().length < 30 || !!feedbackBusy} onClick={() => void evaluateExercise(m)} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">{feedbackBusy === m.id ? "MIKA está avaliando..." : "Avaliar com a MIKA"}</button>
                     {aiFeedback[m.id] && <div role="status" className="whitespace-pre-wrap rounded-lg border border-violet-300/30 bg-violet-800/20 p-3 text-xs leading-relaxed text-white">{aiFeedback[m.id]}</div>}
