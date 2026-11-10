@@ -24,7 +24,6 @@ export default function MikaReviewCalendar({ title }: { title: string }) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [suggesting, setSuggesting] = useState(false);
   const [googleChecked, setGoogleChecked] = useState<boolean | null>(null);
-  const [calendarDestination, setCalendarDestination] = useState<"myryra" | "google">("myryra");
   async function suggestTimes() {
     if (suggesting || confirmed) return;
     setSuggesting(true);
