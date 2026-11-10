@@ -45,6 +45,23 @@ export async function POST(request: NextRequest) {
     }
     const calendar = google.calendar({ version: "v3", auth: oauth });
     const eventId = "myryra" + createHash("sha256").update(JSON.stringify([user.id, title, start, end])).digest("hex").slice(0, 40);
+    const { data: localEvents, error: localError } = await supabase.from("events")
+      .select("starts_at, ends_at").eq("user_id", user.id).is("deleted_at", null)
+      .lt("starts_at", new Date(end).toISOString()).gt("ends_at", new Date(start).toISOString()).limit(1);
+    if (localError) throw new Error("local_availability");
+    if ((localEvents ?? []).length) return NextResponse.json({ error: "Este horário já está ocupado na MYRYRA." }, { status: 409 });
+    // Idempotent retries must succeed before checking the Google overlap.
+    try {
+      const existing = await calendar.events.get({ calendarId: "primary", eventId });
+      if (existing.data.id === eventId) return NextResponse.json({ created: false, alreadyExists: true, id: existing.data.id, url: existing.data.htmlLink }, { headers: { "Cache-Control": "private, no-store" } });
+    } catch (lookupError) {
+      const status = (lookupError as { code?: number; response?: { status?: number } }).response?.status ?? (lookupError as { code?: number }).code;
+      if (status !== 404) throw lookupError;
+    }
+    const busy = await calendar.events.list({ calendarId: "primary", timeMin: new Date(start).toISOString(), timeMax: new Date(end).toISOString(), singleEvents: true, maxResults: 100 });
+    if (busy.data.nextPageToken || (busy.data.items ?? []).some(event => event.status !== "cancelled" && event.transparency !== "transparent" && (event.start?.dateTime || event.start?.date))) {
+      return NextResponse.json({ error: "Este horário já está ocupado no Google Calendar principal." }, { status: 409 });
+    }
     let result;
     try {
       result = await calendar.events.insert({
