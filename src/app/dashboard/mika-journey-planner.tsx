@@ -9,6 +9,8 @@ export default function MikaJourneyPlanner() {
   const [targetDate, setTargetDate] = useState("");
   const [days, setDays] = useState(3);
   const [draft, setDraft] = useState<JourneyDraft | null>(null);
+  const [useAI, setUseAI] = useState(false);
+  const [snapshotId, setSnapshotId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const submittingRef = useRef(false);
   const confirmationKeyRef = useRef<string | null>(null);
@@ -95,13 +97,13 @@ export default function MikaJourneyPlanner() {
     setMessage("");
     if (confirm && !confirmationKeyRef.current) confirmationKeyRef.current = crypto.randomUUID();
     try {
-      const response = await fetch(confirm ? "/api/journeys/confirm" : "/api/journeys/draft", {
+      const response = await fetch(confirm ? "/api/journeys/confirm" : useAI ? "/api/journeys/ai-preview" : "/api/journeys/draft", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title, ...(targetDate ? { targetDate } : {}),
           weeklyAvailabilityDays: days,
-          ...(confirm ? { confirmed: true, confirmationKey: confirmationKeyRef.current, plannedOn: draft?.plannedOn } : {}),
+          ...(confirm ? { confirmed: true, confirmationKey: confirmationKeyRef.current, plannedOn: draft?.plannedOn, ...(snapshotId ? { snapshotId } : {}) } : {}),
         }),
       });
       const payload = await response.json();
@@ -112,6 +114,7 @@ export default function MikaJourneyPlanner() {
         await refreshJourneys();
       } else {
         setDraft(payload.draft);
+        setSnapshotId(typeof payload.snapshotId === "string" ? payload.snapshotId : null);
         setSaved(false);
       }
     } catch (error) {
@@ -125,6 +128,7 @@ export default function MikaJourneyPlanner() {
   function resetDraft() {
     confirmationKeyRef.current = null;
     setDraft(null);
+    setSnapshotId(null);
     setSaved(false);
     setMessage("");
   }
@@ -150,13 +154,17 @@ export default function MikaJourneyPlanner() {
             </select>
           </label>
         </div>
+        <label className="flex items-center gap-2 text-sm text-slate-200">
+          <input type="checkbox" checked={useAI} onChange={(e) => { setUseAI(e.target.checked); resetDraft(); }} disabled={busy} />
+          Personalizar com a MIKA (IA, até 12 semanas)
+        </label>
         {!draft && <button type="submit" disabled={busy} className="rounded-lg bg-violet-600 px-4 py-2 font-semibold disabled:opacity-50">
           {busy ? "Preparando..." : "Criar prévia"}
         </button>}
       </form>
       {draft && !saved && <div className="mt-4 space-y-3 rounded-xl border border-white/15 p-3">
         <p className="font-semibold">{draft.title} · {draft.weeks} semana(s)</p>
-        <p className="text-xs text-slate-300">Proposta inicial automática, ainda não personalizada por IA. Revise antes de confirmar.</p>
+        <p className="text-xs text-slate-300">{snapshotId ? "Proposta personalizada pela MIKA. Prévia válida por 15 minutos; revise antes de confirmar." : "Proposta inicial automática, ainda não personalizada por IA. Revise antes de confirmar."}</p>
         <ol className="max-h-64 list-decimal space-y-1 overflow-auto pl-5 text-sm">
           {draft.missions.map((mission) => <li key={mission.id}>Semana {mission.week}: {mission.title}</li>)}
         </ol>
