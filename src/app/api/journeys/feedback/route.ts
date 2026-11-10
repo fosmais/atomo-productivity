@@ -29,6 +29,10 @@ export async function POST(request: Request) {
   const { data: priorProgress, error: progressError } = await supabase.from("myryra_journey_learning_progress")
     .select("answer,feedback").eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
   if (progressError) return NextResponse.json({ error: "Histórico de aprendizagem indisponível." }, { status: 503 });
+  // Never assess an unsaved or different answer. The saved draft is the
+  // canonical learner submission used for progress and completion checks.
+  if (priorProgress?.answer?.trim() !== answer.trim())
+    return NextResponse.json({ error: "Salve a resposta atual antes de solicitar a avaliação da MIKA." }, { status: 409 });
   let limit: Awaited<ReturnType<typeof checkConciergeRateLimit>>;
   try { limit = await checkConciergeRateLimit(user.id); } catch { return NextResponse.json({ error: "Serviço temporariamente indisponível." }, { status: 503 }); }
   if (!limit.allowed) return NextResponse.json({ error: "Limite de avaliações atingido. Tente novamente mais tarde." }, { status: 429, headers: { "Retry-After": String(Math.max(1, Math.ceil((limit.reset - Date.now()) / 1000))) } });
