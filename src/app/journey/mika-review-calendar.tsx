@@ -8,6 +8,32 @@ export default function MikaReviewCalendar({ title }: { title: string }) {
   const [working, setWorking] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [message, setMessage] = useState("");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggesting, setSuggesting] = useState(false);
+  async function suggestTimes() {
+    if (suggesting || confirmed) return;
+    setSuggesting(true);
+    setMessage("");
+    try {
+      const events = await getCloudEvents();
+      const slots: string[] = [];
+      const now = new Date();
+      for (let dayOffset = 0; dayOffset < 7 && slots.length < 3; dayOffset++) {
+        for (const hour of [9, 11, 14, 16, 19]) {
+          const candidate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + dayOffset, hour, 0);
+          const end = candidate.getTime() + 20 * 60_000;
+          if (candidate.getTime() < Date.now() + 30 * 60_000) continue;
+          if (events.some(event => event.blocksTime && Date.parse(event.startsAt) < end && Date.parse(event.endsAt) > candidate.getTime())) continue;
+          const local = [candidate.getFullYear(), String(candidate.getMonth() + 1).padStart(2, "0"), String(candidate.getDate()).padStart(2, "0")].join("-") + "T" + String(hour).padStart(2, "0") + ":00";
+          slots.push(local);
+          if (slots.length === 3) break;
+        }
+      }
+      setSuggestions(slots);
+      if (!slots.length) setMessage("Nenhum horário livre encontrado nos próximos sete dias. Escolha manualmente.");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Não foi possível consultar a agenda."); }
+    finally { setSuggesting(false); }
+  }
   async function confirm() {
     if (working || confirmed) return;
     const startDate = new Date(start);
@@ -35,9 +61,11 @@ export default function MikaReviewCalendar({ title }: { title: string }) {
   }
   return <div className="mt-3 space-y-2 rounded-lg border border-emerald-300/30 p-3">
     <label className="block font-semibold text-emerald-100">Reservar 20 minutos na Agenda MYRYRA</label>
+    <button type="button" disabled={suggesting || working || confirmed} onClick={() => void suggestTimes()} className="rounded-lg border border-violet-200/50 px-3 py-2 font-semibold text-violet-100 disabled:opacity-40">{suggesting ? "Consultando agenda..." : "Sugerir horários livres"}</button>
+    {suggestions.length > 0 && <div className="flex flex-wrap gap-2">{suggestions.map(slot => <button type="button" key={slot} disabled={working || confirmed} onClick={() => setStart(slot)} className="rounded-lg border border-emerald-200/40 px-3 py-2 text-emerald-100">{new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(slot))}</button>)}</div>}
     <input aria-label="Início do treinamento" type="datetime-local" value={start} disabled={working || confirmed} onChange={event => setStart(event.target.value)} className="max-w-full rounded-lg border border-slate-500 bg-slate-900 p-2 text-white" />
     <button type="button" disabled={working || confirmed || !start} onClick={() => void confirm()} className="rounded-lg border border-emerald-200/50 px-3 py-2 font-semibold text-emerald-100 disabled:opacity-40">{working ? "Verificando disponibilidade..." : confirmed ? "Agendado" : "Confirmar na Agenda"}</button>
-    <p className="text-slate-200">A MIKA verifica bloqueios existentes antes de salvar. O compromisso é criado somente após sua confirmação.</p>
+    <p className="text-slate-200">As sugestões consideram somente os bloqueios registrados na MYRYRA, não os eventos externos. Confira seus outros calendários. O compromisso é criado somente após sua confirmação.</p>
     {message && <p role="status">{message}</p>}
   </div>;
 }
