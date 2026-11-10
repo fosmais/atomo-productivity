@@ -66,11 +66,19 @@ export function createJourneyDraft(goal: JourneyGoal, today = new Date()): Journ
     action = "Pesquisar um requisito prático da mudança e registrar a próxima providência";
     review = "Atualizar o checklist de documentos, prazos e orçamento da mudança";
   }
+  // Stages are deterministic so confirmation reconstructs the exact reviewed preview.
+  const stages = [
+    "Preparação: estabelecer o ponto de partida e os recursos necessários",
+    "Prática: executar a ação e registrar o que funcionou",
+    "Evolução: aumentar gradualmente a consistência conforme a disponibilidade",
+    "Consolidação: revisar conquistas e planejar a continuidade",
+  ];
   const missions: JourneyMission[] = [];
   for (let week = 1; week <= weeks; week++) {
+    const stage = stages[Math.min(3, Math.floor(((week - 1) * 4) / weeks))];
     missions.push({
       id: `week-${week}-plan`,
-      title: `Semana ${week}: ${action} (${days} dia(s) disponíveis)`.slice(0, 160),
+      title: `Semana ${week}: ${stage}. ${action} (${days} dia(s) disponíveis)`.slice(0, 160),
       week,
       status: "pending",
     });
