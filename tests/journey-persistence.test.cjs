@@ -161,3 +161,22 @@ test("unrecognized goals receive actionable neutral missions", () => {
   assert.match(result.missions[0].title, /Definir e executar uma ação concreta/);
   assert.match(result.missions[1].title, /Registrar o resultado/);
 });
+
+test("four-stage journey progression changes actions without changing reviewed missions", () => {
+  const cases = [
+    ["Aprender italiano", /frases úteis/, /Conversar ou escrever/, /Revisar dificuldades/],
+    ["Correr 10 km", /treinos leves/, /Ajustar gradualmente/, /próximo ciclo/],
+    ["Juntar R$ 30 mil", /Separar uma quantia/, /Revisar despesas/, /Conferir o acumulado/],
+    ["Mudar de país", /Organizar documentos/, /exigências oficiais/, /Revisar checklist/],
+  ];
+  for (const [title, second, third, fourth] of cases) {
+    const goal = { title, targetDate: "2026-12-06", weeklyAvailabilityDays: 2 };
+    const preview = createJourneyDraft(goal, new Date("2026-11-09T12:00:00Z"));
+    assert.equal(preview.weeks, 4);
+    assert.match(preview.missions[2].title, second);
+    assert.match(preview.missions[4].title, third);
+    assert.match(preview.missions[6].title, fourth);
+    assert.ok(preview.missions.every((mission) => mission.title.length <= 160));
+    assert.deepEqual(preview.missions, createJourneyDraft(goal, new Date("2026-11-09T18:00:00Z")).missions);
+  }
+});
