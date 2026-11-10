@@ -43,6 +43,13 @@ export async function POST(request: Request) {
     });
     const feedback = response.output_text?.trim();
     if (!feedback) return NextResponse.json({ error: "A avaliação não retornou conteúdo." }, { status: 503 });
+    // The model call may take several seconds. Do not overwrite a newer draft
+    // if the learner edited the answer while MIKA was generating feedback.
+    const { data: currentProgress, error: currentError } = await supabase.from("myryra_journey_learning_progress")
+      .select("answer").eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
+    if (currentError) return NextResponse.json({ error: "Não foi possível verificar a versão atual da resposta." }, { status: 503 });
+    if (currentProgress?.answer !== priorProgress?.answer)
+      return NextResponse.json({ error: "A resposta foi alterada durante a avaliação. Solicite uma nova avaliação para a versão atual." }, { status: 409 });
     const { error: saveError } = await supabase.from("myryra_journey_learning_progress").upsert({
       mission_id: missionId, owner_id: user.id, answer: answer.trim(), feedback, updated_at: new Date().toISOString(),
     }, { onConflict: "mission_id" });
