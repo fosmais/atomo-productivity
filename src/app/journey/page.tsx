@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import MikaJourneyPlanner from "../dashboard/mika-journey-planner";
 
 export default async function JourneyPage() {
+  await connection();
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) redirect("/login");
