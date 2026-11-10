@@ -21,7 +21,7 @@ export default function JourneyTrail() {
   const [goalTitle, setGoalTitle] = useState("");
   const [goalDate, setGoalDate] = useState("");
   const [showAllMissions, setShowAllMissions] = useState(false);
-  const [replan, setReplan] = useState<{ previewOnly: boolean; preserved: { completed: { id: string; title: string }[]; existingMissionCount: number }; proposed: { title: string; week: number }[] } | null>(null);
+  const [replan, setReplan] = useState<{ previewOnly: boolean; preserved: { completed: { id: string; title: string }[]; existingMissionCount: number }; proposed: { title: string; week: number }[]; planning?: { targetDate: string | null; originalTargetDate: string | null; deadlineNeedsReview: boolean; remainingMissions: number } } | null>(null);
   useEffect(() => {
     let alive = true;
     fetch("/api/journeys", { cache: "no-store" }).then(async r => {
@@ -224,6 +224,8 @@ export default function JourneyTrail() {
         {replan && <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
           <p className="text-sm font-semibold text-emerald-200">🔒 Prévia segura: {replan.preserved.completed.length} conquista(s) preservada(s). Nenhuma MYRA foi alterada.</p>
           <p className="text-xs text-slate-300">Jornada atual: {replan.preserved.existingMissionCount} missões · Proposta: {replan.proposed.length} missões. Esta visualização não substitui a jornada existente.</p>
+          {replan.planning?.deadlineNeedsReview && <p role="alert" className="rounded-lg border border-amber-400/40 bg-amber-400/10 p-3 text-xs text-amber-100">⚠ O prazo original já passou. Esta prévia foi criada sem data-alvo. Edite a data da meta antes de decidir sobre um novo planejamento.</p>}
+          {replan.planning?.targetDate && <p className="text-xs text-violet-200">Prazo considerado: {replan.planning.targetDate} · Missões ainda não concluídas: {replan.planning.remainingMissions}</p>}
           <ol className="max-h-72 space-y-2 overflow-y-auto pr-1">{replan.proposed.map((m, i) => <li key={i} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100"><span className="mr-2 text-violet-300">{i + 1}.</span>{m.title}</li>)}</ol>
           <button type="button" onClick={() => setReplan(null)} className="rounded-lg border border-white/20 px-3 py-2 text-xs text-slate-200">Fechar prévia</button>
         </div>}
