@@ -9,7 +9,7 @@ const compiled = ts.transpileModule(source.replace("export function validateRepl
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
 }).outputText;
 const moduleShim = { exports: {} };
-new Function("module", compiled)(moduleShim);
+new Function("module", "exports", compiled)(moduleShim, moduleShim.exports);
 const { validateReplan } = moduleShim.exports;
 
 test("preserves completed missions and replaces pending missions only", () => {
