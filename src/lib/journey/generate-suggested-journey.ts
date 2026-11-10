@@ -15,7 +15,9 @@ export async function generateSuggestedJourney(base: JourneyDraft): Promise<Jour
     throw new Error("Jornada fora do limite da geração por IA.");
   }
   const client = new OpenAI({ apiKey, timeout: 20000, maxRetries: 0 });
-  const response = await client.responses.create({
+  let response;
+  try {
+    response = await client.responses.create({
     model: "gpt-4.1-mini",
     store: false,
     instructions: [
@@ -38,12 +40,31 @@ export async function generateSuggestedJourney(base: JourneyDraft): Promise<Jour
     }),
     text: { format: { type: "json_object" } },
     max_output_tokens: 3800,
-  });
+    });
+  } catch (cause) {
+    const status = cause && typeof cause === "object" && "status" in cause ? (cause as { status?: unknown }).status : undefined;
+    const code = cause && typeof cause === "object" && "code" in cause ? (cause as { code?: unknown }).code : undefined;
+    console.error("[journey-ai-preview] provider_failure", {
+      status: typeof status === "number" ? status : "unknown",
+      code: typeof code === "string" ? code.slice(0, 60) : "unknown",
+    });
+    throw new Error("Falha no provedor de IA.");
+  }
+  if (response.status !== "completed") {
+    console.error("[journey-ai-preview] incomplete_response", { status: response.status, reason: response.incomplete_details?.reason ?? "unknown" });
+    throw new Error("Resposta incompleta da IA.");
+  }
   let parsed: unknown;
   try {
     parsed = JSON.parse(response.output_text);
   } catch {
+    console.error("[journey-ai-preview] invalid_json");
     throw new Error("A IA retornou uma jornada inválida.");
   }
-  return { ...base, missions: validateGeneratedJourneyMissions(parsed, base) };
+  try {
+    return { ...base, missions: validateGeneratedJourneyMissions(parsed, base) };
+  } catch {
+    console.error("[journey-ai-preview] invalid_missions", { expected: base.weeks * 2 });
+    throw new Error("A IA retornou missões inválidas.");
+  }
 }
