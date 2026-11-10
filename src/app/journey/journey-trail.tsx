@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import JourneyAchievementCard from "./journey-achievement-card";
+import TaskConfirmation from "../dashboard/task-confirmation";
 
 type Journey = { id: string; title: string; status: string; target_date: string | null };
 type Mission = { id: string; title: string; status: string; week?: number };
@@ -27,6 +28,7 @@ export default function JourneyTrail() {
   const [showReview, setShowReview] = useState<string | null>(null);
   const [aiFeedback, setAiFeedback] = useState<Record<string, string>>({});
   const [feedbackBusy, setFeedbackBusy] = useState<string | null>(null);
+  const [proposedReview, setProposedReview] = useState<string | null>(null);
   const [savingExercise, setSavingExercise] = useState<string | null>(null);
   const [exerciseMessage, setExerciseMessage] = useState<Record<string, string>>({});
   const [replan, setReplan] = useState<{ previewOnly: boolean; revision: string; preserved: { completed: { id: string; title: string }[]; existingMissionCount: number }; proposed: { title: string; week: number }[]; planning?: { targetDate: string | null; originalTargetDate: string | null; deadlineNeedsReview: boolean; remainingMissions: number } } | null>(null);
@@ -396,6 +398,8 @@ export default function JourneyTrail() {
                           const proposal = "Revisão MIKA · " + lesson.heading + "\\nDuração sugerida: 20 minutos\\nObjetivo: aplicar o feedback e refazer o exercício.\\n\\n" + aiFeedback[m.id];
                           void navigator.clipboard.writeText(proposal).then(() => setExerciseMessage(old => ({ ...old, [m.id]: "Proposta copiada. Você pode usá-la para criar uma tarefa na Agenda." }))).catch(() => setExerciseMessage(old => ({ ...old, [m.id]: "Não foi possível copiar a proposta." })));
                         }} className="mt-2 rounded-lg border border-amber-200/50 px-3 py-2 font-semibold text-amber-100">Copiar proposta de revisão</button>
+                        <button type="button" onClick={() => setProposedReview(old => old === m.id ? null : m.id)} className="mt-2 ml-2 rounded-lg border border-emerald-200/50 px-3 py-2 font-semibold text-emerald-100">{proposedReview === m.id ? "Ocultar confirmação" : "Adicionar tarefa de revisão"}</button>
+                        {proposedReview === m.id && <div className="mt-3"><TaskConfirmation key={m.id} task={{ title: ("Revisar com MIKA: " + lesson.heading).slice(0, 140), priority: "Média", dueDate: null, completed: false }} onSaved={() => setExerciseMessage(old => ({ ...old, [m.id]: "Tarefa de revisão adicionada às tarefas da MYRYRA." }))} /></div>}
                       </div>
                     </div>}
                     <button type="button" disabled={(exerciseAnswers[m.id] ?? "").trim().length < 30} onClick={() => setShowReview(m.id)} className="rounded-lg border border-amber-300/40 bg-amber-300/10 px-3 py-2 text-xs font-semibold text-amber-100 disabled:opacity-40">Revisar minha resposta</button>
