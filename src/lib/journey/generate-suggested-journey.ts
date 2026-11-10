@@ -44,9 +44,13 @@ export async function generateSuggestedJourney(base: JourneyDraft): Promise<Jour
   } catch (cause) {
     const status = cause && typeof cause === "object" && "status" in cause ? (cause as { status?: unknown }).status : undefined;
     const code = cause && typeof cause === "object" && "code" in cause ? (cause as { code?: unknown }).code : undefined;
+    const param = cause && typeof cause === "object" && "param" in cause ? (cause as { param?: unknown }).param : undefined;
+    const type = cause && typeof cause === "object" && "type" in cause ? (cause as { type?: unknown }).type : undefined;
     console.error("[journey-ai-preview] provider_failure", {
       status: typeof status === "number" ? status : "unknown",
       code: typeof code === "string" ? code.slice(0, 60) : "unknown",
+      param: typeof param === "string" ? param.slice(0, 80) : "unknown",
+      type: typeof type === "string" ? type.slice(0, 60) : "unknown",
     });
     throw new Error("Falha no provedor de IA.");
   }
