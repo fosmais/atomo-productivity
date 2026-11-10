@@ -54,10 +54,10 @@ export async function PATCH(request: Request, context: Context) {
 
   const { data: mission, error: updateError } = await supabase.from("myryra_journey_missions")
     .update({ status, completed_at: status === "completed" ? new Date().toISOString() : null })
-    .eq("id", missionId).eq("journey_id", journeyId)
+    .eq("id", missionId).eq("journey_id", journeyId).eq("status", existingMission.status)
     .select("id,title,status,completed_at").maybeSingle();
   if (updateError) return NextResponse.json({ error: "Não foi possível atualizar a missão." }, { status: 500 });
-  if (!mission) return NextResponse.json({ error: "Missão não encontrada." }, { status: 404 });
+  if (!mission) return NextResponse.json({ error: "A missão foi alterada por outra operação. Atualize a jornada e tente novamente." }, { status: 409 });
   const { data: confirmedCredit, error: rewardError } = status === "completed" && !existingCredit
     ? await supabase.from("myryra_journey_myra_ledger").select("mission_id").eq("owner_id", user.id).eq("mission_id", missionId).maybeSingle()
     : { data: null, error: null };
