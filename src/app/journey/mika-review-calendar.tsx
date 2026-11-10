@@ -12,7 +12,7 @@ async function getGoogleBusy(): Promise<{ connected: boolean; events: GoogleBusy
   return { connected: data.connected === true, events: data.events };
 }
 function hasConflict(start: number, end: number, events: { startsAt: string; endsAt: string; blocksTime: boolean }[], google: GoogleBusy[]) {
-  return events.some(event => event.blocksTime && Date.parse(event.startsAt) < end && Date.parse(event.endsAt) > start)
+  return events.some(event => Date.parse(event.startsAt) < end && Date.parse(event.endsAt) > start)
     || google.some(event => event.start && event.end && Date.parse(event.start) < end && Date.parse(event.end) > start);
 }
 
@@ -80,7 +80,7 @@ export default function MikaReviewCalendar({ title }: { title: string }) {
     {suggestions.length > 0 && <div className="flex flex-wrap gap-2">{suggestions.map(slot => <button type="button" key={slot} disabled={working || confirmed} onClick={() => setStart(slot)} className="rounded-lg border border-emerald-200/40 px-3 py-2 text-emerald-100">{new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(slot))}</button>)}</div>}
     <input aria-label="Início do treinamento" type="datetime-local" value={start} disabled={working || confirmed} onChange={event => setStart(event.target.value)} className="max-w-full rounded-lg border border-slate-500 bg-slate-900 p-2 text-white" />
     <button type="button" disabled={working || confirmed || !start} onClick={() => void confirm()} className="rounded-lg border border-emerald-200/50 px-3 py-2 font-semibold text-emerald-100 disabled:opacity-40">{working ? "Verificando disponibilidade..." : confirmed ? "Agendado" : "Confirmar na Agenda"}</button>
-    <p className="text-slate-200">As sugestões verificam os bloqueios MYRYRA e, quando conectado, os eventos Google. A criação ocorre somente na MYRYRA após sua confirmação.</p>
+    <p className="text-slate-200">As sugestões consideram compromissos e bloqueios MYRYRA e, quando conectado, os eventos Google. A criação ocorre somente na MYRYRA após sua confirmação.</p>
     {googleChecked === false && <p role="status" className="text-amber-100">Google Calendar não conectado: os horários foram verificados apenas na MYRYRA. Confira seus outros calendários antes de confirmar.</p>}
     {message && <p role="status">{message}</p>}
   </div>;
