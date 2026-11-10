@@ -48,3 +48,12 @@ test("Generated Google Calendar event ID uses supported base32hex characters", (
   const generated = match[1] + require("node:crypto").createHash("sha256").update("example").digest("hex").slice(0, 40);
   assert.match(generated, /^[0-9a-v]{5,1024}$/);
 });
+
+test("MIKA availability excludes cancelled and transparent Google events", () => {
+  const ui = read("src/app/journey/mika-review-calendar.tsx");
+  const api = read("src/app/api/google/events/create/route.ts");
+  assert.match(ui, /event\.status !== "cancelled"/);
+  assert.match(ui, /event\.transparency !== "transparent"/);
+  assert.match(api, /event\.status !== "cancelled"/);
+  assert.match(api, /event\.transparency !== "transparent"/);
+});
