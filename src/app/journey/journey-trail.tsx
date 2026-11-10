@@ -455,6 +455,8 @@ export default function JourneyTrail() {
                     <span aria-hidden="true" className={"absolute -top-3 " + (i % 2 ? "-right-2" : "-left-2") + " flex h-9 w-9 items-center justify-center rounded-full border-2 border-violet-200/70 bg-violet-800 text-lg shadow-lg"}>{completed ? "⭐" : next ? "🚀" : "🔮"}</span>
                     <span className="block text-[10px] font-bold uppercase tracking-[.18em] text-violet-200">Etapa {i + 1} · {m.week ? "Semana " + m.week : "Sua missão"}</span>
                     <span className="mt-2 block break-words text-sm font-semibold leading-relaxed text-white sm:text-base">{m.title}</span>
+                    <span className="mt-2 block text-xs font-semibold text-cyan-100">Progresso da missão: {completed ? 100 : 0}% {completed ? "· concluída" : "· conclusão ainda não registrada"}</span>
+                    <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-white/15"><span className="block h-full rounded-full bg-cyan-300" style={{ width: (completed ? 100 : 0) + "%" }} /></span>
                     <span className={"mt-3 inline-flex rounded-full px-3 py-1 text-[11px] font-bold " + (completed ? "bg-emerald-400/20 text-emerald-200" : next ? "bg-amber-300/20 text-amber-200" : "bg-white/10 text-violet-200")}>{completed ? "✓ Conquista realizada" : next ? "✦ Sua próxima missão" : "◇ Aguardando sua vez"}</span>
                   </button>
                   </div>
