@@ -54,17 +54,15 @@ export default function TaskKanban() {
   const [taskSearch, setTaskSearch] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [dashboardFilter, setDashboardFilter] = useState<"all" | "pending" | "overdue">("all");
-  // On mobile, open the first column containing results for a MIKA shortcut.
-  // Keep the user's selected column whenever it already contains matching tasks.
-  useEffect(() => {
-    if (dashboardFilter === "all" || loading) return;
+  // Derive the visible mobile column without synchronous state updates in effects.
+  const visibleMobileColumn = (() => {
+    if (dashboardFilter === "all" || loading) return mobileColumn;
     const matches = (task: KanbanTask) =>
       task.status !== "done" &&
       (dashboardFilter === "pending" || (!!task.due_date && task.due_date < localDateKey(new Date())));
-    if (tasks.some((task) => task.status === mobileColumn && matches(task))) return;
-    const first = columns.find((column) => tasks.some((task) => task.status === column.status && matches(task)));
-    if (first) setMobileColumn(first.status);
-  }, [dashboardFilter, loading, mobileColumn, tasks]);
+    if (tasks.some((task) => task.status === mobileColumn && matches(task))) return mobileColumn;
+    return columns.find((column) => tasks.some((task) => task.status === column.status && matches(task)))?.status ?? mobileColumn;
+  })();
   useEffect(() => {
     const apply = (event: Event) => {
       const filter = (event as CustomEvent<{ filter?: string }>).detail?.filter;
@@ -550,8 +548,8 @@ export default function TaskKanban() {
         <div className="min-w-0">
           <div className="mb-3 flex snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain pb-2 lg:hidden" role="group" aria-label="Etapa do pipeline">
             {columns.map((column) => (
-              <button key={column.status} type="button" aria-pressed={mobileColumn === column.status} onClick={() => setMobileColumn(column.status)}
-                className={`min-h-10 shrink-0 snap-start rounded-xl border px-3 py-2 text-xs font-semibold sm:text-sm ${mobileColumn === column.status ? "border-violet-400 bg-violet-600 text-white" : "border-slate-600 bg-slate-800 text-slate-300"}`}>
+              <button key={column.status} type="button" aria-pressed={visibleMobileColumn === column.status} onClick={() => setMobileColumn(column.status)}
+                className={`min-h-10 shrink-0 snap-start rounded-xl border px-3 py-2 text-xs font-semibold sm:text-sm ${visibleMobileColumn === column.status ? "border-violet-400 bg-violet-600 text-white" : "border-slate-600 bg-slate-800 text-slate-300"}`}>
                 {column.label} ({tasks.filter((task) => task.status === column.status && (dashboardFilter === "all" || (task.status !== "done" && (dashboardFilter === "pending" || (!!task.due_date && task.due_date < localDateKey(new Date()))))) && (priorityFilter === "all" || task.priority === priorityFilter) && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))).length})
               </button>
             ))}
@@ -580,7 +578,7 @@ export default function TaskKanban() {
             return (
               <div
                 key={column.status}
-                className={`min-w-0 rounded-xl border border-white/10 bg-slate-800/65 p-2.5 sm:p-4 ${mobileColumn === column.status ? "" : "hidden lg:block"}`}
+                className={`min-w-0 rounded-xl border border-white/10 bg-slate-800/65 p-2.5 sm:p-4 ${visibleMobileColumn === column.status ? "" : "hidden lg:block"}`}
               >
                 <h3 className="mb-2 flex items-center justify-between gap-2 text-xs font-semibold sm:mb-3 sm:text-sm">
                   {column.label}
