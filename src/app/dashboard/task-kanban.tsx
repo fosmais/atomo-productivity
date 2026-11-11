@@ -147,6 +147,8 @@ export default function TaskKanban() {
 
       if (tasksError) throw tasksError;
 
+      // Apply pagination metadata only for the latest request, avoiding stale refresh races.
+      if (requestId !== latestLoadRef.current) return;
       fetchedCountRef.current = (data ?? []).length;
       setHasMoreTasks((data ?? []).length === 200);
       // Legacy records can have completed=true with a stale status. Never display them as pending.
