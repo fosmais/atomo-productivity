@@ -17,7 +17,9 @@ export async function hasCurrentLegalAcceptance(userId: string): Promise<boolean
       .eq("status", "published")
       .lte("published_at", now)
       .lte("effective_at", now)
-      .order("effective_at", { ascending: false });
+      .order("effective_at", { ascending: false })
+      .order("published_at", { ascending: false })
+      .order("id", { ascending: false });
     if (versionError) return false;
     const ids = ["terms", "privacy_notice"].map((type) =>
       (versions ?? []).find((version) => version.document_type === type)?.id,
