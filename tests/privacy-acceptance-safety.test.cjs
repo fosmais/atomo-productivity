@@ -166,3 +166,13 @@ test("MIKA learning assessment requires current acceptance before calling OpenAI
   assert.match(code, /LEGAL_ACCEPTANCE_REQUIRED/);
   assert.ok(code.indexOf("LEGAL_ACCEPTANCE_REQUIRED") < code.indexOf("client.responses.create("));
 });
+
+
+test("MIKA Concierge authorization is owner-scoped and never claims external execution", () => {
+  const code = source("src/app/api/mika/actions/route.ts");
+  const patch = code.split("export async function PATCH")[1];
+  assert.match(patch, /\.eq\("id", actionId\)\.eq\("user_id", user\.id\)\.eq\("status", "awaiting_authorization"\)/);
+  assert.match(patch, /decision === "authorize" \? "authorized" : "cancelled"/);
+  assert.match(patch, /executed: false/);
+  assert.doesNotMatch(patch, /status:\s*"executed"/);
+});
