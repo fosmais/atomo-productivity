@@ -84,6 +84,27 @@ export default function MikaJourneyPlanner() {
     }
   }
 
+  async function toggleJourneyPause(id: string, status: string) {
+    if (journeyBusy || (status !== "active" && status !== "paused")) return;
+    setJourneyBusy(id);
+    setMessage("");
+    try {
+      const response = await fetch("/api/journeys/" + encodeURIComponent(id), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: status === "active" ? "paused" : "active" }),
+      });
+      const payload = await readApiJson(response, "Não foi possível alterar o estado da meta");
+      if (!response.ok) throw new Error(payload.error || "Falha ao atualizar a meta.");
+      setMessage(status === "active" ? "Jornada pausada. Seu progresso foi preservado." : "Jornada retomada de onde parou.");
+      await refreshJourneys();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Falha ao atualizar a meta.");
+    } finally {
+      setJourneyBusy(null);
+    }
+  }
+
   async function changeSavedJourney(id: string, archive: boolean) {
     if (journeyBusy) return;
     if (archive && !window.confirm("Remover esta meta da lista? O histórico e os MYRAs serão preservados.")) return;
@@ -271,6 +292,12 @@ export default function MikaJourneyPlanner() {
                   {journey.target_date ? " · Meta: " + journey.target_date.slice(0, 10).split("-").reverse().join("/") : ""}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
+                  {(journey.status === "active" || journey.status === "paused") && (
+                    <button type="button" disabled={journeyBusy !== null} onClick={() => void toggleJourneyPause(journey.id, journey.status)}
+                      className="rounded-lg border border-amber-400/50 px-3 py-2 text-xs text-amber-100 disabled:opacity-50">
+                      {journey.status === "active" ? "Pausar" : "Retomar"}
+                    </button>
+                  )}
                   <button type="button" disabled={journeyBusy !== null} onClick={() => {
                     setEditingJourney(journey.id);
                     setEditTitle(journey.title);
