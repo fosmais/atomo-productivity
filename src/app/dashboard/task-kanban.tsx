@@ -737,7 +737,7 @@ export default function TaskKanban() {
                   )}
                   {columnTasks.length === 0 && (
                     <p className="text-xs text-slate-400">
-                      {taskSearch || favoritesOnly || priorityFilter !== "all" ? "Nenhuma tarefa corresponde aos filtros nesta etapa." : "Nenhuma tarefa nesta etapa."}
+                      {dashboardFilter !== "all" || taskSearch || favoritesOnly || priorityFilter !== "all" ? "Nenhuma tarefa corresponde aos filtros nesta etapa." : "Nenhuma tarefa nesta etapa."}
                     </p>
                   )}
                 </div>
