@@ -157,3 +157,12 @@ test("Journey learning and review writes enforce legal acceptance without blocki
     assert.doesNotMatch(get, /LEGAL_ACCEPTANCE_REQUIRED/);
   }
 });
+
+
+test("MIKA learning assessment requires current acceptance before calling OpenAI", () => {
+  const code = source("src/app/api/journeys/feedback/route.ts");
+  assert.match(code, /MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true"/);
+  assert.match(code, /hasCurrentLegalAcceptance\(user\.id\)/);
+  assert.match(code, /LEGAL_ACCEPTANCE_REQUIRED/);
+  assert.ok(code.indexOf("LEGAL_ACCEPTANCE_REQUIRED") < code.indexOf("client.responses.create("));
+});
