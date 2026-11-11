@@ -17,6 +17,7 @@ begin
     where id=p_message_id and user_id=p_user_id and role='assistant' for update;
   if not found then return jsonb_build_object('status','missing'); end if;
   if m.event_status='saved' then
+    if m.confirmed_event_id is null then return jsonb_build_object('status','legacy_saved'); end if;
     return jsonb_build_object('status','saved','eventId',m.confirmed_event_id);
   end if;
   if m.event_status is distinct from 'pending' then
@@ -26,8 +27,8 @@ begin
   if e is null or jsonb_typeof(e)<>'object' then return jsonb_build_object('status','invalid'); end if;
   v_title := btrim(e->>'title');
   if v_title is null or length(v_title) not between 1 and 200
-    or coalesce(e->>'startsAt','') !~ '^\\d{4}-\\d{2}-\\d{2}T'
-    or coalesce(e->>'endsAt','') !~ '^\\d{4}-\\d{2}-\\d{2}T'
+    or coalesce(e->>'startsAt','') !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T'
+    or coalesce(e->>'endsAt','') !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T'
   then return jsonb_build_object('status','invalid'); end if;
   begin
     v_start := (e->>'startsAt')::timestamptz;
