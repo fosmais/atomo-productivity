@@ -95,7 +95,7 @@ const CONCURRENT_CLAIMS = 20;
  assert.equal(proposal.result.task_id,taskId);
  assert.equal(audit.length,1,'Exactly one succeeded audit event');
  assert.equal(tasks.length,1,'Executed task must exist');
- assert.equal(matchingTasks,1,'Exactly one matching synthetic task must exist after concurrent calls');
+ assert.equal(matchingTasks,1,'Exactly one task persisted after concurrent calls');
  // Regression gate: replaying the same proposal with a different plan must
  // not disclose the prior task ID or succeed with a mismatched argument.
  const {data:wrongPlanReplay,error:wrongPlanReplayError} = await a.rpc('mika_execute_approved_task',{
