@@ -89,3 +89,13 @@ test('MIKA proposal creation is rate limited without blocking authorization revo
  assert.doesNotMatch(patch, /checkConciergeRateLimit/);
  assert.match(patch, /decision === "authorize" \? "authorized" : "cancelled"/);
 });
+
+
+test('MIKA proposal rejects client-supplied ownership and execution metadata', () => {
+ const route = fs.readFileSync(path.join(__dirname, '../src/app/api/mika/actions/route.ts'), 'utf8');
+ const post = route.split('export async function POST')[1].split('export async function PATCH')[0];
+ assert.match(post, /Object\.keys\(body\)\.some\(key => !\["eventId", "service", "actionType", "provider", "proposal"\]\.includes\(key\)\)/);
+ assert.match(post, /Campos não permitidos na proposta/);
+ assert.ok(post.indexOf('Campos não permitidos na proposta') < post.indexOf('await authenticate()'));
+ assert.match(post, /status: "awaiting_authorization"/);
+});
