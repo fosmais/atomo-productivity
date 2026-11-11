@@ -23,7 +23,9 @@ export async function GET() {
     .eq("status", "published")
     .lte("effective_at", now)
     .lte("published_at", now)
-    .order("effective_at", { ascending: false });
+    .order("effective_at", { ascending: false })
+      .order("published_at", { ascending: false })
+      .order("id", { ascending: false });
   if (versionsError) {
     return NextResponse.json({ error: "Documentos legais indisponíveis." }, { status: 503, headers });
   }
