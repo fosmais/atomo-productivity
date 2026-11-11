@@ -35,9 +35,10 @@ export async function PATCH(request: Request, context: Context) {
     return NextResponse.json({ error: "Verificação adicional necessária." }, { status: 403 });
 
   const { data: journey, error: journeyError } = await supabase.from("myryra_journeys")
-    .select("id").eq("id", journeyId).eq("owner_id", user.id).maybeSingle();
+    .select("id,status").eq("id", journeyId).eq("owner_id", user.id).maybeSingle();
   if (journeyError) return NextResponse.json({ error: "Falha ao verificar jornada." }, { status: 500 });
   if (!journey) return NextResponse.json({ error: "Jornada não encontrada." }, { status: 404 });
+  if (journey.status !== "active") return NextResponse.json({ error: "Retome a jornada antes de alterar suas missões." }, { status: 409 });
 
   // Verify the mission belongs to this authenticated user's journey before any ledger lookup or mutation.
   const { data: existingMission, error: missionLookupError } = await supabase.from("myryra_journey_missions")
