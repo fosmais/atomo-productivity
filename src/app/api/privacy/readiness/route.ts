@@ -16,12 +16,13 @@ export async function GET() {
     return NextResponse.json({ error: "Autenticação necessária." }, { status: 401, headers });
   }
 
+  const now = new Date().toISOString();
   const { data: versions, error: versionsError } = await supabase
     .from("myryra_privacy_document_versions")
     .select("id, document_type, version, effective_at, published_at")
     .eq("status", "published")
-    .lte("effective_at", new Date().toISOString())
-    .not("published_at", "is", null)
+    .lte("effective_at", now)
+    .lte("published_at", now)
     .order("effective_at", { ascending: false });
   if (versionsError) {
     return NextResponse.json({ error: "Documentos legais indisponíveis." }, { status: 503, headers });
