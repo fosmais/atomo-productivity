@@ -70,3 +70,8 @@ test("consent submission stays disabled when either legal document is missing", 
   assert.match(page, /Os documentos legais ainda não estão disponíveis/);
   assert.match(page, /!document\.published \|\| !document\.publicUrl/);
 });
+
+test("previously accepted document does not block completing the remaining acceptance", () => {
+  assert.match(page, /!document\.accepted && \(!document\.publicUrl/);
+  assert.match(page, /const pending = state\.documents\.filter\(\(document\) => !document\.accepted\)/);
+});
