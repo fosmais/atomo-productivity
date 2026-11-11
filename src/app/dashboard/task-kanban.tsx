@@ -527,10 +527,10 @@ export default function TaskKanban() {
         <p className="text-sm text-slate-400">Carregando tarefas...</p>
       ) : (
         <div className="min-w-0">
-          <div className="mb-3 flex gap-2 overflow-x-auto pb-2 lg:hidden" role="group" aria-label="Etapa do pipeline">
+          <div className="mb-3 flex snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain pb-2 lg:hidden" role="group" aria-label="Etapa do pipeline">
             {columns.map((column) => (
               <button key={column.status} type="button" aria-pressed={mobileColumn === column.status} onClick={() => setMobileColumn(column.status)}
-                className={`min-h-11 shrink-0 rounded-lg border px-3 py-2 text-sm font-medium ${mobileColumn === column.status ? "border-violet-400 bg-violet-600 text-white" : "border-slate-600 bg-slate-800 text-slate-300"}`}>
+                className={`min-h-10 shrink-0 snap-start rounded-xl border px-3 py-2 text-xs font-semibold sm:text-sm ${mobileColumn === column.status ? "border-violet-400 bg-violet-600 text-white" : "border-slate-600 bg-slate-800 text-slate-300"}`}>
                 {column.label} ({tasks.filter((task) => task.status === column.status && (dashboardFilter === "all" || (task.status !== "done" && (dashboardFilter === "pending" || (!!task.due_date && task.due_date < localDateKey(new Date()))))) && (priorityFilter === "all" || task.priority === priorityFilter) && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))).length})
               </button>
             ))}
