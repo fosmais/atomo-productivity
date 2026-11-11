@@ -176,3 +176,20 @@ test("MIKA Concierge authorization is owner-scoped and never claims external exe
   assert.match(patch, /executed: false/);
   assert.doesNotMatch(patch, /status:\s*"executed"/);
 });
+
+
+test("MIKA Concierge proposal validates event ownership and never calls a provider", () => {
+  const code = source("src/app/api/mika/actions/route.ts");
+  const post = code.split("export async function POST")[1].split("export async function PATCH")[0];
+  assert.match(post, /\.from\("events"\)\.select\("id"\)\.eq\("id", eventId\)\.eq\("user_id", user\.id\)/);
+  assert.match(post, /status: "awaiting_authorization"/);
+  assert.doesNotMatch(post, /status:\s*"(?:authorized|executed|completed)"/);
+});
+
+test("MIKA Concierge cancellation stays available without new legal acceptance", () => {
+  const patch = source("src/app/api/mika/actions/route.ts").split("export async function PATCH")[1];
+  const gate = patch.split("const admin = createSupabaseAdmin()")[0];
+  assert.match(gate, /if \(decision === "authorize"\)/);
+  assert.match(gate, /hasCurrentLegalAcceptance\(user\.id\)/);
+  assert.match(patch, /decision === "authorize" \? "authorized" : "cancelled"/);
+});
