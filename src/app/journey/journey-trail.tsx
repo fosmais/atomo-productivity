@@ -120,7 +120,7 @@ export default function JourneyTrail() {
         const remaining = journeys.filter(j => j.id !== selected);
         setJourneys(remaining); setSelected(remaining[0]?.id ?? ""); setMissions([]);
       } else {
-        setJourneys(old => old.map(j => j.id === selected ? { ...j, ...payload.journey } : j));
+        setJourneys(old => old.map(j => j.id === selected ? { ...j, ...(payload.journey as Partial<Journey>) } : j));
       }
       setEditing(false); setReplan(null);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Falha ao alterar a meta."); }
