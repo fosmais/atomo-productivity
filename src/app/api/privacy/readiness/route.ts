@@ -19,7 +19,7 @@ export async function GET() {
   const now = new Date().toISOString();
   const { data: versions, error: versionsError } = await supabase
     .from("myryra_privacy_document_versions")
-    .select("id, document_type, version, effective_at, published_at")
+    .select("id, document_type, version, public_url, effective_at, published_at")
     .eq("status", "published")
     .lte("effective_at", now)
     .lte("published_at", now)
@@ -49,6 +49,8 @@ export async function GET() {
   const documents = current.map(({ type, document }) => ({
     type,
     version: document?.version ?? null,
+    documentVersionId: document?.id ?? null,
+    publicUrl: document?.public_url ?? null,
     published: Boolean(document),
     accepted: Boolean(document && acceptedIds.has(document.id)),
   }));
