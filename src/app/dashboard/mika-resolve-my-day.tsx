@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useVyraNavigation } from "./vyra-module-context";
 import { getCloudEvents, saveCloudEvent } from "@/lib/event-cloud";
 
 type Plan = {
@@ -23,6 +24,7 @@ function localIso(date: Date) {
 }
 
 export default function MikaResolveMyDay() {
+  const { navigateTo } = useVyraNavigation();
   const [plan, setPlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(false);
   const [savingFocus, setSavingFocus] = useState(false);
@@ -97,9 +99,9 @@ export default function MikaResolveMyDay() {
       {error && <p role="alert" className="mt-3 text-sm text-rose-300">{error}</p>}
       {plan && <div className="mt-4 space-y-3 text-sm text-slate-200" aria-live="polite">
         <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-lg bg-white/10 p-3"><strong className="block text-xl">{plan.pendingTasks}</strong>Tarefas pendentes</div>
-          <div className="rounded-lg bg-white/10 p-3"><strong className="block text-xl">{plan.todayEvents}</strong>Compromissos</div>
-          <div className="rounded-lg bg-white/10 p-3"><strong className="block text-xl">{plan.overdueTasks}</strong>Atrasadas</div>
+          <button type="button" onClick={() => navigateTo("vyra-tasks")} className="rounded-lg bg-white/10 p-3 text-left hover:bg-violet-500/20 focus-visible:outline-2 focus-visible:outline-violet-300" aria-label={`Abrir ${plan.pendingTasks} tarefas pendentes`}><strong className="block text-xl">{plan.pendingTasks}</strong>Tarefas pendentes <span aria-hidden="true">↗</span></button>
+          <button type="button" onClick={() => navigateTo("vyra-calendar")} className="rounded-lg bg-white/10 p-3 text-left hover:bg-violet-500/20 focus-visible:outline-2 focus-visible:outline-violet-300" aria-label={`Abrir ${plan.todayEvents} compromissos`}><strong className="block text-xl">{plan.todayEvents}</strong>Compromissos <span aria-hidden="true">↗</span></button>
+          <button type="button" onClick={() => navigateTo("vyra-tasks")} className="rounded-lg bg-white/10 p-3 text-left hover:bg-violet-500/20 focus-visible:outline-2 focus-visible:outline-violet-300" aria-label={`Abrir ${plan.overdueTasks} tarefas atrasadas`}><strong className="block text-xl">{plan.overdueTasks}</strong>Atrasadas <span aria-hidden="true">↗</span></button>
         </div>
         <div><h4 className="font-semibold text-white">Suas prioridades</h4>
           {plan.priorities.length ? <ul className="mt-1 list-inside list-disc">{plan.priorities.map((task, i) => <li key={i}>{task.title} ({task.priority})</li>)}</ul> : <p>Sem tarefas pendentes.</p>}
