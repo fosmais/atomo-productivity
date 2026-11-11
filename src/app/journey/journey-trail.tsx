@@ -363,8 +363,8 @@ export default function JourneyTrail() {
   const finished = missions.length > 0 && done === missions.length;
   const firstPending = missions.findIndex(m => m.status !== "completed");
   const focusIndex = firstPending === -1 ? Math.max(0, missions.length - 1) : firstPending;
-  const windowStart = showAllMissions ? 0 : Math.max(0, focusIndex - 2);
-  const windowEnd = showAllMissions ? missions.length : Math.min(missions.length, Math.max(7, focusIndex + 5));
+  const windowStart = showAllMissions ? 0 : focusIndex;
+  const windowEnd = showAllMissions ? missions.length : Math.min(missions.length, focusIndex + 3);
   const visibleMissions = missions.slice(windowStart, windowEnd);
   const chapterSize = 8;
   const goalWords = (current?.title ?? "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase();
@@ -412,7 +412,7 @@ export default function JourneyTrail() {
       {current && <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
         <p className="text-xs uppercase tracking-widest text-violet-300">Destino escolhido</p>
         <h3 className="mt-1 text-2xl font-bold">✧ {current.title}</h3>
-        <p className="mt-1 text-sm text-slate-300">{current.target_date ? "Meta: " + current.target_date : "Uma conquista de cada vez"}</p>
+        <p className="mt-1 text-sm text-slate-300">{current.target_date ? "Meta: " + current.target_date.slice(0, 10).split("-").reverse().join("/") : "Uma conquista de cada vez"}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           <button type="button" disabled={!!busy} onClick={() => { setGoalTitle(current.title); setGoalDate(current.target_date ?? ""); setEditing(v => !v); }} className="rounded-lg border border-violet-300/40 px-3 py-2 text-xs font-semibold text-violet-100">✎ Editar meta</button>
           <button type="button" disabled={!!busy} onClick={() => void changeGoal(true)} className="rounded-lg border border-rose-300/40 px-3 py-2 text-xs font-semibold text-rose-200">Excluir meta</button>
@@ -425,6 +425,11 @@ export default function JourneyTrail() {
         </div>}
         <div className="mt-4 flex items-center justify-between text-sm"><span>{done} de {missions.length} missões</span><strong>{percent}%</strong></div>
         <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-700" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label="Progresso da jornada"><div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-400 transition-all duration-500" style={{ width: percent + "%" }} /></div>
+      </div>}
+      {current && missions.length > 0 && !finished && firstPending >= 0 && <div className="mt-4 rounded-2xl border border-fuchsia-400/35 bg-fuchsia-500/10 p-4" aria-label="Próxima missão da jornada">
+        <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-200">🎯 Seu próximo passo</p>
+        <p className="mt-2 text-base font-semibold text-white">{missions[firstPending].title}</p>
+        <p className="mt-1 text-xs text-slate-300">Missão {firstPending + 1} de {missions.length} · {percent}% da jornada concluída</p>
       </div>}
       {current && missions.length > 0 && <div className="mt-4 rounded-2xl border border-violet-400/30 bg-slate-900/70 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
