@@ -66,3 +66,13 @@ test('MIKA actions API never claims an external action was executed by an approv
  assert.doesNotMatch(patch, /fetch\(|responses\.create\(|\.rpc\(/);
  assert.doesNotMatch(patch, /status: "succeeded"|status: "completed"/);
 });
+
+
+test('MIKA authorization rejects injected fields before changing approval state', () => {
+ const route = fs.readFileSync(path.join(__dirname, '../src/app/api/mika/actions/route.ts'), 'utf8');
+ const patch = route.split('export async function PATCH')[1];
+ assert.match(patch, /Object\.keys\(body\)\.some\(key => !\["actionId", "decision"\]\.includes\(key\)\)/);
+ assert.match(patch, /Campos não permitidos na decisão/);
+ assert.ok(patch.indexOf('Campos não permitidos na decisão') < patch.indexOf('await authenticate()'));
+ assert.match(patch, /executed: false/);
+});
