@@ -130,3 +130,14 @@ test("Journey achievement creation is gated while viewing and deleting memories 
   assert.doesNotMatch(get, /LEGAL_ACCEPTANCE_REQUIRED/);
   assert.doesNotMatch(deletion, /LEGAL_ACCEPTANCE_REQUIRED/);
 });
+
+
+test("Journey edit and resume require legal acceptance while pause and archive remain accessible", () => {
+  const code = source("src/app/api/journeys/[journeyId]/route.ts");
+  const mutation = code.split("async function changeJourney")[1];
+  assert.match(mutation, /!archive && updates\.status !== "paused"/);
+  assert.match(mutation, /MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true"/);
+  assert.match(mutation, /hasCurrentLegalAcceptance\(user\.id\)/);
+  assert.match(mutation, /LEGAL_ACCEPTANCE_REQUIRED/);
+  assert.match(mutation, /export async function DELETE/);
+});
