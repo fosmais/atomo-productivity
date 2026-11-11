@@ -37,7 +37,7 @@ export async function GET(_request: Request, context: Context) {
   const { supabase, user } = auth;
   if (!supabase || !user) return NextResponse.json({ error: "Autenticação necessária." }, { status: 401 });
   const { data, error } = await supabase.from("myryra_journey_achievements")
-    .select("id,title,message,photo_path,achieved_at")
+    .select("id,title,message,photo_path,achieved_at,completed_missions_at_achievement,myra_earned_at_achievement")
     .eq("journey_id", journeyId).eq("owner_id", user.id)
     .order("achieved_at", { ascending: false }).limit(30);
   if (error) return NextResponse.json({ error: "Galeria indisponível." }, { status: 503 });
@@ -59,6 +59,19 @@ export async function POST(request: Request, context: Context) {
     .select("status").eq("journey_id", journeyId).limit(105);
   if (missionsError || !missions?.length || missions.length > 104 || missions.some(m => m.status !== "completed"))
     return NextResponse.json({ error: "Conclua sua jornada antes de registrar a conquista." }, { status: 409 });
+  // Read only credits already recorded in the ledger. Saving a memory never awards MYRA.
+  let myraEarned = 0;
+  for (let offset = 0; ; offset += 1000) {
+    const { data: credits, error: creditsError } = await supabase.from("myryra_journey_myra_ledger")
+      .select("amount").eq("owner_id", user.id).eq("journey_id", journeyId)
+      .range(offset, offset + 999);
+    if (creditsError) return NextResponse.json({ error: "Não foi possível confirmar o histórico de MYRAs." }, { status: 503 });
+    const entries = credits ?? [];
+    myraEarned += entries.reduce((sum, entry) => sum + entry.amount, 0);
+    if (entries.length < 1000) break;
+  }
+  if (!Number.isSafeInteger(myraEarned) || myraEarned < 0)
+    return NextResponse.json({ error: "Saldo histórico de MYRAs inválido." }, { status: 503 });
   let form: FormData;
   try { form = await request.formData(); } catch { return NextResponse.json({ error: "Formulário inválido." }, { status: 400 }); }
   const rawMessage = form.get("message");
@@ -77,8 +90,8 @@ export async function POST(request: Request, context: Context) {
     if (uploadError) return NextResponse.json({ error: "Não foi possível salvar a foto." }, { status: 503 });
   }
   const { data, error } = await supabase.from("myryra_journey_achievements")
-    .insert({ journey_id: journeyId, owner_id: user.id, title: journey.title, message: rawMessage.trim(), photo_path: path })
-    .select("id,title,message,achieved_at").single();
+    .insert({ journey_id: journeyId, owner_id: user.id, title: journey.title, message: rawMessage.trim(), photo_path: path, completed_missions_at_achievement: missions.length, myra_earned_at_achievement: myraEarned })
+    .select("id,title,message,achieved_at,completed_missions_at_achievement,myra_earned_at_achievement").single();
   if (error) {
     if (path) await supabase.storage.from(BUCKET).remove([path]);
     return NextResponse.json({ error: "Não foi possível registrar a conquista." }, { status: 503 });
