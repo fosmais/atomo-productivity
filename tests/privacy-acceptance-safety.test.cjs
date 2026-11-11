@@ -94,3 +94,17 @@ test("Journey confirmation and replan mutations enforce legal acceptance on roll
     assert.match(code, /LEGAL_ACCEPTANCE_REQUIRED/);
   }
 });
+
+
+test("MIKA action proposals and authorizations require current legal acceptance when enabled", () => {
+  const code = source("src/app/api/mika/actions/route.ts");
+  const post = code.split("export async function POST")[1].split("export async function PATCH")[0];
+  const patch = code.split("export async function PATCH")[1];
+  for (const handler of [post, patch]) {
+    assert.match(handler, /MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true"/);
+    assert.match(handler, /hasCurrentLegalAcceptance\(user\.id\)/);
+    assert.match(handler, /LEGAL_ACCEPTANCE_REQUIRED/);
+  }
+  assert.match(patch, /if \(decision === "authorize"\)/);
+  assert.match(patch, /decision === "authorize" \? "authorized" : "cancelled"/);
+});
