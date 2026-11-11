@@ -52,6 +52,21 @@ export default function TaskKanban() {
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [taskSearch, setTaskSearch] = useState("");
+  const [dashboardFilter, setDashboardFilter] = useState<"all" | "pending" | "overdue">("all");
+  useEffect(() => {
+    const apply = (event: Event) => {
+      const filter = (event as CustomEvent<{ filter?: string }>).detail?.filter;
+      if (filter !== "pending" && filter !== "overdue") return;
+      setDashboardFilter(filter);
+      setTaskSearch("");
+      setPriorityFilter("all");
+      setFavoritesOnly(false);
+      setMobileColumn("todo");
+    };
+    window.addEventListener("myryra:task-filter", apply);
+    return () => window.removeEventListener("myryra:task-filter", apply);
+  }, []);
+
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [taskSort, setTaskSort] = useState<"priority" | "due" | "title" | "recent">("priority");
   const [favoriteSavingId, setFavoriteSavingId] = useState<string | null>(null);
@@ -408,6 +423,12 @@ export default function TaskKanban() {
         </button>
       </div>
 
+      {dashboardFilter !== "all" && (
+        <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border border-violet-400/40 bg-violet-500/10 px-3 py-2 text-sm text-violet-100">
+          <span>{dashboardFilter === "overdue" ? "Exibindo tarefas atrasadas" : "Exibindo tarefas pendentes"}</span>
+          <button type="button" onClick={() => setDashboardFilter("all")} className="rounded border border-violet-400/40 px-2 py-1 text-xs">Ver todas</button>
+        </div>
+      )}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <label className="min-w-[12rem] flex-1">
           <span className="sr-only">Buscar tarefas por nome</span>
@@ -503,14 +524,14 @@ export default function TaskKanban() {
             {columns.map((column) => (
               <button key={column.status} type="button" aria-pressed={mobileColumn === column.status} onClick={() => setMobileColumn(column.status)}
                 className={`min-h-11 shrink-0 rounded-lg border px-3 py-2 text-sm font-medium ${mobileColumn === column.status ? "border-violet-400 bg-violet-600 text-white" : "border-slate-600 bg-slate-800 text-slate-300"}`}>
-                {column.label} ({tasks.filter((task) => task.status === column.status && (priorityFilter === "all" || task.priority === priorityFilter) && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))).length})
+                {column.label} ({tasks.filter((task) => task.status === column.status && (dashboardFilter === "all" || (task.status !== "done" && (dashboardFilter === "pending" || (!!task.due_date && task.due_date < localDateKey(new Date()))))) && (priorityFilter === "all" || task.priority === priorityFilter) && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))).length})
               </button>
             ))}
           </div>
           <div className="grid min-w-0 gap-3 sm:gap-4 lg:grid-cols-2 2xl:grid-cols-4">
           {columns.map((column) => {
             const columnTasks = tasks.filter(
-              (task) => task.status === column.status && (priorityFilter === "all" || task.priority === priorityFilter) && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))
+              (task) => task.status === column.status && (dashboardFilter === "all" || (task.status !== "done" && (dashboardFilter === "pending" || (!!task.due_date && task.due_date < localDateKey(new Date()))))) && (priorityFilter === "all" || task.priority === priorityFilter) && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))
             );
             const priorityOrder: Record<string, number> = { Alta: 0, "Média": 1, Normal: 2, Baixa: 2 };
             columnTasks.sort((a, b) => {
