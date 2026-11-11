@@ -35,6 +35,7 @@ export default function TaskKanban() {
   const latestLoadRef = useRef(0);
   const [expandedColumns, setExpandedColumns] = useState<TaskStatus[]>([]);
   const [mobileColumn, setMobileColumn] = useState<TaskStatus>("todo");
+  const [mobileColumnManuallySelected, setMobileColumnManuallySelected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -56,7 +57,7 @@ export default function TaskKanban() {
   const [dashboardFilter, setDashboardFilter] = useState<"all" | "pending" | "overdue">("all");
   // Derive the visible mobile column without synchronous state updates in effects.
   const visibleMobileColumn = (() => {
-    if (dashboardFilter === "all" || loading) return mobileColumn;
+    if (dashboardFilter === "all" || loading || mobileColumnManuallySelected) return mobileColumn;
     const matches = (task: KanbanTask) =>
       task.status !== "done" &&
       (dashboardFilter === "pending" || (!!task.due_date && task.due_date < localDateKey(new Date())));
@@ -74,6 +75,7 @@ export default function TaskKanban() {
       setPriorityFilter("all");
       setFavoritesOnly(false);
       setMobileColumn("todo");
+      setMobileColumnManuallySelected(false);
     };
     window.addEventListener("myryra:task-filter", apply);
     const pending = sessionStorage.getItem("myryra:task-filter-pending");
@@ -548,7 +550,7 @@ export default function TaskKanban() {
         <div className="min-w-0">
           <div className="mb-3 flex snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain pb-2 lg:hidden" role="group" aria-label="Etapa do pipeline">
             {columns.map((column) => (
-              <button key={column.status} type="button" aria-pressed={visibleMobileColumn === column.status} onClick={() => setMobileColumn(column.status)}
+              <button key={column.status} type="button" aria-pressed={visibleMobileColumn === column.status} onClick={() => { setMobileColumn(column.status); setMobileColumnManuallySelected(true); }}
                 className={`min-h-10 shrink-0 snap-start rounded-xl border px-3 py-2 text-xs font-semibold sm:text-sm ${visibleMobileColumn === column.status ? "border-violet-400 bg-violet-600 text-white" : "border-slate-600 bg-slate-800 text-slate-300"}`}>
                 {column.label} ({tasks.filter((task) => task.status === column.status && (dashboardFilter === "all" || (task.status !== "done" && (dashboardFilter === "pending" || (!!task.due_date && task.due_date < localDateKey(new Date()))))) && (priorityFilter === "all" || task.priority === priorityFilter) && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))).length})
               </button>
