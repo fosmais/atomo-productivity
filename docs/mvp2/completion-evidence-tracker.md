@@ -25,6 +25,37 @@ Cada frente deve ter critérios objetivos, evidência (commit, CI, homologação
 | Billing Asaas | Sandbox e controles de readiness | Homologar fluxo e entitlements; cobranças reais seguem desabilitadas |
 | Estabilidade, segurança e release | Workflows GitHub e testes automatizados | Confirmar CI no SHA final, revisão de permissões, teste ponta a ponta e deploy com rollback |
 
+
+## Matriz de pesos proposta (total 100 pontos)
+
+Pesos de planejamento, **não** percentuais de conclusão. Não marcar um item como concluído sem evidência de homologação e, quando aplicável, produção.
+
+| Frente | Peso | Critério mínimo de conclusão |
+| --- | ---: | --- |
+| Journey | 20 | CRUD, pausa/retomada, replanejamento, missões, MYRA, compartilhamento e mobile homologados |
+| MIKA Agente | 20 | Proposta, autorização granular, execução real suportada, revogação, idempotência e auditoria homologadas |
+| Concierge | 15 | Provedores integrados por APIs autorizadas e cenários de falha homologados |
+| Agenda e Tarefas | 10 | Fluxos CRUD, links, Calendar e mobile homologados |
+| Finance | 10 | Saldos, lançamentos, metas, assinaturas e isolamento de dados homologados |
+| LGPD | 10 | Documentos publicados, aceite obrigatório de novos/antigos, gates e trilha de auditoria homologados |
+| Billing Asaas | 5 | Sandbox, webhooks e entitlements homologados; cobrança real permanece fora do escopo |
+| Estabilidade e release | 10 | CI do SHA final, regressão, segurança, rollout controlado e smoke em produção |
+| **Total** | **100** | |
+
+### Regra de cálculo auditável
+- Para cada frente, criar subitens verificáveis com pesos cuja soma corresponda ao peso da frente.
+- Cada subitem recebe `implemented`, `ci_passed`, `homologated` e `production_verified`, cada um com evidência ou `unknown`.
+- **Progresso entregue** = soma dos pesos dos subitens homologados e verificados em produção, dividida por 100. Para itens de infraestrutura que não exigem interface de produção, definir evidência operacional equivalente antes de contabilizar.
+- **Progresso implementado** = soma dos pesos dos subitens implementados com CI aprovado, dividida por 100. Reportar separadamente.
+- Se faltarem inventário completo ou evidências, publicar **não aferido**; não converter ausência de evidência em zero, nem estimar com base em commits.
+- Pesos sujeitos à aprovação de escopo. Nenhum número acima representa avanço medido.
+
+### Estado da aferição em 2026-11-11
+- PR #11 segue aberto como rascunho; não equivale a merge nem deploy.
+- Existem testes automatizados aprovados em commits recentes, mas isso não valida automaticamente o SHA final ou produção.
+- **Progresso implementado auditado: não aferido. Progresso entregue auditado: não aferido.**
+- Referência anterior de 85% é histórica e não auditada; não usar como indicador de release.
+
 ## Checklist para a próxima medição
 1. Listar todas as funcionalidades aprovadas no escopo MVP2, com peso explícito e responsável.
 2. Para cada item, marcar implementado, CI, homologado e produção separadamente, anexando evidência.
