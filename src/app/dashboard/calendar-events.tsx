@@ -899,7 +899,7 @@ export default function CalendarEvents() {
                   <p className="mt-1 text-sm text-slate-400">
                     {formatDate(event.startsAt)} até {formatDate(event.endsAt)}
                   </p>
-                  {new Date(event.startsAt).getTime() > Date.now() && <button type="button"
+                  {<button type="button"
                     disabled={syncingEventId !== null}
                     onClick={() => void retryGoogleSync(event)}
                     className="mt-2 rounded-lg border border-violet-500/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/15 disabled:opacity-50">
