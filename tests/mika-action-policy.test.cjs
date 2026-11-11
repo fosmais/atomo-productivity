@@ -50,3 +50,17 @@ test("missing identity or invalid digest cannot bypass approval checks", () => {
   assert.equal(authorizeMikaAction({ ...request, payloadDigest: "not-a-digest", approval }, now).reason, "approval_mismatch");
   assert.equal(authorizeMikaAction({ ...request, kind: "read_daily_plan", actionId: "" }, now).reason, "approval_mismatch");
 });
+
+test("task and event creation require explicit matching approval", () => {
+  for (const kind of ["create_task", "create_event"]) {
+    assert.equal(authorizeMikaAction({ ...request, kind }, now).reason, "approval_required");
+    assert.deepEqual(authorizeMikaAction({ ...request, kind, approval }, now), { allowed: true, reason: "approved" });
+  }
+});
+
+test("approval expires at the exact boundary and rejects invalid timestamps", () => {
+  for (const expiresAt of ["2026-11-08T20:00:00Z", "invalid-date", "2026-11-08T20:15:00.001Z"]) {
+    assert.equal(authorizeMikaAction({ ...request, approval: { ...approval, expiresAt } }, now).reason, "approval_expired");
+  }
+  assert.deepEqual(authorizeMikaAction({ ...request, approval: { ...approval, expiresAt: "2026-11-08T20:15:00Z" } }, now), { allowed: true, reason: "approved" });
+});
