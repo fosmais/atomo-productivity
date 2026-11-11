@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { hasCurrentLegalAcceptance } from "@/lib/privacy/legal-acceptance";
+import { checkConciergeRateLimit } from "@/lib/rate-limit";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const services = new Set(["transport", "restaurant", "parking", "hotel", "external_app", "other"]);
@@ -89,6 +90,16 @@ export async function POST(request: Request) {
       { status: 403, headers: noStore },
     );
   }
+
+  // Limit proposal creation to prevent unbounded persisted action records.
+  let limit: Awaited<ReturnType<typeof checkConciergeRateLimit>>;
+  try { limit = await checkConciergeRateLimit(user.id); }
+  catch { return NextResponse.json({ error: "Serviço temporariamente indisponível." }, { status: 503, headers: noStore }); }
+  if (!limit.allowed)
+    return NextResponse.json(
+      { error: "Limite de propostas atingido. Tente novamente mais tarde." },
+      { status: 429, headers: { ...noStore, "Retry-After": String(Math.max(1, Math.ceil((limit.reset - Date.now()) / 1000))) } },
+    );
 
   // The event must belong to the same user. Never trust a client-supplied owner.
   if (eventId) {
