@@ -52,6 +52,7 @@ export async function POST(request: Request) {
   const { data, error } = await createSupabaseAdmin().from("mika_agent_actions")
     .insert({ user_id: user.id, event_id: eventId ?? null, service, action_type: actionType, provider: provider ?? null, proposal, status: "awaiting_authorization" })
     .select("id,status,created_at").single();
+  if (error?.code === "23505") return NextResponse.json({ error: "Já existe um planejamento ativo para este compromisso. Atualize a Agenda para consultar a autorização.", code: "ACTIVE_PROPOSAL_EXISTS" }, { status: 409, headers: noStore });
   if (error) return NextResponse.json({ error: "Não foi possível registrar a proposta." }, { status: 503 });
   return NextResponse.json({ action: data }, { status: 201, headers: noStore });
 }
