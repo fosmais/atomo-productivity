@@ -54,3 +54,15 @@ test('MIKA staging concurrency requires twenty claims and one persisted task', (
  assert.match(harness, /Exactly one succeeded audit event/);
  assert.match(harness, /Exactly one task persisted after concurrent calls/);
 });
+
+
+test('MIKA actions API never claims an external action was executed by an approval', () => {
+ const route = fs.readFileSync(path.join(__dirname, '../src/app/api/mika/actions/route.ts'), 'utf8');
+ const post = route.split('export async function POST')[1].split('export async function PATCH')[0];
+ const patch = route.split('export async function PATCH')[1];
+ assert.match(post, /status: "awaiting_authorization"/);
+ assert.match(patch, /\.eq\("user_id", user\.id\)\.eq\("status", "awaiting_authorization"\)/);
+ assert.match(patch, /executed: false/);
+ assert.doesNotMatch(patch, /fetch\(|responses\.create\(|\.rpc\(/);
+ assert.doesNotMatch(patch, /status: "succeeded"|status: "completed"/);
+});
