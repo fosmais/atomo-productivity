@@ -39,7 +39,7 @@ test('MIKA concurrency harness is staging-only and requires synthetic authentica
  assert.ok(harness.includes('Promise.all'));
  assert.match(harness, /already_executed/);
  assert.match(harness, /Exactly one succeeded audit event/);
- assert.match(harness, /Exactly one task persisted/);
+ assert.match(harness, /Exactly one task persisted after concurrent calls/);
  assert.doesNotMatch(harness, /service_role_key|SUPABASE_SERVICE_ROLE_KEY/);
 });
 
@@ -52,5 +52,5 @@ test('MIKA staging concurrency requires twenty claims and one persisted task', (
  assert.match(harness, /execution_status==='already_executed'\)\.length,CONCURRENT_CLAIMS-1/);
  assert.match(harness, /results\.every\(x=>x\.task_id===taskId\)/);
  assert.match(harness, /Exactly one succeeded audit event/);
- assert.match(harness, /Exactly one task persisted/);
+ assert.match(harness, /Exactly one task persisted after concurrent calls/);
 });
