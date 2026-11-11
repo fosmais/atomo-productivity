@@ -43,9 +43,17 @@ async function changeJourney(request: Request, context: Context, archive: boolea
     try { body = await request.json(); } catch { return NextResponse.json({ error: "Dados inválidos." }, { status: 400 }); }
     if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
     const data = body as Record<string, unknown>;
-    if (typeof data.title !== "string" || !data.title.trim() || data.title.trim().length > 120)
-      return NextResponse.json({ error: "Informe um nome entre 1 e 120 caracteres." }, { status: 400 });
-    updates.title = data.title.trim().replace(/\s+/g, " ");
+    if (data.status !== undefined) {
+      if (data.status !== "active" && data.status !== "paused")
+        return NextResponse.json({ error: "Status inválido." }, { status: 400 });
+      if (data.title !== undefined || data.targetDate !== undefined)
+        return NextResponse.json({ error: "Atualize o status separadamente dos demais campos." }, { status: 400 });
+      updates.status = data.status;
+    } else {
+      if (typeof data.title !== "string" || !data.title.trim() || data.title.trim().length > 120)
+        return NextResponse.json({ error: "Informe um nome entre 1 e 120 caracteres." }, { status: 400 });
+      updates.title = data.title.trim().replace(/\s+/g, " ");
+    }
     if (data.targetDate !== undefined) {
       if (data.targetDate !== null && (typeof data.targetDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(data.targetDate) ||
         Number.isNaN(Date.parse(data.targetDate + "T12:00:00Z")) ||
@@ -55,7 +63,8 @@ async function changeJourney(request: Request, context: Context, archive: boolea
     }
   }
   const { data, error } = await supabase.from("myryra_journeys").update(updates)
-    .eq("id", journeyId).eq("owner_id", user.id).neq("status", "archived")
+    .eq("id", journeyId).eq("owner_id", user.id)
+    .in("status", updates.status === "paused" ? ["active"] : updates.status === "active" ? ["paused"] : archive ? ["active", "paused", "completed"] : ["active", "paused", "completed"])
     .select("id,title,status,target_date").maybeSingle();
   if (error) return NextResponse.json({ error: "Não foi possível atualizar a meta." }, { status: 500 });
   if (!data) return NextResponse.json({ error: "Meta não encontrada ou já excluída." }, { status: 404 });
