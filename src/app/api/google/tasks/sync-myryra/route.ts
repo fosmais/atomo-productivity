@@ -82,6 +82,21 @@ export async function POST(request: NextRequest) {
     try {
       const existing = await calendar.events.get({ calendarId: "primary", eventId });
       if (existing.data.id === eventId) {
+        // Re-exporting after editing a task updates its existing reminder instead of leaving a stale due date.
+        if (existing.data.summary !== requestBody.summary ||
+            existing.data.start?.date !== requestBody.start.date ||
+            existing.data.end?.date !== requestBody.end.date) {
+          const updated = await calendar.events.patch({
+            calendarId: "primary",
+            eventId,
+            requestBody: {
+              summary: requestBody.summary,
+              start: requestBody.start,
+              end: requestBody.end,
+            },
+          });
+          return NextResponse.json({ created: false, updated: true, id: updated.data.id, url: updated.data.htmlLink }, { headers: { "Cache-Control": "private, no-store" } });
+        }
         return NextResponse.json({ created: false, alreadyExists: true, id: existing.data.id, url: existing.data.htmlLink }, { headers: { "Cache-Control": "private, no-store" } });
       }
     } catch (lookupError) {
