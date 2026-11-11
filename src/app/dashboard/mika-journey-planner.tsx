@@ -161,8 +161,10 @@ export default function MikaJourneyPlanner() {
         throw new Error(payload.error || "Não foi possível processar sua jornada.");
       }
       if (confirm) {
+        if (typeof payload.journey?.id !== "string") throw new Error("A jornada foi salva, mas não foi possível identificá-la. Atualize a página para encontrá-la.");
         setSaved(true);
         setMessage("Jornada salva com sucesso.");
+        window.dispatchEvent(new CustomEvent("myryra:journey-created", { detail: { journeyId: payload.journey.id } }));
         await refreshJourneys();
       } else {
         setDraft(payload.draft);
