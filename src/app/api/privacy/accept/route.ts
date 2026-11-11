@@ -43,6 +43,23 @@ export async function POST(request: Request) {
   if (!document || !["terms", "privacy_notice"].includes(document.document_type)) {
     return NextResponse.json({ error: "Versão legal não vigente." }, { status: 409, headers });
   }
+  // Prevent an old tab from accepting an outdated version after a newer one
+  // becomes effective. Readiness always evaluates the newest effective version.
+  const { data: latest, error: latestError } = await admin.from("myryra_privacy_document_versions")
+    .select("id")
+    .eq("document_type", document.document_type)
+    .eq("status", "published")
+    .lte("published_at", now)
+    .lte("effective_at", now)
+    .order("effective_at", { ascending: false })
+    .order("published_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (latestError) return NextResponse.json({ error: "Versão atual indisponível." }, { status: 503, headers });
+  if (!latest || latest.id !== document.id) {
+    return NextResponse.json({ error: "Uma nova versão foi publicada. Atualize a página e leia o documento vigente." }, { status: 409, headers });
+  }
   // The client must show this exact version before submitting acceptance.
   const { data: existing, error: existingError } = await admin.from("myryra_privacy_acceptances")
     .select("document_version_id,action").eq("user_id", auth.user.id).eq("request_id", data.requestId).maybeSingle();
