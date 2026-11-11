@@ -65,6 +65,11 @@ export default function TaskKanban() {
       setMobileColumn("todo");
     };
     window.addEventListener("myryra:task-filter", apply);
+    const pending = sessionStorage.getItem("myryra:task-filter-pending");
+    if (pending === "pending" || pending === "overdue") {
+      sessionStorage.removeItem("myryra:task-filter-pending");
+      apply(new CustomEvent("myryra:task-filter", { detail: { filter: pending } }));
+    }
     return () => window.removeEventListener("myryra:task-filter", apply);
   }, []);
 
