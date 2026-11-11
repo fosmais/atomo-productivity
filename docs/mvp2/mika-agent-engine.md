@@ -53,3 +53,9 @@ Alternativas: `rejected`, `expired`, `cancelled`. Toda transição deve ser vali
 
 ## Próximo trabalho
 Inspecionar rotas, serviços, schemas e políticas RLS atuais; reutilizar os componentes existentes. Implementar migrações, endpoints de proposta/aprovação/execução, UI de aprovação e testes em commits pequenos. Não realizar deploy automático nem habilitar pagamentos reais.
+
+## Fluxo de tarefas efetivamente localizado
+- `src/app/dashboard/task-confirmation.tsx` chama `myka_confirm_task_item(p_message_id,p_task_index)` e `myka_cancel_task_item` diretamente via cliente Supabase autenticado quando recebe `messageId`. Isso confirma a integração da UI com o mecanismo transacional existente; não é necessário criar uma nova rota só para esse caso.
+- Sem `messageId`, o mesmo componente usa `saveCloudPlan("Tarefas do Concierge", ...)`. Este caminho legado não utiliza a confirmação persistente `myka_task_confirmations`; avaliar consentimento, trilha de auditoria e idempotência antes de reutilizá-lo em ações automáticas.
+- O botão exige clique explícito para salvar; não transformar o fallback em execução automática. Para a nova MIKA Agente, exigir proposta persistida, autorização verificável e execução reivindicada atomicamente.
+- A busca de caminhos de código com nomes `consent`, `lgpd`, `terms` e `legal` não localizou artefatos dedicados nesta branch; isso não comprova ausência de aceite, pois pode estar implementado sob outros nomes. Verificar banco e rotas de autenticação antes de concluir.
