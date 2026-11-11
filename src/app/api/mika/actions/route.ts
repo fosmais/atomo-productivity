@@ -73,6 +73,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
   }
   if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
+  // A proposal cannot carry client-controlled execution, ownership or approval metadata.
+  if (Object.keys(body).some(key => !["eventId", "service", "actionType", "provider", "proposal"].includes(key)))
+    return NextResponse.json({ error: "Campos não permitidos na proposta." }, { status: 400, headers: noStore });
   const { eventId, service, actionType, provider, proposal } = body as Record<string, unknown>;
   if (eventId !== undefined && (typeof eventId !== "string" || !uuid.test(eventId)) ||
       typeof service !== "string" || !services.has(service) ||
