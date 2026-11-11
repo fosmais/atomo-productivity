@@ -66,7 +66,9 @@ function userClient(token) {
  });
  const {data:anonProposal,error:anonProposalError} = await anonymous.from('mika_action_proposals')
   .select('id').eq('id',env.MIKA_TEST_PROPOSAL_ID);
- if (!anonProposalError) assert.equal(anonProposal.length,0,'Anonymous caller must not read proposal');
+ if (anonProposalError) {
+  assert.equal(anonProposalError.code,'42501','Anonymous read failed for a reason other than permission denial');
+ } else assert.equal(anonProposal.length,0,'Anonymous caller must not read proposal');
  function expectDenied(error, allowedCodes, description) {
   assert.ok(error,description+' must be denied');
   assert.ok(allowedCodes.includes(error.code),description+' returned unexpected error code: '+String(error.code));
@@ -86,7 +88,8 @@ function userClient(token) {
  ];
  for (const [name,query] of checks) {
   const {data,error} = await query;
-  if (!error) assert.equal(data.length,0,'Other user must not read owner '+name);
+  if (error) assert.equal(error.code,'42501','Unexpected '+name+' read error');
+  else assert.equal(data.length,0,'Other user must not read owner '+name);
  }
  const {data:ownerAuditBefore,error:auditBeforeError} = await owner.client.from('mika_action_audit')
   .select('id,event_type').eq('proposal_id',env.MIKA_TEST_PROPOSAL_ID).order('id',{ascending:true});
@@ -116,7 +119,8 @@ function userClient(token) {
  expectDenied(executionError,['P0002'],'Cross-user execution');
  const {data:otherAudit,error:otherAuditError} = await other.client.from('mika_action_audit')
   .select('id').eq('proposal_id',env.MIKA_TEST_PROPOSAL_ID);
- if (!otherAuditError) assert.equal(otherAudit.length,0,'Other user must not see newly created audit records');
+ if (otherAuditError) assert.equal(otherAuditError.code,'42501','Unexpected cross-user audit read error');
+ else assert.equal(otherAudit.length,0,'Other user must not see newly created audit records');
  const {data:after,error:afterError} = await owner.client.from('mika_action_proposals')
   .select('status').eq('id',env.MIKA_TEST_PROPOSAL_ID).single();
  if (afterError) throw afterError;
