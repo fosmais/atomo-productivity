@@ -75,3 +75,10 @@ test("previously accepted document does not block completing the remaining accep
   assert.match(page, /!document\.accepted && \(!document\.publicUrl/);
   assert.match(page, /const pending = state\.documents\.filter\(\(document\) => !document\.accepted\)/);
 });
+
+test("consent validates HTTPS document links and provides retry after readiness failure", () => {
+  assert.match(page, /pending\.some\(\(document\) =>/);
+  assert.match(page, /!\/\^https:/);
+  assert.match(page, /Tentar novamente/);
+  assert.match(page, /void refresh\(\)\.catch/);
+});
