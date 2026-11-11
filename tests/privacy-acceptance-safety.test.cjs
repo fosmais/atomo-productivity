@@ -117,3 +117,16 @@ test("Journey mission completion gates new MYRA awards without blocking undo", (
   assert.match(code, /LEGAL_ACCEPTANCE_REQUIRED/);
   assert.match(code, /status === "completed" \? new Date\(\)\.toISOString\(\) : null/);
 });
+
+
+test("Journey achievement creation is gated while viewing and deleting memories remain available", () => {
+  const create = source("src/app/api/journeys/[journeyId]/achievements/route.ts");
+  const post = create.split("export async function POST")[1];
+  const get = create.split("export async function GET")[1].split("export async function POST")[0];
+  const deletion = source("src/app/api/journeys/[journeyId]/achievements/[achievementId]/route.ts");
+  assert.match(post, /MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true"/);
+  assert.match(post, /hasCurrentLegalAcceptance\(user\.id\)/);
+  assert.match(post, /LEGAL_ACCEPTANCE_REQUIRED/);
+  assert.doesNotMatch(get, /LEGAL_ACCEPTANCE_REQUIRED/);
+  assert.doesNotMatch(deletion, /LEGAL_ACCEPTANCE_REQUIRED/);
+});
