@@ -30,6 +30,8 @@ type GoogleCalendarEvent = {
 export default function CalendarEvents() {
   const { navigateTo } = useVyraNavigation();
   const [showCategoryLegend, setShowCategoryLegend] = useState(false);
+  const [syncToGoogle, setSyncToGoogle] = useState(false);
+  const [syncNotice, setSyncNotice] = useState("");
   function planWithMyka(event: Pick<CalendarEvent, "title" | "startsAt" | "endsAt" | "location" | "concierge">) {
     if (!event.concierge) return;
     const services = event.concierge.services.map(service => (({ transport: "transporte", parking: "estacionamento", restaurant: "restaurante", hotel: "hospedagem" } as Record<string, string>)[service] || service)).join(", ") || "orientações gerais";
@@ -299,7 +301,7 @@ export default function CalendarEvents() {
     setError("");
 
     try {
-      await saveCloudEvent({
+      const savedEventId = await saveCloudEvent({
         title,
         startsAt,
         endsAt,
@@ -313,6 +315,27 @@ export default function CalendarEvents() {
         } : undefined,
       });
 
+      setSyncNotice("");
+      if (syncToGoogle) {
+        try {
+          const response = await fetch("/api/google/events/sync-myryra", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ localEventId: savedEventId, title: title.trim(), startsAt: new Date(startsAt).toISOString(), endsAt: new Date(endsAt).toISOString(), location }),
+          });
+          if (!response.ok) {
+            const detail: { error?: string; code?: string } = await response.json();
+            setSyncNotice(detail.code === "GOOGLE_WRITE_CONSENT_REQUIRED"
+              ? "Salvo na MYRYRA, mas falta autorizar a criação no Google. Conecte em Configurações e tente novamente."
+              : `Salvo na MYRYRA, mas não enviado ao Google: ${detail.error || "tente novamente"}`);
+          } else {
+            setSyncNotice("Compromisso salvo na MYRYRA e confirmado no Google Calendar.");
+            void loadGoogleEvents();
+          }
+        } catch {
+          setSyncNotice("Salvo na MYRYRA, mas não foi possível confirmar o envio ao Google.");
+        }
+      }
       await loadEvents();
       window.dispatchEvent(new Event("myryra:events-updated"));
       // Keep the user in Agenda: route estimates and departure planning live on the event card.
@@ -651,6 +674,7 @@ export default function CalendarEvents() {
           <p className="text-xs text-violet-200">A MIKA poderá sugerir opções e horários. Nenhuma reserva ou pagamento será realizado automaticamente.</p>
         </div>}
       </div>}
+      <label className="mt-4 flex items-center gap-2 text-sm text-slate-200"><input type="checkbox" checked={syncToGoogle} onChange={(event) => setSyncToGoogle(event.target.checked)} className="accent-violet-500" />Adicionar também ao Google Calendar (requer autorização de escrita)</label>
       <div className="mt-4 flex flex-wrap items-center gap-3">
       <button type="button" onClick={() => setShowForm(false)} disabled={saving}
         className="rounded-xl border border-slate-600 px-4 py-3 text-sm text-slate-200 hover:bg-slate-800 disabled:opacity-50">Cancelar</button>
@@ -665,6 +689,7 @@ export default function CalendarEvents() {
       </div>
 
       </div></div>}
+      {syncNotice && <p role="status" className="mt-3 text-sm text-amber-200">{syncNotice}</p>}
       {error && (
         <p role="alert" className="mt-3 text-sm text-red-400">
           {error}
