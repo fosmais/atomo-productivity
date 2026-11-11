@@ -29,6 +29,46 @@ type GoogleCalendarEvent = {
 };
 export default function CalendarEvents() {
   const { navigateTo } = useVyraNavigation();
+  const [agentActionByEvent, setAgentActionByEvent] = useState<Record<string, { id: string; status: string }>>({});
+  const [agentBusyEvent, setAgentBusyEvent] = useState<string | null>(null);
+  const [agentFeedbackByEvent, setAgentFeedbackByEvent] = useState<Record<string, string>>({});
+  async function proposeConciergeAction(event: CalendarEvent) {
+    if (!event.concierge || agentBusyEvent) return;
+    setAgentBusyEvent(event.id);
+    try {
+      const response = await fetch("/api/mika/actions", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId: event.id, service: "other", actionType: "concierge_planning",
+          proposal: { title: event.title, destination: event.location, departureAddress: event.concierge.departureAddress,
+            services: event.concierge.services, startsAt: event.startsAt } }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.action?.id) throw new Error(payload.error || "Não foi possível criar a proposta.");
+      setAgentActionByEvent(current => ({ ...current, [event.id]: { id: payload.action.id, status: "awaiting_authorization" } }));
+      setAgentFeedbackByEvent(current => ({ ...current, [event.id]: "Proposta registrada. Revise os serviços e autorize somente se estiver de acordo." }));
+    } catch (error) {
+      setAgentFeedbackByEvent(current => ({ ...current, [event.id]: error instanceof Error ? error.message : "Erro ao registrar proposta." }));
+    } finally { setAgentBusyEvent(null); }
+  }
+  async function decideConciergeAction(eventId: string, decision: "authorize" | "cancel") {
+    const action = agentActionByEvent[eventId];
+    if (!action || agentBusyEvent) return;
+    setAgentBusyEvent(eventId);
+    try {
+      const response = await fetch("/api/mika/actions", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actionId: action.id, decision }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível registrar a decisão.");
+      setAgentActionByEvent(current => ({ ...current, [eventId]: { id: action.id, status: payload.action.status } }));
+      setAgentFeedbackByEvent(current => ({ ...current, [eventId]: decision === "authorize"
+        ? "Planejamento autorizado e registrado. Nenhuma reserva, pagamento ou aplicativo externo foi executado."
+        : "Proposta cancelada. Nenhuma ação externa foi executada." }));
+    } catch (error) {
+      setAgentFeedbackByEvent(current => ({ ...current, [eventId]: error instanceof Error ? error.message : "Erro ao registrar decisão." }));
+    } finally { setAgentBusyEvent(null); }
+  }
   const [showCategoryLegend, setShowCategoryLegend] = useState(false);
   const [syncToGoogle, setSyncToGoogle] = useState(false);
   const [syncNotice, setSyncNotice] = useState("");
@@ -917,6 +957,16 @@ export default function CalendarEvents() {
                     <p className="mt-1 text-xs text-slate-300">Serviços: {event.concierge.services.map(service => (({ transport: "Transporte", parking: "Estacionamento", restaurant: "Restaurante", hotel: "Hospedagem" } as Record<string, string>)[service] || service)).join(", ") || "Nenhum selecionado"}</p>
                     <p className="mt-2 text-xs text-slate-400">As opções ainda precisam ser planejadas. Reservas e pagamentos exigem confirmação.</p>
                     <button type="button" onClick={() => planWithMyka(event)} className="mt-3 rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500">Planejar com a MIKA</button>
+                    <div className="mt-3 rounded-lg border border-violet-400/20 p-3">
+                      <p className="text-xs font-semibold text-violet-200">MIKA Agente · Autorização do planejamento</p>
+                      <p className="mt-1 text-xs text-slate-300">Registre uma proposta para os serviços selecionados. A autorização não faz reservas nem pagamentos.</p>
+                      {!agentActionByEvent[event.id] && <button type="button" disabled={agentBusyEvent !== null} onClick={() => proposeConciergeAction(event)} className="mt-2 rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 disabled:opacity-50">Preparar proposta</button>}
+                      {agentActionByEvent[event.id]?.status === "awaiting_authorization" && <div className="mt-2 flex flex-wrap gap-2">
+                        <button type="button" disabled={agentBusyEvent !== null} onClick={() => decideConciergeAction(event.id, "authorize")} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Autorizar planejamento</button>
+                        <button type="button" disabled={agentBusyEvent !== null} onClick={() => decideConciergeAction(event.id, "cancel")} className="rounded-lg border border-white/20 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Cancelar proposta</button>
+                      </div>}
+                      {agentFeedbackByEvent[event.id] && <p role="status" className="mt-2 text-xs text-slate-300">{agentFeedbackByEvent[event.id]}</p>}
+                    </div>
                     <div className="mt-3 rounded-lg border border-violet-400/20 p-3">
                       <p className="text-xs font-semibold text-violet-200">Planejar horário de saída</p>
                       <p className="mt-1 text-xs text-slate-400">Informe a duração aproximada do trajeto ou consulte a estimativa de rota. O alerta só ficará disponível após definir um tempo de deslocamento.</p>
