@@ -28,3 +28,13 @@ Sem aprovação até migrações reconciliadas, testes autenticados e concorrên
 - Tabelas `public.journeys`, `public.journey_missions` e `public.finance_entries` não apareceram na consulta de nomes exatos; isso não confirma a inexistência de tabelas com outros nomes.
 - Contagem atual: 0 usuários em `auth.users`, 0 propostas em `mika_action_proposals`.
 - Implicação: não assumir paridade entre homologação e produção, e não atribuir causa específica a `MIGRATIONS_FAILED` sem log de branching ou erro reproduzido.
+
+## Revisão de privilégios das RPCs (2026-11-11)
+Consulta de catálogo PostgreSQL em homologação, sem alterações:
+
+| Função | EXECUTE anon | EXECUTE authenticated | SECURITY DEFINER |
+| --- | --- | --- | --- |
+| `mika_decide_proposal(uuid,boolean)` | não | sim | sim |
+| `mika_execute_approved_task(uuid,uuid)` | não | sim | sim |
+
+A inspeção das definições SQL confirmou `auth.uid()`, seleção de proposta por `user_id`, bloqueio `FOR UPDATE` e validação de plano no fluxo de execução aprovado. A execução repetida de uma proposta já concluída retorna `already_executed` antes de comparar novamente o argumento `p_plan_id`; isto não cria uma segunda tarefa, mas deve ser avaliado como contrato de API antes da liberação. Essas evidências são estáticas, não substituem os testes com dois usuários reais de homologação.
