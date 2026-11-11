@@ -400,7 +400,7 @@ export default function JourneyTrail() {
     }
   }
   return (
-    <section aria-label="Mapa da minha jornada" className="overflow-hidden rounded-3xl border border-violet-400/30 bg-gradient-to-b from-violet-950/80 via-slate-900 to-slate-950 p-4 sm:p-8">
+    <section id="journey-map" aria-label="Mapa da minha jornada" className="overflow-hidden rounded-3xl border border-violet-400/30 bg-gradient-to-b from-violet-950/80 via-slate-900 to-slate-950 p-4 sm:p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-300">✦ Meu universo em evolução</p><h2 className="mt-2 text-2xl font-bold">O mapa da sua jornada</h2></div>
         <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-sm font-semibold text-amber-200" title="Moedas virtuais de conquistas, sem valor monetário">◈ {myraBalance === null ? "MYRA · Carregando" : myraBalance + " MYRAs"}</div>
