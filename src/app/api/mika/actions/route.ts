@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
+import { hasCurrentLegalAcceptance } from "@/lib/privacy/legal-acceptance";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const services = new Set(["transport", "restaurant", "parking", "hotel", "external_app", "other"]);
@@ -48,6 +49,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Proposta inválida." }, { status: 400 });
   const { user, status } = await authenticate();
   if (!user) return NextResponse.json({ error: "Acesso não autorizado." }, { status });
+  if (process.env.MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true" &&
+      !(await hasCurrentLegalAcceptance(user.id))) {
+    return NextResponse.json(
+      { error: "Aceite dos documentos legais vigentes necessário.", code: "LEGAL_ACCEPTANCE_REQUIRED" },
+      { status: 403, headers: noStore },
+    );
+  }
+
   // The event must belong to the same user. Never trust a client-supplied owner.
   if (eventId) {
     const admin = createSupabaseAdmin();
@@ -73,6 +82,17 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Decisão inválida." }, { status: 400 });
   const { user, status } = await authenticate();
   if (!user) return NextResponse.json({ error: "Acesso não autorizado." }, { status });
+  // Revoking a pending action must remain possible without legal acceptance.
+  if (decision === "authorize") {
+    if (process.env.MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true" &&
+        !(await hasCurrentLegalAcceptance(user.id))) {
+      return NextResponse.json(
+        { error: "Aceite dos documentos legais vigentes necessário.", code: "LEGAL_ACCEPTANCE_REQUIRED" },
+        { status: 403, headers: noStore },
+      );
+    }
+  }
+
   const admin = createSupabaseAdmin();
   const now = new Date().toISOString();
   const nextStatus = decision === "authorize" ? "authorized" : "cancelled";
