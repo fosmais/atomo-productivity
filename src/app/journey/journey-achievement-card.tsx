@@ -114,8 +114,14 @@ export default function JourneyAchievementCard({ journeyId, title, completedCoun
   }
   function shareWhatsApp(text: string) {
     const url = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text + " https://myryra.com/journey");
-    window.open(url, "_blank", "noopener,noreferrer");
-    setFeedback("WhatsApp aberto para você escolher o destinatário. Nenhuma publicação foi feita automaticamente.");
+    // Keep the navigation inside the tap handler: browsers can block delayed popups.
+    const opened = window.open(url, "_blank");
+    if (opened) {
+      try { opened.opener = null; } catch { /* Some browsers restrict cross-origin windows. */ }
+      setFeedback("Link do WhatsApp solicitado. Escolha o destinatário no aplicativo; nada foi enviado automaticamente.");
+    } else {
+      setFeedback("O navegador bloqueou a abertura do WhatsApp. Permita pop-ups para este site ou use Copiar.");
+    }
   }
   async function copyConquest(text: string) {
     try {
