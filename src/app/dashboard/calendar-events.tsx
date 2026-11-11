@@ -674,6 +674,7 @@ export default function CalendarEvents() {
           <p className="text-xs text-violet-200">A MIKA poderá sugerir opções e horários. Nenhuma reserva ou pagamento será realizado automaticamente.</p>
         </div>}
       </div>}
+      {error && <p role="alert" className="mt-3 text-sm text-red-300">{error}</p>}
       <label className="mt-4 flex items-center gap-2 text-sm text-slate-200"><input type="checkbox" checked={syncToGoogle} onChange={(event) => setSyncToGoogle(event.target.checked)} className="accent-violet-500" />Adicionar também ao Google Calendar (requer autorização de escrita)</label>
       <div className="mt-4 flex flex-wrap items-center gap-3">
       <button type="button" onClick={() => setShowForm(false)} disabled={saving}
