@@ -158,10 +158,7 @@ export default function TaskKanban() {
       }
       const data = rows;
 
-      // Apply pagination metadata only for the latest request, avoiding stale refresh races.
-      if (requestId !== latestLoadRef.current) return;
-      fetchedCountRef.current = (data ?? []).length;
-      setHasMoreTasks((data ?? []).length === requestedCount);
+      // Defer pagination metadata until the entire refresh succeeds.
       // Legacy records can have completed=true with a stale status. Never display them as pending.
       let loaded = ((data ?? []) as KanbanTask[]).map((task) => task.completed ? { ...task, status: "done" as const } : task);
       // A busca global pode encontrar tarefas fora das 200 mais recentes.
@@ -184,6 +181,8 @@ export default function TaskKanban() {
         .select("task_id").eq("user_id", auth.user.id).not("task_id", "is", null);
       if (favoritesError) throw favoritesError;
       if (requestId === latestLoadRef.current) {
+        fetchedCountRef.current = data.length;
+        setHasMoreTasks(data.length === requestedCount);
         setTasks(loaded);
         const focused = loaded.find((task) => task.id === focusedTaskId);
         if (focused) setMobileColumn(focused.status);
