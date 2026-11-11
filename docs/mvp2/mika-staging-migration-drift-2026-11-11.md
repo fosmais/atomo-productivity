@@ -58,3 +58,6 @@ Comparação read-only de `information_schema.columns` (nome, tipo UDT, nulabili
 2. `myryra_finance_subscriptions`: `deleted_at` somente no staging.
 3. `myryra_privacy_document_versions`: `created_at` somente em PROD; `status` default `'draft'::text` em PROD, sem default no staging.
 **Não aplicar automaticamente** as colunas de staging em PROD: `deleted_at` pode ser parte de um contrato de soft-delete ainda não homologado. Esta comparação não valida constraints, triggers, índices, RLS, grants, nem semântica de dados.
+
+## Comparação preliminar RLS (2026-11-11)
+Consulta read-only a `pg_class`/`pg_policy`: as **16 tabelas compartilhadas** possuem `relrowsecurity=true` em ambos os ambientes. Contagens de políticas diferentes: `events` PROD 5/staging 4; `myryra_finance_entries` PROD 3/staging 4; `myryra_finance_subscriptions` PROD 3/staging 4. As demais 13 possuem a mesma quantidade de políticas, **sem comprovação de equivalência de expressões, roles, comandos ou grants**. Não copiar políticas automaticamente nem desabilitar RLS.
