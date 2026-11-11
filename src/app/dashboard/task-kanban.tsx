@@ -218,8 +218,6 @@ export default function TaskKanban() {
         .range(offset, offset + 199);
       if (pageError) throw pageError;
       if (requestId !== latestLoadRef.current) return;
-      fetchedCountRef.current = offset + (data ?? []).length;
-      setHasMoreTasks((data ?? []).length === 200);
       const next = ((data ?? []) as KanbanTask[]).map((task) =>
         task.completed ? { ...task, status: "done" as const } : task
       );
@@ -227,6 +225,8 @@ export default function TaskKanban() {
         const ids = new Set(current.map((task) => task.id));
         return [...current, ...next.filter((task) => !ids.has(task.id))];
       });
+      fetchedCountRef.current = offset + (data ?? []).length;
+      setHasMoreTasks((data ?? []).length === 200);
     } catch (err) {
       if (requestId === latestLoadRef.current) setError(err instanceof Error ? err.message : "Erro ao carregar mais tarefas.");
     } finally {
