@@ -42,5 +42,12 @@ Alternativas: `rejected`, `expired`, `cancelled`. Toda transição deve ser vali
 - Falha parcial produz estado e relatório fiéis.
 - Testes de integração e homologação web/mobile aprovados antes de produção.
 
+## Reutilização obrigatória do fluxo existente
+- A migração `database/migrations/20261028_myka_proposal_status.sql` já define `public.myka_confirm_task(uuid)`, com bloqueio transacional `FOR UPDATE`, verificação de `auth.uid()` e retorno `already_saved` para impedir duplicação de tarefas.
+- Antes de criar outro executor de tarefas, verificar no Supabase ativo se a função foi aplicada e se a rota existente a utiliza. Não duplicar o fluxo de confirmação nem presumir que a migração está em produção.
+- O motor novo deve usar `actionId` persistente, digest do payload e aprovação por usuário; a checagem pura em `execution-gate.ts` não substitui a transação que reivindica a ação.
+- A confirmação de tarefa já existente é diferente de autorização genérica para abrir aplicativos. Integrações externas exigem APIs/OAuth específicos, escopos e consentimento individual; abrir um link não constitui execução integrada.
+- Antes de conectar um executor novo, validar idempotência em concorrência, rejeição, expiração, revogação e isolamento entre usuários em ambiente de homologação.
+
 ## Próximo trabalho
 Inspecionar rotas, serviços, schemas e políticas RLS atuais; reutilizar os componentes existentes. Implementar migrações, endpoints de proposta/aprovação/execução, UI de aprovação e testes em commits pequenos. Não realizar deploy automático nem habilitar pagamentos reais.
