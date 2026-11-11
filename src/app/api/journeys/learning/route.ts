@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createSupabaseAdmin } from "@/lib/supabase/admin";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -50,7 +51,8 @@ export async function PUT(request: Request) {
   const { data: previous, error: readError } = await supabase.from("myryra_journey_learning_progress")
     .select("answer,feedback,assessment_score,assessment_passed,assessed_at").eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
   if (readError) return NextResponse.json({ error: "Não foi possível consultar a resposta anterior." }, { status: 503 });
-  const { error } = await supabase.from("myryra_journey_learning_progress").upsert({
+  // Ownership was verified above using the authenticated client; privileged writes stay server-side.
+  const { error } = await createSupabaseAdmin().from("myryra_journey_learning_progress").upsert({
     mission_id: missionId, owner_id: user.id, answer,
     feedback: previous?.answer === answer ? previous.feedback : null,
     assessment_score: previous?.answer === answer ? previous.assessment_score : null,
