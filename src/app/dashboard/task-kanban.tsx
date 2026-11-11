@@ -64,7 +64,10 @@ export default function TaskKanban() {
     if (dashboardFilter === "all" || loading || mobileColumnManuallySelected) return mobileColumn;
     const matches = (task: KanbanTask) =>
       task.status !== "done" &&
-      (dashboardFilter === "pending" || (!!task.due_date && task.due_date < localDateKey(new Date())));
+      (dashboardFilter === "pending" || (!!task.due_date && task.due_date < localDateKey(new Date()))) &&
+      (priorityFilter === "all" || task.priority === priorityFilter) &&
+      (!favoritesOnly || favoriteIds.includes(task.id)) &&
+      task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"));
     if (tasks.some((task) => task.status === mobileColumn && matches(task))) return mobileColumn;
     return columns.find((column) => tasks.some((task) => task.status === column.status && matches(task)))?.status ?? mobileColumn;
   })();
