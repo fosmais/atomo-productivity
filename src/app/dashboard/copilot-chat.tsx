@@ -114,7 +114,6 @@ function isEventProposal(
   const [hideOffers, setHideOffers] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<"free" | "pro" | "premium">("free");
   const [pendingTask, setPendingTask] = useState<SavedTask | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
 
 const [listening, setListening] = useState(false);
 
@@ -345,11 +344,8 @@ async function startVoice() {
     return () => { active = false; };
   }, []);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({
-      behavior: "smooth",
-    });
-  }, [messages, loading]);
+  // Never scroll the whole dashboard when chat history loads in a hidden module.
+  // The user controls page navigation; opening MYKA must not jump Home to the bottom.
 
   async function prepareTask() {
     const content = input.trim();
@@ -908,7 +904,6 @@ setConversationId(data.conversationId);
           </p>
         )}
 
-        <div ref={bottomRef} />
       </div>
 
       {error && (
