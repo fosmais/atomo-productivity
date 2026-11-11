@@ -27,7 +27,10 @@ if (tokenParts.length !== 3) throw new Error('Expected a user JWT access token')
 let claims;
 try { claims = JSON.parse(Buffer.from(tokenParts[1], 'base64url').toString('utf8')); }
 catch { throw new Error('Malformed user access token'); }
-if (claims.role !== 'authenticated' || !claims.sub || claims.exp * 1000 <= Date.now()) {
+if (claims.iss !== env.MIKA_STAGING_URL + '/auth/v1') {
+  throw new Error('JWT issuer does not match the isolated staging project');
+ }
+ if (claims.role !== 'authenticated' || !claims.sub || claims.exp * 1000 <= Date.now()) {
  throw new Error('Requires a valid unexpired authenticated-user token, not a service token');
 }
 const makeClient = () => createClient(env.MIKA_STAGING_URL, env.MIKA_STAGING_ANON_KEY, {
