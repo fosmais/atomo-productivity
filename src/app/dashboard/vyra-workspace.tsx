@@ -33,6 +33,7 @@ export default function VyraWorkspace({
     const syncFromUrl = () => {
       const requested = decodeURIComponent(window.location.hash.slice(1));
       setActiveModule(requested === "vyra-planner" ? "vyra-tasks" : validModules.includes(requested) ? requested : "home");
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     };
     syncFromUrl();
     window.addEventListener("hashchange", syncFromUrl);
@@ -41,6 +42,8 @@ export default function VyraWorkspace({
 
   const navigateTo = (module: string) => {
     setActiveModule(module);
+    // Reset the scroll position when changing sections, including returning Home.
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     const url = new URL(window.location.href);
     url.hash = module === "home" ? "" : module;
     window.history.replaceState(window.history.state, "", url.toString());
