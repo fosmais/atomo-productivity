@@ -21,3 +21,10 @@ A divergência no histórico não prova qual migração falhou, nem garante que 
 
 ## Condição de liberação
 Sem aprovação até migrações reconciliadas, testes autenticados e concorrência comprovados. Não efetuar deploy ou alteração de dados de clientes automaticamente.
+
+## Verificação adicional (2026-11-11)
+- Logs recentes de Postgres filtrados por erro/migração: nenhum registro encontrado na janela consultada. **Não significa ausência de erro histórico**.
+- Tabelas presentes na homologação: `public.mika_action_proposals`, `public.mika_action_audit`, `public.plans`, `public.tasks`.
+- Tabelas `public.journeys`, `public.journey_missions` e `public.finance_entries` não apareceram na consulta de nomes exatos; isso não confirma a inexistência de tabelas com outros nomes.
+- Contagem atual: 0 usuários em `auth.users`, 0 propostas em `mika_action_proposals`.
+- Implicação: não assumir paridade entre homologação e produção, e não atribuir causa específica a `MIGRATIONS_FAILED` sem log de branching ou erro reproduzido.
