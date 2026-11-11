@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       .select("encrypted_access_token,encrypted_refresh_token,token_expires_at")
       .eq("user_id", user.id).maybeSingle();
     if (connectionError) throw new Error("connection_lookup");
-    if (!connection) return NextResponse.json({ error: "Conecte o Google Calendar." }, { status: 409 });
+    if (!connection) return NextResponse.json({ error: "Conecte o Google Calendar para autorizar o envio de tarefas.", code: "GOOGLE_WRITE_CONSENT_REQUIRED" }, { status: 409 });
     const oauth = createGoogleOAuthClient();
     oauth.setCredentials({
       access_token: decryptGoogleToken(connection.encrypted_access_token),
