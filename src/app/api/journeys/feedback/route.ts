@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createClient } from "@/lib/supabase/server";
+import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { checkConciergeRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
     if (currentError) return NextResponse.json({ error: "Não foi possível verificar a versão atual da resposta." }, { status: 503 });
     if (currentProgress?.answer !== priorProgress?.answer)
       return NextResponse.json({ error: "A resposta foi alterada durante a avaliação. Solicite uma nova avaliação para a versão atual." }, { status: 409 });
-    const { error: saveError } = await supabase.from("myryra_journey_learning_progress").upsert({
+    const { error: saveError } = await createSupabaseAdmin().from("myryra_journey_learning_progress").upsert({
       mission_id: missionId, owner_id: user.id, answer: answer.trim(), feedback, assessment_score: assessment.score, assessment_passed: assessment.passed, assessment_attempts: (priorProgress?.assessment_attempts ?? 0) + 1, assessed_at: new Date().toISOString(), updated_at: new Date().toISOString(),
     }, { onConflict: "mission_id" });
     if (saveError) {
