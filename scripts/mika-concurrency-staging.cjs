@@ -2,7 +2,7 @@
 /**
  * Manual staging-only concurrency check. Requires an approved, unexecuted
  * create_task proposal whose payload.plan_id matches MIKA_TEST_PLAN_ID.
- * Both clients use the same real user's access token but independent HTTP calls.
+ * Twenty independent clients use the same test user's token to simulate competing HTTP calls.
  * No production credentials or service-role key should ever be used.
  *
  * MIKA_STAGING_URL=... MIKA_STAGING_ANON_KEY=...
@@ -34,7 +34,8 @@ const makeClient = () => createClient(env.MIKA_STAGING_URL, env.MIKA_STAGING_ANO
  global: { headers: { Authorization: 'Bearer ' + env.MIKA_TEST_ACCESS_TOKEN } },
  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
 });
-const a = makeClient(), b = makeClient();
+const a = makeClient();
+const CONCURRENT_CLAIMS = 20;
 (async () => {
  const { data: identity, error: identityError } = await a.auth.getUser(env.MIKA_TEST_ACCESS_TOKEN);
  if (identityError || !identity?.user || identity.user.id !== claims.sub) {
@@ -58,25 +59,25 @@ const a = makeClient(), b = makeClient();
  assert.equal(existingAudit.length,0,'Test proposal must have no previous success audit');
  const args = { p_proposal_id: env.MIKA_TEST_PROPOSAL_ID, p_plan_id: env.MIKA_TEST_PLAN_ID };
  const started = Date.now();
- const [one,two] = await Promise.all([
-  a.rpc('mika_execute_approved_task',args),
-  b.rpc('mika_execute_approved_task',args)
- ]);
- if (one.error) throw one.error;
- if (two.error) throw two.error;
- const results = [one.data,two.data].map(x => Array.isArray(x) ? x[0] : x);
- assert.deepEqual(results.map(x=>x.execution_status).sort(),['already_executed','executed']);
- assert.ok(results[0].task_id);
- assert.equal(results[0].task_id,results[1].task_id);
+ const responses = await Promise.all(Array.from({length: CONCURRENT_CLAIMS}, () =>
+  makeClient().rpc('mika_execute_approved_task',args)
+ ));
+ for (const response of responses) if (response.error) throw response.error;
+ const results = responses.map(x => Array.isArray(x.data) ? x.data[0] : x.data);
+ assert.equal(results.filter(x=>x.execution_status==='executed').length,1,'Exactly one claim must execute');
+ assert.equal(results.filter(x=>x.execution_status==='already_executed').length,CONCURRENT_CLAIMS-1,'All replay claims must be idempotent');
+ const taskId = results.find(x=>x.execution_status==='executed').task_id;
+ assert.ok(taskId);
+ assert.ok(results.every(x=>x.task_id===taskId),'All claims must return the same task');
  const [{data:proposal,error:pErr},{data:audit,error:aErr},{data:tasks,error:tErr}] = await Promise.all([
   a.from('mika_action_proposals').select('status,result').eq('id',env.MIKA_TEST_PROPOSAL_ID).single(),
   a.from('mika_action_audit').select('id,event_type').eq('proposal_id',env.MIKA_TEST_PROPOSAL_ID).eq('event_type','succeeded'),
-  a.from('tasks').select('id').eq('id',results[0].task_id)
+  a.from('tasks').select('id').eq('id',taskId)
  ]);
  for (const error of [pErr,aErr,tErr]) if (error) throw error;
  assert.equal(proposal.status,'executed');
- assert.equal(proposal.result.task_id,results[0].task_id);
+ assert.equal(proposal.result.task_id,taskId);
  assert.equal(audit.length,1,'Exactly one succeeded audit event');
  assert.equal(tasks.length,1,'Exactly one task persisted');
- console.log(JSON.stringify({outcome:'PASS',duration_ms:Date.now()-started,statuses:results.map(x=>x.execution_status),task_id:results[0].task_id,audit_count:audit.length,task_count:tasks.length}));
+ console.log(JSON.stringify({outcome:'PASS',duration_ms:Date.now()-started,statuses:results.map(x=>x.execution_status),task_id:taskId,audit_count:audit.length,task_count:tasks.length,concurrent_claims:CONCURRENT_CLAIMS}));
 })().catch(e=>{ console.error('MIKA concurrency staging test FAILED:',e.message);process.exitCode=1;});
