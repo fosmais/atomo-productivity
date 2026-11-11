@@ -59,3 +59,10 @@ Inspecionar rotas, serviços, schemas e políticas RLS atuais; reutilizar os com
 - Sem `messageId`, o mesmo componente usa `saveCloudPlan("Tarefas do Concierge", ...)`. Este caminho legado não utiliza a confirmação persistente `myka_task_confirmations`; avaliar consentimento, trilha de auditoria e idempotência antes de reutilizá-lo em ações automáticas.
 - O botão exige clique explícito para salvar; não transformar o fallback em execução automática. Para a nova MIKA Agente, exigir proposta persistida, autorização verificável e execução reivindicada atomicamente.
 - A busca de caminhos de código com nomes `consent`, `lgpd`, `terms` e `legal` não localizou artefatos dedicados nesta branch; isso não comprova ausência de aceite, pois pode estar implementado sob outros nomes. Verificar banco e rotas de autenticação antes de concluir.
+
+## Auditoria LGPD no ambiente ativo — 2026-11-10
+- Existem quatro tabelas `public.myryra_privacy_*` (document_versions, acceptances, choices, purposes), todas com RLS habilitado. Na consulta de auditoria, **todas tinham zero registros**; não presumir que a existência da estrutura equivale a aceite efetivo.
+- Políticas existentes são somente `SELECT`: documentos publicados/vigentes, finalidades ativas e histórico de aceite/escolhas restrito ao proprietário. Não há funções públicas de banco com nomes `privacy`, `accept`, `consent` ou `terms` para registrar/revogar.
+- `src/app/login/page.tsx` utiliza `supabase.auth.signUp`; na inspeção da página não foi localizado checkbox de aceite ou envio de versão de documentos. Isso não exclui mecanismos em outras camadas, mas **não autoriza habilitar o motor**.
+- Bloqueio de liberação: publicar documentos versionados aprovados, implementar aceite explícito auditável e verificação server-side do aceite vigente; exigir regularização de usuários antigos. Preferências opcionais da MIKA precisam de concessão/revogação granular e verificação a cada execução, não somente no cadastro.
+- Nunca marcar aceite automaticamente, nem inserir aceites fictícios. Manter a execução da MIKA Agente desabilitada até testes ponta a ponta de aceite, recusa, revogação e atualização de versão.
