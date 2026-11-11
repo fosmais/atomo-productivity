@@ -52,6 +52,7 @@ export default function MikaResolveMyDay() {
     };
   }, []);
   function openTaskList(filter: "pending" | "overdue") {
+    sessionStorage.setItem("myryra:task-filter-pending", filter);
     navigateTo("vyra-tasks");
     window.dispatchEvent(new CustomEvent("myryra:task-filter", { detail: { filter } }));
   }
