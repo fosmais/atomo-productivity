@@ -37,7 +37,12 @@ export async function POST(request: Request) {
   if (request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !== "application/json")
     return NextResponse.json({ error: "Envie JSON." }, { status: 415 });
   let body: unknown;
-  try { body = await request.json(); } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
+  try {
+    const raw = await request.text();
+    if (new TextEncoder().encode(raw).length > 8192)
+      return NextResponse.json({ error: "Solicitação muito grande." }, { status: 413, headers: noStore });
+    body = JSON.parse(raw);
+  } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
   if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
   const { eventId, service, actionType, provider, proposal } = body as Record<string, unknown>;
   if (eventId !== undefined && (typeof eventId !== "string" || !uuid.test(eventId)) ||
@@ -75,7 +80,12 @@ export async function PATCH(request: Request) {
   if (request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !== "application/json")
     return NextResponse.json({ error: "Envie JSON." }, { status: 415 });
   let body: unknown;
-  try { body = await request.json(); } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
+  try {
+    const raw = await request.text();
+    if (new TextEncoder().encode(raw).length > 8192)
+      return NextResponse.json({ error: "Solicitação muito grande." }, { status: 413, headers: noStore });
+    body = JSON.parse(raw);
+  } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
   if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
   const { actionId, decision } = body as Record<string, unknown>;
   if (typeof actionId !== "string" || !uuid.test(actionId) || (decision !== "authorize" && decision !== "cancel"))
