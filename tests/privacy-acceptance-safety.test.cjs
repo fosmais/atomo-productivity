@@ -200,6 +200,7 @@ test("MIKA action handlers enforce streaming byte limit before authentication", 
   const helper = code.split("async function readBoundedJson")[1].split("async function authenticate")[0];
   assert.match(helper, /request\.body\?\.getReader\(\)/);
   assert.match(helper, /bytes > 8192/);
+  assert.ok(helper.includes(String.raw`/^\d+$/`), "Content-Length must validate decimal digits");
   assert.match(helper, /reader\.cancel\(\)/);
   assert.doesNotMatch(helper, /request\.text\(\)/);
   for (const handler of [
