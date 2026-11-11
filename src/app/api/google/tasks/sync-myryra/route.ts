@@ -27,9 +27,9 @@ export async function POST(request: NextRequest) {
   const taskId = typeof body.taskId === "string" ? body.taskId : "";
   if (!uuid.test(taskId)) return NextResponse.json({ error: "Tarefa inválida." }, { status: 400 });
   const { data: task, error: taskError } = await supabase.from("tasks")
-    .select("id,title,due_date,completed")
+    .select("id,title,due_date,completed,status")
     .eq("id", taskId).eq("user_id", user.id).is("deleted_at", null).maybeSingle();
-  if (taskError || !task || task.completed || !task.title?.trim() || task.title.length > 200 ||
+  if (taskError || !task || task.completed || task.status === "done" || !task.title?.trim() || task.title.length > 200 ||
       !task.due_date || !dateOnly.test(task.due_date) ||
       Number.isNaN(Date.parse(task.due_date)) ||
       new Date(task.due_date).toISOString().slice(0, 10) !== task.due_date) {
