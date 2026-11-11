@@ -55,6 +55,29 @@ export default function TaskKanban() {
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [taskSort, setTaskSort] = useState<"priority" | "due" | "title" | "recent">("priority");
   const [favoriteSavingId, setFavoriteSavingId] = useState<string | null>(null);
+  const [googleSavingId, setGoogleSavingId] = useState<string | null>(null);
+  const [googleNotice, setGoogleNotice] = useState("");
+  async function sendTaskToGoogle(task: KanbanTask) {
+    if (googleSavingId || !task.due_date || task.status === "done") return;
+    if (!window.confirm(`Enviar a tarefa "${task.title}" ao Google Calendar como lembrete de dia inteiro em ${task.due_date}?`)) return;
+    setGoogleSavingId(task.id);
+    setGoogleNotice("");
+    try {
+      const response = await fetch("/api/google/tasks/sync-myryra", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId: task.id }),
+      });
+      const result = await response.json() as { error?: string; alreadyExists?: boolean };
+      if (!response.ok) throw new Error(result.error || "Falha na sincronização com Google Calendar.");
+      setGoogleNotice(result.alreadyExists ? "Esta tarefa já está no Google Calendar." : "Tarefa enviada ao Google Calendar como lembrete de dia inteiro.");
+    } catch (err) {
+      setGoogleNotice(err instanceof Error ? err.message : "Falha ao enviar tarefa ao Google.");
+    } finally {
+      setGoogleSavingId(null);
+    }
+  }
+
 
   const loadTasks = useCallback(async () => {
     const requestId = ++latestLoadRef.current;
@@ -465,6 +488,7 @@ export default function TaskKanban() {
           </div>
         </form>
       )}
+      {googleNotice && <p role="status" className="mb-3 text-sm text-violet-200">{googleNotice}</p>}
       {error && (
         <p role="alert" className="mb-4 text-sm text-red-400">
           {error}
@@ -547,6 +571,13 @@ export default function TaskKanban() {
                         </p>
                       )}
 
+                      {task.status !== "done" && task.due_date && (
+                        <button type="button" disabled={googleSavingId !== null}
+                          onClick={() => void sendTaskToGoogle(task)}
+                          className="mt-2 rounded-md border border-violet-400/40 px-2 py-1 text-xs text-violet-200 hover:bg-violet-500/15 disabled:opacity-50">
+                          {googleSavingId === task.id ? "Enviando..." : "Enviar ao Google Calendar"}
+                        </button>
+                      )}
                       {task.status !== "done" && task.due_date && task.due_date < localDateKey(new Date()) && (
                         <div className="mt-2 flex flex-wrap gap-2">
                           <button type="button" disabled={savingId !== null} onClick={() => void rescheduleTask(task.id, localDateKey(new Date()))} className="rounded-md border border-violet-400/40 px-2 py-1 text-xs text-violet-200 hover:bg-violet-500/15 disabled:opacity-50">Reagendar para hoje</button>
