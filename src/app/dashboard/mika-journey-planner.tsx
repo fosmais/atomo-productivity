@@ -105,6 +105,27 @@ export default function MikaJourneyPlanner() {
     }
   }
 
+  async function changeJourneyStatus(id: string, status: "active" | "paused") {
+    if (journeyBusy) return;
+    setJourneyBusy(id);
+    setMessage("");
+    try {
+      const response = await fetch("/api/journeys/" + encodeURIComponent(id), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      const payload = await readApiJson(response, "Não foi possível alterar o status da meta");
+      if (!response.ok) throw new Error(payload.error || "Falha ao alterar o status da meta.");
+      setMessage(status === "paused" ? "Meta pausada. Seu progresso foi preservado." : "Meta retomada. Seu progresso foi preservado.");
+      await refreshJourneys();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Falha ao alterar o status da meta.");
+    } finally {
+      setJourneyBusy(null);
+    }
+  }
+
   async function changeSavedJourney(id: string, archive: boolean) {
     if (journeyBusy) return;
     if (archive && !window.confirm("Remover esta meta da lista? O histórico e os MYRAs serão preservados.")) return;
@@ -303,6 +324,13 @@ export default function MikaJourneyPlanner() {
                     setEditTitle(journey.title);
                     setEditDate(journey.target_date?.slice(0, 10) ?? "");
                   }} className="rounded-lg border border-white/30 px-3 py-2 text-xs disabled:opacity-50">Editar meta</button>
+                  {(journey.status === "active" || journey.status === "paused") && (
+                    <button type="button" disabled={journeyBusy !== null}
+                      onClick={() => void changeJourneyStatus(journey.id, journey.status === "active" ? "paused" : "active")}
+                      className="rounded-lg border border-amber-400/40 px-3 py-2 text-xs text-amber-100 disabled:opacity-50">
+                      {journeyBusy === journey.id ? "Aguarde..." : journey.status === "active" ? "Pausar meta" : "Retomar meta"}
+                    </button>
+                  )}
                   <button type="button" disabled={journeyBusy !== null} onClick={() => void changeSavedJourney(journey.id, true)}
                     className="rounded-lg border border-rose-400/50 px-3 py-2 text-xs text-rose-200 disabled:opacity-50">
                     {journeyBusy === journey.id ? "Aguarde..." : "Excluir meta"}
