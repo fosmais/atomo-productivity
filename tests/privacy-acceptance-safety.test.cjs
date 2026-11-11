@@ -108,3 +108,12 @@ test("MIKA action proposals and authorizations require current legal acceptance 
   assert.match(patch, /if \(decision === "authorize"\)/);
   assert.match(patch, /decision === "authorize" \? "authorized" : "cancelled"/);
 });
+
+
+test("Journey mission completion gates new MYRA awards without blocking undo", () => {
+  const code = source("src/app/api/journeys/[journeyId]/missions/[missionId]/route.ts");
+  assert.match(code, /status === "completed" &&\s*process\.env\.MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true"/);
+  assert.match(code, /hasCurrentLegalAcceptance\(user\.id\)/);
+  assert.match(code, /LEGAL_ACCEPTANCE_REQUIRED/);
+  assert.match(code, /status === "completed" \? new Date\(\)\.toISOString\(\) : null/);
+});
