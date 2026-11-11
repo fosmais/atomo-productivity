@@ -205,15 +205,25 @@ export async function POST(request: Request) {
       }, { status: 409 });
     }
     // A single database transaction serializes confirmation and cancellation.
-    const { data: result, error: confirmError } = await admin.rpc("myka_confirm_event", {
+    const { data: result, error: confirmError } = await admin.rpc("myka_confirm_event_v2", {
       p_message_id: messageId,
       p_user_id: auth.user.id,
+      p_acknowledge_conflict: acknowledgeConflict,
     });
     if (confirmError) throw confirmError;
     if (!result || typeof result !== "object" || Array.isArray(result)) {
       throw new Error("Resposta inválida da confirmação.");
     }
     const outcome = result as Record<string, unknown>;
+    if (outcome.status === "conflict") {
+      return NextResponse.json({ error: "O horário coincide com outro compromisso. Revise o conflito e confirme novamente se desejar continuar.", code: "EVENT_CONFLICT" }, { status: 409 });
+    }
+    if (outcome.status === "expired_or_invalid" || outcome.status === "invalid") {
+      return NextResponse.json({ error: "Dados ou horário do compromisso inválidos. Solicite uma nova proposta à MIKA." }, { status: 422 });
+    }
+    if (outcome.status === "legacy_saved") {
+      return NextResponse.json({ error: "Compromisso já confirmado anteriormente; identificador original indisponível.", code: "LEGACY_EVENT_SAVED" }, { status: 409 });
+    }
     if (outcome.status === "cancelled") {
       return NextResponse.json({ error: "Proposta descartada." }, { status: 409 });
     }
