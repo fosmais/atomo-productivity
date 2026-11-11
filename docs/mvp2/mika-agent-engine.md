@@ -44,7 +44,9 @@ Alternativas: `rejected`, `expired`, `cancelled`. Toda transição deve ser vali
 
 ## Reutilização obrigatória do fluxo existente
 - A migração `database/migrations/20261028_myka_proposal_status.sql` já define `public.myka_confirm_task(uuid)`, com bloqueio transacional `FOR UPDATE`, verificação de `auth.uid()` e retorno `already_saved` para impedir duplicação de tarefas.
-- Antes de criar outro executor de tarefas, verificar no Supabase ativo se a função foi aplicada e se a rota existente a utiliza. Não duplicar o fluxo de confirmação nem presumir que a migração está em produção.
+- Verificado no Supabase ativo (2026-11-10): `myka_confirm_task(uuid)` **não existe**, mas `myka_confirm_task_item(uuid,integer)` existe, é `SECURITY DEFINER`, permite `EXECUTE` a `authenticated` e nega a `anon`. Ela usa `auth.uid()`, `FOR UPDATE` e `myka_task_confirmations` para impedir duplicação por mensagem/índice. Não instalar a função antiga sem necessidade.
+- `myka_confirm_event(uuid,uuid)` existe como `SECURITY INVOKER` e não concede execução a `authenticated` nem `anon`; a rota `src/app/api/myka/proposal/route.ts` a invoca via cliente administrativo após validar usuário, MFA, proposta e conflito. Manter essa separação de permissões.
+- Antes de conectar o novo motor, mapear o endpoint existente que chama `myka_confirm_task_item` e verificar a exigência de consentimento vigente; não assumir que o motor MIKA Agente já executa ações externas.
 - O motor novo deve usar `actionId` persistente, digest do payload e aprovação por usuário; a checagem pura em `execution-gate.ts` não substitui a transação que reivindica a ação.
 - A confirmação de tarefa já existente é diferente de autorização genérica para abrir aplicativos. Integrações externas exigem APIs/OAuth específicos, escopos e consentimento individual; abrir um link não constitui execução integrada.
 - Antes de conectar um executor novo, validar idempotência em concorrência, rejeição, expiração, revogação e isolamento entre usuários em ambiente de homologação.
