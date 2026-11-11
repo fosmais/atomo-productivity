@@ -54,6 +54,17 @@ export default function TaskKanban() {
   const [taskSearch, setTaskSearch] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [dashboardFilter, setDashboardFilter] = useState<"all" | "pending" | "overdue">("all");
+  // On mobile, open the first column containing results for a MIKA shortcut.
+  // Keep the user's selected column whenever it already contains matching tasks.
+  useEffect(() => {
+    if (dashboardFilter === "all" || loading) return;
+    const matches = (task: KanbanTask) =>
+      task.status !== "done" &&
+      (dashboardFilter === "pending" || (!!task.due_date && task.due_date < localDateKey(new Date())));
+    if (tasks.some((task) => task.status === mobileColumn && matches(task))) return;
+    const first = columns.find((column) => tasks.some((task) => task.status === column.status && matches(task)));
+    if (first) setMobileColumn(first.status);
+  }, [dashboardFilter, loading, mobileColumn, tasks]);
   useEffect(() => {
     const apply = (event: Event) => {
       const filter = (event as CustomEvent<{ filter?: string }>).detail?.filter;
