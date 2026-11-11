@@ -22,6 +22,10 @@ export default function MikaJourneyPlanner() {
   const [missions, setMissions] = useState<{ id: string; title: string; status: string }[]>([]);
   const [missionBusy, setMissionBusy] = useState<string | null>(null);
   const [missionLoading, setMissionLoading] = useState(false);
+  const [editingJourney, setEditingJourney] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDate, setEditDate] = useState("");
+  const [journeyBusy, setJourneyBusy] = useState<string | null>(null);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async function readApiJson(response: Response, action: string): Promise<Record<string, any>> {
@@ -77,6 +81,29 @@ export default function MikaJourneyPlanner() {
       setMessage(error instanceof Error ? error.message : "Falha ao atualizar missão.");
     } finally {
       setMissionBusy(null);
+    }
+  }
+
+  async function changeSavedJourney(id: string, archive: boolean) {
+    if (journeyBusy) return;
+    if (archive && !window.confirm("Remover esta meta da lista? O histórico e os MYRAs serão preservados.")) return;
+    setJourneyBusy(id);
+    setMessage("");
+    try {
+      const response = await fetch("/api/journeys/" + encodeURIComponent(id), {
+        method: archive ? "DELETE" : "PATCH",
+        ...(archive ? {} : { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: editTitle, targetDate: editDate || null }) }),
+      });
+      const payload = await readApiJson(response, "Não foi possível atualizar a meta");
+      if (!response.ok) throw new Error(payload.error || "Falha ao atualizar meta.");
+      setMessage(payload.message || "Meta atualizada.");
+      setEditingJourney(null);
+      if (archive && expandedId === id) { setExpandedId(null); setMissions([]); }
+      await refreshJourneys();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Falha ao atualizar meta.");
+    } finally {
+      setJourneyBusy(null);
     }
   }
 
@@ -243,6 +270,35 @@ export default function MikaJourneyPlanner() {
                 <p className="mt-1 text-xs text-slate-300">Status: {journey.status === "active" ? "Em andamento" : journey.status === "paused" ? "Pausada" : journey.status === "completed" ? "Concluída" : journey.status === "archived" ? "Arquivada" : journey.status}
                   {journey.target_date ? " · Meta: " + journey.target_date.slice(0, 10).split("-").reverse().join("/") : ""}
                 </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button type="button" disabled={journeyBusy !== null} onClick={() => {
+                    setEditingJourney(journey.id);
+                    setEditTitle(journey.title);
+                    setEditDate(journey.target_date?.slice(0, 10) ?? "");
+                  }} className="rounded-lg border border-white/30 px-3 py-2 text-xs disabled:opacity-50">Editar meta</button>
+                  <button type="button" disabled={journeyBusy !== null} onClick={() => void changeSavedJourney(journey.id, true)}
+                    className="rounded-lg border border-rose-400/50 px-3 py-2 text-xs text-rose-200 disabled:opacity-50">
+                    {journeyBusy === journey.id ? "Aguarde..." : "Excluir meta"}
+                  </button>
+                </div>
+                {editingJourney === journey.id && (
+                  <div className="mt-3 space-y-2 rounded-lg border border-violet-400/30 p-3">
+                    <label className="block text-xs">Nome da meta
+                      <input value={editTitle} maxLength={120} onChange={(event) => setEditTitle(event.target.value)}
+                        className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-2 text-sm" />
+                    </label>
+                    <label className="block text-xs">Data-alvo (opcional)
+                      <input type="date" value={editDate} onChange={(event) => setEditDate(event.target.value)}
+                        className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-2 text-sm" />
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" disabled={journeyBusy !== null || !editTitle.trim()} onClick={() => void changeSavedJourney(journey.id, false)}
+                        className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold disabled:opacity-50">Salvar alterações</button>
+                      <button type="button" disabled={journeyBusy !== null} onClick={() => setEditingJourney(null)}
+                        className="rounded-lg border border-white/30 px-3 py-2 text-xs">Cancelar</button>
+                    </div>
+                  </div>
+                )}
                 <button type="button" onClick={() => void openJourney(journey.id)}
                   className="mt-2 rounded-lg border border-white/30 px-3 py-1.5 text-xs">
                   {expandedId === journey.id ? "Fechar missões" : "Ver missões"}
