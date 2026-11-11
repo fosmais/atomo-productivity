@@ -51,9 +51,12 @@ function userClient(token) {
   if (error || data?.user?.id !== account.claims.sub) throw new Error('Unable to verify authenticated test identity');
  }
  const {data:proposal,error:proposalError} = await owner.client.from('mika_action_proposals')
-  .select('id,user_id,status,payload').eq('id',env.MIKA_TEST_PROPOSAL_ID).single();
+  .select('id,user_id,status,action_type,payload,expires_at').eq('id',env.MIKA_TEST_PROPOSAL_ID).single();
  if (proposalError) throw proposalError;
  assert.equal(proposal.user_id,owner.claims.sub);
+ assert.equal(proposal.status,'approved','Requires approved, unexecuted synthetic proposal');
+ assert.equal(proposal.action_type,'create_task','Only create_task proposals are permitted');
+ assert.ok(Number.isFinite(Date.parse(proposal.expires_at)) && Date.parse(proposal.expires_at)>Date.now(),'Test proposal must not be expired');
  assert.match(proposal.payload.title,/^\[MIKA-STAGING-TEST\]/);
  assert.equal(proposal.payload.plan_id,env.MIKA_TEST_PLAN_ID);
  const {data:plan,error:planError} = await owner.client.from('plans')
@@ -100,7 +103,7 @@ function userClient(token) {
  if (tasksBeforeError) throw tasksBeforeError;
  // Owner cannot execute an approved proposal against a different plan.
  // The wrong-plan check must run before the legitimate concurrency harness.
- if (proposal.status === 'approved') {
+ {
   const {error:wrongPlanError} = await owner.client.rpc('mika_execute_approved_task',{
    p_proposal_id:env.MIKA_TEST_PROPOSAL_ID,
    p_plan_id:'00000000-0000-4000-8000-000000000001'
