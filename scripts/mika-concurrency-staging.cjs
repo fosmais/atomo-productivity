@@ -94,5 +94,14 @@ const CONCURRENT_CLAIMS = 20;
  assert.equal(audit.length,1,'Exactly one succeeded audit event');
  assert.equal(tasks.length,1,'Executed task must exist');
  assert.equal(matchingTasks,1,'Exactly one matching synthetic task must exist after concurrent calls');
+ // Regression gate: replaying the same proposal with a different plan must
+ // not disclose the prior task ID or succeed with a mismatched argument.
+ const {data:wrongPlanReplay,error:wrongPlanReplayError} = await a.rpc('mika_execute_approved_task',{
+  p_proposal_id:env.MIKA_TEST_PROPOSAL_ID,
+  p_plan_id:'00000000-0000-4000-8000-000000000001'
+ });
+ assert.ok(wrongPlanReplayError,'Replay against a different plan must be rejected');
+ assert.equal(wrongPlanReplayError.code,'22023','Replay must reject the mismatched plan');
+ assert.equal(wrongPlanReplay,null,'Rejected replay must not return a task ID');
  console.log(JSON.stringify({outcome:'PASS',duration_ms:Date.now()-started,statuses:results.map(x=>x.execution_status),task_id:taskId,audit_count:audit.length,task_count:matchingTasks,concurrent_claims:CONCURRENT_CLAIMS}));
 })().catch(e=>{ console.error('MIKA concurrency staging test FAILED:',e.message);process.exitCode=1;});
