@@ -115,8 +115,7 @@ export default function JourneyTrail() {
         headers: { "Content-Type": "application/json" },
         ...(!archive ? { body: JSON.stringify({ title: goalTitle, targetDate: goalDate || null }) } : {}),
       });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Não foi possível alterar a meta.");
+      const payload = await readJourneyJson(response, "Não foi possível alterar a meta");
       if (archive) {
         const remaining = journeys.filter(j => j.id !== selected);
         setJourneys(remaining); setSelected(remaining[0]?.id ?? ""); setMissions([]);
