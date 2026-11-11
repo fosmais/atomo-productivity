@@ -767,14 +767,14 @@ export default function CalendarEvents() {
       </div>}
       {error && <p role="alert" className="mt-3 text-sm text-red-300">{error}</p>}
       <label className="mt-4 flex items-center gap-2 text-sm text-slate-200"><input type="checkbox" checked={syncToGoogle} onChange={(event) => setSyncToGoogle(event.target.checked)} className="accent-violet-500" />Adicionar também ao Google Calendar (requer autorização de escrita)</label>
-      <div className="mt-4 flex flex-wrap items-center gap-3">
+      <div className="sticky bottom-0 z-10 mt-4 flex flex-wrap items-center gap-2 border-t border-white/10 bg-slate-950/95 py-3 backdrop-blur-sm sm:gap-3">
       <button type="button" onClick={() => setShowForm(false)} disabled={saving}
-        className="rounded-xl border border-slate-600 px-4 py-3 text-sm text-slate-200 hover:bg-slate-800 disabled:opacity-50">Cancelar</button>
+        className="min-h-11 flex-1 rounded-xl border border-slate-600 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800 disabled:opacity-50 sm:flex-none sm:px-4 sm:py-3">Cancelar</button>
       <button
         type="button"
         onClick={handleSave}
         disabled={saving || !title.trim() || !startsAt || !endsAt}
-        className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-3 font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+        className="min-h-11 flex-[2] rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-5 sm:py-3 sm:text-base"
       >
         {saving ? "Salvando..." : "Adicionar compromisso"}
       </button>
