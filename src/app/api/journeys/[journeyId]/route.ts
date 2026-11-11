@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { hasCurrentLegalAcceptance } from "@/lib/privacy/legal-acceptance";
 
 type Context = { params: Promise<{ journeyId: string }> };
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -61,6 +62,16 @@ async function changeJourney(request: Request, context: Context, archive: boolea
         return NextResponse.json({ error: "Data-alvo inválida." }, { status: 400 });
       updates.target_date = data.targetDate;
     }
+  }
+  // Keep pause and archive available as user controls, even if acceptance is missing.
+  // Resume and edit require current legal acceptance only during the flagged rollout.
+  if (!archive && updates.status !== "paused" &&
+      process.env.MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true" &&
+      !(await hasCurrentLegalAcceptance(user.id))) {
+    return NextResponse.json(
+      { error: "Aceite dos documentos legais vigentes necessário.", code: "LEGAL_ACCEPTANCE_REQUIRED" },
+      { status: 403, headers: { "Cache-Control": "private, no-store" } },
+    );
   }
   const { data, error } = await supabase.from("myryra_journeys").update(updates)
     .eq("id", journeyId).eq("owner_id", user.id)
