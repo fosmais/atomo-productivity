@@ -67,14 +67,18 @@ function userClient(token) {
  const {data:anonProposal,error:anonProposalError} = await anonymous.from('mika_action_proposals')
   .select('id').eq('id',env.MIKA_TEST_PROPOSAL_ID);
  if (!anonProposalError) assert.equal(anonProposal.length,0,'Anonymous caller must not read proposal');
+ function expectDenied(error, allowedCodes, description) {
+  assert.ok(error,description+' must be denied');
+  assert.ok(allowedCodes.includes(error.code),description+' returned unexpected error code: '+String(error.code));
+ }
  const {error:anonDecisionError} = await anonymous.rpc('mika_decide_proposal',{
   p_proposal_id:env.MIKA_TEST_PROPOSAL_ID,p_approve:true
  });
- assert.ok(anonDecisionError,'Anonymous caller must not approve proposal');
+ expectDenied(anonDecisionError,['28000','42501'],'Anonymous approval');
  const {error:anonExecutionError} = await anonymous.rpc('mika_execute_approved_task',{
   p_proposal_id:env.MIKA_TEST_PROPOSAL_ID,p_plan_id:env.MIKA_TEST_PLAN_ID
  });
- assert.ok(anonExecutionError,'Anonymous caller must not execute task');
+ expectDenied(anonExecutionError,['28000','42501'],'Anonymous execution');
  const checks = [
   ['proposal',other.client.from('mika_action_proposals').select('id').eq('id',env.MIKA_TEST_PROPOSAL_ID)],
   ['audit',other.client.from('mika_action_audit').select('id').eq('proposal_id',env.MIKA_TEST_PROPOSAL_ID)],
@@ -98,18 +102,18 @@ function userClient(token) {
    p_proposal_id:env.MIKA_TEST_PROPOSAL_ID,
    p_plan_id:'00000000-0000-4000-8000-000000000001'
   });
-  assert.ok(wrongPlanError,'Executing an approved proposal with another plan must fail');
+  expectDenied(wrongPlanError,['22023'],'Mismatched plan execution');
  }
  // Unauthorized decision must fail before any state transition.
  const {error:decisionError} = await other.client.rpc('mika_decide_proposal',{
   p_proposal_id:env.MIKA_TEST_PROPOSAL_ID,p_approve:true
  });
- assert.ok(decisionError,'Cross-user approval must be rejected');
+ expectDenied(decisionError,['P0002'],'Cross-user approval');
  // Unauthorized execution must fail before creating a task.
  const {error:executionError} = await other.client.rpc('mika_execute_approved_task',{
   p_proposal_id:env.MIKA_TEST_PROPOSAL_ID,p_plan_id:env.MIKA_TEST_PLAN_ID
  });
- assert.ok(executionError,'Cross-user execution must be rejected');
+ expectDenied(executionError,['P0002'],'Cross-user execution');
  const {data:otherAudit,error:otherAuditError} = await other.client.from('mika_action_audit')
   .select('id').eq('proposal_id',env.MIKA_TEST_PROPOSAL_ID);
  if (!otherAuditError) assert.equal(otherAudit.length,0,'Other user must not see newly created audit records');
