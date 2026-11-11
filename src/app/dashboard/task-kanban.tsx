@@ -140,16 +140,23 @@ export default function TaskKanban() {
         throw new Error("Faça login para visualizar suas tarefas.");
       }
 
-      const { data, error: tasksError } = await supabase
-        .from("tasks")
-        .select("id, title, priority, category, due_date, status, completed_at, completed")
-        .eq("user_id", auth.user.id)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false })
-        .order("id", { ascending: false })
-        .range(0, requestedCount - 1);
-
-      if (tasksError) throw tasksError;
+      // Keep each database request bounded even after many pages have been loaded.
+      const rows: KanbanTask[] = [];
+      for (let offset = 0; offset < requestedCount; offset += 200) {
+        if (requestId !== latestLoadRef.current) return;
+        const { data: page, error: tasksError } = await supabase
+          .from("tasks")
+          .select("id, title, priority, category, due_date, status, completed_at, completed")
+          .eq("user_id", auth.user.id)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(offset, Math.min(offset + 199, requestedCount - 1));
+        if (tasksError) throw tasksError;
+        rows.push(...((page ?? []) as KanbanTask[]));
+        if ((page ?? []).length < Math.min(200, requestedCount - offset)) break;
+      }
+      const data = rows;
 
       // Apply pagination metadata only for the latest request, avoiding stale refresh races.
       if (requestId !== latestLoadRef.current) return;
