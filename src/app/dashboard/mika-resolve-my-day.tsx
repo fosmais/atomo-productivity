@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useVyraNavigation } from "./vyra-module-context";
 import { getCloudEvents, saveCloudEvent } from "@/lib/event-cloud";
 
@@ -31,6 +31,26 @@ export default function MikaResolveMyDay() {
   const [focusSaved, setFocusSaved] = useState(false);
   const [focusMessage, setFocusMessage] = useState("");
   const [error, setError] = useState("");
+  // A plan is a snapshot. Invalidate it after task changes or when the user
+  // returns to the app, so completed tasks are never presented as fresh advice.
+  useEffect(() => {
+    const invalidate = () => {
+      setPlan(null);
+      setFocusSaved(false);
+      setFocusMessage("");
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") invalidate();
+    };
+    window.addEventListener("myryra:tasks-updated", invalidate);
+    window.addEventListener("focus", invalidate);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("myryra:tasks-updated", invalidate);
+      window.removeEventListener("focus", invalidate);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
   async function prepare() {
     setLoading(true); setError(""); setPlan(null); setFocusSaved(false); setFocusMessage("");
     try {
