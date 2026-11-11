@@ -64,13 +64,22 @@ export async function POST(request: Request) {
     if (currentError) return NextResponse.json({ error: "Não foi possível verificar a versão atual da resposta." }, { status: 503 });
     if (currentProgress?.answer !== priorProgress?.answer)
       return NextResponse.json({ error: "A resposta foi alterada durante a avaliação. Solicite uma nova avaliação para a versão atual." }, { status: 409 });
-    const { error: saveError } = await createSupabaseAdmin().from("myryra_journey_learning_progress").upsert({
-      mission_id: missionId, owner_id: user.id, answer: answer.trim(), feedback, assessment_score: assessment.score, assessment_passed: assessment.passed, assessment_attempts: (priorProgress?.assessment_attempts ?? 0) + 1, assessed_at: new Date().toISOString(), updated_at: new Date().toISOString(),
-    }, { onConflict: "mission_id" });
+    // Atomic compare-and-set: do not replace an edited answer or overwrite a
+    // concurrent assessment. An existing saved draft is mandatory above.
+    const { data: savedRows, error: saveError } = await createSupabaseAdmin()
+      .from("myryra_journey_learning_progress")
+      .update({ feedback, assessment_score: assessment.score, assessment_passed: assessment.passed,
+        assessment_attempts: (priorProgress?.assessment_attempts ?? 0) + 1,
+        assessed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq("mission_id", missionId).eq("owner_id", user.id)
+      .eq("answer", priorProgress!.answer)
+      .eq("assessment_attempts", priorProgress?.assessment_attempts ?? 0)
+      .select("mission_id");
     if (saveError) {
       console.error("MIKA Journey feedback persistence failed", saveError.code);
       return NextResponse.json({ feedback, saved: false }, { headers: { "Cache-Control": "private, no-store" } });
     }
+    if (!savedRows?.length) return NextResponse.json({ error: "A resposta ou avaliação mudou durante o processamento. Solicite uma nova avaliação." }, { status: 409 });
     return NextResponse.json({ feedback, saved: true, score: assessment.score, passed: assessment.passed }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("MIKA Journey feedback unavailable", error);
