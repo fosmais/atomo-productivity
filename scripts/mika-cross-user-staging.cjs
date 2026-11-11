@@ -64,6 +64,13 @@ function userClient(token) {
   if (error) throw new Error(name+': '+error.message);
   assert.equal(data.length,0,'Other user must not read owner '+name);
  }
+ const {data:ownerAuditBefore,error:auditBeforeError} = await owner.client.from('mika_action_audit')
+  .select('id,event_type').eq('proposal_id',env.MIKA_TEST_PROPOSAL_ID);
+ if (auditBeforeError) throw auditBeforeError;
+ const {count:ownerTasksBefore,error:tasksBeforeError} = await owner.client.from('tasks')
+  .select('id',{count:'exact',head:true}).eq('plan_id',env.MIKA_TEST_PLAN_ID)
+  .eq('user_id',owner.claims.sub).eq('title',proposal.payload.title);
+ if (tasksBeforeError) throw tasksBeforeError;
  // Unauthorized decision must fail before any state transition.
  const {error:decisionError} = await other.client.rpc('mika_decide_proposal',{
   p_proposal_id:env.MIKA_TEST_PROPOSAL_ID,p_approve:true
@@ -78,5 +85,14 @@ function userClient(token) {
   .select('status').eq('id',env.MIKA_TEST_PROPOSAL_ID).single();
  if (afterError) throw afterError;
  assert.equal(after.status,proposal.status,'Unauthorized calls must not mutate proposal status');
+ const {data:ownerAuditAfter,error:auditAfterError} = await owner.client.from('mika_action_audit')
+  .select('id,event_type').eq('proposal_id',env.MIKA_TEST_PROPOSAL_ID);
+ if (auditAfterError) throw auditAfterError;
+ assert.deepEqual(ownerAuditAfter,ownerAuditBefore,'Unauthorized calls must not add audit events');
+ const {count:ownerTasksAfter,error:tasksAfterError} = await owner.client.from('tasks')
+  .select('id',{count:'exact',head:true}).eq('plan_id',env.MIKA_TEST_PLAN_ID)
+  .eq('user_id',owner.claims.sub).eq('title',proposal.payload.title);
+ if (tasksAfterError) throw tasksAfterError;
+ assert.equal(ownerTasksAfter,ownerTasksBefore,'Unauthorized calls must not create tasks');
  console.log(JSON.stringify({outcome:'PASS',cross_user_read_denied:true,cross_user_decision_denied:true,cross_user_execution_denied:true}));
 })().catch(error=>{console.error('MIKA cross-user staging test FAILED:',error.message);process.exitCode=1;});
