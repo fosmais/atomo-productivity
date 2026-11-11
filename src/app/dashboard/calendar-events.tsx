@@ -32,6 +32,29 @@ export default function CalendarEvents() {
   const [agentActionByEvent, setAgentActionByEvent] = useState<Record<string, { id: string; status: string }>>({});
   const [agentBusyEvent, setAgentBusyEvent] = useState<string | null>(null);
   const [agentFeedbackByEvent, setAgentFeedbackByEvent] = useState<Record<string, string>>({});
+  const [agentHistoryError, setAgentHistoryError] = useState("");
+  useEffect(() => {
+    let active = true;
+    async function restoreAgentActions() {
+      try {
+        const response = await fetch("/api/mika/actions", { cache: "no-store" });
+        if (!response.ok) throw new Error("Não foi possível recuperar as autorizações da MIKA.");
+        const payload: unknown = await response.json();
+        if (!payload || typeof payload !== "object" || !("actions" in payload) || !Array.isArray(payload.actions)) throw new Error("Histórico inválido.");
+        const restored: Record<string, { id: string; status: string }> = {};
+        for (const item of payload.actions) {
+          if (!item || typeof item !== "object" || item.action_type !== "concierge_planning" ||
+              typeof item.event_id !== "string" || typeof item.id !== "string" || typeof item.status !== "string") continue;
+          if (!restored[item.event_id]) restored[item.event_id] = { id: item.id, status: item.status };
+        }
+        if (active) setAgentActionByEvent(restored);
+      } catch {
+        if (active) setAgentHistoryError("Não foi possível carregar o histórico de autorizações. Tente atualizar a página.");
+      }
+    }
+    void restoreAgentActions();
+    return () => { active = false; };
+  }, []);
   async function proposeConciergeAction(event: CalendarEvent) {
     if (!event.concierge || agentBusyEvent) return;
     setAgentBusyEvent(event.id);
@@ -960,11 +983,14 @@ export default function CalendarEvents() {
                     <div className="mt-3 rounded-lg border border-violet-400/20 p-3">
                       <p className="text-xs font-semibold text-violet-200">MIKA Agente · Autorização do planejamento</p>
                       <p className="mt-1 text-xs text-slate-300">Registre uma proposta para os serviços selecionados. A autorização não faz reservas nem pagamentos.</p>
-                      {!agentActionByEvent[event.id] && <button type="button" disabled={agentBusyEvent !== null} onClick={() => proposeConciergeAction(event)} className="mt-2 rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 disabled:opacity-50">Preparar proposta</button>}
+                      {(!agentActionByEvent[event.id] || ["cancelled", "expired", "failed"].includes(agentActionByEvent[event.id].status)) && <button type="button" disabled={agentBusyEvent !== null} onClick={() => proposeConciergeAction(event)} className="mt-2 rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 disabled:opacity-50">Preparar proposta</button>}
                       {agentActionByEvent[event.id]?.status === "awaiting_authorization" && <div className="mt-2 flex flex-wrap gap-2">
                         <button type="button" disabled={agentBusyEvent !== null} onClick={() => decideConciergeAction(event.id, "authorize")} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Autorizar planejamento</button>
                         <button type="button" disabled={agentBusyEvent !== null} onClick={() => decideConciergeAction(event.id, "cancel")} className="rounded-lg border border-white/20 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Cancelar proposta</button>
                       </div>}
+                      {agentActionByEvent[event.id]?.status === "authorized" && <p className="mt-2 text-xs text-emerald-300">Planejamento autorizado e registrado. Nenhuma reserva ou pagamento foi executado.</p>}
+                      {agentActionByEvent[event.id]?.status === "cancelled" && <p className="mt-2 text-xs text-slate-300">Última proposta cancelada.</p>}
+                      {agentHistoryError && <p role="alert" className="mt-2 text-xs text-amber-300">{agentHistoryError}</p>}
                       {agentFeedbackByEvent[event.id] && <p role="status" className="mt-2 text-xs text-slate-300">{agentFeedbackByEvent[event.id]}</p>}
                     </div>
                     <div className="mt-3 rounded-lg border border-violet-400/20 p-3">
