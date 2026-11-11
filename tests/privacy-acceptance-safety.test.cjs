@@ -216,3 +216,12 @@ test("MIKA task confirmation preflights legal readiness on flagged clients", () 
   assert.ok(confirm.indexOf("readiness.ready !== true") < confirm.indexOf("myka_confirm_task_item"));
   assert.ok(confirm.indexOf("readiness.ready !== true") < confirm.indexOf('saveCloudPlan("Tarefas do Concierge"'));
 });
+
+
+test("AI task generation requires current legal acceptance before sending user text to provider", () => {
+  const code = source("src/app/api/tasks/route.ts");
+  assert.match(code, /MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true"/);
+  assert.match(code, /hasCurrentLegalAcceptance\(user\.id\)/);
+  assert.match(code, /LEGAL_ACCEPTANCE_REQUIRED/);
+  assert.ok(code.indexOf("LEGAL_ACCEPTANCE_REQUIRED") < code.indexOf("client.responses.create("));
+});
