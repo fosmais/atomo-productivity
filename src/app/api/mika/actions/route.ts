@@ -10,7 +10,7 @@ const noStore = { "Cache-Control": "private, no-store" };
 // Enforce the byte limit while streaming; request.text() would buffer unbounded input.
 async function readBoundedJson(request: Request): Promise<unknown> {
   const declared = request.headers.get("content-length");
-  if (declared && /^\\d+$/.test(declared) && Number(declared) > 8192)
+  if (declared && /^\d+$/.test(declared) && Number(declared) > 8192)
     throw new Error("PAYLOAD_TOO_LARGE");
   const reader = request.body?.getReader();
   if (!reader) throw new Error("INVALID_JSON");
