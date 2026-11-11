@@ -127,6 +127,7 @@ export default function TaskKanban() {
     setError("");
 
     try {
+      const requestedCount = Math.max(200, fetchedCountRef.current);
       const supabase = createClient();
 
       const { data: auth, error: authError } =
@@ -143,14 +144,14 @@ export default function TaskKanban() {
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .order("id", { ascending: false })
-        .limit(200);
+        .range(0, requestedCount - 1);
 
       if (tasksError) throw tasksError;
 
       // Apply pagination metadata only for the latest request, avoiding stale refresh races.
       if (requestId !== latestLoadRef.current) return;
       fetchedCountRef.current = (data ?? []).length;
-      setHasMoreTasks((data ?? []).length === 200);
+      setHasMoreTasks((data ?? []).length === requestedCount);
       // Legacy records can have completed=true with a stale status. Never display them as pending.
       let loaded = ((data ?? []) as KanbanTask[]).map((task) => task.completed ? { ...task, status: "done" as const } : task);
       // A busca global pode encontrar tarefas fora das 200 mais recentes.
