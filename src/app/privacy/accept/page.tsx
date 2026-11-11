@@ -117,7 +117,7 @@ export default function PrivacyAcceptancePage() {
         <a href="/dashboard" className="inline-flex rounded-xl bg-violet-600 px-5 py-3 font-semibold">Ir para o painel</a>
       ) : (
         <button type="button" disabled={busy || !state || state.documents.length !== 2 || state.documents.some((document) =>
-          !document.published || !document.publicUrl || !/^https:\/\//i.test(document.publicUrl) || (!document.accepted && !selected[document.type])
+          !document.published || (!document.accepted && (!document.publicUrl || !/^https:\/\//i.test(document.publicUrl) || !selected[document.type]))
         )} onClick={() => void accept()}
           className="rounded-xl bg-violet-600 px-5 py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-40">
           {busy ? "Registrando..." : "Confirmar aceites"}
