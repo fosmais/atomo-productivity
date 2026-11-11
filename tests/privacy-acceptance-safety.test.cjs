@@ -205,3 +205,14 @@ test("MIKA proposal and authorization requests reject oversized JSON before proc
     assert.ok(handler.indexOf("status: 413") < handler.indexOf("await authenticate()"));
   }
 });
+
+
+test("MIKA task confirmation preflights legal readiness on flagged clients", () => {
+  const code = source("src/app/dashboard/task-confirmation.tsx");
+  const confirm = code.split("async function handleConfirm")[1].split("async function handleCancel")[0];
+  assert.match(confirm, /NEXT_PUBLIC_MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true"/);
+  assert.match(confirm, /fetch\("\/api\/privacy\/readiness"/);
+  assert.match(confirm, /readiness\.ready !== true/);
+  assert.ok(confirm.indexOf("readiness.ready !== true") < confirm.indexOf("myka_confirm_task_item"));
+  assert.ok(confirm.indexOf("readiness.ready !== true") < confirm.indexOf('saveCloudPlan("Tarefas do Concierge"'));
+});
