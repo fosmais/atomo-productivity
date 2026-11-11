@@ -569,9 +569,9 @@ export default function TaskKanban() {
             return (
               <div
                 key={column.status}
-                className={`min-w-0 rounded-xl border border-white/10 bg-slate-800/65 p-3 sm:p-4 ${mobileColumn === column.status ? "" : "hidden lg:block"}`}
+                className={`min-w-0 rounded-xl border border-white/10 bg-slate-800/65 p-2.5 sm:p-4 ${mobileColumn === column.status ? "" : "hidden lg:block"}`}
               >
-                <h3 className="mb-3 flex items-center justify-between gap-2 text-sm font-semibold">
+                <h3 className="mb-2 flex items-center justify-between gap-2 text-xs font-semibold sm:mb-3 sm:text-sm">
                   {column.label}
                   <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2 py-0.5 text-xs tabular-nums text-violet-200">{columnTasks.length}</span>
                 </h3>
@@ -581,14 +581,14 @@ export default function TaskKanban() {
                     <article
                       key={task.id}
                       id={`vyra-task-${task.id}`}
-                      className={`min-w-0 rounded-xl border p-3.5 transition-all duration-300 ${
+                      className={`min-w-0 rounded-xl border p-2.5 transition-all duration-300 sm:p-3.5 ${
                         focusedTaskId === task.id
                           ? "border-violet-400 bg-violet-500/15 ring-2 ring-violet-400/50 shadow-lg shadow-violet-500/20"
                           : "border-slate-600 bg-slate-900"
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <p className="min-w-0 break-words text-sm font-semibold leading-snug">{task.title}</p>
+                        <p className="min-w-0 break-words text-xs font-semibold leading-snug sm:text-sm">{task.title}</p>
                         <button type="button" onClick={() => void toggleFavorite(task)} disabled={favoriteSavingId !== null}
                           aria-pressed={favoriteIds.includes(task.id)}
                           aria-label={favoriteIds.includes(task.id) ? `Remover ${task.title} dos favoritos` : `Favoritar ${task.title}`}
