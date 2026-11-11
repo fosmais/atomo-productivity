@@ -76,3 +76,16 @@ test('MIKA authorization rejects injected fields before changing approval state'
  assert.ok(patch.indexOf('Campos não permitidos na decisão') < patch.indexOf('await authenticate()'));
  assert.match(patch, /executed: false/);
 });
+
+
+test('MIKA proposal creation is rate limited without blocking authorization revocation', () => {
+ const route = fs.readFileSync(path.join(__dirname, '../src/app/api/mika/actions/route.ts'), 'utf8');
+ const post = route.split('export async function POST')[1].split('export async function PATCH')[0];
+ const patch = route.split('export async function PATCH')[1];
+ assert.match(post, /checkConciergeRateLimit\(user\.id\)/);
+ assert.match(post, /status: 429/);
+ assert.match(post, /"Retry-After"/);
+ assert.ok(post.indexOf('checkConciergeRateLimit(user.id)') < post.indexOf('.from("mika_agent_actions")'));
+ assert.doesNotMatch(patch, /checkConciergeRateLimit/);
+ assert.match(patch, /decision === "authorize" \? "authorized" : "cancelled"/);
+});
