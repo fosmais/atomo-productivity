@@ -34,6 +34,9 @@ export default function TaskKanban() {
   const { focusedTaskId } = useVyraNavigation();
   const [tasks, setTasks] = useState<KanbanTask[]>([]);
   const latestLoadRef = useRef(0);
+  const fetchedCountRef = useRef(0);
+  const [hasMoreTasks, setHasMoreTasks] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [expandedColumns, setExpandedColumns] = useState<TaskStatus[]>([]);
   const [mobileColumn, setMobileColumn] = useState<TaskStatus>("todo");
   const [mobileColumnManuallySelected, setMobileColumnManuallySelected] = useState(false);
@@ -139,10 +142,13 @@ export default function TaskKanban() {
         .eq("user_id", auth.user.id)
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
         .limit(200);
 
       if (tasksError) throw tasksError;
 
+      fetchedCountRef.current = (data ?? []).length;
+      setHasMoreTasks((data ?? []).length === 200);
       // Legacy records can have completed=true with a stale status. Never display them as pending.
       let loaded = ((data ?? []) as KanbanTask[]).map((task) => task.completed ? { ...task, status: "done" as const } : task);
       // A busca global pode encontrar tarefas fora das 200 mais recentes.
@@ -180,6 +186,41 @@ export default function TaskKanban() {
       if (requestId === latestLoadRef.current) setLoading(false);
     }
   }, [focusedTaskId]);
+
+  async function loadMoreTasks() {
+    if (loadingMore || loading || !hasMoreTasks) return;
+    const requestId = latestLoadRef.current;
+    const offset = fetchedCountRef.current;
+    setLoadingMore(true);
+    setError("");
+    try {
+      const supabase = createClient();
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError || !auth.user) throw new Error("Faça login para visualizar suas tarefas.");
+      const { data, error: pageError } = await supabase.from("tasks")
+        .select("id, title, priority, category, due_date, status, completed_at, completed")
+        .eq("user_id", auth.user.id)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(offset, offset + 199);
+      if (pageError) throw pageError;
+      if (requestId !== latestLoadRef.current) return;
+      fetchedCountRef.current = offset + (data ?? []).length;
+      setHasMoreTasks((data ?? []).length === 200);
+      const next = ((data ?? []) as KanbanTask[]).map((task) =>
+        task.completed ? { ...task, status: "done" as const } : task
+      );
+      setTasks((current) => {
+        const ids = new Set(current.map((task) => task.id));
+        return [...current, ...next.filter((task) => !ids.has(task.id))];
+      });
+    } catch (err) {
+      if (requestId === latestLoadRef.current) setError(err instanceof Error ? err.message : "Erro ao carregar mais tarefas.");
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -693,6 +734,12 @@ export default function TaskKanban() {
           })}
           </div>
         </div>
+      )}
+      {hasMoreTasks && (
+        <button type="button" disabled={loading || loadingMore} onClick={() => void loadMoreTasks()}
+          className="mt-4 w-full rounded-xl border border-violet-400/40 px-4 py-3 text-sm font-semibold text-violet-100 hover:bg-violet-500/10 disabled:opacity-50">
+          {loadingMore ? "Carregando tarefas antigas..." : "Carregar mais tarefas antigas"}
+        </button>
       )}
     </section>
   );
