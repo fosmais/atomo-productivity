@@ -2,6 +2,7 @@ import { isEventCategory } from "@/lib/event-categories";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
+import { hasCurrentLegalAcceptance } from "@/lib/privacy/legal-acceptance";
 
 function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
@@ -134,6 +135,13 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const { data: auth, error: authError } = await supabase.auth.getUser();
     if (authError || !auth.user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+    if (process.env.MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true" &&
+        !(await hasCurrentLegalAcceptance(auth.user.id))) {
+      return NextResponse.json(
+        { error: "Aceite dos documentos legais vigentes necessário.", code: "LEGAL_ACCEPTANCE_REQUIRED" },
+        { status: 403, headers: { "Cache-Control": "private, no-store" } },
+      );
+    }
     const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
     if (assurance.error) return NextResponse.json({ error: "Sessão indisponível." }, { status: 503 });
     if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
