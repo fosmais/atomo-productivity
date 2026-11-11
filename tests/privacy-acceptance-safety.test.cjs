@@ -193,3 +193,15 @@ test("MIKA Concierge cancellation stays available without new legal acceptance",
   assert.match(gate, /hasCurrentLegalAcceptance\(user\.id\)/);
   assert.match(patch, /decision === "authorize" \? "authorized" : "cancelled"/);
 });
+
+
+test("MIKA proposal and authorization requests reject oversized JSON before processing", () => {
+  const code = source("src/app/api/mika/actions/route.ts");
+  const post = code.split("export async function POST")[1].split("export async function PATCH")[0];
+  const patch = code.split("export async function PATCH")[1];
+  for (const handler of [post, patch]) {
+    assert.match(handler, /new TextEncoder\(\)\.encode\(raw\)\.length > 8192/);
+    assert.match(handler, /status: 413/);
+    assert.ok(handler.indexOf("status: 413") < handler.indexOf("await authenticate()"));
+  }
+});
