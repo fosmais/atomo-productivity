@@ -68,9 +68,9 @@ export default function TaskKanban() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ taskId: task.id }),
       });
-      const result = await response.json() as { error?: string; alreadyExists?: boolean };
+      const result = await response.json() as { error?: string; alreadyExists?: boolean; updated?: boolean };
       if (!response.ok) throw new Error(result.error || "Falha na sincronização com Google Calendar.");
-      setGoogleNotice(result.alreadyExists ? "Esta tarefa já está no Google Calendar." : "Tarefa enviada ao Google Calendar como lembrete de dia inteiro.");
+      setGoogleNotice(result.updated ? "Lembrete atualizado no Google Calendar com o título e prazo atuais." : result.alreadyExists ? "Esta tarefa já está no Google Calendar." : "Tarefa enviada ao Google Calendar como lembrete de dia inteiro.");
     } catch (err) {
       setGoogleNotice(err instanceof Error ? err.message : "Falha ao enviar tarefa ao Google.");
     } finally {
