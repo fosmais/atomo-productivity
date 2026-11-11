@@ -67,7 +67,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Autorize a criação de eventos no Google Calendar.", code: "GOOGLE_WRITE_CONSENT_REQUIRED" }, { status: 403 });
     }
     const calendar = google.calendar({ version: "v3", auth: oauth });
-    const eventId = "myrt" + createHash("sha256").update(JSON.stringify([user.id, taskId])).digest("hex").slice(0, 40);
+    // Google Calendar custom event IDs accept only base32hex characters: a-v and 0-9.
+    // The previous "myrt" prefix contained an invalid "y" and could not be inserted.
+    const eventId = "mrt" + createHash("sha256").update(JSON.stringify([user.id, taskId])).digest("hex").slice(0, 40);
     const day = new Date(task.due_date + "T00:00:00Z");
     day.setUTCDate(day.getUTCDate() + 1);
     const nextDay = day.toISOString().slice(0, 10);
