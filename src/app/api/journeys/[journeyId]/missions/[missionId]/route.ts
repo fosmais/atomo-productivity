@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { hasCurrentLegalAcceptance } from "@/lib/privacy/legal-acceptance";
 
 type Context = { params: Promise<{ journeyId: string; missionId: string }> };
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -30,6 +31,15 @@ export async function PATCH(request: Request, context: Context) {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return NextResponse.json({ error: "Autenticação necessária." }, { status: 401 });
+  // Allow undoing a completion even without acceptance; new rewards require current consent.
+  if (status === "completed" &&
+      process.env.MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true" &&
+      !(await hasCurrentLegalAcceptance(user.id))) {
+    return NextResponse.json(
+      { error: "Aceite dos documentos legais vigentes necessário.", code: "LEGAL_ACCEPTANCE_REQUIRED" },
+      { status: 403, headers: { "Cache-Control": "private, no-store" } },
+    );
+  }
   const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (assurance.error || (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2"))
     return NextResponse.json({ error: "Verificação adicional necessária." }, { status: 403 });
