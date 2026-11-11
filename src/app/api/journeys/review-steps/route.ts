@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { hasCurrentLegalAcceptance } from "@/lib/privacy/legal-acceptance";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const noStore = { "Cache-Control": "private, no-store" };
@@ -53,6 +54,13 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Etapas inválidas." }, { status: 400 });
   const { supabase, user, status } = await authorize(journeyId, missionId);
   if (!user) return NextResponse.json({ error: "Acesso indisponível ou não autorizado." }, { status });
+  if (process.env.MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true" &&
+      !(await hasCurrentLegalAcceptance(user.id))) {
+    return NextResponse.json(
+      { error: "Aceite dos documentos legais vigentes necessário.", code: "LEGAL_ACCEPTANCE_REQUIRED" },
+      { status: 403, headers: { "Cache-Control": "private, no-store" } },
+    );
+  }
   const { error } = await supabase.from("myryra_journey_review_steps").upsert({
     mission_id: missionId, owner_id: user.id, steps, updated_at: new Date().toISOString(),
   }, { onConflict: "mission_id" });
