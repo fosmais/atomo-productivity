@@ -14,6 +14,10 @@ const required = ['MIKA_STAGING_URL','MIKA_STAGING_ANON_KEY','MIKA_TEST_ACCESS_T
 const missing = required.filter(k => !env[k]);
 if (missing.length) throw new Error('Missing staging settings: '+missing.join(', '));
 const url = new URL(env.MIKA_STAGING_URL);
+if (url.pathname !== '/' || url.search || url.hash || url.username || url.password || url.port) {
+ throw new Error('Expected a clean staging project root URL');
+}
+const expectedIssuer = url.origin + '/auth/v1';
 if (url.protocol !== 'https:' || url.hostname !== 'xanavauqzsrgvdfhcrsm.supabase.co') {
  throw new Error('Only the approved isolated MYRYRA staging branch is permitted');
 }
@@ -27,13 +31,13 @@ function userClient(token) {
  let claims;
  try { claims = JSON.parse(Buffer.from(parts[1],'base64url').toString('utf8')); }
  catch { throw new Error('Invalid user JWT'); }
- if (claims.iss !== env.MIKA_STAGING_URL + '/auth/v1') {
+ if (claims.iss !== expectedIssuer) {
   throw new Error('JWT issuer does not match the isolated staging project');
  }
  if (claims.role !== 'authenticated' || !claims.sub || !Number.isFinite(claims.exp) || claims.exp*1000 <= Date.now()) {
   throw new Error('Only unexpired authenticated-user JWTs are permitted');
  }
- return {claims, client:createClient(env.MIKA_STAGING_URL,env.MIKA_STAGING_ANON_KEY,{
+ return {claims, token, client:createClient(env.MIKA_STAGING_URL,env.MIKA_STAGING_ANON_KEY,{
   global:{headers:{Authorization:'Bearer '+token}},
   auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},
  })};
@@ -43,7 +47,7 @@ function userClient(token) {
  const other = userClient(env.MIKA_TEST_OTHER_ACCESS_TOKEN);
  assert.notEqual(owner.claims.sub,other.claims.sub,'Two distinct synthetic users are required');
  for (const account of [owner,other]) {
-  const {data,error} = await account.client.auth.getUser();
+  const {data,error} = await account.client.auth.getUser(account.token);
   if (error || data?.user?.id !== account.claims.sub) throw new Error('Unable to verify authenticated test identity');
  }
  const {data:proposal,error:proposalError} = await owner.client.from('mika_action_proposals')
