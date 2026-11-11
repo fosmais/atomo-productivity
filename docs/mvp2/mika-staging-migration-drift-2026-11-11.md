@@ -38,3 +38,10 @@ Consulta de catálogo PostgreSQL em homologação, sem alterações:
 | `mika_execute_approved_task(uuid,uuid)` | não | sim | sim |
 
 A inspeção das definições SQL confirmou `auth.uid()`, seleção de proposta por `user_id`, bloqueio `FOR UPDATE` e validação de plano no fluxo de execução aprovado. A execução repetida de uma proposta já concluída retorna `already_executed` antes de comparar novamente o argumento `p_plan_id`; isto não cria uma segunda tarefa, mas deve ser avaliado como contrato de API antes da liberação. Essas evidências são estáticas, não substituem os testes com dois usuários reais de homologação.
+
+## Atualização — reconciliação pendente (2026-11-11)
+- Comparação completa por `version` via Supabase: **40 migrações presentes somente em PROD**, **15 somente na homologação**, e **1 versão compartilhada** (`20261030174834`). São históricos efetivamente divergentes; não presumir que a aplicação de uma única migração resolve a branch.
+- A migração isolada `20261111220502_mika_replay_plan_mismatch_guard_staging` foi aplicada na homologação. A função `mika_execute_approved_task` agora rejeita um `p_plan_id` divergente (`22023`) **inclusive no replay de proposta já executada**, antes de retornar o identificador da tarefa. A observação anterior sobre replay sem validação está superada.
+- Verificação pós-alteração: `has_function_privilege('anon',...,'EXECUTE') = false`, `authenticated = true`; RLS de leitura de propostas e auditoria continua restrita a `auth.uid() = user_id`.
+- Os dois pipelines do commit `47bc0ae` foram aprovados no GitHub Actions; isso **não** comprova o teste funcional autenticado, pois a homologação ainda tem zero contas sintéticas e zero propostas.
+- A branch permanece `MIGRATIONS_FAILED` embora o projeto de preview esteja `ACTIVE_HEALTHY`. Não tentar rebase/reset/merge automaticamente. Obter o erro exato de branching e preparar plano de reconciliação sem tocar PROD.
