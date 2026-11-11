@@ -38,7 +38,7 @@ export default function CalendarEvents() {
     let active = true;
     async function restoreAgentActions() {
       try {
-        const response = await fetch("/api/mika/actions", { cache: "no-store" });
+        const response = await fetch("/api/mika/actions?actionType=concierge_planning", { cache: "no-store" });
         if (!response.ok) throw new Error("Não foi possível recuperar as autorizações da MIKA.");
         const payload: unknown = await response.json();
         if (!payload || typeof payload !== "object" || !("actions" in payload) || !Array.isArray(payload.actions)) throw new Error("Histórico inválido.");
