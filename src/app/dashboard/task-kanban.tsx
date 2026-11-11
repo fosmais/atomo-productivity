@@ -79,19 +79,24 @@ export default function TaskKanban() {
   const [favoriteSavingId, setFavoriteSavingId] = useState<string | null>(null);
   const [googleSavingId, setGoogleSavingId] = useState<string | null>(null);
   const [googleNotice, setGoogleNotice] = useState("");
+  const [googleConsentRequired, setGoogleConsentRequired] = useState(false);
   async function sendTaskToGoogle(task: KanbanTask) {
     if (googleSavingId || !task.due_date || task.status === "done") return;
     if (!window.confirm(`Enviar a tarefa "${task.title}" ao Google Calendar como lembrete de dia inteiro em ${task.due_date}?`)) return;
     setGoogleSavingId(task.id);
     setGoogleNotice("");
+    setGoogleConsentRequired(false);
     try {
       const response = await fetch("/api/google/tasks/sync-myryra", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ taskId: task.id }),
       });
-      const result = await response.json() as { error?: string; alreadyExists?: boolean; updated?: boolean };
-      if (!response.ok) throw new Error(result.error || "Falha na sincronização com Google Calendar.");
+      const result = await response.json() as { error?: string; code?: string; alreadyExists?: boolean; updated?: boolean };
+      if (!response.ok) {
+        if (result.code === "GOOGLE_WRITE_CONSENT_REQUIRED" || result.code === "GOOGLE_CALENDAR_RECONNECT_REQUIRED") setGoogleConsentRequired(true);
+        throw new Error(result.error || "Falha na sincronização com Google Calendar.");
+      }
       setGoogleNotice(result.updated ? "Lembrete atualizado no Google Calendar com o título e prazo atuais." : result.alreadyExists ? "Esta tarefa já está no Google Calendar." : "Tarefa enviada ao Google Calendar como lembrete de dia inteiro.");
     } catch (err) {
       setGoogleNotice(err instanceof Error ? err.message : "Falha ao enviar tarefa ao Google.");
@@ -517,6 +522,11 @@ export default function TaskKanban() {
         </form>
       )}
       {googleNotice && <p role="status" className="mb-3 text-sm text-violet-200">{googleNotice}</p>}
+      {googleConsentRequired && (
+        <a href="/api/google/connect?allow_event_creation=1" className="mb-3 inline-flex rounded-lg border border-violet-400 px-3 py-2 text-sm text-violet-100 hover:bg-violet-500/20">
+          Autorizar envio de tarefas ao Google Calendar
+        </a>
+      )}
       {error && (
         <p role="alert" className="mb-4 text-sm text-red-400">
           {error}
