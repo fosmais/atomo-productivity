@@ -65,7 +65,7 @@ function userClient(token) {
   assert.equal(data.length,0,'Other user must not read owner '+name);
  }
  const {data:ownerAuditBefore,error:auditBeforeError} = await owner.client.from('mika_action_audit')
-  .select('id,event_type').eq('proposal_id',env.MIKA_TEST_PROPOSAL_ID);
+  .select('id,event_type').eq('proposal_id',env.MIKA_TEST_PROPOSAL_ID).order('id',{ascending:true});
  if (auditBeforeError) throw auditBeforeError;
  const {count:ownerTasksBefore,error:tasksBeforeError} = await owner.client.from('tasks')
   .select('id',{count:'exact',head:true}).eq('plan_id',env.MIKA_TEST_PLAN_ID)
@@ -81,6 +81,10 @@ function userClient(token) {
   p_proposal_id:env.MIKA_TEST_PROPOSAL_ID,p_plan_id:env.MIKA_TEST_PLAN_ID
  });
  assert.ok(executionError,'Cross-user execution must be rejected');
+ const {data:otherAudit,error:otherAuditError} = await other.client.from('mika_action_audit')
+  .select('id').eq('proposal_id',env.MIKA_TEST_PROPOSAL_ID);
+ if (otherAuditError) throw otherAuditError;
+ assert.equal(otherAudit.length,0,'Other user must not see newly created audit records');
  const {data:after,error:afterError} = await owner.client.from('mika_action_proposals')
   .select('status').eq('id',env.MIKA_TEST_PROPOSAL_ID).single();
  if (afterError) throw afterError;
