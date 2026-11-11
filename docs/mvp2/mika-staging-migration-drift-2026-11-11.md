@@ -51,3 +51,10 @@ Consulta read-only a `information_schema.tables` (`table_schema='public'`, `tabl
 
 ## Diferença de tabelas por nome (2026-11-11)
 Comparação read-only do catálogo `information_schema.tables`: **44 tabelas apenas em PROD**, **3 apenas na homologação**, **16 compartilhadas**. Exclusivas de homologação: `mika_action_audit`, `mika_action_proposals`, `myryra_privacy_rights_requests`. Exclusivas de PROD incluem `myryra_journeys`, `myryra_journey_missions`, `myryra_journey_myra_ledger`, `myryra_health_profiles`, `event_concierge`, `google_calendar_connections`, `billing_subscriptions`, `mika_agent_actions`, `myka_conversations` e `myka_messages`. **A ausência das tabelas novas de MIKA em PROD não autoriza sua criação sem homologação.** Comparação por nome não confirma equivalência de colunas, índices, constraints, RLS ou funções nas 16 tabelas compartilhadas. Próximo passo: obter falha original do branching e criar estratégia de migrations aditivas compatíveis, seguida de teste de duas identidades sintéticas.
+
+## Paridade de colunas nas 16 tabelas compartilhadas (2026-11-11)
+Comparação read-only de `information_schema.columns` (nome, tipo UDT, nulabilidade e default): **13 tabelas sem diferenças detectadas**; **3 com diferenças**:
+1. `myryra_finance_entries`: `deleted_at` somente no staging.
+2. `myryra_finance_subscriptions`: `deleted_at` somente no staging.
+3. `myryra_privacy_document_versions`: `created_at` somente em PROD; `status` default `'draft'::text` em PROD, sem default no staging.
+**Não aplicar automaticamente** as colunas de staging em PROD: `deleted_at` pode ser parte de um contrato de soft-delete ainda não homologado. Esta comparação não valida constraints, triggers, índices, RLS, grants, nem semântica de dados.
