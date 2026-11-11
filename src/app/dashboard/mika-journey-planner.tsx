@@ -48,6 +48,7 @@ export default function MikaJourneyPlanner() {
       const response = await fetch("/api/journeys/" + encodeURIComponent(id), { cache: "no-store" });
       const payload = await readApiJson(response, "Não foi possível processar a jornada");
       if (!response.ok) throw new Error(payload.error || "Falha ao consultar missões.");
+      if (!Array.isArray(payload.missions)) throw new Error("A jornada não retornou uma lista válida de missões. Tente novamente.");
       setMissions(payload.missions);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Falha ao consultar missões.");
