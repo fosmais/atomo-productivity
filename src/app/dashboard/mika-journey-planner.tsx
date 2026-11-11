@@ -240,8 +240,8 @@ export default function MikaJourneyPlanner() {
             {journeys.map((journey) => (
               <li key={journey.id} className="rounded-lg border border-white/15 p-3 text-sm">
                 <p className="font-medium">{journey.title}</p>
-                <p className="mt-1 text-xs text-slate-300">Status: {journey.status}
-                  {journey.target_date ? " · Meta: " + journey.target_date : ""}
+                <p className="mt-1 text-xs text-slate-300">Status: {journey.status === "active" ? "Em andamento" : journey.status === "paused" ? "Pausada" : journey.status === "completed" ? "Concluída" : journey.status === "archived" ? "Arquivada" : journey.status}
+                  {journey.target_date ? " · Meta: " + journey.target_date.slice(0, 10).split("-").reverse().join("/") : ""}
                 </p>
                 <button type="button" onClick={() => void openJourney(journey.id)}
                   className="mt-2 rounded-lg border border-white/30 px-3 py-1.5 text-xs">
