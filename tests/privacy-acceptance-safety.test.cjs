@@ -45,3 +45,14 @@ test("dashboard legal gate stays off by default and sends unaccepted users to th
   assert.match(dashboard, /redirect\("\/privacy\/accept"\)/);
   assert.match(dashboard, /\.eq\("user_id", user\.id\)/);
 });
+
+test("MIKA event confirmation enforces legal readiness when rollout is enabled", () => {
+  const proposal = source("src/app/api/myka/proposal/route.ts");
+  const guard = source("src/lib/privacy/legal-acceptance.ts");
+  assert.match(proposal, /MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true"/);
+  assert.match(proposal, /hasCurrentLegalAcceptance\(auth\.user\.id\)/);
+  assert.match(proposal, /LEGAL_ACCEPTANCE_REQUIRED/);
+  assert.match(guard, /"terms", "privacy_notice"/);
+  assert.match(guard, /\.eq\("action", "accepted"\)/);
+  assert.match(guard, /return false/);
+});
