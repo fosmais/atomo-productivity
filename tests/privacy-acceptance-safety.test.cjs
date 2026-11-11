@@ -82,3 +82,15 @@ test("consent validates HTTPS document links and provides retry after readiness 
   assert.match(page, /Tentar novamente/);
   assert.match(page, /void refresh\(\)\.catch/);
 });
+
+test("Journey confirmation and replan mutations enforce legal acceptance on rollout", () => {
+  for (const route of [
+    "src/app/api/journeys/confirm/route.ts",
+    "src/app/api/journeys/[journeyId]/replan-apply/route.ts",
+  ]) {
+    const code = source(route);
+    assert.match(code, /MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true"/);
+    assert.match(code, /hasCurrentLegalAcceptance\(user\.id\)/);
+    assert.match(code, /LEGAL_ACCEPTANCE_REQUIRED/);
+  }
+});
