@@ -49,9 +49,11 @@ const CONCURRENT_CLAIMS = 20;
   throw new Error('Authenticated test user could not be verified');
  }
  const { data: before, error: beforeError } = await a.from('mika_action_proposals')
-  .select('id,status,action_type,payload').eq('id',env.MIKA_TEST_PROPOSAL_ID).single();
+  .select('id,user_id,status,action_type,payload,expires_at').eq('id',env.MIKA_TEST_PROPOSAL_ID).single();
  if (beforeError) throw beforeError;
+ assert.equal(before.user_id,identity.user.id,'Proposal must belong to the authenticated synthetic user');
  assert.equal(before.status,'approved','Requires an approved, unexecuted proposal');
+ assert.ok(Number.isFinite(Date.parse(before.expires_at)) && Date.parse(before.expires_at)>Date.now()+60000,'Proposal must have at least 60 seconds remaining');
  assert.equal(before.action_type,'create_task');
  assert.match(before.payload.title, /^\[MIKA-STAGING-TEST\]/, 'Only explicitly marked synthetic proposals may be executed');
  assert.equal(before.payload.plan_id,env.MIKA_TEST_PLAN_ID);
