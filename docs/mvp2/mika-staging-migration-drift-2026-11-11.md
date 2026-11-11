@@ -45,3 +45,6 @@ A inspeção das definições SQL confirmou `auth.uid()`, seleção de proposta 
 - Verificação pós-alteração: `has_function_privilege('anon',...,'EXECUTE') = false`, `authenticated = true`; RLS de leitura de propostas e auditoria continua restrita a `auth.uid() = user_id`.
 - Os dois pipelines do commit `47bc0ae` foram aprovados no GitHub Actions; isso **não** comprova o teste funcional autenticado, pois a homologação ainda tem zero contas sintéticas e zero propostas.
 - A branch permanece `MIGRATIONS_FAILED` embora o projeto de preview esteja `ACTIVE_HEALTHY`. Não tentar rebase/reset/merge automaticamente. Obter o erro exato de branching e preparar plano de reconciliação sem tocar PROD.
+
+## Inventário de tabelas efetivas (2026-11-11)
+Consulta read-only a `information_schema.tables` (`table_schema='public'`, `table_type='BASE TABLE'`): **PROD tem 60 tabelas** e a **homologação tem 19 tabelas**. A homologação inclui `events`, `plans`, `tasks`, `mika_action_proposals`, `mika_action_audit`, tabelas `myryra_finance_*` e `myryra_privacy_*`. A diferença estrutural é material; histórico de migrações não é a única divergência. Não executar migrações de PROD em lote no staging nem tratar staging como espelho completo da aplicação. A causa específica de `MIGRATIONS_FAILED` ainda depende do erro de branching original.
