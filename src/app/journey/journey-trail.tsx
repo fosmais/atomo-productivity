@@ -67,6 +67,25 @@ export default function JourneyTrail() {
     return () => { alive = false; };
   }, []);
   useEffect(() => {
+    const onCreated = (event: Event) => {
+      const journeyId = (event as CustomEvent<{ journeyId?: string }>).detail?.journeyId;
+      if (!journeyId) return;
+      void fetch("/api/journeys", { cache: "no-store" })
+        .then(response => readJourneyJson(response, "Não foi possível atualizar suas jornadas"))
+        .then(data => {
+          if (!Array.isArray(data.journeys)) throw new Error("Lista de jornadas inválida.");
+          setJourneys(data.journeys as Journey[]);
+          setSelected(journeyId);
+          setShowAllMissions(false);
+          setError("");
+          document.getElementById("journey-map")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        })
+        .catch(error => setError(error instanceof Error ? error.message : "Atualize a página para visualizar a nova jornada."));
+    };
+    window.addEventListener("myryra:journey-created", onCreated);
+    return () => window.removeEventListener("myryra:journey-created", onCreated);
+  }, []);
+  useEffect(() => {
     if (!selected) return;
     let alive = true;
     setLoading(true);
