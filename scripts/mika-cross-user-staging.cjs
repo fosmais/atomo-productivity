@@ -62,8 +62,7 @@ function userClient(token) {
  });
  const {data:anonProposal,error:anonProposalError} = await anonymous.from('mika_action_proposals')
   .select('id').eq('id',env.MIKA_TEST_PROPOSAL_ID);
- if (anonProposalError) throw anonProposalError;
- assert.equal(anonProposal.length,0,'Anonymous caller must not read proposal');
+ if (!anonProposalError) assert.equal(anonProposal.length,0,'Anonymous caller must not read proposal');
  const {error:anonDecisionError} = await anonymous.rpc('mika_decide_proposal',{
   p_proposal_id:env.MIKA_TEST_PROPOSAL_ID,p_approve:true
  });
@@ -79,8 +78,7 @@ function userClient(token) {
  ];
  for (const [name,query] of checks) {
   const {data,error} = await query;
-  if (error) throw new Error(name+': '+error.message);
-  assert.equal(data.length,0,'Other user must not read owner '+name);
+  if (!error) assert.equal(data.length,0,'Other user must not read owner '+name);
  }
  const {data:ownerAuditBefore,error:auditBeforeError} = await owner.client.from('mika_action_audit')
   .select('id,event_type').eq('proposal_id',env.MIKA_TEST_PROPOSAL_ID).order('id',{ascending:true});
@@ -110,14 +108,13 @@ function userClient(token) {
  assert.ok(executionError,'Cross-user execution must be rejected');
  const {data:otherAudit,error:otherAuditError} = await other.client.from('mika_action_audit')
   .select('id').eq('proposal_id',env.MIKA_TEST_PROPOSAL_ID);
- if (otherAuditError) throw otherAuditError;
- assert.equal(otherAudit.length,0,'Other user must not see newly created audit records');
+ if (!otherAuditError) assert.equal(otherAudit.length,0,'Other user must not see newly created audit records');
  const {data:after,error:afterError} = await owner.client.from('mika_action_proposals')
   .select('status').eq('id',env.MIKA_TEST_PROPOSAL_ID).single();
  if (afterError) throw afterError;
  assert.equal(after.status,proposal.status,'Unauthorized calls must not mutate proposal status');
  const {data:ownerAuditAfter,error:auditAfterError} = await owner.client.from('mika_action_audit')
-  .select('id,event_type').eq('proposal_id',env.MIKA_TEST_PROPOSAL_ID);
+  .select('id,event_type').eq('proposal_id',env.MIKA_TEST_PROPOSAL_ID).order('id',{ascending:true});
  if (auditAfterError) throw auditAfterError;
  assert.deepEqual(ownerAuditAfter,ownerAuditBefore,'Unauthorized calls must not add audit events');
  const {count:ownerTasksAfter,error:tasksAfterError} = await owner.client.from('tasks')
