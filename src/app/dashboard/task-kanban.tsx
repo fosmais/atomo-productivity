@@ -58,6 +58,8 @@ export default function TaskKanban() {
     const apply = (event: Event) => {
       const filter = (event as CustomEvent<{ filter?: string }>).detail?.filter;
       if (filter !== "pending" && filter !== "overdue") return;
+      // Consume the handoff even when this mounted board received the event directly.
+      sessionStorage.removeItem("myryra:task-filter-pending");
       setDashboardFilter(filter);
       setTaskSearch("");
       setPriorityFilter("all");
