@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Read-only cross-user authorization check against the approved isolated staging branch.
+ * Non-destructive cross-user authorization check (RPC denial attempts are expected) against the approved isolated staging branch.
  * Requires two distinct synthetic authenticated users. Never use production tokens.
  * MIKA_STAGING_URL, MIKA_STAGING_ANON_KEY, MIKA_TEST_ACCESS_TOKEN,
  * MIKA_TEST_OTHER_ACCESS_TOKEN, MIKA_TEST_PROPOSAL_ID, MIKA_TEST_PLAN_ID.
@@ -27,6 +27,9 @@ function userClient(token) {
  let claims;
  try { claims = JSON.parse(Buffer.from(parts[1],'base64url').toString('utf8')); }
  catch { throw new Error('Invalid user JWT'); }
+ if (claims.iss !== env.MIKA_STAGING_URL + '/auth/v1') {
+  throw new Error('JWT issuer does not match the isolated staging project');
+ }
  if (claims.role !== 'authenticated' || !claims.sub || !Number.isFinite(claims.exp) || claims.exp*1000 <= Date.now()) {
   throw new Error('Only unexpired authenticated-user JWTs are permitted');
  }
