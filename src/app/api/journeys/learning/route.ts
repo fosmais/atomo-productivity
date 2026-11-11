@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { hasCurrentLegalAcceptance } from "@/lib/privacy/legal-acceptance";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -42,6 +43,13 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
   const { supabase, user, status } = await authenticate();
   if (!user) return NextResponse.json({ error: "Acesso não autorizado." }, { status });
+  if (process.env.MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true" &&
+      !(await hasCurrentLegalAcceptance(user.id))) {
+    return NextResponse.json(
+      { error: "Aceite dos documentos legais vigentes necessário.", code: "LEGAL_ACCEPTANCE_REQUIRED" },
+      { status: 403, headers: { "Cache-Control": "private, no-store" } },
+    );
+  }
   const { data: journey, error: journeyError } = await supabase.from("myryra_journeys").select("id").eq("id", journeyId).eq("owner_id", user.id).maybeSingle();
   if (journeyError) return NextResponse.json({ error: "Erro ao consultar a jornada." }, { status: 500 });
   if (!journey) return NextResponse.json({ error: "Jornada não encontrada." }, { status: 404 });
