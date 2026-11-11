@@ -16,12 +16,17 @@ async function authenticate() {
   return { user, status: 200 };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const { user, status } = await authenticate();
   if (!user) return NextResponse.json({ error: "Acesso não autorizado." }, { status });
-  const { data, error } = await createSupabaseAdmin().from("mika_agent_actions")
+  const actionType = new URL(request.url).searchParams.get("actionType");
+  if (actionType !== null && actionType !== "concierge_planning")
+    return NextResponse.json({ error: "Filtro inválido." }, { status: 400 });
+  let query = createSupabaseAdmin().from("mika_agent_actions")
     .select("id,event_id,service,action_type,status,provider,proposal,authorization_at,execution_started_at,execution_finished_at,provider_reference,result,error_code,created_at,updated_at")
-    .eq("user_id", user.id).order("created_at", { ascending: false }).limit(50);
+    .eq("user_id", user.id);
+  if (actionType) query = query.eq("action_type", actionType);
+  const { data, error } = await query.order("created_at", { ascending: false }).limit(actionType ? 500 : 50);
   if (error) return NextResponse.json({ error: "Histórico indisponível." }, { status: 503 });
   return NextResponse.json({ actions: data ?? [] }, { headers: noStore });
 }
