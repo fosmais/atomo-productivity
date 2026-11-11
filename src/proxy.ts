@@ -21,7 +21,23 @@ export async function proxy(request: NextRequest) {
     destination.port = "";
     return NextResponse.redirect(destination, 308);
   }
-  return updateSession(request);
+  try {
+    return await updateSession(request);
+  } catch (cause) {
+    // A session refresh failure happens before the route handler runs.
+    // API clients must receive JSON rather than a Next.js HTML error page.
+    console.error("[auth-proxy] session_refresh_failed", {
+      path: pathname.startsWith("/api/") ? "api" : "page",
+      category: cause instanceof Error ? cause.name : "unknown",
+    });
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json(
+        { error: "Não foi possível verificar sua sessão. Tente novamente em instantes." },
+        { status: 503, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+    throw cause;
+  }
 }
 
 export const config = {
