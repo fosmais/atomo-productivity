@@ -7,6 +7,34 @@ const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const services = new Set(["transport", "restaurant", "parking", "hotel", "external_app", "other"]);
 const noStore = { "Cache-Control": "private, no-store" };
 
+// Enforce the byte limit while streaming; request.text() would buffer unbounded input.
+async function readBoundedJson(request: Request): Promise<unknown> {
+  const declared = request.headers.get("content-length");
+  if (declared && /^\\d+$/.test(declared) && Number(declared) > 8192)
+    throw new Error("PAYLOAD_TOO_LARGE");
+  const reader = request.body?.getReader();
+  if (!reader) throw new Error("INVALID_JSON");
+  const decoder = new TextDecoder("utf-8", { fatal: true });
+  let raw = "";
+  let bytes = 0;
+  try {
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      bytes += chunk.value.byteLength;
+      if (bytes > 8192) {
+        await reader.cancel();
+        throw new Error("PAYLOAD_TOO_LARGE");
+      }
+      raw += decoder.decode(chunk.value, { stream: true });
+    }
+    raw += decoder.decode();
+    return JSON.parse(raw);
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 async function authenticate() {
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
@@ -37,12 +65,12 @@ export async function POST(request: Request) {
   if (request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !== "application/json")
     return NextResponse.json({ error: "Envie JSON." }, { status: 415 });
   let body: unknown;
-  try {
-    const raw = await request.text();
-    if (new TextEncoder().encode(raw).length > 8192)
+  try { body = await readBoundedJson(request); }
+  catch (error) {
+    if (error instanceof Error && error.message === "PAYLOAD_TOO_LARGE")
       return NextResponse.json({ error: "Solicitação muito grande." }, { status: 413, headers: noStore });
-    body = JSON.parse(raw);
-  } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
+    return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
+  }
   if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
   const { eventId, service, actionType, provider, proposal } = body as Record<string, unknown>;
   if (eventId !== undefined && (typeof eventId !== "string" || !uuid.test(eventId)) ||
@@ -80,12 +108,12 @@ export async function PATCH(request: Request) {
   if (request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !== "application/json")
     return NextResponse.json({ error: "Envie JSON." }, { status: 415 });
   let body: unknown;
-  try {
-    const raw = await request.text();
-    if (new TextEncoder().encode(raw).length > 8192)
+  try { body = await readBoundedJson(request); }
+  catch (error) {
+    if (error instanceof Error && error.message === "PAYLOAD_TOO_LARGE")
       return NextResponse.json({ error: "Solicitação muito grande." }, { status: 413, headers: noStore });
-    body = JSON.parse(raw);
-  } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
+    return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
+  }
   if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
   // Reject unexpected fields so clients cannot smuggle execution flags or approval scopes.
   if (Object.keys(body).some(key => !["actionId", "decision"].includes(key)))
