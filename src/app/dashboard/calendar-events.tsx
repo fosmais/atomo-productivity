@@ -662,7 +662,7 @@ export default function CalendarEvents() {
 
       {showForm && <div role="presentation" className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/85 p-3 backdrop-blur-sm sm:p-6">
       <div id="myryra-calendar-event-form" role="dialog" aria-modal="true" aria-label="Novo compromisso" className="max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-2xl border border-violet-400/40 bg-slate-950 p-4 shadow-2xl shadow-violet-950/70 sm:p-6">
-      <div className="mb-4 flex items-center justify-between gap-3"><h3 className="text-lg font-semibold text-white">Novo compromisso</h3><button type="button" onClick={() => setShowForm(false)} aria-label="Fechar formulário" className="rounded-lg border border-white/20 px-3 py-1 text-sm text-white">✕</button></div>
+      <div className="mb-4 flex items-center justify-between gap-3"><h3 className="text-lg font-semibold text-white">Novo compromisso</h3><button type="button" onClick={() => setShowForm(false)} disabled={saving} aria-label="Fechar formulário" className="min-h-10 min-w-10 rounded-lg border border-white/20 px-3 py-1 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50">✕</button></div>
       <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
         <input
           type="text"
