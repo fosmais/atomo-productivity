@@ -45,7 +45,7 @@ export default function PrivacyAcceptancePage() {
   async function accept() {
     if (!state || busy || state.ready) return;
     const pending = state.documents.filter((document) => !document.accepted);
-    if (!pending.length || pending.some((document) => !document.published || !document.documentVersionId || !document.publicUrl || !selected[document.type])) return;
+    if (!pending.length || pending.some((document) => !document.published || !document.documentVersionId || !document.publicUrl || !/^https:\/\//i.test(document.publicUrl) || !selected[document.type])) return;
     setBusy(true);
     setError("");
     setNotice("");
@@ -111,6 +111,7 @@ export default function PrivacyAcceptancePage() {
           Os documentos legais ainda não estão disponíveis para leitura e aceite. Nenhum aceite será registrado até a publicação das versões oficiais.
         </p>
       )}
+      {error && <button type="button" onClick={() => { setError(""); void refresh().catch((err) => setError(err instanceof Error ? err.message : "Consulta indisponível.")); }} className="rounded-lg border border-slate-600 px-3 py-2 text-sm">Tentar novamente</button>}
       {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
       {notice && <p role="status" className="text-sm text-emerald-300">{notice}</p>}
       {state?.ready ? (
