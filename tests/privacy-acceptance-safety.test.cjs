@@ -56,3 +56,11 @@ test("MIKA event confirmation enforces legal readiness when rollout is enabled",
   assert.match(guard, /\.eq\("action", "accepted"\)/);
   assert.match(guard, /return false/);
 });
+
+test("legal acceptance rejects stale published versions and refreshes latest version deterministically", () => {
+  assert.match(acceptance, /latest\.id !== document\.id/);
+  assert.match(acceptance, /Uma nova versão foi publicada/);
+  assert.match(acceptance, /\.order\("published_at", \{ ascending: false \}\)/);
+  assert.match(readiness, /\.order\("published_at", \{ ascending: false \}\)/);
+  assert.match(dashboard, /\.order\("published_at", \{ ascending: false \}\)/);
+});
