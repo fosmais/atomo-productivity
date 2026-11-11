@@ -10,6 +10,7 @@ export default function MykaLoginScene() {
         width={1240}
         height={1240}
         priority
+        unoptimized
         sizes="(max-width: 1024px) 80vw, 250px"
         className="relative h-auto w-full max-w-[210px] xl:max-w-[225px]"
       /></div>
