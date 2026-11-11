@@ -32,6 +32,7 @@ export default function CalendarEvents() {
   const [showCategoryLegend, setShowCategoryLegend] = useState(false);
   const [syncToGoogle, setSyncToGoogle] = useState(false);
   const [syncNotice, setSyncNotice] = useState("");
+  const [syncingEventId, setSyncingEventId] = useState<string | null>(null);
   function planWithMyka(event: Pick<CalendarEvent, "title" | "startsAt" | "endsAt" | "location" | "concierge">) {
     if (!event.concierge) return;
     const services = event.concierge.services.map(service => (({ transport: "transporte", parking: "estacionamento", restaurant: "restaurante", hotel: "hospedagem" } as Record<string, string>)[service] || service)).join(", ") || "orientações gerais";
@@ -275,6 +276,32 @@ export default function CalendarEvents() {
       active = false;
     };
   }, []);
+
+  async function retryGoogleSync(event: CalendarEvent) {
+    if (syncingEventId) return;
+    setSyncingEventId(event.id);
+    setSyncNotice("");
+    try {
+      const response = await fetch("/api/google/events/sync-myryra", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ localEventId: event.id, title: event.title, startsAt: event.startsAt, endsAt: event.endsAt }),
+      });
+      if (!response.ok) {
+        const detail: { error?: string; code?: string } = await response.json();
+        setSyncNotice(detail.code === "GOOGLE_WRITE_CONSENT_REQUIRED"
+          ? "Autorize a criação de eventos Google em Configurações e tente novamente."
+          : detail.error || "Não foi possível sincronizar este compromisso.");
+      } else {
+        setSyncNotice("Sincronização com Google Calendar confirmada.");
+        await loadGoogleEvents();
+      }
+    } catch {
+      setSyncNotice("Falha de conexão com o Google. Tente novamente.");
+    } finally {
+      setSyncingEventId(null);
+    }
+  }
 
   async function handleSave() {
     if (!title.trim() || !startsAt || !endsAt) {
@@ -872,6 +899,12 @@ export default function CalendarEvents() {
                   <p className="mt-1 text-sm text-slate-400">
                     {formatDate(event.startsAt)} até {formatDate(event.endsAt)}
                   </p>
+                  {new Date(event.startsAt).getTime() > Date.now() && <button type="button"
+                    disabled={syncingEventId !== null}
+                    onClick={() => void retryGoogleSync(event)}
+                    className="mt-2 rounded-lg border border-violet-500/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/15 disabled:opacity-50">
+                    {syncingEventId === event.id ? "Sincronizando..." : "Enviar / reenviar ao Google Calendar"}
+                  </button>}
 
                   {event.location && (
                     <p className="mt-1 text-sm text-slate-400">
