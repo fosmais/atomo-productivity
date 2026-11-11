@@ -16,6 +16,7 @@ type KanbanTask = {
   due_date: string | null;
   status: TaskStatus;
   completed_at: string | null;
+  completed: boolean;
 };
 
 function localDateKey(date: Date): string {
@@ -134,7 +135,7 @@ export default function TaskKanban() {
 
       const { data, error: tasksError } = await supabase
         .from("tasks")
-        .select("id, title, priority, category, due_date, status, completed_at")
+        .select("id, title, priority, category, due_date, status, completed_at, completed")
         .eq("user_id", auth.user.id)
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
@@ -142,18 +143,22 @@ export default function TaskKanban() {
 
       if (tasksError) throw tasksError;
 
-      let loaded = (data ?? []) as KanbanTask[];
+      // Legacy records can have completed=true with a stale status. Never display them as pending.
+      let loaded = ((data ?? []) as KanbanTask[]).map((task) => task.completed ? { ...task, status: "done" as const } : task);
       // A busca global pode encontrar tarefas fora das 200 mais recentes.
       if (focusedTaskId && !loaded.some((task) => task.id === focusedTaskId)) {
         const { data: focusedTask, error: focusedError } = await supabase
           .from("tasks")
-          .select("id, title, priority, category, due_date, status, completed_at")
+          .select("id, title, priority, category, due_date, status, completed_at, completed")
           .eq("user_id", auth.user.id)
           .is("deleted_at", null)
           .eq("id", focusedTaskId)
           .maybeSingle();
         if (focusedError) throw focusedError;
-        if (focusedTask) loaded = [focusedTask as KanbanTask, ...loaded];
+        if (focusedTask) {
+          const item = focusedTask as KanbanTask;
+          loaded = [item.completed ? { ...item, status: "done" } : item, ...loaded];
+        }
       }
 
       const { data: favoriteRows, error: favoritesError } = await supabase.from("favorites")
@@ -373,7 +378,7 @@ export default function TaskKanban() {
     setTasks((current) =>
       current.map((task) =>
         task.id === id
-          ? { ...task, status, completed_at: completionDate }
+          ? { ...task, status, completed: status === "done", completed_at: completionDate }
           : task
       )
     );
