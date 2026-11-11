@@ -87,6 +87,9 @@ export async function PATCH(request: Request) {
     body = JSON.parse(raw);
   } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
   if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
+  // Reject unexpected fields so clients cannot smuggle execution flags or approval scopes.
+  if (Object.keys(body).some(key => !["actionId", "decision"].includes(key)))
+    return NextResponse.json({ error: "Campos não permitidos na decisão." }, { status: 400, headers: noStore });
   const { actionId, decision } = body as Record<string, unknown>;
   if (typeof actionId !== "string" || !uuid.test(actionId) || (decision !== "authorize" && decision !== "cancel"))
     return NextResponse.json({ error: "Decisão inválida." }, { status: 400 });
