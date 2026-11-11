@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { hasCurrentLegalAcceptance } from "@/lib/privacy/legal-acceptance";
 
 type Context = { params: Promise<{ journeyId: string }> };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -55,6 +56,13 @@ export async function POST(request: Request, context: Context) {
   if (auth.error) return auth.error;
   const { supabase, user, journey } = auth;
   if (!supabase || !user || !journey) return NextResponse.json({ error: "Autenticação necessária." }, { status: 401 });
+  if (process.env.MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true" &&
+      !(await hasCurrentLegalAcceptance(user.id))) {
+    return NextResponse.json(
+      { error: "Aceite dos documentos legais vigentes necessário.", code: "LEGAL_ACCEPTANCE_REQUIRED" },
+      { status: 403, headers: { "Cache-Control": "private, no-store" } },
+    );
+  }
   const { data: missions, error: missionsError } = await supabase.from("myryra_journey_missions")
     .select("status").eq("journey_id", journeyId).limit(105);
   if (missionsError || !missions?.length || missions.length > 104 || missions.some(m => m.status !== "completed"))
