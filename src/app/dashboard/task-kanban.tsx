@@ -52,6 +52,7 @@ export default function TaskKanban() {
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [taskSearch, setTaskSearch] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("all");
   const [dashboardFilter, setDashboardFilter] = useState<"all" | "pending" | "overdue">("all");
   useEffect(() => {
     const apply = (event: Event) => {
@@ -67,7 +68,6 @@ export default function TaskKanban() {
     return () => window.removeEventListener("myryra:task-filter", apply);
   }, []);
 
-  const [priorityFilter, setPriorityFilter] = useState("all");
   const [taskSort, setTaskSort] = useState<"priority" | "due" | "title" | "recent">("priority");
   const [favoriteSavingId, setFavoriteSavingId] = useState<string | null>(null);
   const [googleSavingId, setGoogleSavingId] = useState<string | null>(null);
