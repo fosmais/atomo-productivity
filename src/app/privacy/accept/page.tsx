@@ -106,12 +106,17 @@ export default function PrivacyAcceptancePage() {
           )}
         </section>
       ))}
+      {state && state.documents.some((document) => !document.published || !document.publicUrl) && (
+        <p role="status" className="text-sm text-amber-200">
+          Os documentos legais ainda não estão disponíveis para leitura e aceite. Nenhum aceite será registrado até a publicação das versões oficiais.
+        </p>
+      )}
       {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
       {notice && <p role="status" className="text-sm text-emerald-300">{notice}</p>}
       {state?.ready ? (
         <a href="/dashboard" className="inline-flex rounded-xl bg-violet-600 px-5 py-3 font-semibold">Ir para o painel</a>
       ) : (
-        <button type="button" disabled={busy || !state || state.documents.some((document) =>
+        <button type="button" disabled={busy || !state || state.documents.length !== 2 || state.documents.some((document) =>
           !document.published || !document.publicUrl || !/^https:\/\//i.test(document.publicUrl) || (!document.accepted && !selected[document.type])
         )} onClick={() => void accept()}
           className="rounded-xl bg-violet-600 px-5 py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-40">
