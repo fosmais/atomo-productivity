@@ -295,11 +295,16 @@ export default function JourneyTrail() {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: mission.status === "completed" ? "pending" : "completed" })
       });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error || "Não foi possível atualizar a missão.");
-      setMissions(old => old.map(m => m.id === mission.id ? { ...m, status: data.mission.status } : m));
+      const data = await readJourneyJson(r, "Não foi possível atualizar a missão");
+      const updatedMission = data.mission;
+      if (!updatedMission || typeof updatedMission !== "object" || !("status" in updatedMission) ||
+          (updatedMission.status !== "completed" && updatedMission.status !== "pending")) {
+        throw new Error("O servidor não confirmou o novo status da missão. Atualize a jornada antes de tentar novamente.");
+      }
+      const updatedStatus = updatedMission.status;
+      setMissions(old => old.map(m => m.id === mission.id ? { ...m, status: updatedStatus } : m));
       setEarnedMyra(false);
-      if (data.mission.status === "completed") {
+      if (updatedStatus === "completed") {
         setCelebratedMission(mission.id);
         try {
           const afterResponse = await fetch("/api/journeys/myra", { cache: "no-store" });
