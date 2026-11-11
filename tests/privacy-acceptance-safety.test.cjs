@@ -64,3 +64,9 @@ test("legal acceptance rejects stale published versions and refreshes latest ver
   assert.match(readiness, /\.order\("published_at", \{ ascending: false \}\)/);
   assert.match(dashboard, /\.order\("published_at", \{ ascending: false \}\)/);
 });
+
+test("consent submission stays disabled when either legal document is missing", () => {
+  assert.match(page, /state\.documents\.length !== 2/);
+  assert.match(page, /Os documentos legais ainda não estão disponíveis/);
+  assert.match(page, /!document\.published \|\| !document\.publicUrl/);
+});
