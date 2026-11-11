@@ -195,12 +195,18 @@ test("MIKA Concierge cancellation stays available without new legal acceptance",
 });
 
 
-test("MIKA proposal and authorization requests reject oversized JSON before processing", () => {
+test("MIKA action handlers enforce streaming byte limit before authentication", () => {
   const code = source("src/app/api/mika/actions/route.ts");
-  const post = code.split("export async function POST")[1].split("export async function PATCH")[0];
-  const patch = code.split("export async function PATCH")[1];
-  for (const handler of [post, patch]) {
-    assert.match(handler, /new TextEncoder\(\)\.encode\(raw\)\.length > 8192/);
+  const helper = code.split("async function readBoundedJson")[1].split("async function authenticate")[0];
+  assert.match(helper, /request\.body\?\.getReader\(\)/);
+  assert.match(helper, /bytes > 8192/);
+  assert.match(helper, /reader\.cancel\(\)/);
+  assert.doesNotMatch(helper, /request\.text\(\)/);
+  for (const handler of [
+    code.split("export async function POST")[1].split("export async function PATCH")[0],
+    code.split("export async function PATCH")[1],
+  ]) {
+    assert.match(handler, /await readBoundedJson\(request\)/);
     assert.match(handler, /status: 413/);
     assert.ok(handler.indexOf("status: 413") < handler.indexOf("await authenticate()"));
   }
