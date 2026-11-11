@@ -141,3 +141,19 @@ test("Journey edit and resume require legal acceptance while pause and archive r
   assert.match(mutation, /LEGAL_ACCEPTANCE_REQUIRED/);
   assert.match(mutation, /export async function DELETE/);
 });
+
+
+test("Journey learning and review writes enforce legal acceptance without blocking history reads", () => {
+  for (const route of [
+    "src/app/api/journeys/learning/route.ts",
+    "src/app/api/journeys/review-steps/route.ts",
+  ]) {
+    const code = source(route);
+    const get = code.split("export async function GET")[1].split("export async function PUT")[0];
+    const put = code.split("export async function PUT")[1];
+    assert.match(put, /MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true"/);
+    assert.match(put, /hasCurrentLegalAcceptance\(user\.id\)/);
+    assert.match(put, /LEGAL_ACCEPTANCE_REQUIRED/);
+    assert.doesNotMatch(get, /LEGAL_ACCEPTANCE_REQUIRED/);
+  }
+});
