@@ -16,7 +16,7 @@ export default function TodoistImport() {
   const selected = tasks.filter(task => selectedIds.includes(task.id));
 
   async function load() {
-    setBusy(true); setMessage(""); setNeedsConnection(false);
+    setBusy(true); setMessage(""); setNeedsConnection(false); setLoaded(false); setTasks([]); setSelectedIds([]);
     try {
       const response = await fetch("/api/todoist/tasks", { cache: "no-store" });
       const data = await response.json();
