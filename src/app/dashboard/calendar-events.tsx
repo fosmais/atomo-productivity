@@ -620,10 +620,10 @@ export default function CalendarEvents() {
       {tasksError && <p role="status" className="mt-3 text-xs text-amber-300">{tasksError}</p>}
       <div className="rounded-2xl border border-white/15 bg-slate-900/75 p-3 sm:p-5" aria-label="Smart Calendar">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex w-full flex-wrap items-center justify-between gap-3">
-          <div><p className="text-xs font-semibold uppercase tracking-widest text-violet-300">Smart Calendar · Beta</p>
-          <button type="button" onClick={() => setShowForm(true)} aria-haspopup="dialog" className="rounded-xl bg-violet-600 px-3 py-2 text-sm font-semibold text-white hover:bg-violet-500">+ Novo compromisso</button>
-          </div><h3 className="mt-1 text-lg font-semibold capitalize">{calendarPeriod}</h3></div>
+          <div className="flex w-full flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-wider text-violet-300 sm:text-xs">Smart Calendar · Beta</p><h3 className="mt-1 text-sm font-semibold capitalize sm:text-lg">{calendarPeriod}</h3></div>
+          <button type="button" onClick={() => setShowForm(true)} aria-haspopup="dialog" className="min-h-10 shrink-0 rounded-xl bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500 sm:text-sm">+ Novo compromisso</button>
+          </div>
           <div className="flex flex-wrap gap-2">
             {(["day", "week", "month"] as const).map((view) => <button key={view} type="button" aria-pressed={calendarView === view} onClick={() => { setCalendarView(view); setCalendarOffset(0); setSelectedDay(null); }} className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${calendarView === view ? "bg-violet-500 text-white" : "border border-white/10 text-slate-300 hover:bg-white/10"}`}>{view === "day" ? "Dia" : view === "week" ? "Semana" : "Mês"}</button>)}
           </div>
