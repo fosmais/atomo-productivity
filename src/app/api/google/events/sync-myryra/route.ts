@@ -26,8 +26,8 @@ export async function POST(request: NextRequest) {
   const start = typeof body.startsAt === "string" ? Date.parse(body.startsAt) : NaN;
   const end = typeof body.endsAt === "string" ? Date.parse(body.endsAt) : NaN;
   const localEventId = typeof body.localEventId === "string" ? body.localEventId : "";
-  const location = typeof body.location === "string" ? body.location.trim().slice(0, 300) : "";
-  if (!/^[0-9a-f-]{36}$/i.test(localEventId) || !title || title.length > 200 || !Number.isFinite(start) || !Number.isFinite(end) || start <= Date.now() || end <= start || end - start > 24 * 60 * 60_000) {
+
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(localEventId) || !title || title.length > 200 || !Number.isFinite(start) || !Number.isFinite(end) || start <= Date.now() || end <= start || end - start > 24 * 60 * 60_000) {
     return NextResponse.json({ error: "Informe um compromisso futuro válido, com duração máxima de 24 horas." }, { status: 400 });
   }
   try {
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
     const calendar = google.calendar({ version: "v3", auth: oauth });
     // Google Calendar IDs accept only base32hex characters (0-9, a-v); avoid the letter y.
-    const eventId = "mika" + createHash("sha256").update(JSON.stringify([user.id, localEventId])).digest("hex").slice(0, 40);
+    const eventId = "myra" + createHash("sha256").update(JSON.stringify([user.id, localEventId])).digest("hex").slice(0, 40);
     // Idempotent retries must succeed before checking the Google overlap.
     try {
       const existing = await calendar.events.get({ calendarId: "primary", eventId });
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
         id: eventId,
         summary: title,
         description: "Compromisso MYRYRA · enviado ao Google mediante autorização explícita.",
-        location: location || undefined,
+        location: ownedEvent.location || undefined,
         start: { dateTime: new Date(start).toISOString() },
         end: { dateTime: new Date(end).toISOString() },
       },
