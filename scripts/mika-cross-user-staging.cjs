@@ -54,6 +54,21 @@ function userClient(token) {
  if (planError) throw planError;
  assert.equal(plan.user_id,owner.claims.sub);
  assert.match(plan.title,/^\[MIKA-STAGING-TEST\]/);
+ const anonymous = createClient(env.MIKA_STAGING_URL,env.MIKA_STAGING_ANON_KEY,{
+  auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
+ });
+ const {data:anonProposal,error:anonProposalError} = await anonymous.from('mika_action_proposals')
+  .select('id').eq('id',env.MIKA_TEST_PROPOSAL_ID);
+ if (anonProposalError) throw anonProposalError;
+ assert.equal(anonProposal.length,0,'Anonymous caller must not read proposal');
+ const {error:anonDecisionError} = await anonymous.rpc('mika_decide_proposal',{
+  p_proposal_id:env.MIKA_TEST_PROPOSAL_ID,p_approve:true
+ });
+ assert.ok(anonDecisionError,'Anonymous caller must not approve proposal');
+ const {error:anonExecutionError} = await anonymous.rpc('mika_execute_approved_task',{
+  p_proposal_id:env.MIKA_TEST_PROPOSAL_ID,p_plan_id:env.MIKA_TEST_PLAN_ID
+ });
+ assert.ok(anonExecutionError,'Anonymous caller must not execute task');
  const checks = [
   ['proposal',other.client.from('mika_action_proposals').select('id').eq('id',env.MIKA_TEST_PROPOSAL_ID)],
   ['audit',other.client.from('mika_action_audit').select('id').eq('proposal_id',env.MIKA_TEST_PROPOSAL_ID)],
@@ -98,5 +113,5 @@ function userClient(token) {
   .eq('user_id',owner.claims.sub).eq('title',proposal.payload.title);
  if (tasksAfterError) throw tasksAfterError;
  assert.equal(ownerTasksAfter,ownerTasksBefore,'Unauthorized calls must not create tasks');
- console.log(JSON.stringify({outcome:'PASS',cross_user_read_denied:true,cross_user_decision_denied:true,cross_user_execution_denied:true}));
+ console.log(JSON.stringify({outcome:'PASS',cross_user_read_denied:true,cross_user_decision_denied:true,cross_user_execution_denied:true,anonymous_access_denied:true}));
 })().catch(error=>{console.error('MIKA cross-user staging test FAILED:',error.message);process.exitCode=1;});
