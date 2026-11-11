@@ -122,9 +122,13 @@ export default function MikaJourneyPlanner() {
           ...(confirm ? { confirmed: true, confirmationKey: confirmationKeyRef.current, plannedOn: draft?.plannedOn, ...(snapshotId ? { snapshotId } : {}) } : {}),
         }),
       });
-      let payload = await readApiJson(response, "Não foi possível processar a jornada");
+      // An AI endpoint can fail with an HTML error page. Recover to the basic
+      // draft only when the AI preview failed; never retry confirmation writes.
+      const isJson = (response.headers.get("content-type") ?? "").toLowerCase().includes("application/json");
+      const aiUnavailable = !confirm && useAI && (!isJson || response.status === 429 || response.status === 503);
+      let payload = aiUnavailable ? null : await readApiJson(response, "Não foi possível processar a jornada");
       // A falha da IA não pode impedir o usuário de criar uma jornada básica.
-      if (!confirm && useAI && (response.status === 429 || response.status === 503)) {
+      if (aiUnavailable) {
         const fallback = await fetch("/api/journeys/draft", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
