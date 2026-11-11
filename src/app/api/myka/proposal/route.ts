@@ -187,23 +187,8 @@ export async function POST(request: Request) {
     if (eventType !== "appointment" && eventType !== "unavailable") {
       return NextResponse.json({ error: "Tipo inválido." }, { status: 422 });
     }
-    // Recheck local overlaps at confirmation time, not only in the browser.
+    // The database RPC is the single source of truth for overlap checks and idempotency.
     const acknowledgeConflict = (input as Record<string, unknown>).acknowledgeConflict === true;
-    const { data: overlaps, error: overlapsError } = await admin.from("events")
-      .select("id, title")
-      .eq("user_id", auth.user.id)
-      .is("deleted_at", null)
-      .lt("starts_at", endsAt.toISOString())
-      .gt("ends_at", startsAt.toISOString())
-      .limit(5);
-    if (overlapsError) throw overlapsError;
-    if ((overlaps?.length ?? 0) > 0 && !acknowledgeConflict) {
-      return NextResponse.json({
-        error: "O horário coincide com outro compromisso. Revise o conflito e confirme novamente se desejar continuar.",
-        code: "EVENT_CONFLICT",
-        conflicts: (overlaps ?? []).map((item) => ({ title: item.title })),
-      }, { status: 409 });
-    }
     // A single database transaction serializes confirmation and cancellation.
     const { data: result, error: confirmError } = await admin.rpc("myka_confirm_event_v2", {
       p_message_id: messageId,
@@ -216,7 +201,7 @@ export async function POST(request: Request) {
     }
     const outcome = result as Record<string, unknown>;
     if (outcome.status === "conflict") {
-      return NextResponse.json({ error: "O horário coincide com outro compromisso. Revise o conflito e confirme novamente se desejar continuar.", code: "EVENT_CONFLICT" }, { status: 409 });
+      return NextResponse.json({ error: "O horário coincide com outro compromisso. Revise o conflito e confirme novamente se desejar continuar.", code: "EVENT_CONFLICT", conflictCount: typeof outcome.conflictCount === "number" ? outcome.conflictCount : undefined }, { status: 409 });
     }
     if (outcome.status === "expired_or_invalid" || outcome.status === "invalid") {
       return NextResponse.json({ error: "Dados ou horário do compromisso inválidos. Solicite uma nova proposta à MIKA." }, { status: 422 });
