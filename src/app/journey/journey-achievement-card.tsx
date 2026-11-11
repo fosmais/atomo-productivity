@@ -11,7 +11,7 @@ export default function JourneyAchievementCard({ journeyId, title, completedCoun
   const [message, setMessage] = useState("Cada passo valeu a pena!");
   const [feedback, setFeedback] = useState("");
   const [saving, setSaving] = useState(false);
-  const [gallery, setGallery] = useState<{ id: string; title: string; message: string | null; photo_url: string | null }[]>([]);
+  const [gallery, setGallery] = useState<{ id: string; title: string; message: string | null; photo_url: string | null; completed_missions_at_achievement: number | null; myra_earned_at_achievement: number | null }[]>([]);
   const [shareFiles, setShareFiles] = useState<Record<string, File>>({});
   const endpoint = "/api/journeys/" + encodeURIComponent(journeyId) + "/achievements";
   useEffect(() => {
@@ -80,9 +80,16 @@ export default function JourneyAchievementCard({ journeyId, title, completedCoun
     setPhoto(file);
     setPreview(URL.createObjectURL(file));
   }
-  async function shareSaved(item: { id: string; title: string; message: string | null; photo_url: string | null }) {
+  function savedAchievementText(item: { title: string; message: string | null; completed_missions_at_achievement: number | null; myra_earned_at_achievement: number | null }) {
+    const missions = item.completed_missions_at_achievement;
+    const myras = item.myra_earned_at_achievement;
+    return "🏆 Concluí minha jornada " + item.title + " na MYRYRA! " +
+      (missions !== null ? missions + " missões concluídas. " : "") +
+      (myras !== null ? myras + " MYRAs registradas. " : "") + (item.message ?? "");
+  }
+  async function shareSaved(item: { id: string; title: string; message: string | null; photo_url: string | null; completed_missions_at_achievement: number | null; myra_earned_at_achievement: number | null }) {
     // Historical achievements must not show today's potentially different mission count.
-    const text = "🏆 Concluí minha jornada " + item.title + " na MYRYRA! " + (item.message ?? "") + " https://myryra.com/journey";
+    const text = savedAchievementText(item);
     setFeedback("");
     const file = shareFiles[item.id];
     try {
@@ -177,7 +184,7 @@ export default function JourneyAchievementCard({ journeyId, title, completedCoun
         <button type="button" onClick={() => void copyConquest("🏆 Concluí minha jornada " + title + " na MYRYRA! " + completedCount + " missões realizadas. " + message.trim())} className="rounded-xl border border-white/40 px-3 py-2 text-xs font-bold text-white">Copiar conquista</button>
       </div>
       <p className="text-xs text-slate-400">Fotos salvas ficam privadas. O compartilhamento é sempre uma ação sua; não publicamos sua foto automaticamente.</p>
-      {gallery.length > 0 && <div className="space-y-2"><p className="text-sm font-semibold text-violet-100">Minha galeria de conquistas</p>{gallery.map(item => <div key={item.id} className="rounded-xl border border-white/10 bg-white/5 p-3">{item.photo_url && <img src={item.photo_url} alt={"Foto da conquista " + item.title} className="max-h-48 w-full rounded-lg object-contain" /> }<p className="mt-2 text-sm font-semibold">{item.title}</p>{item.message && <p className="text-xs text-slate-300">{item.message}</p>}<div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => void shareSaved(item)} className="rounded-lg border border-amber-300/50 px-3 py-2 text-xs text-amber-100">Compartilhar</button><button type="button" onClick={() => shareWhatsApp("🏆 Concluí minha jornada " + item.title + " na MYRYRA! " + (item.message ?? ""))} className="rounded-lg border border-emerald-300/50 px-3 py-2 text-xs text-emerald-100">WhatsApp</button><button type="button" onClick={() => void copyConquest("🏆 Concluí minha jornada " + item.title + " na MYRYRA! " + (item.message ?? ""))} className="rounded-lg border border-white/30 px-3 py-2 text-xs text-white">Copiar</button>{item.photo_url && <button type="button" onClick={() => downloadPhoto(item)} className="rounded-lg border border-violet-300/40 px-3 py-2 text-xs text-violet-100">Baixar foto</button>}<button type="button" onClick={() => void removeAchievement(item.id)} className="rounded-lg border border-rose-300/40 px-3 py-2 text-xs text-rose-200">Excluir da galeria</button></div></div>)}</div>}
+      {gallery.length > 0 && <div className="space-y-2"><p className="text-sm font-semibold text-violet-100">Minha galeria de conquistas</p>{gallery.map(item => <div key={item.id} className="rounded-xl border border-white/10 bg-white/5 p-3">{item.photo_url && <img src={item.photo_url} alt={"Foto da conquista " + item.title} className="max-h-48 w-full rounded-lg object-contain" /> }<p className="mt-2 text-sm font-semibold">{item.title}</p>{item.message && <p className="text-xs text-slate-300">{item.message}</p>}<div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => void shareSaved(item)} className="rounded-lg border border-amber-300/50 px-3 py-2 text-xs text-amber-100">Compartilhar</button><button type="button" onClick={() => shareWhatsApp(savedAchievementText(item))} className="rounded-lg border border-emerald-300/50 px-3 py-2 text-xs text-emerald-100">WhatsApp</button><button type="button" onClick={() => void copyConquest(savedAchievementText(item))} className="rounded-lg border border-white/30 px-3 py-2 text-xs text-white">Copiar</button>{item.photo_url && <button type="button" onClick={() => downloadPhoto(item)} className="rounded-lg border border-violet-300/40 px-3 py-2 text-xs text-violet-100">Baixar foto</button>}<button type="button" onClick={() => void removeAchievement(item.id)} className="rounded-lg border border-rose-300/40 px-3 py-2 text-xs text-rose-200">Excluir da galeria</button></div></div>)}</div>}
       {feedback && <p role="status" className="text-xs text-amber-200">{feedback}</p>}
     </div>
   );
