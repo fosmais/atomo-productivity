@@ -89,6 +89,15 @@ function userClient(token) {
   .select('id',{count:'exact',head:true}).eq('plan_id',env.MIKA_TEST_PLAN_ID)
   .eq('user_id',owner.claims.sub).eq('title',proposal.payload.title);
  if (tasksBeforeError) throw tasksBeforeError;
+ // Owner cannot execute an approved proposal against a different plan.
+ // The wrong-plan check must run before the legitimate concurrency harness.
+ if (proposal.status === 'approved') {
+  const {error:wrongPlanError} = await owner.client.rpc('mika_execute_approved_task',{
+   p_proposal_id:env.MIKA_TEST_PROPOSAL_ID,
+   p_plan_id:'00000000-0000-4000-8000-000000000001'
+  });
+  assert.ok(wrongPlanError,'Executing an approved proposal with another plan must fail');
+ }
  // Unauthorized decision must fail before any state transition.
  const {error:decisionError} = await other.client.rpc('mika_decide_proposal',{
   p_proposal_id:env.MIKA_TEST_PROPOSAL_ID,p_approve:true
