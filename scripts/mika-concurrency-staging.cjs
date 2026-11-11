@@ -57,6 +57,11 @@ const CONCURRENT_CLAIMS = 20;
   .select('id').eq('proposal_id',env.MIKA_TEST_PROPOSAL_ID).eq('event_type','succeeded');
  if (auditBeforeError) throw auditBeforeError;
  assert.equal(existingAudit.length,0,'Test proposal must have no previous success audit');
+ const { count: priorMatchingTasks, error: priorTaskError } = await a.from('tasks')
+  .select('id', { count: 'exact', head: true }).eq('plan_id', env.MIKA_TEST_PLAN_ID)
+  .eq('user_id', identity.user.id).eq('title', before.payload.title);
+ if (priorTaskError) throw priorTaskError;
+ assert.equal(priorMatchingTasks, 0, 'Synthetic task title must be unique before concurrency test');
  const args = { p_proposal_id: env.MIKA_TEST_PROPOSAL_ID, p_plan_id: env.MIKA_TEST_PLAN_ID };
  const started = Date.now();
  const responses = await Promise.all(Array.from({length: CONCURRENT_CLAIMS}, () =>
@@ -69,15 +74,18 @@ const CONCURRENT_CLAIMS = 20;
  const taskId = results.find(x=>x.execution_status==='executed').task_id;
  assert.ok(taskId);
  assert.ok(results.every(x=>x.task_id===taskId),'All claims must return the same task');
- const [{data:proposal,error:pErr},{data:audit,error:aErr},{data:tasks,error:tErr}] = await Promise.all([
+ const [{data:proposal,error:pErr},{data:audit,error:aErr},{data:tasks,error:tErr},{count:matchingTasks,error:countErr}] = await Promise.all([
   a.from('mika_action_proposals').select('status,result').eq('id',env.MIKA_TEST_PROPOSAL_ID).single(),
   a.from('mika_action_audit').select('id,event_type').eq('proposal_id',env.MIKA_TEST_PROPOSAL_ID).eq('event_type','succeeded'),
-  a.from('tasks').select('id').eq('id',taskId)
+  a.from('tasks').select('id').eq('id',taskId),
+  a.from('tasks').select('id', { count: 'exact', head: true }).eq('plan_id',env.MIKA_TEST_PLAN_ID)
+   .eq('user_id',identity.user.id).eq('title',before.payload.title)
  ]);
- for (const error of [pErr,aErr,tErr]) if (error) throw error;
+ for (const error of [pErr,aErr,tErr,countErr]) if (error) throw error;
  assert.equal(proposal.status,'executed');
  assert.equal(proposal.result.task_id,taskId);
  assert.equal(audit.length,1,'Exactly one succeeded audit event');
- assert.equal(tasks.length,1,'Exactly one task persisted');
- console.log(JSON.stringify({outcome:'PASS',duration_ms:Date.now()-started,statuses:results.map(x=>x.execution_status),task_id:taskId,audit_count:audit.length,task_count:tasks.length,concurrent_claims:CONCURRENT_CLAIMS}));
+ assert.equal(tasks.length,1,'Executed task must exist');
+ assert.equal(matchingTasks,1,'Exactly one matching synthetic task must exist after concurrent calls');
+ console.log(JSON.stringify({outcome:'PASS',duration_ms:Date.now()-started,statuses:results.map(x=>x.execution_status),task_id:taskId,audit_count:audit.length,task_count:matchingTasks,concurrent_claims:CONCURRENT_CLAIMS}));
 })().catch(e=>{ console.error('MIKA concurrency staging test FAILED:',e.message);process.exitCode=1;});
