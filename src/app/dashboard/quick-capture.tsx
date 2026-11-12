@@ -72,9 +72,12 @@ export default function QuickCapture() {
     const prefillMission = (event: Event) => {
       const detail = (event as CustomEvent<{ title?: string }>).detail;
       const title = typeof detail?.title === "string" ? detail.title.trim().slice(0, 200) : "";
-      if (detail && typeof (detail as { journeyId?: unknown }).journeyId === "string" && typeof (detail as { missionId?: unknown }).missionId === "string") {
-        missionRef.current = detail as { journeyId: string; missionId: string; title: string };
-      }
+      const ids = detail as { journeyId?: unknown; missionId?: unknown } | undefined;
+      const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      missionRef.current = title && typeof ids?.journeyId === "string" && uuid.test(ids.journeyId)
+        && typeof ids.missionId === "string" && uuid.test(ids.missionId)
+        ? { journeyId: ids.journeyId, missionId: ids.missionId, title }
+        : null;
       if (!title) return;
       sessionStorage.removeItem("myryra:journey-task-prefill:v1");
       setCaptureType("task");
