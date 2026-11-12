@@ -86,7 +86,7 @@ export default function QuickCapture() {
       const pending = sessionStorage.getItem("myryra:journey-task-prefill:v1");
       if (pending) {
         const parsed: unknown = JSON.parse(pending);
-        if (parsed && typeof parsed === "object" && "title" in parsed) prefillMission(new CustomEvent("myryra:journey-prefill-task", { detail: parsed }));
+        if (parsed && typeof parsed === "object" && "title" in parsed) { prefillMission(new CustomEvent("myryra:journey-prefill-task", { detail: parsed })); sessionStorage.removeItem("myryra:journey-task-prefill:v1"); }
       }
     } catch { /* optional */ }
     window.addEventListener("myryra:journey-prefill-task", prefillMission);
