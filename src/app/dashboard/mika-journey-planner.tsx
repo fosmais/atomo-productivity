@@ -10,7 +10,7 @@ export default function MikaJourneyPlanner() {
   const [targetDate, setTargetDate] = useState("");
   const [days, setDays] = useState(3);
   const [draft, setDraft] = useState<JourneyDraft | null>(null);
-  const [useAI, setUseAI] = useState(false);
+  const [useAI, setUseAI] = useState(true);
   const [snapshotId, setSnapshotId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const submittingRef = useRef(false);
@@ -348,7 +348,7 @@ export default function MikaJourneyPlanner() {
         </div>
         <label className="flex items-center gap-2 text-sm text-slate-200">
           <input type="checkbox" checked={useAI} onChange={(e) => { setUseAI(e.target.checked); resetDraft(); }} disabled={busy} />
-          Personalizar com a MIKA (IA, até 12 semanas)
+          Personalizar com a MIKA (recomendado, até 12 semanas)
         </label>
         {!draft && <button type="submit" disabled={busy} className="rounded-lg bg-violet-600 px-4 py-2 font-semibold disabled:opacity-50">
           {busy ? "Preparando..." : "Criar prévia"}
