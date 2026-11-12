@@ -90,3 +90,10 @@ test("Journey booking UI checks only blocking events and scopes duplicates to th
   assert.match(ui, /"Jornada " \+ journeyId \+ " · missão " \+ missionId/);
   assert.doesNotMatch(ui, /saveCloudEvent\(/);
 });
+
+test("Completed missions hide lesson and booking actions and close stale lesson panels", () => {
+  const ui = read("src/app/dashboard/mika-journey-planner.tsx");
+  assert.match(ui, /journey\.status === "active" && mission\.status === "pending" && <button type="button" disabled=\{lessonBusy\}/);
+  assert.match(ui, /journey\.status === "active" && mission\.status === "pending" && <button type="button" disabled=\{scheduleBusy\}/);
+  assert.match(ui, /if \(payload\.mission\.status === "completed"\)/);
+});
