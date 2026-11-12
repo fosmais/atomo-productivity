@@ -1,49 +1,38 @@
-# MYRYRA - exportacao schema-only para auditoria; NAO altera o banco.
-# Requer pg_dump e MYRYRA_SCHEMA_DUMP_URL configurados no ambiente local.
-# Uso: powershell -NoProfile -File scripts/export-myryra-schema.ps1
+# MYRYRA - schema-only audit export. READ ONLY; no user data.
+# Requires pg_dump and MYRYRA_SCHEMA_DUMP_URL in the local environment.
 $ErrorActionPreference = 'Stop'
 if ([string]::IsNullOrWhiteSpace($env:MYRYRA_SCHEMA_DUMP_URL)) {
-  throw 'Defina MYRYRA_SCHEMA_DUMP_URL no ambiente local; nunca registre credenciais no Git.'
+  throw 'Configure MYRYRA_SCHEMA_DUMP_URL locally; never commit credentials.'
 }
 if (-not (Get-Command pg_dump -ErrorAction SilentlyContinue)) {
-  throw 'pg_dump nao encontrado. Instale um cliente PostgreSQL compativel com o servidor.'
+  throw 'pg_dump not found. Install a compatible PostgreSQL client.'
 }
-# Fora do repositorio para reduzir risco de commit acidental do snapshot.
 $dir = Join-Path ([System.IO.Path]::GetTempPath()) 'myryra-schema-audit'
 New-Item -ItemType Directory -Path $dir -Force | Out-Null
 $out = Join-Path $dir 'myryra-public-schema-only.sql'
 $tmp = Join-Path $dir 'myryra-public-schema-only.partial.sql'
 try {
   & pg_dump --dbname=$env:MYRYRA_SCHEMA_DUMP_URL --schema-only --schema=public --format=plain --file=$tmp --no-owner
-  if ($LASTEXITCODE -ne 0) { throw "pg_dump falhou (exit code $LASTEXITCODE)." }
-  if (-not (Test-Path $tmp) -or (Get-Item $tmp).Length -eq 0) { throw 'Exportacao vazia.' }
+  if ($LASTEXITCODE -ne 0) { throw "pg_dump failed (exit $LASTEXITCODE)." }
+  if (-not (Test-Path -LiteralPath $tmp) -or (Get-Item -LiteralPath $tmp).Length -eq 0) {
+    throw 'Empty schema export.'
+  }
   $dump = Get-Content -LiteralPath $tmp -Raw
-  # Guard against a truncated or unexpectedly scoped export.
-  foreach ($required in @('public.events', 'public.tasks', 'public.plans', 'public.myryra_journeys')) {
-    $escaped = [regex]::Escape($required)
-    if ($dump -notmatch "(?m)^CREATE TABLE $escaped\\s*\\(") {
-      throw "Exportacao incompleta: CREATE TABLE $required nao encontrado."
+  foreach ($required in @('events', 'tasks', 'plans', 'myryra_journeys')) {
+    $pattern = '(?m)^CREATE TABLE public\\.' + [regex]::Escape($required) + '\\s*\\('
+    if ($dump -notmatch $pattern) {
+      throw "Incomplete export: CREATE TABLE public.$required missing."
     }
   }
-  if ($dump -notmatch '(?m)^ALTER TABLE ONLY public\\.myryra_journeys\\s*
-} finally {
-  if (Test-Path $tmp) { Remove-Item -LiteralPath $tmp -Force }
-}
-Write-Host "Exportacao concluida: $out"
-Write-Host 'ATENCAO: dump de public nao e baseline restauravel completo.'
-Write-Host 'Revisar dependencias de auth/storage, extensoes, funcoes, triggers, grants, RLS e migracoes.'
-Write-Host 'Nao compartilhar o dump sem revisar definicoes potencialmente sensiveis.'
- -and
-      $dump -notmatch '(?m)^ALTER TABLE public\\.myryra_journeys ENABLE ROW LEVEL SECURITY;') {
-    throw 'Exportacao inesperada: nao foi possivel identificar metadados de myryra_journeys.'
+  if ($dump -notmatch '(?m)^ALTER TABLE public\\.myryra_journeys ENABLE ROW LEVEL SECURITY;') {
+    throw 'Incomplete export: Journey RLS enable statement missing.'
   }
   Move-Item -LiteralPath $tmp -Destination $out -Force
-  $hash = (Get-FileHash -LiteralPath $out -Algorithm SHA256).Hash
-  Write-Host "SHA256: $hash"
+  Write-Host "Export: $out"
+  Write-Host "SHA256: $((Get-FileHash -LiteralPath $out -Algorithm SHA256).Hash)"
 } finally {
-  if (Test-Path $tmp) { Remove-Item -LiteralPath $tmp -Force }
+  if (Test-Path -LiteralPath $tmp) { Remove-Item -LiteralPath $tmp -Force }
 }
-Write-Host "Exportacao concluida: $out"
-Write-Host 'ATENCAO: dump de public nao e baseline restauravel completo.'
-Write-Host 'Revisar dependencias de auth/storage, extensoes, funcoes, triggers, grants, RLS e migracoes.'
-Write-Host 'Nao compartilhar o dump sem revisar definicoes potencialmente sensiveis.'
+Write-Host 'WARNING: public-only schema is NOT a complete restorable baseline.'
+Write-Host 'Review auth/storage dependencies, extensions, grants, triggers, RLS and migration history.'
+Write-Host 'Do not share this file before reviewing potentially sensitive definitions.'
