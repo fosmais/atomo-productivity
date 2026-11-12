@@ -16,6 +16,7 @@ export default function MikaProfessorPage() {
   const [historyError, setHistoryError] = useState("");
   const [saveWarning, setSaveWarning] = useState("");
   const [historyBusy, setHistoryBusy] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [topic, setTopic] = useState("");
   const [level, setLevel] = useState("iniciante");
   const [durationMinutes, setDurationMinutes] = useState(20);
@@ -37,7 +38,7 @@ export default function MikaProfessorPage() {
     return () => controller.abort();
   }, []);
   useEffect(() => {
-    setSessions([]); setSessionId(""); setHistoryError("");
+    setSessions([]); setSessionId(""); setHistoryError(""); setHistoryLoading(Boolean(journeyId));
     if (!journeyId) return;
     const controller = new AbortController();
     fetch("/api/mika/lessons/sessions?journeyId=" + encodeURIComponent(journeyId), { signal: controller.signal, cache: "no-store" })
@@ -45,7 +46,8 @@ export default function MikaProfessorPage() {
         const json = await response.json();
         if (!response.ok) throw new Error(json.error || "Histórico indisponível.");
         if (!controller.signal.aborted) setSessions(json.sessions ?? []);
-      }).catch((e) => { if (!controller.signal.aborted) setHistoryError(e instanceof Error ? e.message : "Histórico indisponível."); });
+      }).catch((e) => { if (!controller.signal.aborted) setHistoryError(e instanceof Error ? e.message : "Histórico indisponível."); })
+      .finally(() => { if (!controller.signal.aborted) setHistoryLoading(false); });
     return () => controller.abort();
   }, [journeyId]);
 
@@ -151,7 +153,8 @@ export default function MikaProfessorPage() {
         {journeyId && <section className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-5">
           <h2 className="font-semibold">Minhas aulas anteriores</h2>
           {historyError && <p className="text-sm text-amber-300">{historyError}</p>}
-          {!historyError && sessions.length === 0 && <p className="text-sm text-slate-400">Nenhuma aula salva nesta jornada.</p>}
+          {historyLoading && <p className="text-sm text-slate-400">Carregando aulas...</p>}
+          {!historyLoading && !historyError && sessions.length === 0 && <p className="text-sm text-slate-400">Nenhuma aula salva nesta jornada.</p>}
           {sessions.map((session) => <div key={session.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-800 p-3">
             <div className="min-w-0"><p className="truncate text-sm font-medium">{session.topic}</p><p className="text-xs text-slate-400">{new Date(session.created_at).toLocaleDateString("pt-BR")} · {session.status}</p></div>
             <div className="flex shrink-0 flex-col gap-2">
@@ -169,7 +172,7 @@ export default function MikaProfessorPage() {
         </section>}
         {lesson && <section className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-5">
           <h2 className="font-semibold">Conversar com a MIKA Professora</h2>
-          <p className="text-xs text-slate-400">{sessionId ? "Histórico vinculado à sua conta. A MIKA continua de onde você parou." : "Modo temporário: as mensagens não serão salvas no histórico."}</p>
+          <p className="text-xs text-slate-400">{sessionId ? "Histórico associado à sua conta. A gravação de cada resposta será confirmada pelo servidor." : "Modo temporário: as mensagens não serão salvas no histórico."}</p>
           {saveWarning && <p role="alert" className="rounded-lg border border-amber-500/50 p-3 text-sm text-amber-200">{saveWarning}</p>}
           <div className="max-h-80 space-y-2 overflow-y-auto" aria-live="polite">
             {messages.map((m, i) => <div key={i} className={m.role === "user" ? "rounded-xl bg-violet-800/50 p-3 text-sm" : "rounded-xl bg-slate-800 p-3 text-sm whitespace-pre-wrap"}>
