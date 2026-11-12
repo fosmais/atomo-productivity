@@ -53,9 +53,12 @@ export default function MikaJourneyPlanner() {
   }
 
   const journeyOpenRequestRef = useRef(0);
+  const lessonRequestRef = useRef(0);
 
   async function openJourney(id: string) {
     const requestId = ++journeyOpenRequestRef.current;
+    ++lessonRequestRef.current;
+    setLessonBusy(false);
     if (expandedId === id) { setExpandedId(null); setLessonMissionId(null); setScheduleMissionId(null); return; }
     setMissionLoading(true);
     setExpandedId(id);
@@ -83,6 +86,7 @@ export default function MikaJourneyPlanner() {
 
   async function talkToMika(journeyId: string, missionId: string, answer?: string) {
     if (lessonBusy) return;
+    const requestId = ++lessonRequestRef.current;
     setLessonBusy(true);
     setMessage("");
     // Reset the visible conversation before requesting a new mission's first lesson.
@@ -98,6 +102,7 @@ export default function MikaJourneyPlanner() {
         body: JSON.stringify({ missionId, messages: next.slice(-11) }),
       });
       const payload = await readApiJson(response, "Aula com a MIKA");
+      if (requestId !== lessonRequestRef.current) return;
       if (!response.ok || typeof payload.reply !== "string") throw new Error(payload.error || "MIKA indisponível.");
       setLessonMissionId(missionId);
       setLessonTurns([...next, { role: "assistant", content: payload.reply }]);
@@ -106,7 +111,7 @@ export default function MikaJourneyPlanner() {
       // Preserve the student's typed answer when a network or AI request fails.
       if (answer) setLessonInput(answer);
       setMessage(error instanceof Error ? error.message : "Falha ao iniciar a aula.");
-    } finally { setLessonBusy(false); }
+    } finally { if (requestId === lessonRequestRef.current) setLessonBusy(false); }
   }
 
   async function scheduleJourneyLesson(journeyId: string, missionId: string, missionTitle: string) {
