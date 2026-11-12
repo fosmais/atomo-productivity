@@ -108,6 +108,12 @@ export default function MikaJourneyPlanner() {
         new Date(event.endsAt).getTime() > start.getTime());
       if (conflict) throw new Error("Já existe um compromisso nesse período. Escolha outro horário.");
       if (!window.confirm("Criar uma aula de 20 minutos na Agenda MYRYRA neste horário?")) return;
+      // Refresh after confirmation: the user may have changed the calendar while the dialog was open.
+      const latest = await getCloudEvents();
+      if (latest.some(event => new Date(event.startsAt).getTime() < end.getTime() &&
+        new Date(event.endsAt).getTime() > start.getTime())) {
+        throw new Error("A Agenda mudou e o horário está ocupado. Escolha outro horário.");
+      }
       await saveCloudEvent({
         title: "Journey · " + missionTitle.slice(0, 180),
         startsAt: start.toISOString(),
@@ -117,7 +123,7 @@ export default function MikaJourneyPlanner() {
         blocksTime: true,
         category: "personal",
       });
-      setMessage("Aula criada na Agenda MYRYRA. A sincronização com Google Calendar não foi solicitada.");
+      setMessage("Aula criada na Agenda MYRYRA. Abra a Agenda para visualizar o compromisso. Google Calendar não foi sincronizado.");
       setScheduleMissionId(null);
       setScheduleStart("");
     } catch (error) {
