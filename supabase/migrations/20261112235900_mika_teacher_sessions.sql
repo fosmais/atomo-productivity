@@ -32,6 +32,7 @@ create table if not exists public.mika_teacher_sessions (
   journey_id uuid not null references public.myryra_journeys(id) on delete cascade,
   topic text not null check (char_length(topic) between 1 and 120),
   level text not null default 'iniciante' check (char_length(level) between 1 and 40),
+  scheduled_at timestamptz,
   status text not null default 'active' check (status in ('active','completed','cancelled')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
