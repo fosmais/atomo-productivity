@@ -54,6 +54,7 @@ export default function MikaJourneyPlanner() {
 
   const journeyOpenRequestRef = useRef(0);
   const lessonRequestRef = useRef(0);
+  const pendingMissionScrollRef = useRef<string | null>(null);
 
   async function openJourney(id: string) {
     const requestId = ++journeyOpenRequestRef.current;
@@ -307,7 +308,7 @@ export default function MikaJourneyPlanner() {
         setMissions(list);
         if (list.some((mission: { id: string }) => mission.id === missionId)) {
           setMessage("Missão localizada. Selecione Iniciar com a MIKA para começar sua aula.");
-          document.getElementById("journey-mission-" + missionId)?.scrollIntoView({ block: "center" });
+          pendingMissionScrollRef.current = missionId;
         } else {
           setMessage("A missão do compromisso não está disponível nesta jornada.");
         }
@@ -321,6 +322,16 @@ export default function MikaJourneyPlanner() {
       .finally(() => { if (active && requestId === journeyOpenRequestRef.current) setMissionLoading(false); });
     return () => { active = false; };
   }, []);
+
+  // Scroll only after React has rendered the mission returned by the Journey API.
+  useEffect(() => {
+    const missionId = pendingMissionScrollRef.current;
+    if (!missionId || missionLoading || !missions.some(mission => mission.id === missionId)) return;
+    const element = document.getElementById("journey-mission-" + missionId);
+    if (!element) return;
+    pendingMissionScrollRef.current = null;
+    element.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [missions, missionLoading]);
 
   useEffect(() => {
     let active = true;
