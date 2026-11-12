@@ -73,3 +73,7 @@ Automated CI passing is **not** authenticated end-to-end validation. The candida
 8. Record evidence (test timestamp, sanitized event ID, commit SHA, environment, screenshots and database row counts). Delete only the synthetic fixtures after approval.
 
 **Release decision:** require clean CI, all staging tests above, review of the 325+ commit delta, migration parity, LGPD document publication/acceptance decision, and rollback plan. No automatic production promotion; preserve payments disabled. Keep build count low due to Vercel costs.
+
+## Live database recheck — 2026-11-12 (read-only)
+
+A fresh read-only catalog query of the main Supabase project confirms `public.myryra_book_journey_lesson(p_journey_id uuid, p_mission_id uuid, p_starts_at timestamptz)` **does exist**, is `SECURITY INVOKER`, and `authenticated` has `EXECUTE` permission. The `public.events` trigger `myryra_guard_blocking_event_overlap` also exists and is enabled (`tgenabled='O'`). This supersedes the earlier statement that the RPC was missing in production. **No migration was applied and no user event was created in this check.** This establishes database availability only, not a working end-to-end booking from the production UI or a passing authenticated staging test. Retain the isolated staging release gate and do not treat these catalog results as user acceptance.
