@@ -52,24 +52,32 @@ export default function MikaJourneyPlanner() {
     return payload as Record<string, any>;
   }
 
+  const journeyOpenRequestRef = useRef(0);
+
   async function openJourney(id: string) {
-    if (expandedId === id) { setExpandedId(null); return; }
+    const requestId = ++journeyOpenRequestRef.current;
+    if (expandedId === id) { setExpandedId(null); setLessonMissionId(null); setScheduleMissionId(null); return; }
     setMissionLoading(true);
     setExpandedId(id);
     setMissions([]);
     setLessonMissionId(null);
     setLessonTurns([]);
+    setLessonInput("");
+    setScheduleMissionId(null);
+    setScheduleStart("");
     try {
       const response = await fetch("/api/journeys/" + encodeURIComponent(id), { cache: "no-store" });
       const payload = await readApiJson(response, "Não foi possível processar a jornada");
+      if (requestId !== journeyOpenRequestRef.current) return;
       if (!response.ok) throw new Error(payload.error || "Falha ao consultar missões.");
       if (!Array.isArray(payload.missions)) throw new Error("A jornada não retornou uma lista válida de missões. Tente novamente.");
       setMissions(payload.missions);
     } catch (error) {
+      if (requestId !== journeyOpenRequestRef.current) return;
       setMessage(error instanceof Error ? error.message : "Falha ao consultar missões.");
       setExpandedId(null);
     } finally {
-      setMissionLoading(false);
+      if (requestId === journeyOpenRequestRef.current) setMissionLoading(false);
     }
   }
 
