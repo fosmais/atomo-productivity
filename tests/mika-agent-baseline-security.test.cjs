@@ -109,3 +109,17 @@ test('MIKA proposal action type matches the supported history filter', () => {
  assert.match(post, /actionType !== "concierge_planning"/);
  assert.ok(post.indexOf('actionType !== "concierge_planning"') < post.indexOf('await authenticate()'));
 });
+
+
+test('internal task execution uses authenticated transactional RPC and fails closed', () => {
+ const route = fs.readFileSync(path.join(__dirname, '../src/app/api/mika/execute-approved-task/route.ts'), 'utf8');
+ assert.match(route, /MYRYRA_MIKA_INTERNAL_EXECUTION_ENABLED !== "true"/);
+ assert.match(route, /auth\.getUser\(\)/);
+ assert.match(route, /getAuthenticatorAssuranceLevel\(\)/);
+ assert.match(route, /hasCurrentLegalAcceptance\(auth\.user\.id\)/);
+ assert.match(route, /supabase\.rpc\("mika_execute_approved_task"/);
+ assert.doesNotMatch(route, /createSupabaseAdmin/);
+ assert.ok(route.indexOf('hasCurrentLegalAcceptance(auth.user.id)') < route.indexOf('supabase.rpc("mika_execute_approved_task"'));
+ assert.match(route, /already_executed/);
+ assert.match(route, /expired/);
+});
