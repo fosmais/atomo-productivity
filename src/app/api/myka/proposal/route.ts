@@ -99,7 +99,7 @@ export async function PATCH(request: Request) {
     }
 
     if (kind === "event") {
-      const { data: result, error: cancelError } = await createSupabaseAdmin().rpc("myka_cancel_event", { p_message_id: messageId, p_user_id: auth.user.id });
+      const { data: result, error: cancelError } = await createSupabaseAdmin().rpc("myka_cancel_event_v2", { p_message_id: messageId, p_user_id: auth.user.id });
       if (cancelError) throw cancelError;
       if (!result || typeof result !== "object" || Array.isArray(result) || result.status !== "cancelled") {
         return NextResponse.json({ error: "Proposta não está pendente." }, { status: 409 });
