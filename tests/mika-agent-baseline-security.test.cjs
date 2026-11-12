@@ -138,3 +138,9 @@ test('MIKA executor title length matches persisted proposal constraints', () => 
  assert.match(executor, /length\(btrim\(v_title\)\) < 3 or length\(v_title\)>160/);
  assert.doesNotMatch(executor, /length\(btrim\(v_title\)\) < 1 or length\(v_title\)>200/);
 });
+
+
+test('MIKA executor requires a recorded and non-future approval timestamp', () => {
+ assert.match(executor, /p\.status <> 'approved' or p\.action_type <> 'create_task' or p\.approved_at is null or p\.approved_at > now\(\)/);
+ assert.ok(executor.indexOf("p.approved_at is null") < executor.indexOf("insert into public.tasks("));
+});
