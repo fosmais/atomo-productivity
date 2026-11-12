@@ -17,7 +17,7 @@ begin
  and pg_get_function_identity_arguments(p.oid)='p_journey_id uuid, p_mission_id uuid, p_starts_at timestamp with time zone';
  if v_proc is null then raise exception 'Lesson RPC not installed'; end if;
  if v_security_definer then raise exception 'RPC must be SECURITY INVOKER'; end if;
- if v_search_path is distinct from 'search_path=' then
+ if v_search_path not in ('search_path=', 'search_path=""') or v_search_path is null then
    raise exception 'RPC must have empty search_path, found %',v_search_path;
  end if;
  select count(*) into v_rls_count
