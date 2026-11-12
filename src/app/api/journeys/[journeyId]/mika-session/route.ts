@@ -38,8 +38,10 @@ export async function POST(request: Request, context: Context) {
         typeof (m as Turn).content === "string" && (m as Turn).content.trim().length >= 1 && (m as Turn).content.length <= 1500))
     return NextResponse.json({ error: "Conversa inválida." }, { status: 400 });
   const messages = input.messages as Turn[];
-  if (messages.some((turn, index) => turn.role !== (index % 2 === 0 ? "user" : "assistant")) ||
-      (messages.length > 0 && messages.length % 2 === 0))
+  // The first AI greeting may precede the first learner reply. Accept both
+  // assistant-first and learner-first histories while enforcing strict alternation.
+  const firstRole = messages[0]?.role;
+  if (messages.some((turn, index) => turn.role !== (index % 2 === 0 ? firstRole : (firstRole === "user" ? "assistant" : "user"))))
     return NextResponse.json({ error: "A conversa deve alternar mensagens do usuário e da MIKA." }, { status: 400 });
   if (messages.length && messages[messages.length - 1].role !== "user")
     return NextResponse.json({ error: "A última mensagem deve ser do usuário." }, { status: 400 });
