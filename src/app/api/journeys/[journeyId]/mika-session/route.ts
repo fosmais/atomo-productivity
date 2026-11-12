@@ -35,7 +35,7 @@ export async function POST(request: Request, context: Context) {
       !Array.isArray(input.messages) || input.messages.length > 12 ||
       !input.messages.every((m: unknown) => m && typeof m === "object" &&
         ("role" in m) && ((m as Turn).role === "user" || (m as Turn).role === "assistant") &&
-        typeof (m as Turn).content === "string" && (m as Turn).content.length >= 1 && (m as Turn).content.length <= 1500))
+        typeof (m as Turn).content === "string" && (m as Turn).content.trim().length >= 1 && (m as Turn).content.length <= 1500))
     return NextResponse.json({ error: "Conversa inválida." }, { status: 400 });
   const messages = input.messages as Turn[];
   if (messages.some((turn, index) => turn.role !== (index % 2 === 0 ? "user" : "assistant")) ||
