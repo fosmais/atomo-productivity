@@ -14,6 +14,7 @@ export default function MikaProfessorPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [sessionId, setSessionId] = useState("");
   const [historyError, setHistoryError] = useState("");
+  const [saveWarning, setSaveWarning] = useState("");
   const [historyBusy, setHistoryBusy] = useState(false);
   const [topic, setTopic] = useState("");
   const [level, setLevel] = useState("iniciante");
@@ -55,7 +56,7 @@ export default function MikaProfessorPage() {
       const response = await fetch("/api/mika/lessons/messages?sessionId=" + encodeURIComponent(session.id), { cache: "no-store" });
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Não foi possível retomar a aula.");
-      setTopic(session.topic); setLevel(session.level); setSessionId(session.id);
+      setTopic(session.topic); setLevel(session.level); setSessionId(session.id); setSaveWarning("");
       setLesson({ title: "Aula: " + session.topic, objective: "Continuar a aula anterior", durationMinutes, activities: [], assessment: "Continue sua conversa com a MIKA." });
       setMessages((json.messages ?? []).map((m: Message) => ({ role: m.role, content: m.content })));
       setAnswer("");
@@ -65,7 +66,7 @@ export default function MikaProfessorPage() {
 
   async function propose() {
     if (!journeyId || busy) return;
-    setBusy(true); setError(""); setLesson(null); setMessages([]); setAnswer(""); setSessionId("");
+    setBusy(true); setError(""); setSaveWarning(""); setHistoryError(""); setLesson(null); setMessages([]); setAnswer(""); setSessionId("");
     try {
       const response = await fetch("/api/mika/lessons/propose", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -85,7 +86,7 @@ export default function MikaProfessorPage() {
     const message = (initialMessage ?? answer).trim();
     if (!lesson || !journeyId || !message || chatBusy || message.length > 2000) return;
     const prior = messages.slice(-12);
-    setChatBusy(true); setError(""); setAnswer("");
+    setChatBusy(true); setError(""); setSaveWarning(""); setAnswer("");
     try {
       const response = await fetch("/api/mika/lessons/chat", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -94,6 +95,7 @@ export default function MikaProfessorPage() {
       const json = await response.json();
       if (!response.ok || typeof json.reply !== "string") throw new Error(json.error || "Não foi possível responder.");
       setMessages((current) => [...current, { role: "user", content: message }, { role: "assistant", content: json.reply }]);
+      if (sessionId && !json.saved) setSaveWarning(json.warning || "Não foi possível salvar esta resposta no histórico.");
     } catch (e) {
       if (!initialMessage) setAnswer(message);
       setError(e instanceof Error ? e.message : "Falha na conversa.");
@@ -152,6 +154,7 @@ export default function MikaProfessorPage() {
         {lesson && <section className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-5">
           <h2 className="font-semibold">Conversar com a MIKA Professora</h2>
           <p className="text-xs text-slate-400">{sessionId ? "Histórico vinculado à sua conta. A MIKA continua de onde você parou." : "Modo temporário: as mensagens não serão salvas no histórico."}</p>
+          {saveWarning && <p role="alert" className="rounded-lg border border-amber-500/50 p-3 text-sm text-amber-200">{saveWarning}</p>}
           <div className="max-h-80 space-y-2 overflow-y-auto" aria-live="polite">
             {messages.map((m, i) => <div key={i} className={m.role === "user" ? "rounded-xl bg-violet-800/50 p-3 text-sm" : "rounded-xl bg-slate-800 p-3 text-sm whitespace-pre-wrap"}>
               <strong>{m.role === "user" ? "Você" : "MIKA"}</strong><p className="mt-1">{m.content}</p>
