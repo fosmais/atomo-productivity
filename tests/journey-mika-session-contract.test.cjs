@@ -25,7 +25,7 @@ test("Journey calendar lessons require confirmation and check conflicts", () => 
   const ui = read("src/app/dashboard/mika-journey-planner.tsx");
   assert.match(ui, /window\.confirm\(/);
   assert.match(ui, /getCloudEvents\(\)/);
-  assert.match(ui, /saveCloudEvent\(/);
+  assert.match(ui, /myryra_book_journey_lesson/);
   assert.match(ui, /Agendar aula na Agenda/);
 });
 
@@ -60,4 +60,13 @@ test("Long MIKA conversations retain an odd number of turns starting with the le
   const api = read("src/app/api/journeys/[journeyId]/mika-session/route.ts");
   assert.match(ui, /messages: next\.slice\(-11\)/);
   assert.match(api, /messages\.some\(\(turn, index\)/);
+});
+
+test("Journey lesson booking uses an owner-scoped, serialized database transaction", () => {
+  const migration = read("supabase/migrations/20261112000100_myryra_journey_lesson_atomic.sql");
+  assert.match(migration, /security invoker/i);
+  assert.match(migration, /pg_advisory_xact_lock/);
+  assert.match(migration, /j.owner_id = v_user/);
+  assert.match(migration, /e.deleted_at is null/);
+  assert.match(migration, /grant execute .* to authenticated/i);
 });
