@@ -25,7 +25,7 @@ begin
    return query select 'already_executed'::text,(p.result->>'task_id')::uuid;
    return;
  end if;
- if p.status <> 'approved' or p.action_type <> 'create_task' then
+ if p.status <> 'approved' or p.action_type <> 'create_task' or p.approved_at is null or p.approved_at > now() then
    raise exception 'proposal_not_approved_or_unsupported' using errcode='P0001';
  end if;
  if p.expires_at <= now() then
