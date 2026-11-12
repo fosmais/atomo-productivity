@@ -94,6 +94,8 @@ export default function MikaJourneyPlanner() {
       setLessonTurns([...next, { role: "assistant", content: payload.reply }]);
       setLessonInput("");
     } catch (error) {
+      // Preserve the student's typed answer when a network or AI request fails.
+      if (answer) setLessonInput(answer);
       setMessage(error instanceof Error ? error.message : "Falha ao iniciar a aula.");
     } finally { setLessonBusy(false); }
   }
