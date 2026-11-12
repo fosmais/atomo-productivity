@@ -15,6 +15,7 @@ export default function MikaProfessorPage() {
   const [sessionId, setSessionId] = useState("");
   const [historyError, setHistoryError] = useState("");
   const [saveWarning, setSaveWarning] = useState("");
+  const [historyOutOfSync, setHistoryOutOfSync] = useState(false);
   const [historyBusy, setHistoryBusy] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyReady, setHistoryReady] = useState(false);
@@ -72,7 +73,7 @@ export default function MikaProfessorPage() {
       const response = await fetch("/api/mika/lessons/messages?sessionId=" + encodeURIComponent(session.id), { cache: "no-store" });
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Não foi possível retomar a aula.");
-      setTopic(session.topic); setLevel(session.level); setSessionId(session.id); setSaveWarning("");
+      setTopic(session.topic); setLevel(session.level); setSessionId(session.id); setSaveWarning(""); setHistoryOutOfSync(false);
       setLesson({ title: "Aula: " + session.topic, objective: "Continuar a aula anterior", durationMinutes, activities: [], assessment: "Continue sua conversa com a MIKA." });
       setMessages((json.messages ?? []).map((m: Message) => ({ role: m.role, content: m.content })));
       setAnswer("");
@@ -82,7 +83,7 @@ export default function MikaProfessorPage() {
 
   async function propose() {
     if (!journeyId || busy || !historyReady) return;
-    setBusy(true); setError(""); setSaveWarning(""); setHistoryError(""); setLesson(null); setMessages([]); setAnswer(""); setSessionId("");
+    setBusy(true); setError(""); setSaveWarning(""); setHistoryOutOfSync(false); setHistoryError(""); setLesson(null); setMessages([]); setAnswer(""); setSessionId("");
     try {
       const response = await fetch("/api/mika/lessons/propose", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -100,7 +101,7 @@ export default function MikaProfessorPage() {
   }
   async function sendMessage(initialMessage?: string) {
     const message = (initialMessage ?? answer).trim();
-    if (!lesson || !journeyId || !sessionId || !message || chatBusy || message.length > 2000) return;
+    if (!lesson || !journeyId || !sessionId || !message || chatBusy || historyOutOfSync || message.length > 2000) return;
     setChatBusy(true); setError(""); setSaveWarning(""); setAnswer("");
     try {
       const response = await fetch("/api/mika/lessons/chat", {
@@ -110,7 +111,10 @@ export default function MikaProfessorPage() {
       const json = await response.json();
       if (!response.ok || typeof json.reply !== "string") throw new Error(json.error || "Não foi possível responder.");
       setMessages((current) => [...current, { role: "user", content: message }, { role: "assistant", content: json.reply }]);
-      if (sessionId && !json.saved) setSaveWarning(json.warning || "Não foi possível salvar esta resposta no histórico.");
+      if (sessionId && !json.saved) {
+        setHistoryOutOfSync(true);
+        setSaveWarning(json.warning || "Não foi possível salvar esta resposta no histórico. Copie a resposta antes de sair.");
+      }
     } catch (e) {
       if (!initialMessage) setAnswer(message);
       setError(e instanceof Error ? e.message : "Falha na conversa.");
@@ -173,17 +177,17 @@ export default function MikaProfessorPage() {
         {lesson && <section className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-5">
           <h2 className="font-semibold">Conversar com a MIKA Professora</h2>
           <p className="text-xs text-slate-400">{sessionId ? "Histórico associado à sua conta. A gravação de cada resposta será confirmada pelo servidor." : "Conversa indisponível até que seja possível salvar o histórico da aula."}</p>
-          {saveWarning && <p role="alert" className="rounded-lg border border-amber-500/50 p-3 text-sm text-amber-200">{saveWarning}</p>}
+          {saveWarning && <p role="alert" className="rounded-lg border border-amber-500/50 p-3 text-sm text-amber-200">{saveWarning} Novas mensagens ficam bloqueadas até você reabrir a aula pelo histórico.</p>}
           <div className="max-h-80 space-y-2 overflow-y-auto" aria-live="polite">
             {messages.map((m, i) => <div key={i} className={m.role === "user" ? "rounded-xl bg-violet-800/50 p-3 text-sm" : "rounded-xl bg-slate-800 p-3 text-sm whitespace-pre-wrap"}>
               <strong>{m.role === "user" ? "Você" : "MIKA"}</strong><p className="mt-1">{m.content}</p>
             </div>)}
           </div>
-          {messages.length === 0 && <button type="button" disabled={chatBusy || !sessionId} onClick={() => void sendMessage("MIKA, comece minha aula agora. Apresente o assunto brevemente e faça a primeira pergunta para avaliar meu nível.")} className="w-full rounded-xl border border-violet-400/60 p-3 font-semibold disabled:opacity-50">Começar aula com a MIKA</button>}
+          {messages.length === 0 && <button type="button" disabled={chatBusy || !sessionId || historyOutOfSync} onClick={() => void sendMessage("MIKA, comece minha aula agora. Apresente o assunto brevemente e faça a primeira pergunta para avaliar meu nível.")} className="w-full rounded-xl border border-violet-400/60 p-3 font-semibold disabled:opacity-50">Começar aula com a MIKA</button>}
           <form onSubmit={(e) => { e.preventDefault(); void sendMessage(); }} className="space-y-2">
             <label htmlFor="mika-lesson-answer" className="block text-sm">Sua resposta ou pergunta</label>
             <textarea id="mika-lesson-answer" value={answer} onChange={(e) => setAnswer(e.target.value)} maxLength={2000} rows={3} className="w-full rounded-lg bg-slate-800 p-3" placeholder="Peça uma explicação ou responda ao exercício..." />
-            <button type="submit" disabled={!answer.trim() || chatBusy || !sessionId} className="w-full rounded-xl bg-violet-600 p-3 font-semibold disabled:opacity-50">{chatBusy ? "MIKA está respondendo..." : "Enviar para a MIKA"}</button>
+            <button type="submit" disabled={!answer.trim() || chatBusy || !sessionId || historyOutOfSync} className="w-full rounded-xl bg-violet-600 p-3 font-semibold disabled:opacity-50">{chatBusy ? "MIKA está respondendo..." : "Enviar para a MIKA"}</button>
           </form>
         </section>}
       </div>
