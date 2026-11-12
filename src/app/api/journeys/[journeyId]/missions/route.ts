@@ -34,8 +34,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ jour
     .order("created_at", { ascending: true }).limit(200);
   if (error) return NextResponse.json({ error: "Missões indisponíveis." }, { status: 503, headers });
   const missions = data ?? [];
-  const completed = missions.filter((mission) => mission.status === "completed").length;
-  return NextResponse.json({ journey, missions, progress: { completed, total: missions.length, percent: missions.length ? Math.round(100 * completed / missions.length) : 0 }, hasMore: missions.length === 200 }, { headers });
+  // Progress must reflect the entire journey, not only the first page of 200 missions.
+  const [allCount, completedCount] = await Promise.all([
+    supabase!.from("myryra_journey_missions").select("id", { count: "exact", head: true }).eq("journey_id", journeyId),
+    supabase!.from("myryra_journey_missions").select("id", { count: "exact", head: true }).eq("journey_id", journeyId).eq("status", "completed"),
+  ]);
+  if (allCount.error || completedCount.error || allCount.count === null || completedCount.count === null) {
+    return NextResponse.json({ error: "Progresso indisponível." }, { status: 503, headers });
+  }
+  const total = allCount.count;
+  const completed = completedCount.count;
+  return NextResponse.json({ journey, missions, progress: { completed, total, percent: total ? Math.round(100 * completed / total) : 0 }, hasMore: total > missions.length }, { headers });
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ journeyId: string }> }) {
