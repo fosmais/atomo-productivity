@@ -8,6 +8,9 @@ const headers = { "Cache-Control": "private, no-store" };
 // Staging-only opt-in. The database RPC atomically checks ownership, approval,
 // expiry, approved plan, and deduplicates concurrent requests via row locking.
 export async function POST(request: Request) {
+  // A mistakenly copied preview flag must never activate execution in production.
+  if (process.env.VERCEL_ENV === "production")
+    return NextResponse.json({ error: "Execução interna ainda não homologada para produção." }, { status: 503, headers });
   if (process.env.MYRYRA_MIKA_INTERNAL_EXECUTION_ENABLED !== "true")
     return NextResponse.json({ error: "Execução interna indisponível." }, { status: 503, headers });
   if (request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !== "application/json")
