@@ -99,3 +99,13 @@ test('MIKA proposal rejects client-supplied ownership and execution metadata', (
  assert.ok(post.indexOf('Campos não permitidos na proposta') < post.indexOf('await authenticate()'));
  assert.match(post, /status: "awaiting_authorization"/);
 });
+
+
+test('MIKA proposal action type matches the supported history filter', () => {
+ const route = fs.readFileSync(path.join(__dirname, '../src/app/api/mika/actions/route.ts'), 'utf8');
+ const get = route.split('export async function GET')[1].split('export async function POST')[0];
+ const post = route.split('export async function POST')[1].split('export async function PATCH')[0];
+ assert.match(get, /actionType !== "concierge_planning"/);
+ assert.match(post, /actionType !== "concierge_planning"/);
+ assert.ok(post.indexOf('actionType !== "concierge_planning"') < post.indexOf('await authenticate()'));
+});
