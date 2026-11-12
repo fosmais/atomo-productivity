@@ -63,3 +63,41 @@ end;
 $$;
 revoke all on function public.myryra_book_journey_lesson(uuid, uuid, timestamptz) from public, anon;
 grant execute on function public.myryra_book_journey_lesson(uuid, uuid, timestamptz) to authenticated;
+
+-- Serialize ALL blocking Agenda writes with Journey bookings for the same user.
+-- A BEFORE trigger shares the same per-user advisory transaction lock as the RPC.
+-- This closes the race between direct Agenda inserts and Journey lesson bookings,
+-- without locking events belonging to unrelated users.
+create or replace function public.myryra_guard_blocking_event_overlap()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  if new.deleted_at is not null or not new.blocks_time then
+    return new;
+  end if;
+  if new.starts_at is null or new.ends_at is null or new.ends_at <= new.starts_at then
+    raise exception 'Invalid event interval' using errcode = '22023';
+  end if;
+  perform pg_catalog.set_config('lock_timeout', '5s', true);
+  perform pg_advisory_xact_lock(hashtextextended(new.user_id::text, 77429));
+  if exists (
+    select 1 from public.events e
+    where e.user_id = new.user_id
+      and e.id is distinct from new.id
+      and e.deleted_at is null and e.blocks_time
+      and e.starts_at < new.ends_at and e.ends_at > new.starts_at
+  ) then
+    raise exception 'Calendar time conflict' using errcode = '23P01';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.myryra_guard_blocking_event_overlap() from public, anon, authenticated;
+drop trigger if exists myryra_guard_blocking_event_overlap on public.events;
+create trigger myryra_guard_blocking_event_overlap
+before insert or update of user_id, starts_at, ends_at, blocks_time, deleted_at
+on public.events
+for each row execute function public.myryra_guard_blocking_event_overlap();
