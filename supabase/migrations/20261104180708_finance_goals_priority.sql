@@ -1,0 +1,1 @@
+alter table public.myryra_finance_goals add column if not exists priority text not null default 'important' constraint myryra_finance_goals_priority_check check (priority in ('essential','important','optional'));
