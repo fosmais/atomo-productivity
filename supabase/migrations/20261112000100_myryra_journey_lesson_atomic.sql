@@ -37,7 +37,7 @@ begin
   if exists (
     select 1 from public.events e
     where e.user_id = v_user and e.deleted_at is null
-      and position(v_marker in coalesce(e.notes, '')) > 0
+      and e.notes like ('Jornada ' || p_journey_id::text || ' · missão ' || p_mission_id::text || '.%')
   ) then
     raise exception 'Mission already scheduled' using errcode = '23505';
   end if;
