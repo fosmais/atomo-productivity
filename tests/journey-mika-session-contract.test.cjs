@@ -41,3 +41,10 @@ test("New journeys opt into contextual MIKA planning by default", () => {
   assert.match(ui, /\[useAI, setUseAI\] = useState\(true\)/);
   assert.match(ui, /Personalizar com a MIKA \(recomendado/);
 });
+
+test("MIKA lessons use the authenticated UUID for quota enforcement", () => {
+  const api = read("src/app/api/journeys/[journeyId]/mika-session/route.ts");
+  assert.match(api, /checkConciergeRateLimit\(user\.id\)/);
+  assert.doesNotMatch(api, /checkConciergeRateLimit\(`journey-session:/);
+  assert.match(api, /messages\.some\(\(turn, index\)/);
+});
