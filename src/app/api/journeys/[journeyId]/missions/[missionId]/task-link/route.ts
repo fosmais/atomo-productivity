@@ -40,9 +40,22 @@ export async function POST(request: Request, { params }: Params) {
   if (length !== null && (!Number.isSafeInteger(Number(length)) || Number(length) > 256 || Number(length) < 0)) return NextResponse.json({ error: "Requisição muito grande ou inválida." }, { status: 413, headers });
   let payload: unknown;
   try {
-    const raw = await request.text();
-    if (new TextEncoder().encode(raw).length > 256) return NextResponse.json({ error: "Requisição muito grande." }, { status: 413, headers });
-    payload = JSON.parse(raw);
+    const reader = request.body?.getReader();
+    if (!reader) throw new Error("Corpo ausente");
+    const decoder = new TextDecoder("utf-8", { fatal: true });
+    let raw = "";
+    let bytes = 0;
+    while (true) {
+      const part = await reader.read();
+      if (part.done) break;
+      bytes += part.value.byteLength;
+      if (bytes > 256) {
+        await reader.cancel();
+        return NextResponse.json({ error: "Requisição muito grande." }, { status: 413, headers });
+      }
+      raw += decoder.decode(part.value, { stream: true });
+    }
+    payload = JSON.parse(raw + decoder.decode());
   } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400, headers }); }
   const taskId = payload && typeof payload === "object" && !Array.isArray(payload) && "taskId" in payload ? (payload as { taskId: unknown }).taskId : null;
   if (typeof taskId !== "string" || !uuid.test(taskId)) return NextResponse.json({ error: "Tarefa inválida." }, { status: 400, headers });
