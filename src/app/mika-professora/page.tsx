@@ -49,6 +49,19 @@ export default function MikaProfessorPage() {
     return () => controller.abort();
   }, [journeyId]);
 
+  async function deleteSession(session: Session) {
+    if (historyBusy || chatBusy || !window.confirm("Excluir definitivamente esta aula e todas as mensagens? Esta ação não pode ser desfeita.")) return;
+    setHistoryBusy(true); setError("");
+    try {
+      const response = await fetch("/api/mika/lessons/delete?sessionId=" + encodeURIComponent(session.id), { method: "DELETE" });
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error || "Não foi possível excluir a aula.");
+      setSessions((current) => current.filter((item) => item.id !== session.id));
+      if (sessionId === session.id) { setSessionId(""); setLesson(null); setMessages([]); setAnswer(""); }
+    } catch (e) { setError(e instanceof Error ? e.message : "Falha ao excluir aula."); }
+    finally { setHistoryBusy(false); }
+  }
+
   async function resumeSession(session: Session) {
     if (historyBusy || chatBusy) return;
     setHistoryBusy(true); setError("");
@@ -141,7 +154,10 @@ export default function MikaProfessorPage() {
           {!historyError && sessions.length === 0 && <p className="text-sm text-slate-400">Nenhuma aula salva nesta jornada.</p>}
           {sessions.map((session) => <div key={session.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-800 p-3">
             <div className="min-w-0"><p className="truncate text-sm font-medium">{session.topic}</p><p className="text-xs text-slate-400">{new Date(session.created_at).toLocaleDateString("pt-BR")} · {session.status}</p></div>
-            <button type="button" disabled={historyBusy || session.status !== "active"} onClick={() => void resumeSession(session)} className="shrink-0 rounded-lg border border-violet-400 px-3 py-2 text-sm disabled:opacity-40">Continuar aula</button>
+            <div className="flex shrink-0 flex-col gap-2">
+              <button type="button" disabled={historyBusy || session.status !== "active"} onClick={() => void resumeSession(session)} className="rounded-lg border border-violet-400 px-3 py-2 text-sm disabled:opacity-40">Continuar aula</button>
+              <button type="button" disabled={historyBusy} onClick={() => void deleteSession(session)} className="rounded-lg border border-rose-400/50 px-3 py-2 text-xs text-rose-200 disabled:opacity-40">Excluir aula</button>
+            </div>
           </div>)}
         </section>}
         {lesson && <section className="space-y-3 rounded-2xl border border-violet-400/30 p-5" aria-live="polite">
