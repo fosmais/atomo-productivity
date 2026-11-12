@@ -221,3 +221,12 @@ test("Restarting or switching an active MIKA lesson requires confirmation", () =
   assert.ok(confirmationIndex >= 0 && restartIndex > confirmationIndex);
   assert.match(ui.slice(confirmationIndex, restartIndex), /\)\) return;/);
 });
+
+test("MIKA rejects a response associated with a different mission", () => {
+  const ui = read("src/app/dashboard/mika-journey-planner.tsx");
+  assert.match(ui, /payload\.missionId !== missionId/);
+  assert.match(ui, /Resposta da MIKA inválida para esta missão/);
+  const validation = ui.indexOf("payload.missionId !== missionId");
+  const update = ui.indexOf("setLessonTurns([...next", validation);
+  assert.ok(validation >= 0 && update > validation);
+});
