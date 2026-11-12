@@ -62,6 +62,8 @@ alter table public.mika_teacher_messages enable row level security;
 revoke all on public.mika_teacher_sessions from public, anon, authenticated;
 revoke all on public.mika_teacher_messages from public, anon, authenticated;
 grant select, insert, delete on public.mika_teacher_sessions to authenticated;
+-- Allow rescheduling only; never permit clients to modify owner, journey, topic or status.
+grant update (scheduled_at) on public.mika_teacher_sessions to authenticated;
 grant select on public.mika_teacher_messages to authenticated;
 
 create policy "teacher sessions select own" on public.mika_teacher_sessions
@@ -73,6 +75,9 @@ create policy "teacher sessions insert own journey" on public.mika_teacher_sessi
       where j.id = journey_id and j.owner_id = (select auth.uid()) and j.status = 'active'
     )
   );
+create policy "teacher sessions reschedule own" on public.mika_teacher_sessions
+  for update to authenticated using ((select auth.uid()) = owner_id and status = 'active')
+  with check ((select auth.uid()) = owner_id and status = 'active');
 create policy "teacher sessions delete own" on public.mika_teacher_sessions
   for delete to authenticated using ((select auth.uid()) = owner_id);
 create policy "teacher messages select own" on public.mika_teacher_messages
