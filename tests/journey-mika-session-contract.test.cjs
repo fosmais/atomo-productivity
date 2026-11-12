@@ -60,6 +60,12 @@ test("MIKA lessons use the authenticated UUID for quota enforcement", () => {
   assert.match(api, /messages\.some\(\(turn, index\)/);
 });
 
+test("MIKA rejects blank learner turns before consuming AI quota", () => {
+  const api = read("src/app/api/journeys/[journeyId]/mika-session/route.ts");
+  assert.match(api, /content\.trim\(\)\.length >= 1/);
+  assert.ok(api.indexOf("content.trim().length >= 1") < api.indexOf("checkConciergeRateLimit(user.id)"));
+});
+
 test("MIKA lesson retains learner input on request failure and resets between missions", () => {
   const ui = read("src/app/dashboard/mika-journey-planner.tsx");
   assert.match(ui, /if \(!answer\) \{\s*setLessonMissionId\(missionId\);\s*setLessonTurns\(\[\]\);/);
