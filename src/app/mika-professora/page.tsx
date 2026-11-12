@@ -193,15 +193,15 @@ export default function MikaProfessorPage() {
           {historyError && <p className="text-sm text-amber-300">{historyError}</p>}
           {historyLoading && <p className="text-sm text-slate-400">Carregando aulas...</p>}
           {!historyLoading && !historyError && sessions.length === 0 && <p className="text-sm text-slate-400">Nenhuma aula salva nesta jornada.</p>}
-          {sessions.map((session) => <div key={session.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-800 p-3">
+          {sessions.map((session) => <div key={session.id} className="flex flex-col gap-3 rounded-xl bg-slate-800 p-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0"><p className="truncate text-sm font-medium">{session.topic}</p><p className="text-xs text-slate-400">{new Date(session.created_at).toLocaleDateString("pt-BR")} · {session.status}{session.scheduled_at ? " · Agendada: " + new Date(session.scheduled_at).toLocaleString("pt-BR") : ""}</p></div>
-            <div className="flex shrink-0 flex-col gap-2">
+            <div className="flex w-full flex-col gap-2 sm:w-52 sm:shrink-0">
               <label className="text-xs text-slate-300">Reagendar
                 <input type="datetime-local" aria-label={"Nova data de " + session.topic} value={rescheduleInputs[session.id] ?? ""} onChange={(e) => setRescheduleInputs((current) => ({ ...current, [session.id]: e.target.value }))} disabled={historyBusy || busy || chatBusy || session.status !== "active"} className="mt-1 w-full rounded-lg bg-slate-700 p-2 text-xs" />
               </label>
               <button type="button" disabled={historyBusy || busy || chatBusy || session.status !== "active" || !rescheduleInputs[session.id]} onClick={() => void updateSchedule(session)} className="rounded-lg border border-violet-400/60 px-3 py-2 text-xs disabled:opacity-40">Salvar horário</button>
-              {session.scheduled_at && <button type="button" disabled={historyBusy || session.status !== "active"} onClick={() => void updateSchedule(session, true)} className="rounded-lg border border-slate-400/50 px-3 py-2 text-xs disabled:opacity-40">Remover data (manter aula)</button>}
-              <button type="button" disabled={historyBusy || session.status !== "active"} onClick={() => void resumeSession(session)} className="rounded-lg border border-violet-400 px-3 py-2 text-sm disabled:opacity-40">Continuar aula</button>
+              {session.scheduled_at && <button type="button" disabled={historyBusy || busy || chatBusy || session.status !== "active"} onClick={() => void updateSchedule(session, true)} className="rounded-lg border border-slate-400/50 px-3 py-2 text-xs disabled:opacity-40">Remover data (manter aula)</button>}
+              <button type="button" disabled={historyBusy || busy || chatBusy || session.status !== "active"} onClick={() => void resumeSession(session)} className="rounded-lg border border-violet-400 px-3 py-2 text-sm disabled:opacity-40">Continuar aula</button>
               <button type="button" disabled={historyBusy || busy || chatBusy} onClick={() => void deleteSession(session)} className="rounded-lg border border-rose-400/50 px-3 py-2 text-xs text-rose-200 disabled:opacity-40">Excluir aula</button>
             </div>
           </div>)}
