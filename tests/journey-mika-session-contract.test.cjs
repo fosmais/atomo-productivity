@@ -138,7 +138,18 @@ test("Booked Journey lessons in Agenda offer a navigation action to MIKA", () =>
   const dashboard = read("src/app/dashboard/page.tsx");
   assert.match(calendar, /event\.notes\?\.startsWith\("Jornada "\)/);
   assert.match(calendar, /event\.notes\.includes\(" · missão "\)/);
-  assert.match(calendar, /onClick=\{\(\) => navigateTo\("vyra-ai"\)\}/);
+  assert.match(calendar, /navigateTo\("vyra-ai"\)/);
   assert.match(calendar, /Abrir Journey e iniciar aula com a MIKA/);
   assert.match(dashboard, /<MikaJourneyPlanner \/>/);
+});
+
+test("Agenda links to the specific booked Journey mission without trusting URL data", () => {
+  const calendar = read("src/app/dashboard/calendar-events.tsx");
+  const planner = read("src/app/dashboard/mika-journey-planner.tsx");
+  assert.match(calendar, /url\.searchParams\.set\("journey", match\[1\]\)/);
+  assert.match(calendar, /url\.searchParams\.set\("mission", match\[2\]\)/);
+  assert.match(planner, /url\.searchParams\.get\("journey"\)/);
+  assert.match(planner, /url\.searchParams\.get\("mission"\)/);
+  assert.match(planner, /list\.some\(\(mission: \{ id: string \}\) => mission\.id === missionId\)/);
+  assert.match(planner, /id=\{"journey-mission-" \+ mission\.id\}/);
 });
