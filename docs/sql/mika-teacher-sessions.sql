@@ -11,7 +11,6 @@ create table if not exists public.mika_teacher_sessions (
   updated_at timestamptz not null default now(),
   unique (id, owner_id)
 );
-
 create table if not exists public.mika_teacher_messages (
   id uuid primary key default gen_random_uuid(),
   session_id uuid not null,
@@ -31,11 +30,12 @@ create index if not exists mika_teacher_messages_session_created_idx
 alter table public.mika_teacher_sessions enable row level security;
 alter table public.mika_teacher_messages enable row level security;
 
-revoke all on public.mika_teacher_sessions from anon;
-revoke all on public.mika_teacher_messages from anon;
+-- Remove inherited/default privileges before granting the exact API surface.
+-- No client-side INSERT, UPDATE or DELETE on messages: only trusted server writes.
+revoke all on public.mika_teacher_sessions from public, anon, authenticated;
+revoke all on public.mika_teacher_messages from public, anon, authenticated;
 grant select, insert, delete on public.mika_teacher_sessions to authenticated;
 grant select on public.mika_teacher_messages to authenticated;
--- Only the trusted server may write messages; clients cannot forge assistant replies.
 
 create policy "teacher sessions select own" on public.mika_teacher_sessions
   for select to authenticated using ((select auth.uid()) = owner_id);
@@ -48,10 +48,8 @@ create policy "teacher sessions insert own journey" on public.mika_teacher_sessi
   );
 create policy "teacher sessions delete own" on public.mika_teacher_sessions
   for delete to authenticated using ((select auth.uid()) = owner_id);
-
 create policy "teacher messages select own" on public.mika_teacher_messages
   for select to authenticated using ((select auth.uid()) = owner_id);
--- No INSERT policy for authenticated: trusted server writes both roles.
--- No UPDATE or DELETE policy on messages: preserve the original transcript.
--- Sessions are immutable after creation except full owner-controlled deletion.
+
+-- Before release: validate effective privileges and RLS with two test users.
 -- No automatic rewards, grades, calendar writes, or background jobs.
