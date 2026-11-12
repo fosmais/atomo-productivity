@@ -49,9 +49,10 @@ export async function POST(request: Request, context: Context) {
   if (!journey) return NextResponse.json({ error: "Jornada não encontrada." }, { status: 404 });
   if (journey.status !== "active") return NextResponse.json({ error: "Retome a jornada para iniciar a aula." }, { status: 409 });
   const { data: mission, error: missionError } = await supabase.from("myryra_journey_missions")
-    .select("id,title").eq("journey_id", journeyId).eq("id", input.missionId).maybeSingle();
+    .select("id,title,status").eq("journey_id", journeyId).eq("id", input.missionId).maybeSingle();
   if (missionError) return NextResponse.json({ error: "Falha ao consultar missão." }, { status: 503 });
   if (!mission) return NextResponse.json({ error: "Missão não encontrada." }, { status: 404 });
+  if (mission.status !== "pending") return NextResponse.json({ error: "Esta missão já foi concluída. Escolha uma missão pendente para iniciar uma nova aula." }, { status: 409 });
   if (!process.env.OPENAI_API_KEY) return NextResponse.json({ error: "MIKA indisponível." }, { status: 503 });
   try {
     const limit = await checkConciergeRateLimit(user.id);
