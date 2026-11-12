@@ -24,10 +24,10 @@ begin
   perform pg_catalog.set_config('lock_timeout', '5s', true);
   -- Serialize all Journey bookings for this user; two concurrent RPCs cannot pass the checks together.
   perform pg_advisory_xact_lock(hashtextextended(v_user::text, 77429));
-  -- Lock event writers too: regular INSERT/UPDATE/DELETE operations acquire ROW EXCLUSIVE.
-  -- This guarantees a stable conflict check against direct Agenda writes already in progress.
-  -- It does not prevent a later direct Agenda insert from overlapping this lesson.
-  lock table public.events in share row exclusive mode;
+  -- Serialize Journey lesson bookings for this user only. A table-wide lock here
+  -- would block unrelated users' Agenda writes and degrade under normal traffic.
+  -- Direct Agenda writers do not share this advisory lock, so concurrent writes
+  -- outside this RPC still require a separate calendar-level conflict strategy.
   select m.title into v_title
   from public.myryra_journey_missions m
   join public.myryra_journeys j on j.id = m.journey_id
