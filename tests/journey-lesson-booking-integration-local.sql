@@ -15,7 +15,8 @@ values
 insert into public.myryra_journey_missions(id,journey_id,title)
 values
  ('00000000-0000-4000-8000-000000000301','00000000-0000-4000-8000-000000000201','Praticar cumprimentos'),
- ('00000000-0000-4000-8000-000000000302','00000000-0000-4000-8000-000000000202','Praticar escalas');
+ ('00000000-0000-4000-8000-000000000302','00000000-0000-4000-8000-000000000202','Praticar escalas'),
+ ('00000000-0000-4000-8000-000000000303','00000000-0000-4000-8000-000000000201','Revisar vocabulário');
 set local role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000101',true);
 do $$
@@ -46,9 +47,9 @@ begin
  exception when no_data_found then null;
  end;
  -- Another mission owned by this user should conflict with booked time.
- insert into public.myryra_journey_missions(id,journey_id,title)
- values ('00000000-0000-4000-8000-000000000303',
- '00000000-0000-4000-8000-000000000201','Revisar vocabulário');
+ -- Insert another mission using table owner privileges; RLS blocks unrelated writes
+ -- but this test should exercise only the booking RPC as authenticated.
+
  begin
   perform public.myryra_book_journey_lesson(
   '00000000-0000-4000-8000-000000000201',
