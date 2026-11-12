@@ -63,6 +63,27 @@ test("Long MIKA conversations retain an odd number of turns starting with the le
   assert.match(api, /messages\.some\(\(turn, index\)/);
 });
 
+test("MIKA history stays learner-first for short and long lessons", () => {
+  // Mirrors the client-side history normalization with the API's alternating-turn contract.
+  function normalize(turns) {
+    return turns.slice(turns.findIndex(turn => turn.role === "user")).slice(-11);
+  }
+  const initial = [{ role: "assistant", content: "Ciao! Come ti chiami?" }];
+  for (let answers = 1; answers <= 20; answers++) {
+    const turns = [...initial];
+    for (let i = 0; i < answers; i++) {
+      turns.push({ role: "user", content: "Risposta " + i });
+      if (i < answers - 1) turns.push({ role: "assistant", content: "Correzione " + i });
+    }
+    const history = normalize(turns);
+    assert.ok(history.length > 0 && history.length <= 11);
+    assert.equal(history.length % 2, 1);
+    history.forEach((turn, index) =>
+      assert.equal(turn.role, index % 2 === 0 ? "user" : "assistant"));
+    assert.equal(history.at(-1).content, "Risposta " + (answers - 1));
+  }
+});
+
 test("Journey lesson booking uses an owner-scoped, serialized database transaction", () => {
   const migration = read("supabase/migrations/20261112000100_myryra_journey_lesson_atomic.sql");
   assert.match(migration, /security invoker/i);
