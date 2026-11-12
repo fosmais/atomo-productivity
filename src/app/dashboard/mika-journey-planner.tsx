@@ -145,7 +145,7 @@ export default function MikaJourneyPlanner() {
       const conflict = events.some(event => event.blocksTime && new Date(event.startsAt).getTime() < end.getTime() &&
         new Date(event.endsAt).getTime() > start.getTime());
       if (conflict) throw new Error("Já existe um compromisso nesse período. Escolha outro horário.");
-      if (!window.confirm("Criar uma aula de 20 minutos na Agenda MYRYRA neste horário?")) return;
+      if (!window.confirm(`Confirmar aula "${missionTitle}" na Agenda MYRYRA em ${start.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}, com duração de 20 minutos?`)) return;
       // Refresh after confirmation: the user may have changed the calendar while the dialog was open.
       if (start.getTime() < Date.now() + 60_000) {
         throw new Error("O horário selecionado já está muito próximo ou passou. Escolha outro horário.");
