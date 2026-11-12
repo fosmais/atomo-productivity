@@ -113,4 +113,5 @@ test("MIKA ignores replies from a journey that was closed or switched", () => {
   assert.match(ui, /\+\+lessonRequestRef\.current/);
   assert.match(ui, /if \(requestId !== lessonRequestRef\.current\) return/);
   assert.match(ui, /if \(requestId === lessonRequestRef\.current\) setLessonBusy\(false\)/);
+  assert.match(ui, /catch \(error\) \{\s*if \(requestId !== lessonRequestRef\.current\) return;\s*\/\/ Preserve the student/);
 });
