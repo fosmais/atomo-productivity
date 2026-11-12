@@ -414,7 +414,7 @@ export default function MikaJourneyPlanner() {
             className="rounded-lg border border-white/30 px-4 py-2">Editar objetivo</button>
         </div>
       </div>}
-      {message && <p role="status" className="mt-3 text-sm">{message}</p>}
+      {message && <div role="status" className="mt-3 space-y-2 text-sm"><p>{message}</p>{message.startsWith("Aula criada na Agenda MYRYRA.") && <a href="/dashboard#vyra-calendar" className="inline-flex rounded-lg border border-violet-400/60 px-3 py-2 font-semibold text-violet-200 underline underline-offset-2">Abrir minha Agenda</a>}</div>}
       <div className="mt-5 border-t border-white/15 pt-4">
         <h4 className="font-semibold">Minhas jornadas</h4>
         {loadingJourneys ? <p className="mt-2 text-sm text-slate-300">Carregando...</p> :
