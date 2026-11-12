@@ -6,9 +6,9 @@ const vm = require("node:vm");
 const ts = require("typescript");
 const source = fs.readFileSync(path.join(__dirname, "../src/lib/journey/mika-session-context.ts"), "utf8");
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-const exports = {};
-vm.runInNewContext(compiled, { exports, Number, JSON, Error }, { timeout: 1000 });
-const { buildMikaJourneySessionPrompt } = exports;
+const promptExports = {};
+vm.runInNewContext(compiled, { exports: promptExports, Number, JSON, Error }, { timeout: 1000 });
+const { buildMikaJourneySessionPrompt } = promptExports;
 
 test("Italian mission generates contextual teaching and correction instructions", () => {
   const prompt = buildMikaJourneySessionPrompt({
