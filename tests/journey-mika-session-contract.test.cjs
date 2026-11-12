@@ -153,3 +153,11 @@ test("Agenda links to the specific booked Journey mission without trusting URL d
   assert.match(planner, /list\.some\(\(mission: \{ id: string \}\) => mission\.id === missionId\)/);
   assert.match(planner, /id=\{"journey-mission-" \+ mission\.id\}/);
 });
+
+test("Booked mission scroll waits until React renders the mission", () => {
+  const planner = read("src/app/dashboard/mika-journey-planner.tsx");
+  assert.match(planner, /pendingMissionScrollRef\.current = missionId/);
+  assert.match(planner, /if \(!missionId \|\| missionLoading \|\| !missions\.some/);
+  assert.match(planner, /element\.scrollIntoView\(\{ block: "center", behavior: "smooth" \}\)/);
+  assert.doesNotMatch(planner, /document\.getElementById\("journey-mission-" \+ missionId\)\?\.scrollIntoView/);
+});
