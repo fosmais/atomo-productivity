@@ -148,7 +148,7 @@ export default function MikaJourneyPlanner() {
         throw new Error("A Agenda mudou e o horário está ocupado. Escolha outro horário.");
       }
       // The database RPC serializes bookings and checks mission ownership, conflicts and duplicates atomically.
-      const { error: bookingError } = await createClient().rpc("myryra_book_journey_lesson", {
+      const { data: bookedEventId, error: bookingError } = await createClient().rpc("myryra_book_journey_lesson", {
         p_journey_id: journeyId,
         p_mission_id: missionId,
         p_starts_at: start.toISOString(),
@@ -163,6 +163,9 @@ export default function MikaJourneyPlanner() {
           throw new Error("O agendamento da Journey ainda não está disponível neste ambiente. Nenhum compromisso foi criado.");
         }
         throw new Error("Não foi possível confirmar a aula na Agenda. Tente novamente.");
+      }
+      if (typeof bookedEventId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(bookedEventId)) {
+        throw new Error("Não foi possível confirmar o identificador do compromisso. Consulte a Agenda antes de tentar novamente para evitar duplicidade.");
       }
       setMessage("Aula criada na Agenda MYRYRA. Abra a Agenda para visualizar o compromisso. Google Calendar não foi sincronizado.");
       setScheduleMissionId(null);
