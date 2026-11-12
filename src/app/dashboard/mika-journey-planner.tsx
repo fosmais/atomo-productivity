@@ -114,7 +114,7 @@ export default function MikaJourneyPlanner() {
       });
       const payload = await readApiJson(response, "Aula com a MIKA");
       if (requestId !== lessonRequestRef.current) return;
-      if (!response.ok || typeof payload.reply !== "string") throw new Error(payload.error || "MIKA indisponível.");
+      if (!response.ok || typeof payload.reply !== "string" || payload.missionId !== missionId) throw new Error(payload.error || "Resposta da MIKA inválida para esta missão.");
       setLessonMissionId(missionId);
       setLessonTurns([...next, { role: "assistant", content: payload.reply }]);
       setLessonInput("");
