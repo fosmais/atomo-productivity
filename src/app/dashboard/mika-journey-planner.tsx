@@ -28,6 +28,11 @@ export default function MikaJourneyPlanner() {
   const [lessonTurns, setLessonTurns] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [lessonInput, setLessonInput] = useState("");
   const [lessonBusy, setLessonBusy] = useState(false);
+  const lessonScrollRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const panel = lessonScrollRef.current;
+    if (panel) panel.scrollTop = panel.scrollHeight;
+  }, [lessonTurns]);
   const [scheduleMissionId, setScheduleMissionId] = useState<string | null>(null);
   const [scheduleStart, setScheduleStart] = useState("");
   const [scheduleBusy, setScheduleBusy] = useState(false);
@@ -580,7 +585,7 @@ export default function MikaJourneyPlanner() {
                                 </div>}
                                 {lessonMissionId === mission.id && <div className="mt-2 space-y-2 rounded-lg border border-violet-400/30 p-3">
                                   <p className="text-xs font-semibold">Aula interativa · MIKA</p>
-                                  <div className="max-h-64 space-y-2 overflow-y-auto" aria-live="polite">
+                                  <div ref={lessonScrollRef} className="max-h-64 space-y-2 overflow-y-auto" aria-live="polite">
                                     {lessonTurns.map((turn, index) => <p key={index} className="text-sm">
                                       <strong>{turn.role === "assistant" ? "MIKA: " : "Você: "}</strong>{turn.content}
                                     </p>)}
