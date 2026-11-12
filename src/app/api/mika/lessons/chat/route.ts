@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createClient } from "@/lib/supabase/server";
+import { createSupabaseAdmin } from "@/lib/supabase/admin";
 
 /** Interactive teaching only. Does not save progress, create events or award MYRAs. */
 export async function POST(request: Request) {
@@ -83,7 +84,10 @@ export async function POST(request: Request) {
     const reply = completion.choices[0]?.message?.content?.trim();
     if (!reply) throw new Error("Empty model response");
     if (sessionId) {
-      const { error: saveError } = await supabase.from("mika_teacher_messages").insert([
+      // Authorization and active-session checks above use the caller-scoped client.
+      // Admin writes only this verified session; authenticated clients cannot forge assistant replies.
+      const admin = createSupabaseAdmin();
+      const { error: saveError } = await admin.from("mika_teacher_messages").insert([
         { session_id: sessionId, owner_id: user.id, role: "user", content: input.message.trim() },
         { session_id: sessionId, owner_id: user.id, role: "assistant", content: reply.slice(0, 4000) },
       ]);
