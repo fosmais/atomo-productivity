@@ -85,12 +85,14 @@ export async function POST(request: Request) {
     });
     const reply = completion.choices[0]?.message?.content?.trim();
     if (!reply) throw new Error("Empty model response");
+    // The message schema caps content at 4000 characters. Never silently truncate a lesson.
+    if (reply.length > 4000) return NextResponse.json({ error: "A resposta excedeu o limite de armazenamento. Tente novamente." }, { status: 502 });
     if (sessionId) {
       // Authorization and active-session checks above use the caller-scoped client.
       // Admin writes only this verified session; authenticated clients cannot forge assistant replies.
       const { error: saveError } = await admin.from("mika_teacher_messages").insert([
         { session_id: sessionId, owner_id: user.id, role: "user", content: input.message.trim() },
-        { session_id: sessionId, owner_id: user.id, role: "assistant", content: reply.slice(0, 4000) },
+        { session_id: sessionId, owner_id: user.id, role: "assistant", content: reply },
       ]);
       if (saveError) return NextResponse.json({ reply, saved: false, progressUpdated: false, warning: "A resposta foi gerada, mas o histórico não pôde ser salvo. Copie a resposta antes de sair." }, { headers: { "Cache-Control": "private, no-store" } });
     }
