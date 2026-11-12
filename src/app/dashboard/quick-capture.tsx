@@ -156,16 +156,20 @@ export default function QuickCapture() {
       window.dispatchEvent(new Event("myryra:tasks-updated"));
       const mission = missionRef.current;
       if (mission && selected.length === 1 && selected[0].title.trim() === mission.title) {
-        const response = await fetch(`/api/journeys/${encodeURIComponent(mission.journeyId)}/missions/${encodeURIComponent(mission.missionId)}/task-link`, {
-          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ taskId: saved.tasks[0].id }),
-        });
-        if (!response.ok) {
-          const detail = await response.json().catch(() => null) as { error?: string } | null;
-          setError(`Tarefa criada, mas não vinculada à Journey: ${detail?.error ?? "tente novamente"}.`);
-        } else {
-          missionRef.current = null;
-          window.dispatchEvent(new Event("myryra:journey-mission-updated"));
-          setSuccess("Tarefa criada e vinculada à missão da Journey.");
+        try {
+          const response = await fetch(`/api/journeys/${encodeURIComponent(mission.journeyId)}/missions/${encodeURIComponent(mission.missionId)}/task-link`, {
+            method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ taskId: saved.tasks[0].id }),
+          });
+          if (!response.ok) {
+            const detail = await response.json().catch(() => null) as { error?: string } | null;
+            setError(`Tarefa criada, mas não vinculada à Journey: ${detail?.error ?? "tente novamente"}.`);
+          } else {
+            missionRef.current = null;
+            window.dispatchEvent(new Event("myryra:journey-mission-updated"));
+            setSuccess("Tarefa criada e vinculada à missão da Journey.");
+          }
+        } catch {
+          setError("Tarefa criada, mas a conexão com a Journey falhou. Verifique o vínculo antes de tentar novamente.");
         }
       } else {
         setSuccess(`${selected.length} tarefa(s) salva(s) e adicionada(s) à lista.`);
