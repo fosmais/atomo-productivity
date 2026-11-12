@@ -54,3 +54,10 @@ test("MIKA lesson retains learner input on request failure and resets between mi
   assert.match(ui, /if \(!answer\) \{\s*setLessonMissionId\(missionId\);\s*setLessonTurns\(\[\]\);/);
   assert.match(ui, /if \(answer\) setLessonInput\(answer\);/);
 });
+
+test("Long MIKA conversations retain an odd number of turns starting with the learner", () => {
+  const ui = read("src/app/dashboard/mika-journey-planner.tsx");
+  const api = read("src/app/api/journeys/[journeyId]/mika-session/route.ts");
+  assert.match(ui, /messages: next\.slice\(-11\)/);
+  assert.match(api, /messages\.some\(\(turn, index\)/);
+});
