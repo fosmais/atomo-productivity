@@ -169,25 +169,6 @@ export default function TaskKanban() {
       setShowCreate(false);
       await loadTasks();
       window.dispatchEvent(new Event("myryra:tasks-updated"));
-      // Journey synchronization is best-effort and cannot roll back a saved task.
-      // The mission remains independently editable in Journey.
-      try {
-        const link = await supabase.from("myryra_journey_task_links")
-          .select("mission_id").eq("task_id", id).maybeSingle();
-        if (!link.error && link.data?.mission_id) {
-          const mission = await supabase.from("myryra_journey_missions")
-            .select("journey_id").eq("id", link.data.mission_id).maybeSingle();
-          if (!mission.error && mission.data?.journey_id) {
-            const response = await fetch(`/api/journeys/${encodeURIComponent(mission.data.journey_id)}/missions/${encodeURIComponent(link.data.mission_id)}`, {
-              method: "PATCH", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ status: status === "done" ? "completed" : "pending" }),
-            });
-            if (!response.ok) setError("Tarefa salva. Não foi possível sincronizar a missão da Journey; atualize a jornada.");
-          }
-        }
-      } catch {
-        setError("Tarefa salva. Sincronização com a Journey indisponível.");
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao criar tarefa.");
     } finally {
@@ -357,6 +338,25 @@ export default function TaskKanban() {
         );
       }
       window.dispatchEvent(new Event("myryra:tasks-updated"));
+      // Journey synchronization is best-effort and cannot roll back a saved task.
+      // The mission remains independently editable in Journey.
+      try {
+        const link = await supabase.from("myryra_journey_task_links")
+          .select("mission_id").eq("task_id", id).maybeSingle();
+        if (!link.error && link.data?.mission_id) {
+          const mission = await supabase.from("myryra_journey_missions")
+            .select("journey_id").eq("id", link.data.mission_id).maybeSingle();
+          if (!mission.error && mission.data?.journey_id) {
+            const response = await fetch(`/api/journeys/${encodeURIComponent(mission.data.journey_id)}/missions/${encodeURIComponent(link.data.mission_id)}`, {
+              method: "PATCH", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ status: status === "done" ? "completed" : "pending" }),
+            });
+            if (!response.ok) setError("Tarefa salva. Não foi possível sincronizar a missão da Journey; atualize a jornada.");
+          }
+        }
+      } catch {
+        setError("Tarefa salva. Sincronização com a Journey indisponível.");
+      }
     } catch (err) {
       setTasks(previous);
       setError(
