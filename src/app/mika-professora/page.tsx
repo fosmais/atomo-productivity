@@ -24,6 +24,7 @@ export default function MikaProfessorPage() {
   const [level, setLevel] = useState("iniciante");
   const [durationMinutes, setDurationMinutes] = useState(20);
   const [scheduledAt, setScheduledAt] = useState("");
+  const [rescheduleInputs, setRescheduleInputs] = useState<Record<string, string>>({});
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [busy, setBusy] = useState(false);
   const [chatBusy, setChatBusy] = useState(false);
@@ -65,6 +66,26 @@ export default function MikaProfessorPage() {
       setSessions((current) => current.filter((item) => item.id !== session.id));
       if (sessionId === session.id) { setSessionId(""); setLesson(null); setMessages([]); setAnswer(""); }
     } catch (e) { setError(e instanceof Error ? e.message : "Falha ao excluir aula."); }
+    finally { setHistoryBusy(false); }
+  }
+
+  async function updateSchedule(session: Session, clear = false) {
+    if (historyBusy || chatBusy) return;
+    const selected = rescheduleInputs[session.id] ?? "";
+    if (!clear && (!selected || !Number.isFinite(Date.parse(selected)))) {
+      setError("Selecione uma data e horário válidos para reagendar."); return;
+    }
+    setHistoryBusy(true); setError("");
+    try {
+      const response = await fetch("/api/mika/lessons/schedule", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: session.id, scheduledAt: clear ? null : new Date(selected).toISOString() }),
+      });
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error || "Não foi possível atualizar o agendamento.");
+      setSessions((current) => current.map((item) => item.id === session.id ? { ...item, scheduled_at: json.session.scheduled_at } : item));
+      setRescheduleInputs((current) => ({ ...current, [session.id]: "" }));
+    } catch (e) { setError(e instanceof Error ? e.message : "Falha ao atualizar agendamento."); }
     finally { setHistoryBusy(false); }
   }
 
@@ -168,6 +189,11 @@ export default function MikaProfessorPage() {
           {sessions.map((session) => <div key={session.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-800 p-3">
             <div className="min-w-0"><p className="truncate text-sm font-medium">{session.topic}</p><p className="text-xs text-slate-400">{new Date(session.created_at).toLocaleDateString("pt-BR")} · {session.status}{session.scheduled_at ? " · Agendada: " + new Date(session.scheduled_at).toLocaleString("pt-BR") : ""}</p></div>
             <div className="flex shrink-0 flex-col gap-2">
+              <label className="text-xs text-slate-300">Reagendar
+                <input type="datetime-local" aria-label={"Nova data de " + session.topic} value={rescheduleInputs[session.id] ?? ""} onChange={(e) => setRescheduleInputs((current) => ({ ...current, [session.id]: e.target.value }))} disabled={historyBusy || session.status !== "active"} className="mt-1 w-full rounded-lg bg-slate-700 p-2 text-xs" />
+              </label>
+              <button type="button" disabled={historyBusy || session.status !== "active" || !rescheduleInputs[session.id]} onClick={() => void updateSchedule(session)} className="rounded-lg border border-violet-400/60 px-3 py-2 text-xs disabled:opacity-40">Salvar horário</button>
+              {session.scheduled_at && <button type="button" disabled={historyBusy || session.status !== "active"} onClick={() => void updateSchedule(session, true)} className="rounded-lg border border-slate-400/50 px-3 py-2 text-xs disabled:opacity-40">Cancelar agendamento</button>}
               <button type="button" disabled={historyBusy || session.status !== "active"} onClick={() => void resumeSession(session)} className="rounded-lg border border-violet-400 px-3 py-2 text-sm disabled:opacity-40">Continuar aula</button>
               <button type="button" disabled={historyBusy} onClick={() => void deleteSession(session)} className="rounded-lg border border-rose-400/50 px-3 py-2 text-xs text-rose-200 disabled:opacity-40">Excluir aula</button>
             </div>
