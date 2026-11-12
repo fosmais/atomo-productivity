@@ -179,8 +179,8 @@ export default function MikaProfessorPage() {
           <button type="button" onClick={propose} disabled={!journeyId || busy || !historyReady || historyLoading} className="w-full rounded-xl bg-violet-600 p-3 font-semibold disabled:opacity-50">
             {busy ? "Preparando..." : "Preparar minha aula"}
           </button>
-          {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
         </section>
+        {error && <p role="alert" className="rounded-lg border border-rose-400/50 p-3 text-sm text-rose-300">{error}</p>}
         {journeyId && <section className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-5">
           <h2 className="font-semibold">Minhas aulas anteriores</h2>
           {historyError && <p className="text-sm text-amber-300">{historyError}</p>}
@@ -193,7 +193,7 @@ export default function MikaProfessorPage() {
                 <input type="datetime-local" aria-label={"Nova data de " + session.topic} value={rescheduleInputs[session.id] ?? ""} onChange={(e) => setRescheduleInputs((current) => ({ ...current, [session.id]: e.target.value }))} disabled={historyBusy || session.status !== "active"} className="mt-1 w-full rounded-lg bg-slate-700 p-2 text-xs" />
               </label>
               <button type="button" disabled={historyBusy || session.status !== "active" || !rescheduleInputs[session.id]} onClick={() => void updateSchedule(session)} className="rounded-lg border border-violet-400/60 px-3 py-2 text-xs disabled:opacity-40">Salvar horário</button>
-              {session.scheduled_at && <button type="button" disabled={historyBusy || session.status !== "active"} onClick={() => void updateSchedule(session, true)} className="rounded-lg border border-slate-400/50 px-3 py-2 text-xs disabled:opacity-40">Cancelar agendamento</button>}
+              {session.scheduled_at && <button type="button" disabled={historyBusy || session.status !== "active"} onClick={() => void updateSchedule(session, true)} className="rounded-lg border border-slate-400/50 px-3 py-2 text-xs disabled:opacity-40">Remover data (manter aula)</button>}
               <button type="button" disabled={historyBusy || session.status !== "active"} onClick={() => void resumeSession(session)} className="rounded-lg border border-violet-400 px-3 py-2 text-sm disabled:opacity-40">Continuar aula</button>
               <button type="button" disabled={historyBusy} onClick={() => void deleteSession(session)} className="rounded-lg border border-rose-400/50 px-3 py-2 text-xs text-rose-200 disabled:opacity-40">Excluir aula</button>
             </div>
