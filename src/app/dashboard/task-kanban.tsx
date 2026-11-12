@@ -354,6 +354,7 @@ export default function TaskKanban() {
               body: JSON.stringify({ status: status === "done" ? "completed" : "pending" }),
             });
             if (!response.ok) setError("Tarefa salva. Não foi possível sincronizar a missão da Journey; atualize a jornada.");
+            else window.dispatchEvent(new Event("myryra:journey-mission-updated"));
           }
         }
       } catch {
