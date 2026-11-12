@@ -292,10 +292,8 @@ export default function MikaJourneyPlanner() {
     window.history.replaceState(window.history.state, "", url.toString());
     const requestId = ++journeyOpenRequestRef.current;
     ++lessonRequestRef.current;
-    setExpandedId(journeyId);
-    setMissionLoading(true);
-    setMissions([]);
     let active = true;
+    // Defer the URL-driven UI update to the async fetch continuation.
     fetch("/api/journeys/" + encodeURIComponent(journeyId), { cache: "no-store" })
       .then(async response => {
         const payload = await readApiJson(response, "Abrir missão da Agenda");
@@ -305,6 +303,7 @@ export default function MikaJourneyPlanner() {
       .then(payload => {
         if (!active || requestId !== journeyOpenRequestRef.current) return;
         const list = Array.isArray(payload.missions) ? payload.missions : [];
+        setExpandedId(journeyId);
         setMissions(list);
         if (list.some((mission: { id: string }) => mission.id === missionId)) {
           setMessage("Missão localizada. Selecione Iniciar com a MIKA para começar sua aula.");
