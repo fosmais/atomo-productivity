@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
   if (typeof input.journeyId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.journeyId) ||
     typeof input.message !== "string" || !input.message.trim() || input.message.length > 2000 ||
-    (input.sessionId !== undefined && (typeof input.sessionId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.sessionId))) ||
+    (typeof input.sessionId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.sessionId)) ||
     (input.topic !== undefined && (typeof input.topic !== "string" || input.topic.length > 120)) ||
     (input.level !== undefined && (typeof input.level !== "string" || input.level.length > 40)) ||
     (input.history !== undefined && (!Array.isArray(input.history) || input.history.length > 12 ||
@@ -40,9 +40,9 @@ export async function POST(request: Request) {
   if (!journey || journey.status === "archived") return NextResponse.json({ error: "Jornada não encontrada." }, { status: 404 });
   if (journey.status !== "active") return NextResponse.json({ error: "Retome a jornada para iniciar a aula." }, { status: 409 });
   if (!process.env.OPENAI_API_KEY) return NextResponse.json({ error: "Professora indisponível: configuração de IA ausente." }, { status: 503 });
-  let history = (input.history as Array<{ role: "user" | "assistant"; content: string }> | undefined) ?? [];
-  const sessionId = input.sessionId as string | undefined;
-  if (sessionId) {
+  let history: Array<{ role: "user" | "assistant"; content: string }> = [];
+  const sessionId = input.sessionId as string;
+  {
     const { data: session, error: sessionError } = await supabase.from("mika_teacher_sessions")
       .select("id,topic,level,status").eq("id", sessionId).eq("owner_id", user.id)
       .eq("journey_id", journey.id).maybeSingle();
