@@ -45,8 +45,8 @@ export default function MikaProfessorPage() {
       setError(e instanceof Error ? e.message : "Erro ao preparar a aula.");
     } finally { setBusy(false); }
   }
-  async function sendMessage() {
-    const message = answer.trim();
+  async function sendMessage(initialMessage?: string) {
+    const message = (initialMessage ?? answer).trim();
     if (!lesson || !journeyId || !message || chatBusy || message.length > 2000) return;
     const prior = messages.slice(-12);
     setChatBusy(true); setError(""); setAnswer("");
@@ -59,7 +59,7 @@ export default function MikaProfessorPage() {
       if (!response.ok || typeof json.reply !== "string") throw new Error(json.error || "Não foi possível responder.");
       setMessages((current) => [...current, { role: "user", content: message }, { role: "assistant", content: json.reply }]);
     } catch (e) {
-      setAnswer(message);
+      if (!initialMessage) setAnswer(message);
       setError(e instanceof Error ? e.message : "Falha na conversa.");
     } finally { setChatBusy(false); }
   }
@@ -112,6 +112,7 @@ export default function MikaProfessorPage() {
               <strong>{m.role === "user" ? "Você" : "MIKA"}</strong><p className="mt-1">{m.content}</p>
             </div>)}
           </div>
+          {messages.length === 0 && <button type="button" disabled={chatBusy} onClick={() => void sendMessage("MIKA, comece minha aula agora. Apresente o assunto brevemente e faça a primeira pergunta para avaliar meu nível.")} className="w-full rounded-xl border border-violet-400/60 p-3 font-semibold disabled:opacity-50">Começar aula com a MIKA</button>}
           <form onSubmit={(e) => { e.preventDefault(); void sendMessage(); }} className="space-y-2">
             <label htmlFor="mika-lesson-answer" className="block text-sm">Sua resposta ou pergunta</label>
             <textarea id="mika-lesson-answer" value={answer} onChange={(e) => setAnswer(e.target.value)} maxLength={2000} rows={3} className="w-full rounded-lg bg-slate-800 p-3" placeholder="Peça uma explicação ou responda ao exercício..." />
