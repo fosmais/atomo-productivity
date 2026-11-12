@@ -81,3 +81,11 @@ test("Journey booking bounds database lock waits and explains retries", () => {
   assert.match(ui, /bookingError\.code === "40P01"/);
   assert.match(ui, /bookingError\.code === "PGRST202"/);
 });
+
+test("Journey booking UI checks only blocking events and scopes duplicates to the journey", () => {
+  const ui = read("src/app/dashboard/mika-journey-planner.tsx");
+  assert.match(ui, /event\.blocksTime && new Date\(event\.startsAt\)/);
+  assert.match(ui, /event\.notes\?\.startsWith\(missionMarker\)/);
+  assert.match(ui, /"Jornada " \+ journeyId \+ " · missão " \+ missionId/);
+  assert.doesNotMatch(ui, /saveCloudEvent\(/);
+});
