@@ -105,12 +105,11 @@ export default function MikaJourneyPlanner() {
     try {
       const response = await fetch("/api/journeys/" + encodeURIComponent(journeyId) + "/mika-session", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        // The initial MIKA greeting is assistant-only; the API requires the
-        // supplied history to start with a student turn and alternate roles.
-        // Keep the most recent complete student/MIKA pairs plus the new answer.
+        // Keep the opening MIKA exercise in the first follow-up so the tutor
+        // knows which question the learner answered. Retain 12 recent turns.
         body: JSON.stringify({
           missionId,
-          messages: next.slice(next.findIndex(turn => turn.role === "user")).slice(-11),
+          messages: next.slice(-12),
         }),
       });
       const payload = await readApiJson(response, "Aula com a MIKA");
