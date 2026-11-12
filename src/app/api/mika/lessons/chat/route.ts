@@ -87,7 +87,7 @@ export async function POST(request: Request) {
         { session_id: sessionId, owner_id: user.id, role: "user", content: input.message.trim() },
         { session_id: sessionId, owner_id: user.id, role: "assistant", content: reply.slice(0, 4000) },
       ]);
-      if (saveError) return NextResponse.json({ error: "A resposta foi gerada, mas não foi possível salvar o histórico. Tente novamente." }, { status: 503 });
+      if (saveError) return NextResponse.json({ reply, saved: false, progressUpdated: false, warning: "A resposta foi gerada, mas o histórico não pôde ser salvo. Copie a resposta antes de sair." }, { headers: { "Cache-Control": "private, no-store" } });
     }
     return NextResponse.json({ reply, saved: !!sessionId, progressUpdated: false }, {
       headers: { "Cache-Control": "private, no-store" },
