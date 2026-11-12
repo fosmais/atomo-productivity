@@ -106,3 +106,11 @@ test("Rapid journey switching ignores stale mission responses and resets lesson 
   assert.match(ui, /setScheduleMissionId\(null\)/);
   assert.ok(ui.includes('setLessonInput("");'));
 });
+
+test("MIKA ignores replies from a journey that was closed or switched", () => {
+  const ui = read("src/app/dashboard/mika-journey-planner.tsx");
+  assert.match(ui, /const lessonRequestRef = useRef\(0\)/);
+  assert.match(ui, /\+\+lessonRequestRef\.current/);
+  assert.match(ui, /if \(requestId !== lessonRequestRef\.current\) return/);
+  assert.match(ui, /if \(requestId === lessonRequestRef\.current\) setLessonBusy\(false\)/);
+});
