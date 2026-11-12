@@ -8,6 +8,20 @@ begin
      or not exists (select 1 from information_schema.columns where table_schema='public' and table_name='myryra_journeys' and column_name='status') then
     raise exception 'MIKA Professora: estrutura Journey incompativel.';
   end if;
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid='public.myryra_journeys'::regclass and contype='p'
+      and pg_get_constraintdef(oid)='PRIMARY KEY (id)'
+  ) then
+    raise exception 'MIKA Professora: Journey sem chave primaria id.';
+  end if;
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid='public.myryra_journeys'::regclass and contype='f'
+      and pg_get_constraintdef(oid) like 'FOREIGN KEY (owner_id) REFERENCES auth.users(id)%'
+  ) then
+    raise exception 'MIKA Professora: vinculo Journey/auth.users ausente.';
+  end if;
 end $preflight$;
 
 -- MIKA Professora: migration for staging validation; NOT APPLIED to production.
