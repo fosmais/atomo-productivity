@@ -1,0 +1,50 @@
+name: Journey lesson PostgreSQL integration
+on:
+  push:
+    branches:
+      - fix/journey-contextual-mika-missions
+  pull_request:
+    paths:
+      - 'tests/journey-lesson-*.sql'
+      - 'tests/fixtures/journey-agenda-local-bootstrap.sql'
+      - 'tests/fixtures/supabase-auth-postgres-ci-shim.sql'
+      - 'supabase/migrations/20261112000100_myryra_journey_lesson_atomic.sql'
+      - '.github/workflows/journey-lesson-postgres.yml'
+  workflow_dispatch:
+jobs:
+  journey-booking:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: local-ci-only
+          POSTGRES_DB: journey_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d journey_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: local-ci-only
+      PGDATABASE: journey_ci
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify PostgreSQL client
+        run: psql --version
+      - name: Initialize disposable Auth shim
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/fixtures/supabase-auth-postgres-ci-shim.sql
+      - name: Create Journey and Agenda fixture
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/fixtures/journey-agenda-local-bootstrap.sql
+      - name: Install booking RPC
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261112000100_myryra_journey_lesson_atomic.sql
+      - name: Check function privileges and RLS
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/journey-lesson-rpc-local.sql
+      - name: Exercise booking and rejection paths
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/journey-lesson-booking-integration-local.sql
