@@ -86,7 +86,7 @@ export default function MikaJourneyPlanner() {
     try {
       const response = await fetch("/api/journeys/" + encodeURIComponent(journeyId) + "/mika-session", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ missionId, messages: next.slice(-12) }),
+        body: JSON.stringify({ missionId, messages: next.slice(-11) }),
       });
       const payload = await readApiJson(response, "Aula com a MIKA");
       if (!response.ok || typeof payload.reply !== "string") throw new Error(payload.error || "MIKA indisponível.");
