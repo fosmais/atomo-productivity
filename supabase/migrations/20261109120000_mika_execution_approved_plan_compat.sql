@@ -46,7 +46,7 @@ begin
    raise exception 'plan_not_found' using errcode='P0002';
  end if;
  v_title := p.payload->>'title';
- if v_title is null or length(btrim(v_title)) < 1 or length(v_title)>200 then
+ if v_title is null or length(btrim(v_title)) < 3 or length(v_title)>160 then
    raise exception 'invalid_title' using errcode='22023';
  end if;
  if p.payload ? 'due_at' and p.payload->>'due_at' is not null then
