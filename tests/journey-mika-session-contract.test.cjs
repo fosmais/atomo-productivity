@@ -67,7 +67,7 @@ test("Journey lesson booking uses an owner-scoped, serialized database transacti
   const migration = read("supabase/migrations/20261112000100_myryra_journey_lesson_atomic.sql");
   assert.match(migration, /security invoker/i);
   assert.match(migration, /pg_advisory_xact_lock/);
-  assert.match(migration, /lock table public\.events in share row exclusive mode/i);
+  assert.doesNotMatch(migration, /lock table public\.events in share row exclusive mode/i);
   assert.match(migration, /j.owner_id = v_user/);
   assert.match(migration, /e.deleted_at is null/);
   assert.match(migration, /e.notes like \(\x27Jornada \x27 \|\| p_journey_id::text/);
