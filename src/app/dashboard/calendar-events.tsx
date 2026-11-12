@@ -970,6 +970,22 @@ export default function CalendarEvents() {
                     {syncingEventId === event.id ? "Sincronizando..." : "Enviar / reenviar ao Google Calendar"}
                   </button>}
 
+                  {event.notes?.startsWith("Jornada ") && event.notes.includes(" · missão ") && (
+                    <button type="button"
+                      onClick={() => {
+                        const match = event.notes?.match(/^Jornada ([0-9a-f-]{36}) · missão ([0-9a-f-]{36})\./i);
+                        if (match) {
+                          const url = new URL(window.location.href);
+                          url.searchParams.set("journey", match[1]);
+                          url.searchParams.set("mission", match[2]);
+                          window.history.replaceState(window.history.state, "", url.toString());
+                        }
+                        navigateTo("vyra-ai");
+                      }}
+                      className="mt-2 min-h-11 rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/15">
+                      Abrir Journey e iniciar aula com a MIKA
+                    </button>
+                  )}
                   {event.location && (
                     <p className="mt-1 text-sm text-slate-400">
                       Local: {event.location}

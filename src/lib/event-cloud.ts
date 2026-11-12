@@ -137,6 +137,22 @@ export async function saveCloudEvent(
     if (event.concierge.services.some(service => !["transport", "parking", "restaurant", "hotel"].includes(service))) throw new Error("Serviço de Concierge inválido.");
   }
 
+  // Helpful preflight for ordinary Agenda writes. The Journey RPC performs its
+  // own transactional check; a client-side check alone is not concurrency-safe.
+  if (blocksTime) {
+    const { data: conflicts, error: conflictError } = await supabase
+      .from("events")
+      .select("id")
+      .eq("user_id", userId)
+      .is("deleted_at", null)
+      .eq("blocks_time", true)
+      .lt("starts_at", end.toISOString())
+      .gt("ends_at", start.toISOString())
+      .limit(1);
+    if (conflictError) throw new Error("Não foi possível verificar a disponibilidade. Tente novamente.");
+    if (conflicts?.length) throw new Error("Já existe um compromisso que bloqueia esse horário na Agenda.");
+  }
+
   const { data: saved, error } = await supabase.from("events").insert({
     user_id: userId,
     title,

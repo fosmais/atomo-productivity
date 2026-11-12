@@ -3,13 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 type SavedJourneySummary = { id: string; title: string; status: string; target_date: string | null };
 import type { JourneyDraft } from "@/lib/journey/create-journey-draft";
+import { getCloudEvents } from "@/lib/event-cloud";
+import { createClient } from "@/lib/supabase/client";
 
 export default function MikaJourneyPlanner() {
   const [title, setTitle] = useState("");
   const [targetDate, setTargetDate] = useState("");
   const [days, setDays] = useState(3);
   const [draft, setDraft] = useState<JourneyDraft | null>(null);
-  const [useAI, setUseAI] = useState(false);
+  const [useAI, setUseAI] = useState(true);
   const [snapshotId, setSnapshotId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const submittingRef = useRef(false);
@@ -22,6 +24,18 @@ export default function MikaJourneyPlanner() {
   const [missions, setMissions] = useState<{ id: string; title: string; status: string }[]>([]);
   const [missionBusy, setMissionBusy] = useState<string | null>(null);
   const [missionLoading, setMissionLoading] = useState(false);
+  const [lessonMissionId, setLessonMissionId] = useState<string | null>(null);
+  const [lessonTurns, setLessonTurns] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
+  const [lessonInput, setLessonInput] = useState("");
+  const [lessonBusy, setLessonBusy] = useState(false);
+  const lessonScrollRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const panel = lessonScrollRef.current;
+    if (panel) panel.scrollTop = panel.scrollHeight;
+  }, [lessonTurns]);
+  const [scheduleMissionId, setScheduleMissionId] = useState<string | null>(null);
+  const [scheduleStart, setScheduleStart] = useState("");
+  const [scheduleBusy, setScheduleBusy] = useState(false);
   const [editingJourney, setEditingJourney] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDate, setEditDate] = useState("");
@@ -43,23 +57,133 @@ export default function MikaJourneyPlanner() {
     return payload as Record<string, any>;
   }
 
+  const journeyOpenRequestRef = useRef(0);
+  const lessonRequestRef = useRef(0);
+  const pendingMissionScrollRef = useRef<string | null>(null);
+
   async function openJourney(id: string) {
-    if (expandedId === id) { setExpandedId(null); return; }
+    const requestId = ++journeyOpenRequestRef.current;
+    ++lessonRequestRef.current;
+    setLessonBusy(false);
+    if (expandedId === id) { setExpandedId(null); setLessonMissionId(null); setScheduleMissionId(null); return; }
     setMissionLoading(true);
     setExpandedId(id);
     setMissions([]);
+    setLessonMissionId(null);
+    setLessonTurns([]);
+    setLessonInput("");
+    setScheduleMissionId(null);
+    setScheduleStart("");
     try {
       const response = await fetch("/api/journeys/" + encodeURIComponent(id), { cache: "no-store" });
       const payload = await readApiJson(response, "Não foi possível processar a jornada");
+      if (requestId !== journeyOpenRequestRef.current) return;
       if (!response.ok) throw new Error(payload.error || "Falha ao consultar missões.");
       if (!Array.isArray(payload.missions)) throw new Error("A jornada não retornou uma lista válida de missões. Tente novamente.");
       setMissions(payload.missions);
     } catch (error) {
+      if (requestId !== journeyOpenRequestRef.current) return;
       setMessage(error instanceof Error ? error.message : "Falha ao consultar missões.");
       setExpandedId(null);
     } finally {
-      setMissionLoading(false);
+      if (requestId === journeyOpenRequestRef.current) setMissionLoading(false);
     }
+  }
+
+  async function talkToMika(journeyId: string, missionId: string, answer?: string) {
+    if (lessonBusy) return;
+    const requestId = ++lessonRequestRef.current;
+    setLessonBusy(true);
+    setMessage("");
+    // Reset the visible conversation before requesting a new mission's first lesson.
+    if (!answer) {
+      setLessonMissionId(missionId);
+      setLessonTurns([]);
+      setLessonInput("");
+    }
+    const next = answer ? [...lessonTurns, { role: "user" as const, content: answer }] : [];
+    try {
+      const response = await fetch("/api/journeys/" + encodeURIComponent(journeyId) + "/mika-session", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        // Keep the opening MIKA exercise in the first follow-up so the tutor
+        // knows which question the learner answered. Retain 12 recent turns.
+        body: JSON.stringify({
+          missionId,
+          messages: next.slice(-12),
+        }),
+      });
+      const payload = await readApiJson(response, "Aula com a MIKA");
+      if (requestId !== lessonRequestRef.current) return;
+      if (!response.ok || typeof payload.reply !== "string" || !payload.reply.trim() || payload.missionId !== missionId) throw new Error(payload.error || "Resposta da MIKA inválida para esta missão.");
+      setLessonMissionId(missionId);
+      setLessonTurns([...next, { role: "assistant", content: payload.reply }]);
+      setLessonInput("");
+    } catch (error) {
+      if (requestId !== lessonRequestRef.current) return;
+      // Preserve the student's typed answer when a network or AI request fails.
+      if (answer) setLessonInput(answer);
+      setMessage(error instanceof Error ? error.message : "Falha ao iniciar a aula.");
+    } finally { if (requestId === lessonRequestRef.current) setLessonBusy(false); }
+  }
+
+  async function scheduleJourneyLesson(journeyId: string, missionId: string, missionTitle: string) {
+    if (scheduleBusy) return;
+    const start = new Date(scheduleStart);
+    const end = new Date(start.getTime() + 20 * 60_000);
+    if (!scheduleStart || Number.isNaN(start.getTime()) || start.getTime() < Date.now() + 60_000) {
+      setMessage("Escolha uma data e horário futuros para a aula.");
+      return;
+    }
+    setScheduleBusy(true);
+    setMessage("");
+    try {
+      const events = await getCloudEvents();
+      const missionMarker = "Jornada " + journeyId + " · missão " + missionId + ".";
+      if (events.some(event => event.notes?.startsWith(missionMarker))) {
+        throw new Error("Esta missão já possui uma aula na Agenda. Abra a Agenda para consultar ou ajustar o compromisso.");
+      }
+      const conflict = events.some(event => event.blocksTime && new Date(event.startsAt).getTime() < end.getTime() &&
+        new Date(event.endsAt).getTime() > start.getTime());
+      if (conflict) throw new Error("Já existe um compromisso nesse período. Escolha outro horário.");
+      if (!window.confirm(`Confirmar aula "${missionTitle}" na Agenda MYRYRA em ${start.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}, com duração de 20 minutos?`)) return;
+      // Refresh after confirmation: the user may have changed the calendar while the dialog was open.
+      if (start.getTime() < Date.now() + 60_000) {
+        throw new Error("O horário selecionado já está muito próximo ou passou. Escolha outro horário.");
+      }
+      const latest = await getCloudEvents();
+      if (latest.some(event => event.notes?.startsWith(missionMarker))) {
+        throw new Error("Esta missão já foi agendada. Confira o compromisso na Agenda.");
+      }
+      if (latest.some(event => event.blocksTime && new Date(event.startsAt).getTime() < end.getTime() &&
+        new Date(event.endsAt).getTime() > start.getTime())) {
+        throw new Error("A Agenda mudou e o horário está ocupado. Escolha outro horário.");
+      }
+      // The database RPC serializes bookings and checks mission ownership, conflicts and duplicates atomically.
+      const { data: bookedEventId, error: bookingError } = await createClient().rpc("myryra_book_journey_lesson", {
+        p_journey_id: journeyId,
+        p_mission_id: missionId,
+        p_starts_at: start.toISOString(),
+      });
+      if (bookingError) {
+        if (bookingError.code === "23505") throw new Error("Esta missão já foi agendada.");
+        if (bookingError.code === "23P01") throw new Error("O horário está ocupado. Escolha outro.");
+        if (bookingError.code === "55P03" || bookingError.code === "40P01") throw new Error("A Agenda está recebendo alterações. Aguarde alguns segundos e tente novamente.");
+        if (bookingError.code === "P0002") throw new Error("A missão não está mais disponível. Atualize a Journey.");
+        if (bookingError.code === "22023") throw new Error("O horário selecionado não é válido. Escolha outra data.");
+        if (bookingError.code === "PGRST202" || bookingError.code === "42883") {
+          throw new Error("O agendamento da Journey ainda não está disponível neste ambiente. Nenhum compromisso foi criado.");
+        }
+        throw new Error("Não foi possível confirmar a aula na Agenda. Tente novamente.");
+      }
+      if (typeof bookedEventId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(bookedEventId)) {
+        throw new Error("Não foi possível confirmar o identificador do compromisso. Consulte a Agenda antes de tentar novamente para evitar duplicidade.");
+      }
+      setMessage("Aula criada na Agenda MYRYRA. Abra a Agenda para visualizar o compromisso. Google Calendar não foi sincronizado.");
+      setScheduleMissionId(null);
+      setScheduleStart("");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Não foi possível agendar a aula.");
+    } finally { setScheduleBusy(false); }
   }
 
   async function toggleMission(id: string, status: string) {
@@ -75,6 +199,10 @@ export default function MikaJourneyPlanner() {
       });
       const payload = await readApiJson(response, "Não foi possível processar a jornada");
       if (!response.ok) throw new Error(payload.error || "Falha ao atualizar missão.");
+      if (payload.mission.status === "completed") {
+        if (lessonMissionId === id) { setLessonMissionId(null); setLessonTurns([]); setLessonInput(""); }
+        if (scheduleMissionId === id) { setScheduleMissionId(null); setScheduleStart(""); }
+      }
       setMissions((current) => current.map((mission) =>
         mission.id === id ? { ...mission, status: payload.mission.status } : mission));
     } catch (error) {
@@ -161,6 +289,59 @@ export default function MikaJourneyPlanner() {
       setLoadingJourneys(false);
     }
   }
+
+  // A booked lesson may link here from Agenda. Resolve only missions owned by the
+  // authenticated user through the existing Journey API; never trust URL IDs as data.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const journeyId = url.searchParams.get("journey");
+    const missionId = url.searchParams.get("mission");
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!journeyId || !missionId || !uuid.test(journeyId) || !uuid.test(missionId)) return;
+    url.searchParams.delete("journey");
+    url.searchParams.delete("mission");
+    window.history.replaceState(window.history.state, "", url.toString());
+    const requestId = ++journeyOpenRequestRef.current;
+    ++lessonRequestRef.current;
+    let active = true;
+    // Defer the URL-driven UI update to the async fetch continuation.
+    fetch("/api/journeys/" + encodeURIComponent(journeyId), { cache: "no-store" })
+      .then(async response => {
+        const payload = await readApiJson(response, "Abrir missão da Agenda");
+        if (!response.ok) throw new Error(payload.error || "Não foi possível abrir a jornada.");
+        return payload;
+      })
+      .then(payload => {
+        if (!active || requestId !== journeyOpenRequestRef.current) return;
+        const list = Array.isArray(payload.missions) ? payload.missions : [];
+        setExpandedId(journeyId);
+        setMissions(list);
+        if (list.some((mission: { id: string }) => mission.id === missionId)) {
+          setMessage("Missão localizada. Selecione Iniciar com a MIKA para começar sua aula.");
+          pendingMissionScrollRef.current = missionId;
+        } else {
+          setMessage("A missão do compromisso não está disponível nesta jornada.");
+        }
+      })
+      .catch(error => {
+        if (active && requestId === journeyOpenRequestRef.current) {
+          setMessage(error instanceof Error ? error.message : "Não foi possível abrir a missão.");
+          setExpandedId(null);
+        }
+      })
+      .finally(() => { if (active && requestId === journeyOpenRequestRef.current) setMissionLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  // Scroll only after React has rendered the mission returned by the Journey API.
+  useEffect(() => {
+    const missionId = pendingMissionScrollRef.current;
+    if (!missionId || missionLoading || !missions.some(mission => mission.id === missionId)) return;
+    const element = document.getElementById("journey-mission-" + missionId);
+    if (!element) return;
+    pendingMissionScrollRef.current = null;
+    element.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [missions, missionLoading]);
 
   useEffect(() => {
     let active = true;
@@ -279,7 +460,7 @@ export default function MikaJourneyPlanner() {
         </div>
         <label className="flex items-center gap-2 text-sm text-slate-200">
           <input type="checkbox" checked={useAI} onChange={(e) => { setUseAI(e.target.checked); resetDraft(); }} disabled={busy} />
-          Personalizar com a MIKA (IA, até 12 semanas)
+          Personalizar com a MIKA (recomendado, até 12 semanas)
         </label>
         {!draft && <button type="submit" disabled={busy} className="rounded-lg bg-violet-600 px-4 py-2 font-semibold disabled:opacity-50">
           {busy ? "Preparando..." : "Criar prévia"}
@@ -300,7 +481,7 @@ export default function MikaJourneyPlanner() {
             className="rounded-lg border border-white/30 px-4 py-2">Editar objetivo</button>
         </div>
       </div>}
-      {message && <p role="status" className="mt-3 text-sm">{message}</p>}
+      {message && <div role="status" className="mt-3 space-y-2 text-sm"><p>{message}</p>{message.startsWith("Aula criada na Agenda MYRYRA.") && <a href="/dashboard#vyra-calendar" className="inline-flex rounded-lg border border-violet-400/60 px-3 py-2 font-semibold text-violet-200 underline underline-offset-2">Abrir minha Agenda</a>}</div>}
       <div className="mt-5 border-t border-white/15 pt-4">
         <h4 className="font-semibold">Minhas jornadas</h4>
         {loadingJourneys ? <p className="mt-2 text-sm text-slate-300">Carregando...</p> :
@@ -370,15 +551,65 @@ export default function MikaJourneyPlanner() {
                           value={missions.filter((m) => m.status === "completed").length} />
                         <ul className="max-h-64 space-y-2 overflow-auto">
                           {missions.map((mission) => (
-                            <li key={mission.id} className="flex items-start gap-2">
+                            <li key={mission.id} id={"journey-mission-" + mission.id} className="flex items-start gap-2">
                               <input type="checkbox" className="mt-1"
                                 aria-label={"Concluir missão: " + mission.title}
                                 checked={mission.status === "completed"}
                                 disabled={missionBusy !== null}
                                 onChange={() => void toggleMission(mission.id, mission.status)} />
-                              <span className={mission.status === "completed" ? "text-slate-400 line-through" : ""}>
-                                {mission.title}
-                              </span>
+                              <div className="min-w-0 flex-1">
+                                <span className={mission.status === "completed" ? "text-slate-400 line-through" : ""}>
+                                  {mission.title}
+                                </span>
+                                {journey.status === "active" && mission.status === "pending" && <button type="button" disabled={lessonBusy}
+                                  onClick={() => {
+                                    if (lessonMissionId && lessonTurns.length > 0 &&
+                                      !window.confirm(lessonMissionId === mission.id
+                                        ? "Reiniciar esta aula? A conversa atual será perdida."
+                                        : "Iniciar outra missão? A conversa da aula atual será perdida.")) return;
+                                    void talkToMika(journey.id, mission.id);
+                                  }}
+                                  className="mt-2 block rounded-lg border border-violet-400/60 px-3 py-1.5 text-xs">
+                                  {lessonMissionId === mission.id && lessonTurns.length > 0 ? "Reiniciar aula com a MIKA" : "Iniciar com a MIKA"}
+                                </button>}
+                                {journey.status === "active" && mission.status === "pending" && <button type="button" disabled={scheduleBusy}
+                                  onClick={() => setScheduleMissionId(scheduleMissionId === mission.id ? null : mission.id)}
+                                  className="mt-2 block rounded-lg border border-white/30 px-3 py-1.5 text-xs">
+                                  Agendar aula na Agenda
+                                </button>}
+                                {scheduleMissionId === mission.id && <div className="mt-2 space-y-2 rounded-lg border border-white/20 p-3">
+                                  <label className="block text-xs">Data e horário da aula (20 minutos)
+                                    <input type="datetime-local" value={scheduleStart} onChange={(event) => setScheduleStart(event.target.value)}
+                                      className="mt-1 block max-w-full rounded-lg border border-white/20 bg-slate-950 p-2 text-sm" />
+                                  </label>
+                                  <button type="button" disabled={scheduleBusy || !scheduleStart}
+                                    onClick={() => void scheduleJourneyLesson(journey.id, mission.id, mission.title)}
+                                    className="rounded-lg bg-violet-600 px-3 py-2 text-xs disabled:opacity-50">
+                                    {scheduleBusy ? "Agendando..." : "Revisar e confirmar aula"}
+                                  </button>
+                                </div>}
+                                {lessonMissionId === mission.id && <div className="mt-2 space-y-2 rounded-lg border border-violet-400/30 p-3">
+                                  <p className="text-xs font-semibold">Aula interativa · MIKA</p>
+                                  <div ref={lessonScrollRef} className="max-h-64 space-y-2 overflow-y-auto" aria-live="polite">
+                                    {lessonTurns.map((turn, index) => <p key={index} className="text-sm">
+                                      <strong>{turn.role === "assistant" ? "MIKA: " : "Você: "}</strong>{turn.content}
+                                    </p>)}
+                                  </div>
+                                  <form onSubmit={(event) => { event.preventDefault(); if (lessonInput.trim()) void talkToMika(journey.id, mission.id, lessonInput.trim()); }}
+                                    className="flex flex-wrap gap-2">
+                                    <input aria-label="Responder à MIKA" maxLength={1500} disabled={lessonBusy} value={lessonInput}
+                                      onChange={(event) => setLessonInput(event.target.value)}
+                                      className="min-w-0 flex-1 rounded-lg border border-white/20 bg-slate-950 p-2 text-sm"
+                                      placeholder="Escreva sua resposta" />
+                                    <button type="submit" disabled={lessonBusy || !lessonInput.trim()}
+                                      className="rounded-lg bg-violet-600 px-3 py-2 text-xs disabled:opacity-50">
+                                      {lessonBusy ? "Aguarde..." : "Enviar"}
+                                    </button>
+                                  </form>
+                                  {lessonBusy && <p role="status" className="text-xs text-violet-200">MIKA está preparando a resposta...</p>}
+                                  <p className="text-xs text-slate-400">A conversa não conclui a missão automaticamente nem concede MYRAs.</p>
+                                </div>}
+                              </div>
                             </li>
                           ))}
                         </ul>

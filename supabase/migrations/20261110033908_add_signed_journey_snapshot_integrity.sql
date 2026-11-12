@@ -1,0 +1,1 @@
+alter table public.myryra_journey_draft_snapshots add column if not exists signature text; alter table public.myryra_journey_draft_snapshots add constraint journey_snapshot_signature_format check (signature ~ '^[0-9a-f]{64}$');
