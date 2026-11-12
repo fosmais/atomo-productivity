@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 type SavedJourneySummary = { id: string; title: string; status: string; target_date: string | null };
 import type { JourneyDraft } from "@/lib/journey/create-journey-draft";
+import { getCloudEvents, saveCloudEvent } from "@/lib/event-cloud";
 
 export default function MikaJourneyPlanner() {
   const [title, setTitle] = useState("");
@@ -26,6 +27,9 @@ export default function MikaJourneyPlanner() {
   const [lessonTurns, setLessonTurns] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [lessonInput, setLessonInput] = useState("");
   const [lessonBusy, setLessonBusy] = useState(false);
+  const [scheduleMissionId, setScheduleMissionId] = useState<string | null>(null);
+  const [scheduleStart, setScheduleStart] = useState("");
+  const [scheduleBusy, setScheduleBusy] = useState(false);
   const [editingJourney, setEditingJourney] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDate, setEditDate] = useState("");
@@ -86,6 +90,39 @@ export default function MikaJourneyPlanner() {
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Falha ao iniciar a aula.");
     } finally { setLessonBusy(false); }
+  }
+
+  async function scheduleJourneyLesson(journeyId: string, missionId: string, missionTitle: string) {
+    if (scheduleBusy) return;
+    const start = new Date(scheduleStart);
+    const end = new Date(start.getTime() + 20 * 60_000);
+    if (!scheduleStart || Number.isNaN(start.getTime()) || start.getTime() < Date.now() + 60_000) {
+      setMessage("Escolha uma data e horário futuros para a aula.");
+      return;
+    }
+    setScheduleBusy(true);
+    setMessage("");
+    try {
+      const events = await getCloudEvents();
+      const conflict = events.some(event => new Date(event.startsAt).getTime() < end.getTime() &&
+        new Date(event.endsAt).getTime() > start.getTime());
+      if (conflict) throw new Error("Já existe um compromisso nesse período. Escolha outro horário.");
+      if (!window.confirm("Criar uma aula de 20 minutos na Agenda MYRYRA neste horário?")) return;
+      await saveCloudEvent({
+        title: "Journey · " + missionTitle.slice(0, 180),
+        startsAt: start.toISOString(),
+        endsAt: end.toISOString(),
+        notes: "Jornada " + journeyId + " · missão " + missionId + ". Abra a Journey e selecione Iniciar com a MIKA.",
+        eventType: "appointment",
+        blocksTime: true,
+        category: "personal",
+      });
+      setMessage("Aula criada na Agenda MYRYRA. A sincronização com Google Calendar não foi solicitada.");
+      setScheduleMissionId(null);
+      setScheduleStart("");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Não foi possível agendar a aula.");
+    } finally { setScheduleBusy(false); }
   }
 
   async function toggleMission(id: string, status: string) {
@@ -411,6 +448,22 @@ export default function MikaJourneyPlanner() {
                                   className="mt-2 block rounded-lg border border-violet-400/60 px-3 py-1.5 text-xs">
                                   Iniciar com a MIKA
                                 </button>}
+                                {journey.status === "active" && <button type="button" disabled={scheduleBusy}
+                                  onClick={() => setScheduleMissionId(scheduleMissionId === mission.id ? null : mission.id)}
+                                  className="mt-2 block rounded-lg border border-white/30 px-3 py-1.5 text-xs">
+                                  Agendar aula na Agenda
+                                </button>}
+                                {scheduleMissionId === mission.id && <div className="mt-2 space-y-2 rounded-lg border border-white/20 p-3">
+                                  <label className="block text-xs">Data e horário da aula (20 minutos)
+                                    <input type="datetime-local" value={scheduleStart} onChange={(event) => setScheduleStart(event.target.value)}
+                                      className="mt-1 block max-w-full rounded-lg border border-white/20 bg-slate-950 p-2 text-sm" />
+                                  </label>
+                                  <button type="button" disabled={scheduleBusy || !scheduleStart}
+                                    onClick={() => void scheduleJourneyLesson(journey.id, mission.id, mission.title)}
+                                    className="rounded-lg bg-violet-600 px-3 py-2 text-xs disabled:opacity-50">
+                                    {scheduleBusy ? "Agendando..." : "Revisar e confirmar aula"}
+                                  </button>
+                                </div>}
                                 {lessonMissionId === mission.id && <div className="mt-2 space-y-2 rounded-lg border border-violet-400/30 p-3">
                                   <p className="text-xs font-semibold">Aula interativa · MIKA</p>
                                   <div className="max-h-64 space-y-2 overflow-y-auto" aria-live="polite">
