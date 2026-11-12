@@ -1,0 +1,1 @@
+alter table public.tasks add column if not exists deleted_at timestamptz; alter table public.events add column if not exists deleted_at timestamptz; create index if not exists tasks_user_deleted_at_idx on public.tasks(user_id, deleted_at); create index if not exists events_user_deleted_at_idx on public.events(user_id, deleted_at);
