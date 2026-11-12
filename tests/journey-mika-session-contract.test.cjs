@@ -209,3 +209,12 @@ test("Booked mission scroll waits until React renders the mission", () => {
   assert.match(planner, /element\.scrollIntoView\(\{ block: "center", behavior: "smooth" \}\)/);
   assert.doesNotMatch(planner, /document\.getElementById\("journey-mission-" \+ missionId\)\?\.scrollIntoView/);
 });
+
+test("Restarting an active MIKA lesson requires confirmation and can be cancelled", () => {
+  const ui = read("src/app/dashboard/mika-journey-planner.tsx");
+  assert.match(ui, /lessonMissionId === mission\.id && lessonTurns\.length > 0 &&\s*!window\.confirm\("Reiniciar esta aula\? A conversa atual será perdida\."\)\) return;/);
+  assert.match(ui, /"Reiniciar aula com a MIKA" : "Iniciar com a MIKA"/);
+  const confirmationIndex = ui.indexOf('!window.confirm("Reiniciar esta aula? A conversa atual será perdida.")');
+  const restartIndex = ui.indexOf('void talkToMika(journey.id, mission.id);', confirmationIndex);
+  assert.ok(confirmationIndex >= 0 && restartIndex > confirmationIndex);
+});
