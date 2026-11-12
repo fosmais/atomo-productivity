@@ -35,3 +35,8 @@ Read-only queries against the production `supabase_migrations.schema_migrations`
 - `20261111005128_journey_achievement_snapshots`
 
 These records are **not sufficient** to reconstruct the migration SQL. Do not generate speculative DDL or change production migration history. Recover original migration source from the deployment pipeline/SQL backups or produce a separately reviewed baseline using verified catalog definitions and grants. The exact branch-provisioning error is still unknown.
+
+## Verified security audit 2026-11-12
+Production catalog inspection found all three base tables with RLS enabled: `events` (12 columns), `myryra_journeys` (10), and `myryra_journey_missions` (7). Thirteen policies were found; all owner-scoped via `auth.uid()`, with mission ownership checked through the parent journey. The additional `events_owner_update_category` UPDATE policy is permissive and does **not** override the broader existing owner UPDATE policy; do not mistake it for an exclusive restriction on soft-deleted rows. The two existing Journey creation RPCs are SECURITY INVOKER. `myryra_book_journey_lesson` does not yet exist in production. All checks were read-only.
+
+The 12 original Journey SQL statements were recovered from the `statements` column of `supabase_migrations.schema_migrations` and checked into the feature branch. This restores historical SQL but does not prove clean replay; older base-table creation migrations and branch-provisioning failure still require investigation.
