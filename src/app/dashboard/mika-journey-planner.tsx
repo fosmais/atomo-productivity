@@ -279,6 +279,50 @@ export default function MikaJourneyPlanner() {
     }
   }
 
+  // A booked lesson may link here from Agenda. Resolve only missions owned by the
+  // authenticated user through the existing Journey API; never trust URL IDs as data.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const journeyId = url.searchParams.get("journey");
+    const missionId = url.searchParams.get("mission");
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!journeyId || !missionId || !uuid.test(journeyId) || !uuid.test(missionId)) return;
+    url.searchParams.delete("journey");
+    url.searchParams.delete("mission");
+    window.history.replaceState(window.history.state, "", url.toString());
+    const requestId = ++journeyOpenRequestRef.current;
+    ++lessonRequestRef.current;
+    setExpandedId(journeyId);
+    setMissionLoading(true);
+    setMissions([]);
+    let active = true;
+    fetch("/api/journeys/" + encodeURIComponent(journeyId), { cache: "no-store" })
+      .then(async response => {
+        const payload = await readApiJson(response, "Abrir missão da Agenda");
+        if (!response.ok) throw new Error(payload.error || "Não foi possível abrir a jornada.");
+        return payload;
+      })
+      .then(payload => {
+        if (!active || requestId !== journeyOpenRequestRef.current) return;
+        const list = Array.isArray(payload.missions) ? payload.missions : [];
+        setMissions(list);
+        if (list.some((mission: { id: string }) => mission.id === missionId)) {
+          setMessage("Missão localizada. Selecione Iniciar com a MIKA para começar sua aula.");
+          document.getElementById("journey-mission-" + missionId)?.scrollIntoView({ block: "center" });
+        } else {
+          setMessage("A missão do compromisso não está disponível nesta jornada.");
+        }
+      })
+      .catch(error => {
+        if (active && requestId === journeyOpenRequestRef.current) {
+          setMessage(error instanceof Error ? error.message : "Não foi possível abrir a missão.");
+          setExpandedId(null);
+        }
+      })
+      .finally(() => { if (active && requestId === journeyOpenRequestRef.current) setMissionLoading(false); });
+    return () => { active = false; };
+  }, []);
+
   useEffect(() => {
     let active = true;
     fetch("/api/journeys", { cache: "no-store" })
@@ -487,7 +531,7 @@ export default function MikaJourneyPlanner() {
                           value={missions.filter((m) => m.status === "completed").length} />
                         <ul className="max-h-64 space-y-2 overflow-auto">
                           {missions.map((mission) => (
-                            <li key={mission.id} className="flex items-start gap-2">
+                            <li key={mission.id} id={"journey-mission-" + mission.id} className="flex items-start gap-2">
                               <input type="checkbox" className="mt-1"
                                 aria-label={"Concluir missão: " + mission.title}
                                 checked={mission.status === "completed"}
