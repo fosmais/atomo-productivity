@@ -95,6 +95,29 @@ begin
  select count(*) into v_count from public.events
  where user_id=auth.uid() and deleted_at is null and starts_at=v_start;
  if v_count<>1 then raise exception 'Soft-deleted event still blocks slot'; end if;
+ -- Direct Agenda writes must respect Journey lessons at the database boundary.
+ begin
+  insert into public.events(user_id,title,starts_at,ends_at,blocks_time)
+  values (auth.uid(),'Conflito pela Agenda',v_start+interval '1 minute',
+          v_start+interval '10 minutes',true);
+  raise exception 'Direct Agenda overlap was accepted';
+ exception when exclusion_violation then null;
+ end;
+ -- Nonblocking notes may coexist with a lesson.
+ insert into public.events(user_id,title,starts_at,ends_at,blocks_time)
+ values (auth.uid(),'Lembrete livre',v_start+interval '1 minute',
+         v_start+interval '10 minutes',false);
+ -- Updating an existing blocking event into an occupied slot must fail.
+ insert into public.events(user_id,title,starts_at,ends_at,blocks_time)
+ values (auth.uid(),'Outro compromisso',v_start+interval '3 hours',
+         v_start+interval '4 hours',true) returning id into v_event;
+ begin
+  update public.events set starts_at=v_start+interval '2 minutes',
+                           ends_at=v_start+interval '12 minutes'
+  where id=v_event;
+  raise exception 'Agenda update overlap was accepted';
+ exception when exclusion_violation then null;
+ end;
  raise notice 'Local Journey booking integration smoke passed';
 end $$;
 reset role;
