@@ -69,5 +69,6 @@ test("Journey lesson booking uses an owner-scoped, serialized database transacti
   assert.match(migration, /lock table public\.events in share row exclusive mode/i);
   assert.match(migration, /j.owner_id = v_user/);
   assert.match(migration, /e.deleted_at is null/);
+  assert.match(migration, /e.notes like \(\x27Jornada \x27 \|\| p_journey_id::text/);
   assert.match(migration, /grant execute .* to authenticated/i);
 });
