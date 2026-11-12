@@ -20,6 +20,8 @@ begin
     or p_starts_at > now() + interval '2 years' then
     raise exception 'Invalid lesson time' using errcode = '22023';
   end if;
+  -- Bound wait time so a busy Agenda cannot leave a lesson request hanging indefinitely.
+  perform pg_catalog.set_config('lock_timeout', '5s', true);
   -- Serialize all Journey bookings for this user; two concurrent RPCs cannot pass the checks together.
   perform pg_advisory_xact_lock(hashtextextended(v_user::text, 77429));
   -- Lock event writers too: regular INSERT/UPDATE/DELETE operations acquire ROW EXCLUSIVE.
