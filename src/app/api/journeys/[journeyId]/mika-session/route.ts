@@ -38,6 +38,9 @@ export async function POST(request: Request, context: Context) {
         typeof (m as Turn).content === "string" && (m as Turn).content.length >= 1 && (m as Turn).content.length <= 1500))
     return NextResponse.json({ error: "Conversa inválida." }, { status: 400 });
   const messages = input.messages as Turn[];
+  if (messages.some((turn, index) => turn.role !== (index % 2 === 0 ? "user" : "assistant")) ||
+      (messages.length > 0 && messages.length % 2 === 0))
+    return NextResponse.json({ error: "A conversa deve alternar mensagens do usuário e da MIKA." }, { status: 400 });
   if (messages.length && messages[messages.length - 1].role !== "user")
     return NextResponse.json({ error: "A última mensagem deve ser do usuário." }, { status: 400 });
   const { data: journey, error: journeyError } = await supabase.from("myryra_journeys")
@@ -51,7 +54,7 @@ export async function POST(request: Request, context: Context) {
   if (!mission) return NextResponse.json({ error: "Missão não encontrada." }, { status: 404 });
   if (!process.env.OPENAI_API_KEY) return NextResponse.json({ error: "MIKA indisponível." }, { status: 503 });
   try {
-    const limit = await checkConciergeRateLimit(`journey-session:${user.id}`);
+    const limit = await checkConciergeRateLimit(user.id);
     if (!limit.allowed) return NextResponse.json({ error: "Limite temporário de sessões atingido." }, { status: 429 });
   } catch { return NextResponse.json({ error: "Controle de uso indisponível." }, { status: 503 }); }
   try {
