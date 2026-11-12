@@ -1,0 +1,1 @@
+alter table public.myryra_journeys add column if not exists confirmation_key uuid; create unique index if not exists myryra_journeys_owner_confirmation_key_uq on public.myryra_journeys(owner_id,confirmation_key) where confirmation_key is not null;
