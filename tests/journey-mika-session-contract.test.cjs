@@ -35,3 +35,9 @@ test("MIKA session instructions support any topic and no false completion claims
   assert.match(prompt, /não confiável/);
   assert.match(prompt, /Não alegue ter criado eventos/);
 });
+
+test("New journeys opt into contextual MIKA planning by default", () => {
+  const ui = read("src/app/dashboard/mika-journey-planner.tsx");
+  assert.match(ui, /\[useAI, setUseAI\] = useState\(true\)/);
+  assert.match(ui, /Personalizar com a MIKA \(recomendado/);
+});
