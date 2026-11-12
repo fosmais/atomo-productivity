@@ -115,3 +115,12 @@ test("MIKA ignores replies from a journey that was closed or switched", () => {
   assert.match(ui, /if \(requestId === lessonRequestRef\.current\) setLessonBusy\(false\)/);
   assert.match(ui, /catch \(error\) \{\s*if \(requestId !== lessonRequestRef\.current\) return;\s*\/\/ Preserve the student/);
 });
+
+test("Confirmed Journey booking offers a real link to the Agenda section", () => {
+  const ui = read("src/app/dashboard/mika-journey-planner.tsx");
+  const dashboard = read("src/app/dashboard/page.tsx");
+  assert.match(ui, /message\.startsWith\("Aula criada na Agenda MYRYRA\."\)/);
+  assert.match(ui, /href="\/dashboard#vyra-calendar"/);
+  assert.match(ui, /Abrir minha Agenda/);
+  assert.match(dashboard, /<VyraModule id="vyra-calendar">/);
+});
