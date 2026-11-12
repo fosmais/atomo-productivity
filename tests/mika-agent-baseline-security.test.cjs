@@ -154,3 +154,18 @@ test('MIKA executor requires a matching owner-scoped approval audit record', () 
  assert.match(executor, /approval_audit_missing/);
  assert.ok(executor.indexOf("approval_audit_missing") < executor.indexOf("insert into public.tasks("));
 });
+
+
+test('MIKA task approval RPC is owner-scoped, atomic, idempotent and does not execute', () => {
+ const sql = fs.readFileSync(path.join(__dirname, '../docs/sql/mika-agent-approval-staging-review.sql'), 'utf8');
+ assert.match(sql, /auth\.uid\(\)/);
+ assert.match(sql, /WHERE id=p_proposal_id AND user_id=v_user FOR UPDATE/);
+ assert.match(sql, /p\.status <> 'pending'/);
+ assert.match(sql, /p\.expires_at <= now\(\)/);
+ assert.match(sql, /SET status='approved', approved_at=now\(\)/);
+ assert.match(sql, /VALUES\(p\.id,v_user,'approved'\)/);
+ assert.match(sql, /already_approved/);
+ assert.match(sql, /REVOKE ALL ON FUNCTION public\.mika_approve_task_proposal\(uuid\) FROM PUBLIC,anon,service_role/);
+ assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.mika_approve_task_proposal\(uuid\) TO authenticated/);
+ assert.doesNotMatch(sql, /INSERT INTO public\.tasks|mika_execute_approved_task\(/i);
+});
