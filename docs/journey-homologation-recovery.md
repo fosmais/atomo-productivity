@@ -18,3 +18,20 @@
 
 ## Booking concurrency limitation
 The RPC uses an advisory lock per user and a SHARE ROW EXCLUSIVE lock on `events` to wait for existing direct writes. A subsequent direct Agenda write can still overlap a booked lesson. A universal no-overlap policy requires a separate product/schema decision because existing events may legitimately overlap. Do not introduce a global exclusion constraint without checking existing data and UX requirements.
+
+## Verified migration-history drift (2026-11-12)
+Read-only queries against the production `supabase_migrations.schema_migrations` table confirm that the following Journey migrations were applied, but matching migration files were **not found at their exact names** in the inspected GitHub branches:
+- `20261109212001_create_atomic_journey_with_missions`
+- `20261110004235_journey_confirmation_idempotency_key`
+- `20261110011758_myryra_atomic_journey_confirmation`
+- `20261110033112_create_owner_scoped_journey_draft_snapshots`
+- `20261110033908_add_signed_journey_snapshot_integrity`
+- `20261110034947_atomic_journey_snapshot_confirmation_link`
+- `20261110121233_myryra_journey_myra_rewards_ledger`
+- `20261110192741_journey_achievements_private_photos_20261110`
+- `20261110200551_journey_learning_progress_private`
+- `20261110225657_journey_learning_assessment_metadata`
+- `20261110232856_journey_review_steps_persistence`
+- `20261111005128_journey_achievement_snapshots`
+
+These records are **not sufficient** to reconstruct the migration SQL. Do not generate speculative DDL or change production migration history. Recover original migration source from the deployment pipeline/SQL backups or produce a separately reviewed baseline using verified catalog definitions and grants. The exact branch-provisioning error is still unknown.
