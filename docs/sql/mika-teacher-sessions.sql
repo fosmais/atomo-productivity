@@ -34,7 +34,8 @@ alter table public.mika_teacher_messages enable row level security;
 revoke all on public.mika_teacher_sessions from anon;
 revoke all on public.mika_teacher_messages from anon;
 grant select, insert, delete on public.mika_teacher_sessions to authenticated;
-grant select, insert on public.mika_teacher_messages to authenticated;
+grant select on public.mika_teacher_messages to authenticated;
+-- Only the trusted server may write messages; clients cannot forge assistant replies.
 
 create policy "teacher sessions select own" on public.mika_teacher_sessions
   for select to authenticated using ((select auth.uid()) = owner_id);
@@ -50,13 +51,7 @@ create policy "teacher sessions delete own" on public.mika_teacher_sessions
 
 create policy "teacher messages select own" on public.mika_teacher_messages
   for select to authenticated using ((select auth.uid()) = owner_id);
-create policy "teacher messages insert own active session" on public.mika_teacher_messages
-  for insert to authenticated with check (
-    (select auth.uid()) = owner_id and exists (
-      select 1 from public.mika_teacher_sessions s
-      where s.id = session_id and s.owner_id = (select auth.uid()) and s.status = 'active'
-    )
-  );
+-- No INSERT policy for authenticated: trusted server writes both roles.
 -- No UPDATE or DELETE policy on messages: preserve the original transcript.
 -- Sessions are immutable after creation except full owner-controlled deletion.
 -- No automatic rewards, grades, calendar writes, or background jobs.
