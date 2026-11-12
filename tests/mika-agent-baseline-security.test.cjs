@@ -131,3 +131,10 @@ test('unhomologated MIKA task execution cannot be enabled in Vercel production',
  assert.ok(route.indexOf('process.env.VERCEL_ENV === "production"') < route.indexOf('MYRYRA_MIKA_INTERNAL_EXECUTION_ENABLED !== "true"'));
  assert.ok(route.indexOf('process.env.VERCEL_ENV === "production"') < route.indexOf('supabase.rpc("mika_execute_approved_task"'));
 });
+
+
+test('MIKA executor title length matches persisted proposal constraints', () => {
+ assert.match(baseline, /length\(btrim\(payload->>'title'\)\) BETWEEN 3 AND 160/);
+ assert.match(executor, /length\(btrim\(v_title\)\) < 3 or length\(v_title\)>160/);
+ assert.doesNotMatch(executor, /length\(btrim\(v_title\)\) < 1 or length\(v_title\)>200/);
+});
