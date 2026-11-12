@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-type Session = { id: string; journey_id: string; topic: string; level: string; status: string; created_at: string };
+type Session = { id: string; journey_id: string; topic: string; level: string; status: string; created_at: string; scheduled_at?: string | null };
 type Message = { role: "user" | "assistant"; content: string };
 type Journey = { id: string; title: string; status: string };
 type Lesson = { title: string; objective: string; durationMinutes: number; activities: string[]; assessment: string };
@@ -23,6 +23,7 @@ export default function MikaProfessorPage() {
   const [topic, setTopic] = useState("");
   const [level, setLevel] = useState("iniciante");
   const [durationMinutes, setDurationMinutes] = useState(20);
+  const [scheduledAt, setScheduledAt] = useState("");
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [busy, setBusy] = useState(false);
   const [chatBusy, setChatBusy] = useState(false);
@@ -93,7 +94,7 @@ export default function MikaProfessorPage() {
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Não foi possível preparar a aula.");
       setLesson(json.lesson);
-      const created = await fetch("/api/mika/lessons/sessions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ journeyId, topic: topic.trim() || journeys.find((j) => j.id === journeyId)?.title || "Aula", level }) });
+      const created = await fetch("/api/mika/lessons/sessions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ journeyId, topic: topic.trim() || journeys.find((j) => j.id === journeyId)?.title || "Aula", level, ...(scheduledAt ? { scheduledAt: new Date(scheduledAt).toISOString() } : {}) }) });
       if (created.ok) { const result = await created.json(); setSessionId(result.session.id); setSessions((previous) => [result.session, ...previous]); }
       else { setHistoryError("Não foi possível criar o histórico da aula. A conversa fica bloqueada para evitar perda de respostas."); setError("A aula foi preparada, mas o salvamento está indisponível. Tente novamente após a liberação do banco."); }
     } catch (e) {
@@ -150,6 +151,10 @@ export default function MikaProfessorPage() {
               <option value={15}>15 minutos</option><option value={20}>20 minutos</option><option value={30}>30 minutos</option><option value={45}>45 minutos</option><option value={60}>60 minutos</option>
             </select>
           </label>
+          <label className="block text-sm">Agendar para (opcional)
+            <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="mt-1 w-full rounded-lg bg-slate-800 p-3" />
+            <span className="mt-1 block text-xs text-slate-400">Salva a data da aula; ainda não cria evento no calendário nem envia lembrete.</span>
+          </label>
           <button type="button" onClick={propose} disabled={!journeyId || busy || !historyReady || historyLoading} className="w-full rounded-xl bg-violet-600 p-3 font-semibold disabled:opacity-50">
             {busy ? "Preparando..." : "Preparar minha aula"}
           </button>
@@ -161,7 +166,7 @@ export default function MikaProfessorPage() {
           {historyLoading && <p className="text-sm text-slate-400">Carregando aulas...</p>}
           {!historyLoading && !historyError && sessions.length === 0 && <p className="text-sm text-slate-400">Nenhuma aula salva nesta jornada.</p>}
           {sessions.map((session) => <div key={session.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-800 p-3">
-            <div className="min-w-0"><p className="truncate text-sm font-medium">{session.topic}</p><p className="text-xs text-slate-400">{new Date(session.created_at).toLocaleDateString("pt-BR")} · {session.status}</p></div>
+            <div className="min-w-0"><p className="truncate text-sm font-medium">{session.topic}</p><p className="text-xs text-slate-400">{new Date(session.created_at).toLocaleDateString("pt-BR")} · {session.status}{session.scheduled_at ? " · Agendada: " + new Date(session.scheduled_at).toLocaleString("pt-BR") : ""}</p></div>
             <div className="flex shrink-0 flex-col gap-2">
               <button type="button" disabled={historyBusy || session.status !== "active"} onClick={() => void resumeSession(session)} className="rounded-lg border border-violet-400 px-3 py-2 text-sm disabled:opacity-40">Continuar aula</button>
               <button type="button" disabled={historyBusy} onClick={() => void deleteSession(session)} className="rounded-lg border border-rose-400/50 px-3 py-2 text-xs text-rose-200 disabled:opacity-40">Excluir aula</button>
