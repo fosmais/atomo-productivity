@@ -28,6 +28,11 @@ export default function JourneyHomeCard() {
   const [missionFilter, setMissionFilter] = useState<"pending" | "all">("pending");
   const [refresh, setRefresh] = useState(0);
   useEffect(() => {
+    const onMissionUpdated = () => setRefresh(value => value + 1);
+    window.addEventListener("myryra:journey-mission-updated", onMissionUpdated);
+    return () => window.removeEventListener("myryra:journey-mission-updated", onMissionUpdated);
+  }, []);
+  useEffect(() => {
     if (active !== "home") return;
     let cancelled = false;
     fetch("/api/journeys", { cache: "no-store" }).then(async response => {
