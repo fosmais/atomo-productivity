@@ -29,3 +29,8 @@ Status: **não homologado**. Este documento não autoriza publicação.
 
 ## Bloqueio conhecido (12/11/2026)
 As branches Supabase `myryra-mvp1-event-homolog` e `myryra-mvp2-finance-homolog` estão com `MIGRATIONS_FAILED`. A segunda não possui `myryra_journeys`. Não usar reset/rebase sem avaliar os dados e migrações específicas existentes.
+
+## Bloqueio adicional de integridade das respostas (12/11/2026)
+O SQL atual concede INSERT de mensagens ao papel `authenticated`, com RLS verificando apenas dono da sessão e status ativo. Como a coluna `role` aceita `assistant`, o titular da sessão pode enviar diretamente à Data API uma mensagem falsificada como resposta da MIKA. Isso não permite acesso a outros usuários, mas compromete a autenticidade do histórico e qualquer avaliação futura.
+
+**Bloqueio de release:** antes da publicação, separar mensagens do usuário das respostas produzidas pelo servidor (por exemplo, escrita de respostas da MIKA via caminho confiável e autorização explícita), testar que INSERT direto com `role='assistant'` é rejeitado e preservar a gravação atômica do par pergunta/resposta. Não usar esse histórico para notas ou recompensas até resolver.
