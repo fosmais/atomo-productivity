@@ -37,6 +37,16 @@ test("MIKA session instructions support any topic and no false completion claims
   assert.match(prompt, /Não alegue ter criado eventos/);
 });
 
+test("MIKA tutoring prompt demands concrete corrections and contextual progression", () => {
+  const prompt = read("src/lib/journey/mika-session-context.ts");
+  assert.match(prompt, /identifique o que ele acertou/);
+  assert.match(prompt, /aponte no máximo dois erros concretos/);
+  assert.match(prompt, /tradução curta/);
+  assert.match(prompt, /só avalie pronúncia quando houver áudio/);
+  assert.match(prompt, /Não reinicie a aula/);
+  assert.match(prompt, /reduza a complexidade/);
+});
+
 test("New journeys opt into contextual MIKA planning by default", () => {
   const ui = read("src/app/dashboard/mika-journey-planner.tsx");
   assert.match(ui, /\[useAI, setUseAI\] = useState\(true\)/);
