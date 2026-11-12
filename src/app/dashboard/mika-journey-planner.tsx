@@ -142,6 +142,7 @@ export default function MikaJourneyPlanner() {
       if (bookingError) {
         if (bookingError.code === "23505") throw new Error("Esta missão já foi agendada.");
         if (bookingError.code === "23P01") throw new Error("O horário está ocupado. Escolha outro.");
+        if (bookingError.code === "55P03" || bookingError.code === "40P01") throw new Error("A Agenda está recebendo alterações. Aguarde alguns segundos e tente novamente.");
         if (bookingError.code === "P0002") throw new Error("A missão não está mais disponível. Atualize a Journey.");
         if (bookingError.code === "22023") throw new Error("O horário selecionado não é válido. Escolha outra data.");
         if (bookingError.code === "PGRST202" || bookingError.code === "42883") {
