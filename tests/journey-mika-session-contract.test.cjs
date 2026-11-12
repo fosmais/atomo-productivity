@@ -72,3 +72,12 @@ test("Journey lesson booking uses an owner-scoped, serialized database transacti
   assert.match(migration, /e.notes like \(\x27Jornada \x27 \|\| p_journey_id::text/);
   assert.match(migration, /grant execute .* to authenticated/i);
 });
+
+test("Journey booking bounds database lock waits and explains retries", () => {
+  const migration = read("supabase/migrations/20261112000100_myryra_journey_lesson_atomic.sql");
+  const ui = read("src/app/dashboard/mika-journey-planner.tsx");
+  assert.match(migration, /set_config\('lock_timeout', '5s', true\)/);
+  assert.match(ui, /bookingError\.code === "55P03"/);
+  assert.match(ui, /bookingError\.code === "40P01"/);
+  assert.match(ui, /bookingError\.code === "PGRST202"/);
+});
