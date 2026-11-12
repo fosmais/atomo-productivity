@@ -27,12 +27,7 @@ export async function POST(request: Request) {
     (typeof input.sessionId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.sessionId)) ||
     (input.topic !== undefined && (typeof input.topic !== "string" || input.topic.length > 120)) ||
     (input.level !== undefined && (typeof input.level !== "string" || input.level.length > 40)) ||
-    (input.history !== undefined && (!Array.isArray(input.history) || input.history.length > 12 ||
-      !input.history.every((item: unknown) => !!item && typeof item === "object" &&
-        (item as { role?: unknown }).role !== undefined &&
-        ["user", "assistant"].includes(String((item as { role: unknown }).role)) &&
-        typeof (item as { content?: unknown }).content === "string" &&
-        (item as { content: string }).content.length <= 2000))))
+    input.history !== undefined)
     return NextResponse.json({ error: "Dados da aula inválidos." }, { status: 400 });
   const { data: journey, error: queryError } = await supabase.from("myryra_journeys")
     .select("id,title,status").eq("id", input.journeyId).eq("owner_id", user.id).maybeSingle();
