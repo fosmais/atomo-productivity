@@ -155,7 +155,7 @@ export default function QuickCapture() {
       })));
       window.dispatchEvent(new Event("myryra:tasks-updated"));
       const mission = missionRef.current;
-      if (mission && selected.length === 1 && selected[0].title.trim() === mission.title) {
+      if (mission && selected.length === 1) {
         try {
           const response = await fetch(`/api/journeys/${encodeURIComponent(mission.journeyId)}/missions/${encodeURIComponent(mission.missionId)}/task-link`, {
             method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ taskId: saved.tasks[0].id }),
@@ -172,6 +172,7 @@ export default function QuickCapture() {
           setError("Tarefa criada, mas a conexão com a Journey falhou. Verifique o vínculo antes de tentar novamente.");
         }
       } else {
+        missionRef.current = null;
         setSuccess(`${selected.length} tarefa(s) salva(s) e adicionada(s) à lista.`);
       }
       setDrafts([]);
@@ -194,7 +195,7 @@ export default function QuickCapture() {
       </div>
       <p className="mt-2 text-sm text-slate-300">{captureType === "task" ? "Uma tarefa por linha. Reconhece hoje, amanhã e DD/MM/AAAA." : "Registre um compromisso diretamente na agenda MYRYRA."}</p>
       <label htmlFor="quick-capture-input" className="sr-only">{captureType === "task" ? "Tarefas para organizar" : "Título do compromisso"}</label>
-      <textarea id="quick-capture-input" value={input} onChange={(event) => { missionRef.current = null; setInput(event.target.value); setDrafts([]); setSuccess(""); }}
+      <textarea id="quick-capture-input" value={input} onChange={(event) => { setInput(event.target.value); setDrafts([]); setSuccess(""); }}
         maxLength={captureType === "task" ? 2200 : 200} rows={captureType === "task" ? 4 : 2} placeholder={captureType === "task" ? "Preparar reunião de terça\nPagar escola\nMarcar dentista" : "Ex.: Reunião de planejamento"}
         className="mt-4 w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white placeholder:text-slate-500" />
       {captureType === "event" && <div className="mt-3 grid gap-3 sm:grid-cols-2">
