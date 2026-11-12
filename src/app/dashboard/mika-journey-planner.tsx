@@ -113,11 +113,11 @@ export default function MikaJourneyPlanner() {
     setMessage("");
     try {
       const events = await getCloudEvents();
-      const missionMarker = "missão " + missionId + ".";
-      if (events.some(event => event.notes?.includes(missionMarker))) {
+      const missionMarker = "Jornada " + journeyId + " · missão " + missionId + ".";
+      if (events.some(event => event.notes?.startsWith(missionMarker))) {
         throw new Error("Esta missão já possui uma aula na Agenda. Abra a Agenda para consultar ou ajustar o compromisso.");
       }
-      const conflict = events.some(event => new Date(event.startsAt).getTime() < end.getTime() &&
+      const conflict = events.some(event => event.blocksTime && new Date(event.startsAt).getTime() < end.getTime() &&
         new Date(event.endsAt).getTime() > start.getTime());
       if (conflict) throw new Error("Já existe um compromisso nesse período. Escolha outro horário.");
       if (!window.confirm("Criar uma aula de 20 minutos na Agenda MYRYRA neste horário?")) return;
@@ -126,10 +126,10 @@ export default function MikaJourneyPlanner() {
         throw new Error("O horário selecionado já está muito próximo ou passou. Escolha outro horário.");
       }
       const latest = await getCloudEvents();
-      if (latest.some(event => event.notes?.includes(missionMarker))) {
+      if (latest.some(event => event.notes?.startsWith(missionMarker))) {
         throw new Error("Esta missão já foi agendada. Confira o compromisso na Agenda.");
       }
-      if (latest.some(event => new Date(event.startsAt).getTime() < end.getTime() &&
+      if (latest.some(event => event.blocksTime && new Date(event.startsAt).getTime() < end.getTime() &&
         new Date(event.endsAt).getTime() > start.getTime())) {
         throw new Error("A Agenda mudou e o horário está ocupado. Escolha outro horário.");
       }
