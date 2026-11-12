@@ -17,6 +17,7 @@ test("MIKA lesson API checks ownership, active status, and does not award MYRAs"
   const api = read("src/app/api/journeys/[journeyId]/mika-session/route.ts");
   assert.match(api, /\.eq\("owner_id", user\.id\)/);
   assert.match(api, /journey\.status !== "active"/);
+  assert.match(api, /mission\.status !== "pending"/);
   assert.match(api, /\.eq\("journey_id", journeyId\)/);
   assert.match(api, /myraAwarded: false/);
 });
