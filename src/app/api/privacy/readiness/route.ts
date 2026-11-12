@@ -53,7 +53,7 @@ export async function GET() {
     version: document?.version ?? null,
     documentVersionId: document?.id ?? null,
     publicUrl: document?.public_url ?? null,
-    published: Boolean(document),
+    published: Boolean(document && typeof document.public_url === "string" && /^https:\/\//i.test(document.public_url)),
     accepted: Boolean(document && acceptedIds.has(document.id)),
   }));
   return NextResponse.json({
