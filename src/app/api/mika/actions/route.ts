@@ -79,7 +79,7 @@ export async function POST(request: Request) {
   const { eventId, service, actionType, provider, proposal } = body as Record<string, unknown>;
   if (eventId !== undefined && (typeof eventId !== "string" || !uuid.test(eventId)) ||
       typeof service !== "string" || !services.has(service) ||
-      typeof actionType !== "string" || !/^[a-z][a-z0-9_]{2,63}$/.test(actionType) ||
+      actionType !== "concierge_planning" ||
       provider !== undefined && (typeof provider !== "string" || provider.length > 100) ||
       !proposal || typeof proposal !== "object" || Array.isArray(proposal) ||
       JSON.stringify(proposal).length > 4000)
