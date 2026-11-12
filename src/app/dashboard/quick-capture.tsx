@@ -155,6 +155,8 @@ export default function QuickCapture() {
       })));
       window.dispatchEvent(new Event("myryra:tasks-updated"));
       const mission = missionRef.current;
+      // A task is already persisted: never keep a stale mission for a second save.
+      missionRef.current = null;
       if (mission && selected.length === 1) {
         try {
           const response = await fetch(`/api/journeys/${encodeURIComponent(mission.journeyId)}/missions/${encodeURIComponent(mission.missionId)}/task-link`, {
