@@ -123,3 +123,11 @@ test('internal task execution uses authenticated transactional RPC and fails clo
  assert.match(route, /already_executed/);
  assert.match(route, /expired/);
 });
+
+
+test('unhomologated MIKA task execution cannot be enabled in Vercel production', () => {
+ const route = fs.readFileSync(path.join(__dirname, '../src/app/api/mika/execute-approved-task/route.ts'), 'utf8');
+ assert.match(route, /process\.env\.VERCEL_ENV === "production"/);
+ assert.ok(route.indexOf('process.env.VERCEL_ENV === "production"') < route.indexOf('MYRYRA_MIKA_INTERNAL_EXECUTION_ENABLED !== "true"'));
+ assert.ok(route.indexOf('process.env.VERCEL_ENV === "production"') < route.indexOf('supabase.rpc("mika_execute_approved_task"'));
+});
