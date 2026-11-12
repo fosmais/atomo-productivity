@@ -160,6 +160,7 @@ export default function QuickCapture() {
           setError(`Tarefa criada, mas não vinculada à Journey: ${detail?.error ?? "tente novamente"}.`);
         } else {
           missionRef.current = null;
+          window.dispatchEvent(new Event("myryra:journey-mission-updated"));
           setSuccess("Tarefa criada e vinculada à missão da Journey.");
         }
       } else {
