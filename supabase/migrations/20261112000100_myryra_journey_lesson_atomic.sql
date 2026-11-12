@@ -81,6 +81,14 @@ begin
   if new.starts_at is null or new.ends_at is null or new.ends_at <= new.starts_at then
     raise exception 'Invalid event interval' using errcode = '22023';
   end if;
+  -- Preserve legacy overlapping events when an update does not change their
+  -- blocking interval or owner. Newly blocking/moved events are still checked.
+  if tg_op = 'UPDATE' and old.deleted_at is null and old.blocks_time
+    and new.user_id is not distinct from old.user_id
+    and new.starts_at is not distinct from old.starts_at
+    and new.ends_at is not distinct from old.ends_at then
+    return new;
+  end if;
   perform pg_catalog.set_config('lock_timeout', '5s', true);
   perform pg_advisory_xact_lock(hashtextextended(new.user_id::text, 77429));
   if exists (
