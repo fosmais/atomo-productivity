@@ -22,6 +22,10 @@ export default function MikaJourneyPlanner() {
   const [missions, setMissions] = useState<{ id: string; title: string; status: string }[]>([]);
   const [missionBusy, setMissionBusy] = useState<string | null>(null);
   const [missionLoading, setMissionLoading] = useState(false);
+  const [lessonMissionId, setLessonMissionId] = useState<string | null>(null);
+  const [lessonTurns, setLessonTurns] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
+  const [lessonInput, setLessonInput] = useState("");
+  const [lessonBusy, setLessonBusy] = useState(false);
   const [editingJourney, setEditingJourney] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDate, setEditDate] = useState("");
@@ -48,6 +52,8 @@ export default function MikaJourneyPlanner() {
     setMissionLoading(true);
     setExpandedId(id);
     setMissions([]);
+    setLessonMissionId(null);
+    setLessonTurns([]);
     try {
       const response = await fetch("/api/journeys/" + encodeURIComponent(id), { cache: "no-store" });
       const payload = await readApiJson(response, "Não foi possível processar a jornada");
@@ -60,6 +66,26 @@ export default function MikaJourneyPlanner() {
     } finally {
       setMissionLoading(false);
     }
+  }
+
+  async function talkToMika(journeyId: string, missionId: string, answer?: string) {
+    if (lessonBusy) return;
+    setLessonBusy(true);
+    setMessage("");
+    const next = answer ? [...lessonTurns, { role: "user" as const, content: answer }] : [];
+    try {
+      const response = await fetch("/api/journeys/" + encodeURIComponent(journeyId) + "/mika-session", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ missionId, messages: next.slice(-12) }),
+      });
+      const payload = await readApiJson(response, "Aula com a MIKA");
+      if (!response.ok || typeof payload.reply !== "string") throw new Error(payload.error || "MIKA indisponível.");
+      setLessonMissionId(missionId);
+      setLessonTurns([...next, { role: "assistant", content: payload.reply }]);
+      setLessonInput("");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Falha ao iniciar a aula.");
+    } finally { setLessonBusy(false); }
   }
 
   async function toggleMission(id: string, status: string) {
@@ -376,9 +402,36 @@ export default function MikaJourneyPlanner() {
                                 checked={mission.status === "completed"}
                                 disabled={missionBusy !== null}
                                 onChange={() => void toggleMission(mission.id, mission.status)} />
-                              <span className={mission.status === "completed" ? "text-slate-400 line-through" : ""}>
-                                {mission.title}
-                              </span>
+                              <div className="min-w-0 flex-1">
+                                <span className={mission.status === "completed" ? "text-slate-400 line-through" : ""}>
+                                  {mission.title}
+                                </span>
+                                {journey.status === "active" && <button type="button" disabled={lessonBusy}
+                                  onClick={() => { setLessonTurns([]); void talkToMika(journey.id, mission.id); }}
+                                  className="mt-2 block rounded-lg border border-violet-400/60 px-3 py-1.5 text-xs">
+                                  Iniciar com a MIKA
+                                </button>}
+                                {lessonMissionId === mission.id && <div className="mt-2 space-y-2 rounded-lg border border-violet-400/30 p-3">
+                                  <p className="text-xs font-semibold">Aula interativa · MIKA</p>
+                                  <div className="max-h-64 space-y-2 overflow-y-auto" aria-live="polite">
+                                    {lessonTurns.map((turn, index) => <p key={index} className="text-sm">
+                                      <strong>{turn.role === "assistant" ? "MIKA: " : "Você: "}</strong>{turn.content}
+                                    </p>)}
+                                  </div>
+                                  <form onSubmit={(event) => { event.preventDefault(); if (lessonInput.trim()) void talkToMika(journey.id, mission.id, lessonInput.trim()); }}
+                                    className="flex flex-wrap gap-2">
+                                    <input aria-label="Responder à MIKA" maxLength={1500} value={lessonInput}
+                                      onChange={(event) => setLessonInput(event.target.value)}
+                                      className="min-w-0 flex-1 rounded-lg border border-white/20 bg-slate-950 p-2 text-sm"
+                                      placeholder="Escreva sua resposta" />
+                                    <button type="submit" disabled={lessonBusy || !lessonInput.trim()}
+                                      className="rounded-lg bg-violet-600 px-3 py-2 text-xs disabled:opacity-50">
+                                      {lessonBusy ? "Aguarde..." : "Enviar"}
+                                    </button>
+                                  </form>
+                                  <p className="text-xs text-slate-400">A conversa não conclui a missão automaticamente nem concede MYRAs.</p>
+                                </div>}
+                              </div>
                             </li>
                           ))}
                         </ul>
