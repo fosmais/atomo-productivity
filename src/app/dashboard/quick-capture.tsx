@@ -76,6 +76,7 @@ export default function QuickCapture() {
         missionRef.current = detail as { journeyId: string; missionId: string; title: string };
       }
       if (!title) return;
+      sessionStorage.removeItem("myryra:journey-task-prefill:v1");
       setCaptureType("task");
       setInput(title);
       setDrafts([]);
@@ -86,7 +87,7 @@ export default function QuickCapture() {
       const pending = sessionStorage.getItem("myryra:journey-task-prefill:v1");
       if (pending) {
         const parsed: unknown = JSON.parse(pending);
-        if (parsed && typeof parsed === "object" && "title" in parsed) { prefillMission(new CustomEvent("myryra:journey-prefill-task", { detail: parsed })); sessionStorage.removeItem("myryra:journey-task-prefill:v1"); }
+        if (parsed && typeof parsed === "object" && "title" in parsed) { prefillMission(new CustomEvent("myryra:journey-prefill-task", { detail: parsed })); }
       }
     } catch { /* optional */ }
     window.addEventListener("myryra:journey-prefill-task", prefillMission);
