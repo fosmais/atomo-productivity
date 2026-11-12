@@ -562,9 +562,13 @@ export default function MikaJourneyPlanner() {
                                   {mission.title}
                                 </span>
                                 {journey.status === "active" && mission.status === "pending" && <button type="button" disabled={lessonBusy}
-                                  onClick={() => void talkToMika(journey.id, mission.id)}
+                                  onClick={() => {
+                                    if (lessonMissionId === mission.id && lessonTurns.length > 0 &&
+                                      !window.confirm("Reiniciar esta aula? A conversa atual será perdida.")) return;
+                                    void talkToMika(journey.id, mission.id);
+                                  }}
                                   className="mt-2 block rounded-lg border border-violet-400/60 px-3 py-1.5 text-xs">
-                                  Iniciar com a MIKA
+                                  {lessonMissionId === mission.id && lessonTurns.length > 0 ? "Reiniciar aula com a MIKA" : "Iniciar com a MIKA"}
                                 </button>}
                                 {journey.status === "active" && mission.status === "pending" && <button type="button" disabled={scheduleBusy}
                                   onClick={() => setScheduleMissionId(scheduleMissionId === mission.id ? null : mission.id)}
