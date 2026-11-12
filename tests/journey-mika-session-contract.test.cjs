@@ -124,3 +124,11 @@ test("Confirmed Journey booking offers a real link to the Agenda section", () =>
   assert.match(ui, /Abrir minha Agenda/);
   assert.match(dashboard, /<VyraModule id="vyra-calendar">/);
 });
+
+test("Journey booking never claims success without a confirmed event identifier", () => {
+  const ui = read("src/app/dashboard/mika-journey-planner.tsx");
+  assert.match(ui, /data: bookedEventId, error: bookingError/);
+  assert.match(ui, /typeof bookedEventId !== "string"/);
+  assert.match(ui, /Consulte a Agenda antes de tentar novamente para evitar duplicidade/);
+  assert.ok(ui.indexOf('typeof bookedEventId !== "string"') < ui.indexOf('setMessage("Aula criada na Agenda MYRYRA.'));
+});
