@@ -19,12 +19,12 @@ try {
   }
   $dump = Get-Content -LiteralPath $tmp -Raw
   foreach ($required in @('events', 'tasks', 'plans', 'myryra_journeys')) {
-    $pattern = '(?m)^CREATE TABLE public\\.' + [regex]::Escape($required) + '\\s*\\('
+    $pattern = '(?m)^CREATE TABLE public\.' + [regex]::Escape($required) + '\s*\('
     if ($dump -notmatch $pattern) {
       throw "Incomplete export: CREATE TABLE public.$required missing."
     }
   }
-  if ($dump -notmatch '(?m)^ALTER TABLE public\\.myryra_journeys ENABLE ROW LEVEL SECURITY;') {
+  if ($dump -notmatch '(?m)^ALTER TABLE public\.myryra_journeys ENABLE ROW LEVEL SECURITY;') {
     throw 'Incomplete export: Journey RLS enable statement missing.'
   }
   Move-Item -LiteralPath $tmp -Destination $out -Force
