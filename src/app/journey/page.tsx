@@ -27,6 +27,10 @@ async function JourneyContent() {
             <div className="rounded-xl border border-white/10 bg-white/5 p-4"><p className="text-xl">◎</p><h2 className="mt-2 font-semibold">Celebre cada avanço</h2><p className="mt-1 text-xs text-slate-300">Marque missões realizadas e veja seu progresso.</p></div>
           </div>
         </header>
+        <Link href="/mika-professora" className="flex items-center justify-between gap-3 rounded-2xl border border-violet-400/40 bg-violet-900/30 p-4 hover:bg-violet-900/50">
+          <span><strong className="block text-sm">MIKA Professora</strong><span className="mt-1 block text-xs text-slate-300">Prepare aulas personalizadas e continue seus estudos vinculados à Journey.</span></span>
+          <span aria-hidden="true" className="text-xl text-violet-200">→</span>
+        </Link>
         <JourneyTrail />
         <details id="journey-create-details" className="rounded-2xl border border-violet-400/20 bg-slate-900/60 p-4">
           <summary className="cursor-pointer text-sm font-semibold text-violet-200">✦ Criar outra jornada ou planejar um novo sonho</summary>
