@@ -72,8 +72,8 @@ export default function MikaProfessorPage() {
   async function updateSchedule(session: Session, clear = false) {
     if (historyBusy || chatBusy) return;
     const selected = rescheduleInputs[session.id] ?? "";
-    if (!clear && (!selected || !Number.isFinite(Date.parse(selected)))) {
-      setError("Selecione uma data e horário válidos para reagendar."); return;
+    if (!clear && (!selected || !Number.isFinite(Date.parse(selected)) || Date.parse(selected) < Date.now() + 60000 || Date.parse(selected) > Date.now() + 366 * 86400000)) {
+      setError("Escolha uma data válida, entre um minuto e 366 dias a partir de agora."); return;
     }
     setHistoryBusy(true); setError("");
     try {
@@ -106,6 +106,13 @@ export default function MikaProfessorPage() {
 
   async function propose() {
     if (!journeyId || busy || !historyReady) return;
+    if (scheduledAt) {
+      const time = Date.parse(scheduledAt);
+      if (!Number.isFinite(time) || time < Date.now() + 60000 || time > Date.now() + 366 * 86400000) {
+        setError("Escolha uma data válida, entre um minuto e 366 dias a partir de agora.");
+        return;
+      }
+    }
     setBusy(true); setError(""); setSaveWarning(""); setHistoryOutOfSync(false); setHistoryError(""); setLesson(null); setMessages([]); setAnswer(""); setSessionId("");
     try {
       const response = await fetch("/api/mika/lessons/propose", {
