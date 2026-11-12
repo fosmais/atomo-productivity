@@ -52,6 +52,13 @@ export async function POST(request: Request) {
     input.topic = session.topic;
     input.level = session.level;
   }
+  // Fail before incurring model costs if the trusted persistence client is unavailable.
+  let admin: ReturnType<typeof createSupabaseAdmin>;
+  try {
+    admin = createSupabaseAdmin();
+  } catch {
+    return NextResponse.json({ error: "Histórico indisponível: configuração do servidor ausente." }, { status: 503 });
+  }
   try {
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 20000, maxRetries: 0 });
     const completion = await client.chat.completions.create({
@@ -81,7 +88,6 @@ export async function POST(request: Request) {
     if (sessionId) {
       // Authorization and active-session checks above use the caller-scoped client.
       // Admin writes only this verified session; authenticated clients cannot forge assistant replies.
-      const admin = createSupabaseAdmin();
       const { error: saveError } = await admin.from("mika_teacher_messages").insert([
         { session_id: sessionId, owner_id: user.id, role: "user", content: input.message.trim() },
         { session_id: sessionId, owner_id: user.id, role: "assistant", content: reply.slice(0, 4000) },
