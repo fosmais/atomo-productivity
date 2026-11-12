@@ -28,6 +28,16 @@ begin
  if p.status <> 'approved' or p.action_type <> 'create_task' or p.approved_at is null or p.approved_at > now() then
    raise exception 'proposal_not_approved_or_unsupported' using errcode='P0001';
  end if;
+ -- Approval must be traceable to a matching owner-scoped audit event.
+ if not exists (
+   select 1 from public.mika_action_audit a
+   where a.proposal_id=p.id and a.user_id=v_user
+     and a.event_type='approved'
+     and a.created_at >= p.created_at
+     and a.created_at <= now()
+ ) then
+   raise exception 'approval_audit_missing' using errcode='P0001';
+ end if;
  if p.expires_at <= now() then
    update public.mika_action_proposals set status='expired' where id=p.id;
    insert into public.mika_action_audit(proposal_id,user_id,event_type)
