@@ -142,6 +142,11 @@ export default function MikaJourneyPlanner() {
       if (bookingError) {
         if (bookingError.code === "23505") throw new Error("Esta missão já foi agendada.");
         if (bookingError.code === "23P01") throw new Error("O horário está ocupado. Escolha outro.");
+        if (bookingError.code === "P0002") throw new Error("A missão não está mais disponível. Atualize a Journey.");
+        if (bookingError.code === "22023") throw new Error("O horário selecionado não é válido. Escolha outra data.");
+        if (bookingError.code === "PGRST202" || bookingError.code === "42883") {
+          throw new Error("O agendamento da Journey ainda não está disponível neste ambiente. Nenhum compromisso foi criado.");
+        }
         throw new Error("Não foi possível confirmar a aula na Agenda. Tente novamente.");
       }
       setMessage("Aula criada na Agenda MYRYRA. Abra a Agenda para visualizar o compromisso. Google Calendar não foi sincronizado.");
