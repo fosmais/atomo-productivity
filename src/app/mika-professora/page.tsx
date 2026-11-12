@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+type Session = { id: string; journey_id: string; topic: string; level: string; status: string; created_at: string };
 type Message = { role: "user" | "assistant"; content: string };
 type Journey = { id: string; title: string; status: string };
 type Lesson = { title: string; objective: string; durationMinutes: number; activities: string[]; assessment: string };
@@ -10,6 +11,10 @@ type Lesson = { title: string; objective: string; durationMinutes: number; activ
 export default function MikaProfessorPage() {
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [journeyId, setJourneyId] = useState("");
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessionId, setSessionId] = useState("");
+  const [historyError, setHistoryError] = useState("");
+  const [historyBusy, setHistoryBusy] = useState(false);
   const [topic, setTopic] = useState("");
   const [level, setLevel] = useState("iniciante");
   const [durationMinutes, setDurationMinutes] = useState(20);
@@ -30,9 +35,37 @@ export default function MikaProfessorPage() {
       .catch((e) => { if (!controller.signal.aborted) setError(e instanceof Error ? e.message : "Falha ao carregar jornadas."); });
     return () => controller.abort();
   }, []);
+  useEffect(() => {
+    setSessions([]); setSessionId(""); setHistoryError("");
+    if (!journeyId) return;
+    const controller = new AbortController();
+    fetch("/api/mika/lessons/sessions?journeyId=" + encodeURIComponent(journeyId), { signal: controller.signal, cache: "no-store" })
+      .then(async (response) => {
+        const json = await response.json();
+        if (!response.ok) throw new Error(json.error || "Histórico indisponível.");
+        if (!controller.signal.aborted) setSessions(json.sessions ?? []);
+      }).catch((e) => { if (!controller.signal.aborted) setHistoryError(e instanceof Error ? e.message : "Histórico indisponível."); });
+    return () => controller.abort();
+  }, [journeyId]);
+
+  async function resumeSession(session: Session) {
+    if (historyBusy || chatBusy) return;
+    setHistoryBusy(true); setError("");
+    try {
+      const response = await fetch("/api/mika/lessons/messages?sessionId=" + encodeURIComponent(session.id), { cache: "no-store" });
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error || "Não foi possível retomar a aula.");
+      setTopic(session.topic); setLevel(session.level); setSessionId(session.id);
+      setLesson({ title: "Aula: " + session.topic, objective: "Continuar a aula anterior", durationMinutes, activities: [], assessment: "Continue sua conversa com a MIKA." });
+      setMessages((json.messages ?? []).map((m: Message) => ({ role: m.role, content: m.content })));
+      setAnswer("");
+    } catch (e) { setError(e instanceof Error ? e.message : "Falha ao retomar aula."); }
+    finally { setHistoryBusy(false); }
+  }
+
   async function propose() {
     if (!journeyId || busy) return;
-    setBusy(true); setError(""); setLesson(null); setMessages([]); setAnswer("");
+    setBusy(true); setError(""); setLesson(null); setMessages([]); setAnswer(""); setSessionId("");
     try {
       const response = await fetch("/api/mika/lessons/propose", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -41,6 +74,9 @@ export default function MikaProfessorPage() {
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Não foi possível preparar a aula.");
       setLesson(json.lesson);
+      const created = await fetch("/api/mika/lessons/sessions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ journeyId, topic: topic.trim() || journeys.find((j) => j.id === journeyId)?.title || "Aula", level }) });
+      if (created.ok) { const result = await created.json(); setSessionId(result.session.id); setSessions((previous) => [result.session, ...previous]); }
+      else setHistoryError("A aula foi preparada sem histórico persistente. Verifique a configuração do banco.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao preparar a aula.");
     } finally { setBusy(false); }
@@ -53,7 +89,7 @@ export default function MikaProfessorPage() {
     try {
       const response = await fetch("/api/mika/lessons/chat", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ journeyId, topic, level, message, history: prior }),
+        body: JSON.stringify({ journeyId, topic, level, message, history: sessionId ? undefined : prior, sessionId: sessionId || undefined }),
       });
       const json = await response.json();
       if (!response.ok || typeof json.reply !== "string") throw new Error(json.error || "Não foi possível responder.");
@@ -74,21 +110,21 @@ export default function MikaProfessorPage() {
         </header>
         <section className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-5">
           <label className="block text-sm">Jornada
-            <select value={journeyId} onChange={(e) => { setJourneyId(e.target.value); setLesson(null); setMessages([]); }} className="mt-1 w-full rounded-lg bg-slate-800 p-3">
+            <select value={journeyId} onChange={(e) => { setJourneyId(e.target.value); setLesson(null); setMessages([]); setSessionId(""); }} className="mt-1 w-full rounded-lg bg-slate-800 p-3">
               <option value="">Escolha uma jornada ativa</option>
               {journeys.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}
             </select>
           </label>
           <label className="block text-sm">Assunto da aula
-            <input value={topic} onChange={(e) => { setTopic(e.target.value); setLesson(null); setMessages([]); }} maxLength={120} placeholder="Ex.: cumprimentos em italiano" className="mt-1 w-full rounded-lg bg-slate-800 p-3" />
+            <input value={topic} onChange={(e) => { setTopic(e.target.value); setLesson(null); setMessages([]); setSessionId(""); }} maxLength={120} placeholder="Ex.: cumprimentos em italiano" className="mt-1 w-full rounded-lg bg-slate-800 p-3" />
           </label>
           <label className="block text-sm">Nível
-            <select value={level} onChange={(e) => { setLevel(e.target.value); setLesson(null); setMessages([]); }} className="mt-1 w-full rounded-lg bg-slate-800 p-3">
+            <select value={level} onChange={(e) => { setLevel(e.target.value); setLesson(null); setMessages([]); setSessionId(""); }} className="mt-1 w-full rounded-lg bg-slate-800 p-3">
               <option value="iniciante">Iniciante</option><option value="intermediário">Intermediário</option><option value="avançado">Avançado</option>
             </select>
           </label>
           <label className="block text-sm">Duração
-            <select value={durationMinutes} onChange={(e) => { setDurationMinutes(Number(e.target.value)); setLesson(null); setMessages([]); }} className="mt-1 w-full rounded-lg bg-slate-800 p-3">
+            <select value={durationMinutes} onChange={(e) => { setDurationMinutes(Number(e.target.value)); setLesson(null); setMessages([]); setSessionId(""); }} className="mt-1 w-full rounded-lg bg-slate-800 p-3">
               <option value={15}>15 minutos</option><option value={20}>20 minutos</option><option value={30}>30 minutos</option><option value={45}>45 minutos</option><option value={60}>60 minutos</option>
             </select>
           </label>
@@ -97,6 +133,15 @@ export default function MikaProfessorPage() {
           </button>
           {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
         </section>
+        {journeyId && <section className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-5">
+          <h2 className="font-semibold">Minhas aulas anteriores</h2>
+          {historyError && <p className="text-sm text-amber-300">{historyError}</p>}
+          {!historyError && sessions.length === 0 && <p className="text-sm text-slate-400">Nenhuma aula salva nesta jornada.</p>}
+          {sessions.map((session) => <div key={session.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-800 p-3">
+            <div className="min-w-0"><p className="truncate text-sm font-medium">{session.topic}</p><p className="text-xs text-slate-400">{new Date(session.created_at).toLocaleDateString("pt-BR")} · {session.status}</p></div>
+            <button type="button" disabled={historyBusy || session.status !== "active"} onClick={() => void resumeSession(session)} className="shrink-0 rounded-lg border border-violet-400 px-3 py-2 text-sm disabled:opacity-40">Continuar aula</button>
+          </div>)}
+        </section>}
         {lesson && <section className="space-y-3 rounded-2xl border border-violet-400/30 p-5" aria-live="polite">
           <h2 className="text-lg font-semibold">{lesson.title}</h2>
           <p className="text-sm text-slate-300">{lesson.objective} · {lesson.durationMinutes} minutos</p>
@@ -106,7 +151,7 @@ export default function MikaProfessorPage() {
         </section>}
         {lesson && <section className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-5">
           <h2 className="font-semibold">Conversar com a MIKA Professora</h2>
-          <p className="text-xs text-slate-400">As mensagens desta aula ficam apenas nesta sessão da tela e não são salvas como histórico de aprendizagem.</p>
+          <p className="text-xs text-slate-400">{sessionId ? "Histórico vinculado à sua conta. A MIKA continua de onde você parou." : "Modo temporário: as mensagens não serão salvas no histórico."}</p>
           <div className="max-h-80 space-y-2 overflow-y-auto" aria-live="polite">
             {messages.map((m, i) => <div key={i} className={m.role === "user" ? "rounded-xl bg-violet-800/50 p-3 text-sm" : "rounded-xl bg-slate-800 p-3 text-sm whitespace-pre-wrap"}>
               <strong>{m.role === "user" ? "Você" : "MIKA"}</strong><p className="mt-1">{m.content}</p>
