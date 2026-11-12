@@ -22,6 +22,10 @@ begin
   end if;
   -- Serialize all Journey bookings for this user; two concurrent RPCs cannot pass the checks together.
   perform pg_advisory_xact_lock(hashtextextended(v_user::text, 77429));
+  -- Lock event writers too: regular INSERT/UPDATE/DELETE operations acquire ROW EXCLUSIVE.
+  -- This guarantees a stable conflict check against direct Agenda writes already in progress.
+  -- It does not prevent a later direct Agenda insert from overlapping this lesson.
+  lock table public.events in share row exclusive mode;
   select m.title into v_title
   from public.myryra_journey_missions m
   join public.myryra_journeys j on j.id = m.journey_id
