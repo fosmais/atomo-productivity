@@ -150,10 +150,28 @@ export async function POST(request: Request) {
     if ((request.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase() !== "application/json") {
       return NextResponse.json({ error: "Envie JSON." }, { status: 415 });
     }
-    const raw = await request.text();
-    if (new TextEncoder().encode(raw).length > 4096) return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+    const contentLength = Number(request.headers.get("content-length"));
+    if (Number.isFinite(contentLength) && contentLength > 4096) {
+      return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+    }
+    const reader = request.body?.getReader();
+    if (!reader) return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
+    const decoder = new TextDecoder();
+    const chunks: string[] = [];
+    let bytes = 0;
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      bytes += chunk.value.byteLength;
+      if (bytes > 4096) {
+        await reader.cancel();
+        return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+      }
+      chunks.push(decoder.decode(chunk.value, { stream: true }));
+    }
+    chunks.push(decoder.decode());
     let input: unknown;
-    try { input = JSON.parse(raw); } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
+    try { input = JSON.parse(chunks.join("")); } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
     if (!input || typeof input !== "object" || Array.isArray(input)) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
     const messageId = (input as Record<string, unknown>).messageId;
     const categoryInput = (input as Record<string, unknown>).category;
