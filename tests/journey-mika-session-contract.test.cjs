@@ -132,3 +132,13 @@ test("Journey booking never claims success without a confirmed event identifier"
   assert.match(ui, /Consulte a Agenda antes de tentar novamente para evitar duplicidade/);
   assert.ok(ui.indexOf('typeof bookedEventId !== "string"') < ui.indexOf('setMessage("Aula criada na Agenda MYRYRA.'));
 });
+
+test("Booked Journey lessons in Agenda offer a navigation action to MIKA", () => {
+  const calendar = read("src/app/dashboard/calendar-events.tsx");
+  const dashboard = read("src/app/dashboard/page.tsx");
+  assert.match(calendar, /event\.notes\?\.startsWith\("Jornada "\)/);
+  assert.match(calendar, /event\.notes\.includes\(" · missão "\)/);
+  assert.match(calendar, /onClick=\{\(\) => navigateTo\("vyra-ai"\)\}/);
+  assert.match(calendar, /Abrir Journey e iniciar aula com a MIKA/);
+  assert.match(dashboard, /<MikaJourneyPlanner \/>/);
+});
