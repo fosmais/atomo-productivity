@@ -38,12 +38,15 @@ begin
   ) then
     raise exception 'MIKA: foreign key composta sessao/proprietario ausente';
   end if;
-  if has_table_privilege('authenticated','public.mika_teacher_sessions','UPDATE') then
-    raise exception 'MIKA: cliente pode alterar sessao diretamente';
+  if has_column_privilege('authenticated','public.mika_teacher_sessions','owner_id','UPDATE')
+     or has_column_privilege('authenticated','public.mika_teacher_sessions','journey_id','UPDATE')
+     or has_column_privilege('authenticated','public.mika_teacher_sessions','status','UPDATE')
+     or not has_column_privilege('authenticated','public.mika_teacher_sessions','scheduled_at','UPDATE') then
+    raise exception 'MIKA: privilegios de reagendamento incorretos';
   end if;
   if (select count(*) from pg_policies
       where schemaname='public' and tablename='mika_teacher_sessions'
-      and policyname in ('teacher sessions select own','teacher sessions insert own journey','teacher sessions delete own')) <> 3
+      and policyname in ('teacher sessions select own','teacher sessions insert own journey','teacher sessions delete own','teacher sessions reschedule own')) <> 4
      or (select count(*) from pg_policies
          where schemaname='public' and tablename='mika_teacher_messages'
          and policyname='teacher messages select own') <> 1 then
