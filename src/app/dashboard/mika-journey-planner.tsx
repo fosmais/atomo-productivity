@@ -171,6 +171,10 @@ export default function MikaJourneyPlanner() {
       });
       const payload = await readApiJson(response, "Não foi possível processar a jornada");
       if (!response.ok) throw new Error(payload.error || "Falha ao atualizar missão.");
+      if (payload.mission.status === "completed") {
+        if (lessonMissionId === id) { setLessonMissionId(null); setLessonTurns([]); setLessonInput(""); }
+        if (scheduleMissionId === id) { setScheduleMissionId(null); setScheduleStart(""); }
+      }
       setMissions((current) => current.map((mission) =>
         mission.id === id ? { ...mission, status: payload.mission.status } : mission));
     } catch (error) {
@@ -476,12 +480,12 @@ export default function MikaJourneyPlanner() {
                                 <span className={mission.status === "completed" ? "text-slate-400 line-through" : ""}>
                                   {mission.title}
                                 </span>
-                                {journey.status === "active" && <button type="button" disabled={lessonBusy}
+                                {journey.status === "active" && mission.status === "pending" && <button type="button" disabled={lessonBusy}
                                   onClick={() => void talkToMika(journey.id, mission.id)}
                                   className="mt-2 block rounded-lg border border-violet-400/60 px-3 py-1.5 text-xs">
                                   Iniciar com a MIKA
                                 </button>}
-                                {journey.status === "active" && <button type="button" disabled={scheduleBusy}
+                                {journey.status === "active" && mission.status === "pending" && <button type="button" disabled={scheduleBusy}
                                   onClick={() => setScheduleMissionId(scheduleMissionId === mission.id ? null : mission.id)}
                                   className="mt-2 block rounded-lg border border-white/30 px-3 py-1.5 text-xs">
                                   Agendar aula na Agenda
