@@ -97,3 +97,12 @@ test("Completed missions hide lesson and booking actions and close stale lesson 
   assert.match(ui, /journey\.status === "active" && mission\.status === "pending" && <button type="button" disabled=\{scheduleBusy\}/);
   assert.match(ui, /if \(payload\.mission\.status === "completed"\)/);
 });
+
+test("Rapid journey switching ignores stale mission responses and resets lesson state", () => {
+  const ui = read("src/app/dashboard/mika-journey-planner.tsx");
+  assert.match(ui, /const journeyOpenRequestRef = useRef\(0\)/);
+  assert.match(ui, /const requestId = \+\+journeyOpenRequestRef\.current/);
+  assert.match(ui, /if \(requestId !== journeyOpenRequestRef\.current\) return/);
+  assert.match(ui, /setScheduleMissionId\(null\)/);
+  assert.ok(ui.includes('setLessonInput("");'));
+});
