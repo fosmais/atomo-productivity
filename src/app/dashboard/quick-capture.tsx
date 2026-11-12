@@ -180,12 +180,12 @@ export default function QuickCapture() {
       <FeatureHint label="MYRYRA · CAPTURA RÁPIDA" title="Tire as ideias da cabeça" description="Transforma anotações em tarefas, reconhecendo datas como hoje, amanhã ou 31/10/2026." tip="Revise os dados e confirme antes de salvar." />
       <h3 className="mt-2 text-xl font-semibold">Tire as ideias da cabeça.</h3>
       <div className="mt-3 flex gap-2" role="group" aria-label="Tipo de captura">
-        <button type="button" onClick={() => { setCaptureType("task"); setInput(""); setDrafts([]); setError(""); setSuccess(""); }} className={`rounded-lg px-4 py-2 text-sm font-medium ${captureType === "task" ? "bg-violet-600 text-white" : "border border-slate-600 text-slate-300"}`}>Tarefa</button>
-        <button type="button" onClick={() => { setCaptureType("event"); setInput(""); setDrafts([]); setError(""); setSuccess(""); }} className={`rounded-lg px-4 py-2 text-sm font-medium ${captureType === "event" ? "bg-violet-600 text-white" : "border border-slate-600 text-slate-300"}`}>Compromisso</button>
+        <button type="button" onClick={() => { missionRef.current = null; setCaptureType("task"); setInput(""); setDrafts([]); setError(""); setSuccess(""); }} className={`rounded-lg px-4 py-2 text-sm font-medium ${captureType === "task" ? "bg-violet-600 text-white" : "border border-slate-600 text-slate-300"}`}>Tarefa</button>
+        <button type="button" onClick={() => { missionRef.current = null; setCaptureType("event"); setInput(""); setDrafts([]); setError(""); setSuccess(""); }} className={`rounded-lg px-4 py-2 text-sm font-medium ${captureType === "event" ? "bg-violet-600 text-white" : "border border-slate-600 text-slate-300"}`}>Compromisso</button>
       </div>
       <p className="mt-2 text-sm text-slate-300">{captureType === "task" ? "Uma tarefa por linha. Reconhece hoje, amanhã e DD/MM/AAAA." : "Registre um compromisso diretamente na agenda MYRYRA."}</p>
       <label htmlFor="quick-capture-input" className="sr-only">{captureType === "task" ? "Tarefas para organizar" : "Título do compromisso"}</label>
-      <textarea id="quick-capture-input" value={input} onChange={(event) => { setInput(event.target.value); setDrafts([]); setSuccess(""); }}
+      <textarea id="quick-capture-input" value={input} onChange={(event) => { missionRef.current = null; setInput(event.target.value); setDrafts([]); setSuccess(""); }}
         maxLength={captureType === "task" ? 2200 : 200} rows={captureType === "task" ? 4 : 2} placeholder={captureType === "task" ? "Preparar reunião de terça\nPagar escola\nMarcar dentista" : "Ex.: Reunião de planejamento"}
         className="mt-4 w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white placeholder:text-slate-500" />
       {captureType === "event" && <div className="mt-3 grid gap-3 sm:grid-cols-2">
