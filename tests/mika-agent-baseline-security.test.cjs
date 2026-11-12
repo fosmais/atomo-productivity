@@ -144,3 +144,13 @@ test('MIKA executor requires a recorded and non-future approval timestamp', () =
  assert.match(executor, /p\.status <> 'approved' or p\.action_type <> 'create_task' or p\.approved_at is null or p\.approved_at > now\(\)/);
  assert.ok(executor.indexOf("p.approved_at is null") < executor.indexOf("insert into public.tasks("));
 });
+
+
+test('MIKA executor requires a matching owner-scoped approval audit record', () => {
+ assert.match(executor, /from public\.mika_action_audit a/);
+ assert.match(executor, /a\.proposal_id=p\.id and a\.user_id=v_user/);
+ assert.match(executor, /a\.event_type='approved'/);
+ assert.match(executor, /a\.created_at >= p\.created_at/);
+ assert.match(executor, /approval_audit_missing/);
+ assert.ok(executor.indexOf("approval_audit_missing") < executor.indexOf("insert into public.tasks("));
+});
