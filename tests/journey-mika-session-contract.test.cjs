@@ -230,3 +230,11 @@ test("MIKA rejects a response associated with a different mission", () => {
   const update = ui.indexOf("setLessonTurns([...next", validation);
   assert.ok(validation >= 0 && update > validation);
 });
+
+test("MIKA never displays a blank response as a lesson turn", () => {
+  const ui = read("src/app/dashboard/mika-journey-planner.tsx");
+  assert.match(ui, /typeof payload\.reply !== "string" \|\| !payload\.reply\.trim\(\)/);
+  const validation = ui.indexOf("!payload.reply.trim()");
+  const update = ui.indexOf("setLessonTurns([...next", validation);
+  assert.ok(validation >= 0 && update > validation);
+});
