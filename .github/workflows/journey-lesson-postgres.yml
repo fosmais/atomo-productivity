@@ -6,6 +6,7 @@ on:
   pull_request:
     paths:
       - 'tests/journey-lesson-*.sql'
+      - 'tests/journey-lesson-concurrency-ci.sh'
       - 'tests/fixtures/journey-agenda-local-bootstrap.sql'
       - 'tests/fixtures/supabase-auth-postgres-ci-shim.sql'
       - 'supabase/migrations/20261112000100_myryra_journey_lesson_atomic.sql'
@@ -48,3 +49,5 @@ jobs:
         run: psql -X -v ON_ERROR_STOP=1 -f tests/journey-lesson-rpc-local.sql
       - name: Exercise booking and rejection paths
         run: psql -X -v ON_ERROR_STOP=1 -f tests/journey-lesson-booking-integration-local.sql
+      - name: Exercise concurrent booking in separate PostgreSQL sessions
+        run: bash tests/journey-lesson-concurrency-ci.sh
