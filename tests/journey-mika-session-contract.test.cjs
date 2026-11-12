@@ -48,3 +48,9 @@ test("MIKA lessons use the authenticated UUID for quota enforcement", () => {
   assert.doesNotMatch(api, /checkConciergeRateLimit\(`journey-session:/);
   assert.match(api, /messages\.some\(\(turn, index\)/);
 });
+
+test("MIKA lesson retains learner input on request failure and resets between missions", () => {
+  const ui = read("src/app/dashboard/mika-journey-planner.tsx");
+  assert.match(ui, /if \(!answer\) \{\s*setLessonMissionId\(missionId\);\s*setLessonTurns\(\[\]\);/);
+  assert.match(ui, /if \(answer\) setLessonInput\(answer\);/);
+});
