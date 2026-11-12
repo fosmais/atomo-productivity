@@ -76,6 +76,12 @@ export default function MikaJourneyPlanner() {
     if (lessonBusy) return;
     setLessonBusy(true);
     setMessage("");
+    // Reset the visible conversation before requesting a new mission's first lesson.
+    if (!answer) {
+      setLessonMissionId(missionId);
+      setLessonTurns([]);
+      setLessonInput("");
+    }
     const next = answer ? [...lessonTurns, { role: "user" as const, content: answer }] : [];
     try {
       const response = await fetch("/api/journeys/" + encodeURIComponent(journeyId) + "/mika-session", {
@@ -457,7 +463,7 @@ export default function MikaJourneyPlanner() {
                                   {mission.title}
                                 </span>
                                 {journey.status === "active" && <button type="button" disabled={lessonBusy}
-                                  onClick={() => { setLessonMissionId(null); setLessonTurns([]); void talkToMika(journey.id, mission.id); }}
+                                  onClick={() => void talkToMika(journey.id, mission.id)}
                                   className="mt-2 block rounded-lg border border-violet-400/60 px-3 py-1.5 text-xs">
                                   Iniciar com a MIKA
                                 </button>}
