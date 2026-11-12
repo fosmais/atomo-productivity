@@ -55,3 +55,46 @@ if grep -Eiq 'lock[[:space:]]+table[[:space:]]+public[.]events' supabase/migrati
  exit 1
 fi
 echo 'PASS: booking RPC does not acquire a global events table lock'
+
+# Hold an uncommitted Agenda write for another user. Journey booking must
+# proceed without waiting for this unrelated transaction to commit.
+psql -X -v ON_ERROR_STOP=1 <<'SQL'
+insert into auth.users(id,instance_id,aud,role,email,created_at,updated_at)
+values ('00000000-0000-4000-8000-000000000112',
+'00000000-0000-0000-0000-000000000000',
+'authenticated','authenticated','other-local@example.invalid',now(),now());
+insert into public.myryra_journey_missions(id,journey_id,title)
+values ('00000000-0000-4000-8000-000000000312',
+'00000000-0000-4000-8000-000000000211','Outra aula');
+SQL
+cat >"$tmp/unrelated-write.sql" <<'SQL'
+begin;
+insert into public.events(user_id,title,starts_at,ends_at,blocks_time)
+values ('00000000-0000-4000-8000-000000000112',
+'Unrelated pending write',now()+interval '2 days',now()+interval '2 days 20 minutes',true);
+select pg_sleep(3);
+commit;
+SQL
+psql -X -v ON_ERROR_STOP=1 -f "$tmp/unrelated-write.sql" >"$tmp/writer.out" 2>"$tmp/writer.err" &
+writer=$!
+sleep 1
+cat >"$tmp/independent-booking.sql" <<'SQL'
+set role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000111',false);
+set statement_timeout = '1500ms';
+select public.myryra_book_journey_lesson(
+'00000000-0000-4000-8000-000000000211',
+'00000000-0000-4000-8000-000000000312',
+now()+interval '3 days');
+SQL
+set +e
+psql -X -v ON_ERROR_STOP=1 -f "$tmp/independent-booking.sql" >"$tmp/independent.out" 2>"$tmp/independent.err"
+booking_status=$?
+wait "$writer"; writer_status=$?
+set -e
+if [[ $booking_status -ne 0 || $writer_status -ne 0 ]]; then
+ echo "FAIL: unrelated Agenda write blocked Journey booking (booking=$booking_status, writer=$writer_status)"
+ cat "$tmp/independent.err" "$tmp/writer.err"
+ exit 1
+fi
+echo 'PASS: unrelated pending Agenda write does not block Journey booking'
