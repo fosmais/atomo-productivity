@@ -16,6 +16,7 @@ export default function MikaProfessorPage() {
   const [historyError, setHistoryError] = useState("");
   const [saveWarning, setSaveWarning] = useState("");
   const [historyOutOfSync, setHistoryOutOfSync] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState("");
   const [historyBusy, setHistoryBusy] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyReady, setHistoryReady] = useState(false);
@@ -73,7 +74,7 @@ export default function MikaProfessorPage() {
       const response = await fetch("/api/mika/lessons/messages?sessionId=" + encodeURIComponent(session.id), { cache: "no-store" });
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Não foi possível retomar a aula.");
-      setTopic(session.topic); setLevel(session.level); setSessionId(session.id); setSaveWarning(""); setHistoryOutOfSync(false);
+      setTopic(session.topic); setLevel(session.level); setSessionId(session.id); setSaveWarning(""); setHistoryOutOfSync(false); setCopyFeedback(""); setCopyFeedback("");
       setLesson({ title: "Aula: " + session.topic, objective: "Continuar a aula anterior", durationMinutes, activities: [], assessment: "Continue sua conversa com a MIKA." });
       setMessages((json.messages ?? []).map((m: Message) => ({ role: m.role, content: m.content })));
       setAnswer("");
@@ -177,7 +178,16 @@ export default function MikaProfessorPage() {
         {lesson && <section className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-5">
           <h2 className="font-semibold">Conversar com a MIKA Professora</h2>
           <p className="text-xs text-slate-400">{sessionId ? "Histórico associado à sua conta. A gravação de cada resposta será confirmada pelo servidor." : "Conversa indisponível até que seja possível salvar o histórico da aula."}</p>
-          {saveWarning && <p role="alert" className="rounded-lg border border-amber-500/50 p-3 text-sm text-amber-200">{saveWarning} Novas mensagens ficam bloqueadas até você reabrir a aula pelo histórico.</p>}
+          {saveWarning && <div className="space-y-2 rounded-lg border border-amber-500/50 p-3 text-sm text-amber-200" role="alert">
+            <p>{saveWarning} Novas mensagens ficam bloqueadas até você reabrir a aula pelo histórico.</p>
+            <button type="button" className="rounded-lg border border-amber-400/60 px-3 py-2 font-semibold" onClick={async () => {
+              const lastReply = [...messages].reverse().find((m) => m.role === "assistant")?.content;
+              if (!lastReply) return;
+              try { await navigator.clipboard.writeText(lastReply); setCopyFeedback("Resposta copiada."); }
+              catch { setCopyFeedback("Não foi possível copiar automaticamente. Selecione o texto da resposta para copiar."); }
+            }}>Copiar resposta da MIKA</button>
+            {copyFeedback && <p role="status">{copyFeedback}</p>}
+          </div>}
           <div className="max-h-80 space-y-2 overflow-y-auto" aria-live="polite">
             {messages.map((m, i) => <div key={i} className={m.role === "user" ? "rounded-xl bg-violet-800/50 p-3 text-sm" : "rounded-xl bg-slate-800 p-3 text-sm whitespace-pre-wrap"}>
               <strong>{m.role === "user" ? "Você" : "MIKA"}</strong><p className="mt-1">{m.content}</p>
