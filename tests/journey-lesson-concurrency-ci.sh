@@ -47,3 +47,11 @@ if [[ "$count" != 1 ]]; then
  exit 1
 fi
 echo 'PASS: two concurrent bookings produce exactly one event and one duplicate rejection'
+
+# Unrelated users must not be blocked by a Journey booking transaction.
+# A user-scoped advisory lock is acceptable; a table-wide events lock is not.
+if grep -Eiq 'lock[[:space:]]+table[[:space:]]+public[.]events' supabase/migrations/20261112000100_myryra_journey_lesson_atomic.sql; then
+ echo 'FAIL: booking RPC must not lock the global events table'
+ exit 1
+fi
+echo 'PASS: booking RPC does not acquire a global events table lock'
