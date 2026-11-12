@@ -57,7 +57,7 @@ export default function MikaProfessorPage() {
   }, [journeyId]);
 
   async function deleteSession(session: Session) {
-    if (historyBusy || chatBusy || !window.confirm("Excluir definitivamente esta aula e todas as mensagens? Esta ação não pode ser desfeita.")) return;
+    if (historyBusy || chatBusy || busy || !window.confirm("Excluir definitivamente esta aula e todas as mensagens? Esta ação não pode ser desfeita.")) return;
     setHistoryBusy(true); setError("");
     try {
       const response = await fetch("/api/mika/lessons/delete?sessionId=" + encodeURIComponent(session.id), { method: "DELETE" });
@@ -70,7 +70,7 @@ export default function MikaProfessorPage() {
   }
 
   async function updateSchedule(session: Session, clear = false) {
-    if (historyBusy || chatBusy) return;
+    if (historyBusy || chatBusy || busy) return;
     const selected = rescheduleInputs[session.id] ?? "";
     if (!clear && (!selected || !Number.isFinite(Date.parse(selected)) || Date.parse(selected) < Date.now() + 60000 || Date.parse(selected) > Date.now() + 366 * 86400000)) {
       setError("Escolha uma data válida, entre um minuto e 366 dias a partir de agora."); return;
@@ -90,13 +90,13 @@ export default function MikaProfessorPage() {
   }
 
   async function resumeSession(session: Session) {
-    if (historyBusy || chatBusy) return;
+    if (historyBusy || chatBusy || busy) return;
     setHistoryBusy(true); setError("");
     try {
       const response = await fetch("/api/mika/lessons/messages?sessionId=" + encodeURIComponent(session.id), { cache: "no-store" });
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Não foi possível retomar a aula.");
-      setTopic(session.topic); setLevel(session.level); setSessionId(session.id); setSaveWarning(""); setHistoryOutOfSync(false); setCopyFeedback(""); setCopyFeedback("");
+      setTopic(session.topic); setLevel(session.level); setSessionId(session.id); setSaveWarning(""); setHistoryOutOfSync(false); setCopyFeedback("");
       setLesson({ title: "Aula: " + session.topic, objective: "Continuar a aula anterior", durationMinutes, activities: [], assessment: "Continue sua conversa com a MIKA." });
       setMessages((json.messages ?? []).map((m: Message) => ({ role: m.role, content: m.content })));
       setAnswer("");
@@ -105,7 +105,7 @@ export default function MikaProfessorPage() {
   }
 
   async function propose() {
-    if (!journeyId || busy || !historyReady) return;
+    if (!journeyId || busy || chatBusy || historyBusy || !historyReady) return;
     if (scheduledAt) {
       const time = Date.parse(scheduledAt);
       if (!Number.isFinite(time) || time < Date.now() + 60000 || time > Date.now() + 366 * 86400000) {
@@ -161,29 +161,29 @@ export default function MikaProfessorPage() {
         </header>
         <section className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-5">
           <label className="block text-sm">Jornada
-            <select value={journeyId} onChange={(e) => { setJourneyId(e.target.value); setLesson(null); setMessages([]); setSessionId(""); }} className="mt-1 w-full rounded-lg bg-slate-800 p-3">
+            <select disabled={chatBusy || busy || historyBusy} value={journeyId} onChange={(e) => { setJourneyId(e.target.value); setLesson(null); setMessages([]); setSessionId(""); }} className="mt-1 w-full rounded-lg bg-slate-800 p-3">
               <option value="">Escolha uma jornada ativa</option>
               {journeys.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}
             </select>
           </label>
           <label className="block text-sm">Assunto da aula
-            <input value={topic} onChange={(e) => { setTopic(e.target.value); setLesson(null); setMessages([]); setSessionId(""); }} maxLength={120} placeholder="Ex.: cumprimentos em italiano" className="mt-1 w-full rounded-lg bg-slate-800 p-3" />
+            <input disabled={chatBusy || busy || historyBusy} value={topic} onChange={(e) => { setTopic(e.target.value); setLesson(null); setMessages([]); setSessionId(""); }} maxLength={120} placeholder="Ex.: cumprimentos em italiano" className="mt-1 w-full rounded-lg bg-slate-800 p-3" />
           </label>
           <label className="block text-sm">Nível
-            <select value={level} onChange={(e) => { setLevel(e.target.value); setLesson(null); setMessages([]); setSessionId(""); }} className="mt-1 w-full rounded-lg bg-slate-800 p-3">
+            <select disabled={chatBusy || busy || historyBusy} value={level} onChange={(e) => { setLevel(e.target.value); setLesson(null); setMessages([]); setSessionId(""); }} className="mt-1 w-full rounded-lg bg-slate-800 p-3">
               <option value="iniciante">Iniciante</option><option value="intermediário">Intermediário</option><option value="avançado">Avançado</option>
             </select>
           </label>
           <label className="block text-sm">Duração
-            <select value={durationMinutes} onChange={(e) => { setDurationMinutes(Number(e.target.value)); setLesson(null); setMessages([]); setSessionId(""); }} className="mt-1 w-full rounded-lg bg-slate-800 p-3">
+            <select disabled={chatBusy || busy || historyBusy} value={durationMinutes} onChange={(e) => { setDurationMinutes(Number(e.target.value)); setLesson(null); setMessages([]); setSessionId(""); }} className="mt-1 w-full rounded-lg bg-slate-800 p-3">
               <option value={15}>15 minutos</option><option value={20}>20 minutos</option><option value={30}>30 minutos</option><option value={45}>45 minutos</option><option value={60}>60 minutos</option>
             </select>
           </label>
           <label className="block text-sm">Agendar para (opcional)
-            <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="mt-1 w-full rounded-lg bg-slate-800 p-3" />
+            <input type="datetime-local" disabled={chatBusy || busy || historyBusy} value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="mt-1 w-full rounded-lg bg-slate-800 p-3" />
             <span className="mt-1 block text-xs text-slate-400">Salva a data da aula; ainda não cria evento no calendário nem envia lembrete.</span>
           </label>
-          <button type="button" onClick={propose} disabled={!journeyId || busy || !historyReady || historyLoading} className="w-full rounded-xl bg-violet-600 p-3 font-semibold disabled:opacity-50">
+          <button type="button" onClick={propose} disabled={!journeyId || busy || chatBusy || historyBusy || !historyReady || historyLoading} className="w-full rounded-xl bg-violet-600 p-3 font-semibold disabled:opacity-50">
             {busy ? "Preparando..." : "Preparar minha aula"}
           </button>
         </section>
@@ -197,12 +197,12 @@ export default function MikaProfessorPage() {
             <div className="min-w-0"><p className="truncate text-sm font-medium">{session.topic}</p><p className="text-xs text-slate-400">{new Date(session.created_at).toLocaleDateString("pt-BR")} · {session.status}{session.scheduled_at ? " · Agendada: " + new Date(session.scheduled_at).toLocaleString("pt-BR") : ""}</p></div>
             <div className="flex shrink-0 flex-col gap-2">
               <label className="text-xs text-slate-300">Reagendar
-                <input type="datetime-local" aria-label={"Nova data de " + session.topic} value={rescheduleInputs[session.id] ?? ""} onChange={(e) => setRescheduleInputs((current) => ({ ...current, [session.id]: e.target.value }))} disabled={historyBusy || session.status !== "active"} className="mt-1 w-full rounded-lg bg-slate-700 p-2 text-xs" />
+                <input type="datetime-local" aria-label={"Nova data de " + session.topic} value={rescheduleInputs[session.id] ?? ""} onChange={(e) => setRescheduleInputs((current) => ({ ...current, [session.id]: e.target.value }))} disabled={historyBusy || busy || chatBusy || session.status !== "active"} className="mt-1 w-full rounded-lg bg-slate-700 p-2 text-xs" />
               </label>
-              <button type="button" disabled={historyBusy || session.status !== "active" || !rescheduleInputs[session.id]} onClick={() => void updateSchedule(session)} className="rounded-lg border border-violet-400/60 px-3 py-2 text-xs disabled:opacity-40">Salvar horário</button>
+              <button type="button" disabled={historyBusy || busy || chatBusy || session.status !== "active" || !rescheduleInputs[session.id]} onClick={() => void updateSchedule(session)} className="rounded-lg border border-violet-400/60 px-3 py-2 text-xs disabled:opacity-40">Salvar horário</button>
               {session.scheduled_at && <button type="button" disabled={historyBusy || session.status !== "active"} onClick={() => void updateSchedule(session, true)} className="rounded-lg border border-slate-400/50 px-3 py-2 text-xs disabled:opacity-40">Remover data (manter aula)</button>}
               <button type="button" disabled={historyBusy || session.status !== "active"} onClick={() => void resumeSession(session)} className="rounded-lg border border-violet-400 px-3 py-2 text-sm disabled:opacity-40">Continuar aula</button>
-              <button type="button" disabled={historyBusy} onClick={() => void deleteSession(session)} className="rounded-lg border border-rose-400/50 px-3 py-2 text-xs text-rose-200 disabled:opacity-40">Excluir aula</button>
+              <button type="button" disabled={historyBusy || busy || chatBusy} onClick={() => void deleteSession(session)} className="rounded-lg border border-rose-400/50 px-3 py-2 text-xs text-rose-200 disabled:opacity-40">Excluir aula</button>
             </div>
           </div>)}
         </section>}
