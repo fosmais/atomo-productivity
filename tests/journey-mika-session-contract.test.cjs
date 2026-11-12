@@ -87,18 +87,13 @@ test("MIKA lesson retains learner input on request failure and resets between mi
   assert.match(ui, /if \(answer\) setLessonInput\(answer\);/);
 });
 
-test("Long MIKA conversations retain an odd number of turns starting with the learner", () => {
+test("MIKA history keeps the opening exercise and the newest learner reply", () => {
   const ui = read("src/app/dashboard/mika-journey-planner.tsx");
   const api = read("src/app/api/journeys/[journeyId]/mika-session/route.ts");
-  assert.match(ui, /next\.slice\(next\.findIndex\(turn => turn\.role === "user"\)\)\.slice\(-11\)/);
+  assert.match(ui, /messages: next\.slice\(-12\)/);
+  assert.match(api, /const firstRole = messages\[0\]\?\.role/);
   assert.match(api, /messages\.some\(\(turn, index\)/);
-});
-
-test("MIKA history stays learner-first for short and long lessons", () => {
-  // Mirrors the client-side history normalization with the API's alternating-turn contract.
-  function normalize(turns) {
-    return turns.slice(turns.findIndex(turn => turn.role === "user")).slice(-11);
-  }
+  function normalize(turns) { return turns.slice(-12); }
   const initial = [{ role: "assistant", content: "Ciao! Come ti chiami?" }];
   for (let answers = 1; answers <= 20; answers++) {
     const turns = [...initial];
@@ -107,11 +102,12 @@ test("MIKA history stays learner-first for short and long lessons", () => {
       if (i < answers - 1) turns.push({ role: "assistant", content: "Correzione " + i });
     }
     const history = normalize(turns);
-    assert.ok(history.length > 0 && history.length <= 11);
-    assert.equal(history.length % 2, 1);
+    assert.ok(history.length > 0 && history.length <= 12);
+    assert.equal(history.length % 2, 0);
     history.forEach((turn, index) =>
-      assert.equal(turn.role, index % 2 === 0 ? "user" : "assistant"));
+      assert.equal(turn.role, index % 2 === 0 ? "assistant" : "user"));
     assert.equal(history.at(-1).content, "Risposta " + (answers - 1));
+    if (answers === 1) assert.equal(history[0].content, initial[0].content);
   }
 });
 
