@@ -59,7 +59,7 @@ test("MIKA lesson retains learner input on request failure and resets between mi
 test("Long MIKA conversations retain an odd number of turns starting with the learner", () => {
   const ui = read("src/app/dashboard/mika-journey-planner.tsx");
   const api = read("src/app/api/journeys/[journeyId]/mika-session/route.ts");
-  assert.match(ui, /messages: next\.slice\(-11\)/);
+  assert.match(ui, /next\.slice\(next\.findIndex\(turn => turn\.role === "user"\)\)\.slice\(-11\)/);
   assert.match(api, /messages\.some\(\(turn, index\)/);
 });
 
