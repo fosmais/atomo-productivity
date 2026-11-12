@@ -563,8 +563,10 @@ export default function MikaJourneyPlanner() {
                                 </span>
                                 {journey.status === "active" && mission.status === "pending" && <button type="button" disabled={lessonBusy}
                                   onClick={() => {
-                                    if (lessonMissionId === mission.id && lessonTurns.length > 0 &&
-                                      !window.confirm("Reiniciar esta aula? A conversa atual será perdida.")) return;
+                                    if (lessonMissionId && lessonTurns.length > 0 &&
+                                      !window.confirm(lessonMissionId === mission.id
+                                        ? "Reiniciar esta aula? A conversa atual será perdida."
+                                        : "Iniciar outra missão? A conversa da aula atual será perdida.")) return;
                                     void talkToMika(journey.id, mission.id);
                                   }}
                                   className="mt-2 block rounded-lg border border-violet-400/60 px-3 py-1.5 text-xs">
