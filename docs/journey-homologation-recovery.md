@@ -55,3 +55,21 @@ Do not treat the five-table candidate as a complete baseline. Remaining work: re
 Production has **60 ordinary tables in `public`**, of which **25** start with `myryra_`. These include billing, support, Google Calendar, MIKA, privacy, health, finance, and Journey. The five-table candidate covers only a small part of the production schema. The complete 42-migration history was recovered from `supabase_migrations.schema_migrations.statements`, but this history starts after application tables already existed. Do **not** claim that restoring all 42 migration files makes clean replay possible. The original bootstrap must account for all required pre-existing tables, policies, roles, functions, triggers and indexes.
 
 Prioritize a scoped Journey/Agenda test fixture over recreating all 60 production tables for the first local integration test, while retaining a separate full-schema parity task for eventual branch provisioning. Never copy production user rows or billing secrets to a fixture.
+
+## Release gate — MIKA lesson scheduling (2026-11-12)
+
+Automated CI passing is **not** authenticated end-to-end validation. The candidate UI in `src/app/dashboard/mika-journey-planner.tsx` calls `public.myryra_book_journey_lesson` after an explicit confirmation, and the MIKA lesson endpoint requires a signed-in owner and an active journey/pending mission. The booking currently lasts **20 minutes** and does not synchronize to Google Calendar. Do not claim arbitrary lesson durations or natural-language chat scheduling.
+
+**Preflight (read-only):** verify the target environment's deployed commit, Supabase project ID, migration presence, RPC signature/grants, `events` trigger, Journey/mission RLS, and isolated test accounts. A SQL migration file or a successful CI fixture does not prove that the RPC exists in the target database. Never apply a production migration merely to make a test pass.
+
+**Authenticated staging test (only after clean isolated database setup):**
+1. Create two synthetic users A and B via normal Auth. Under A, create an active test journey with a pending test mission; under B, create an independent journey.
+2. With A, open Journey and select **Agendar aula na Agenda**; enter a future local date/time and verify the confirmation dialog displays the mission title, local date/time and 20-minute duration. Cancel once and verify no event was inserted.
+3. Confirm the booking once; require a returned UUID and exactly one owner-scoped `events` row with the expected Journey/mission marker, 20-minute interval and `blocks_time=true`. Refresh Agenda and confirm the event remains visible.
+4. Repeat the booking for the same mission; expect a duplicate rejection and no second event. Attempt a conflicting booking; expect conflict rejection. Verify an adjacent non-overlapping interval is allowed for a different mission.
+5. Attempt A's mission booking while authenticated as B and unauthenticated; both must fail without writing an event. Exercise two simultaneous booking requests for the same mission; expect at most one inserted event.
+6. From the Agenda event, open its linked Journey/mission and start the MIKA session. Send a learner reply and verify contextual feedback without claiming completion or awarding MYRA merely for chatting.
+7. Verify failure handling for unavailable OpenAI, missing RPC, session expiry and permission errors; show actionable messages without leaking secrets or creating phantom appointments.
+8. Record evidence (test timestamp, sanitized event ID, commit SHA, environment, screenshots and database row counts). Delete only the synthetic fixtures after approval.
+
+**Release decision:** require clean CI, all staging tests above, review of the 325+ commit delta, migration parity, LGPD document publication/acceptance decision, and rollback plan. No automatic production promotion; preserve payments disabled. Keep build count low due to Vercel costs.
