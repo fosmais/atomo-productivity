@@ -28,6 +28,19 @@ begin
      or not has_table_privilege('authenticated','public.mika_teacher_sessions','DELETE') then
     raise exception 'MIKA: privilegios de acesso esperados ausentes';
   end if;
+  -- Prevent cross-owner transcript insertion even by trusted server code.
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.mika_teacher_messages'::regclass
+      and contype = 'f'
+      and conname = 'mika_teacher_messages_session_owner_fkey'
+      and pg_get_constraintdef(oid) like '%(session_id, owner_id)%'
+  ) then
+    raise exception 'MIKA: foreign key composta sessao/proprietario ausente';
+  end if;
+  if has_table_privilege('authenticated','public.mika_teacher_sessions','UPDATE') then
+    raise exception 'MIKA: cliente pode alterar sessao diretamente';
+  end if;
   if (select count(*) from pg_policies
       where schemaname='public' and tablename='mika_teacher_sessions'
       and policyname in ('teacher sessions select own','teacher sessions insert own journey','teacher sessions delete own')) <> 3
