@@ -22,13 +22,13 @@ export async function POST(request: Request) {
   if (!input || typeof input !== "object" || Array.isArray(input))
     return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
   const data = input as Record<string, unknown>;
-  if (typeof data.journeyId !== "string" || !/^[0-9a-f-]{36}$/i.test(data.journeyId) ||
-    (data.topic !== undefined && typeof data.topic !== "string") ||
-    (data.level !== undefined && typeof data.level !== "string") ||
-    (data.language !== undefined && typeof data.language !== "string") ||
+  if (typeof data.journeyId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(data.journeyId) ||
+    (data.topic !== undefined && (typeof data.topic !== "string" || data.topic.length > 120)) ||
+    (data.level !== undefined && (typeof data.level !== "string" || data.level.length > 40)) ||
+    (data.language !== undefined && (typeof data.language !== "string" || data.language.length > 40)) ||
     (data.durationMinutes !== undefined && typeof data.durationMinutes !== "number") ||
     (data.completedTopics !== undefined && (!Array.isArray(data.completedTopics) ||
-      data.completedTopics.length > 30 || !data.completedTopics.every((x: unknown) => typeof x === "string"))))
+      data.completedTopics.length > 30 || !data.completedTopics.every((x: unknown) => typeof x === "string" && x.length <= 120))))
     return NextResponse.json({ error: "Dados da aula inválidos." }, { status: 400 });
   const { data: journey, error: queryError } = await supabase.from("myryra_journeys")
     .select("id,title,status").eq("id", data.journeyId).eq("owner_id", user.id).maybeSingle();
