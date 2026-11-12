@@ -17,6 +17,7 @@ export default function MikaProfessorPage() {
   const [saveWarning, setSaveWarning] = useState("");
   const [historyBusy, setHistoryBusy] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyReady, setHistoryReady] = useState(false);
   const [topic, setTopic] = useState("");
   const [level, setLevel] = useState("iniciante");
   const [durationMinutes, setDurationMinutes] = useState(20);
@@ -38,14 +39,14 @@ export default function MikaProfessorPage() {
     return () => controller.abort();
   }, []);
   useEffect(() => {
-    setSessions([]); setSessionId(""); setHistoryError(""); setHistoryLoading(Boolean(journeyId));
+    setSessions([]); setSessionId(""); setHistoryError(""); setHistoryReady(false); setHistoryLoading(Boolean(journeyId));
     if (!journeyId) return;
     const controller = new AbortController();
     fetch("/api/mika/lessons/sessions?journeyId=" + encodeURIComponent(journeyId), { signal: controller.signal, cache: "no-store" })
       .then(async (response) => {
         const json = await response.json();
         if (!response.ok) throw new Error(json.error || "Histórico indisponível.");
-        if (!controller.signal.aborted) setSessions(json.sessions ?? []);
+        if (!controller.signal.aborted) { setSessions(json.sessions ?? []); setHistoryReady(true); }
       }).catch((e) => { if (!controller.signal.aborted) setHistoryError(e instanceof Error ? e.message : "Histórico indisponível."); })
       .finally(() => { if (!controller.signal.aborted) setHistoryLoading(false); });
     return () => controller.abort();
@@ -80,7 +81,7 @@ export default function MikaProfessorPage() {
   }
 
   async function propose() {
-    if (!journeyId || busy) return;
+    if (!journeyId || busy || !historyReady) return;
     setBusy(true); setError(""); setSaveWarning(""); setHistoryError(""); setLesson(null); setMessages([]); setAnswer(""); setSessionId("");
     try {
       const response = await fetch("/api/mika/lessons/propose", {
@@ -145,7 +146,7 @@ export default function MikaProfessorPage() {
               <option value={15}>15 minutos</option><option value={20}>20 minutos</option><option value={30}>30 minutos</option><option value={45}>45 minutos</option><option value={60}>60 minutos</option>
             </select>
           </label>
-          <button type="button" onClick={propose} disabled={!journeyId || busy} className="w-full rounded-xl bg-violet-600 p-3 font-semibold disabled:opacity-50">
+          <button type="button" onClick={propose} disabled={!journeyId || busy || !historyReady || historyLoading} className="w-full rounded-xl bg-violet-600 p-3 font-semibold disabled:opacity-50">
             {busy ? "Preparando..." : "Preparar minha aula"}
           </button>
           {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
