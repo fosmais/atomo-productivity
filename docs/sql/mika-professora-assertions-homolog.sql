@@ -44,6 +44,23 @@ begin
      or not has_column_privilege('authenticated','public.mika_teacher_sessions','scheduled_at','UPDATE') then
     raise exception 'MIKA: privilegios de reagendamento incorretos';
   end if;
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='mika_teacher_sessions'
+      and column_name='scheduled_at' and data_type='timestamp with time zone'
+  ) then
+    raise exception 'MIKA: scheduled_at ausente ou sem fuso horario';
+  end if;
+  if not exists (
+    select 1 from pg_policies
+    where schemaname='public' and tablename='mika_teacher_sessions'
+      and policyname='teacher sessions reschedule own'
+      and cmd='UPDATE'
+      and qual like '%owner_id%'
+      and with_check like '%owner_id%'
+  ) then
+    raise exception 'MIKA: politica de reagendamento nao verifica propriedade em USING e WITH CHECK';
+  end if;
   if (select count(*) from pg_policies
       where schemaname='public' and tablename='mika_teacher_sessions'
       and policyname in ('teacher sessions select own','teacher sessions insert own journey','teacher sessions delete own','teacher sessions reschedule own')) <> 4
