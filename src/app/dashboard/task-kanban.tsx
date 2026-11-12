@@ -343,10 +343,12 @@ export default function TaskKanban() {
       try {
         const link = await supabase.from("myryra_journey_task_links")
           .select("mission_id").eq("task_id", id).maybeSingle();
-        if (!link.error && link.data?.mission_id) {
+        if (link.error) throw new Error("Falha ao consultar vínculo Journey.");
+        if (link.data?.mission_id) {
           const mission = await supabase.from("myryra_journey_missions")
             .select("journey_id").eq("id", link.data.mission_id).maybeSingle();
-          if (!mission.error && mission.data?.journey_id) {
+          if (mission.error || !mission.data?.journey_id) throw new Error("Falha ao consultar missão vinculada.");
+          if (mission.data.journey_id) {
             const response = await fetch(`/api/journeys/${encodeURIComponent(mission.data.journey_id)}/missions/${encodeURIComponent(link.data.mission_id)}`, {
               method: "PATCH", headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ status: status === "done" ? "completed" : "pending" }),
