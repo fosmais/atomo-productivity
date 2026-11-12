@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 type SavedJourneySummary = { id: string; title: string; status: string; target_date: string | null };
 import type { JourneyDraft } from "@/lib/journey/create-journey-draft";
-import { getCloudEvents, saveCloudEvent } from "@/lib/event-cloud";
+import { getCloudEvents } from "@/lib/event-cloud";
+import { createClient } from "@/lib/supabase/client";
 
 export default function MikaJourneyPlanner() {
   const [title, setTitle] = useState("");
@@ -132,15 +133,17 @@ export default function MikaJourneyPlanner() {
         new Date(event.endsAt).getTime() > start.getTime())) {
         throw new Error("A Agenda mudou e o horário está ocupado. Escolha outro horário.");
       }
-      await saveCloudEvent({
-        title: "Journey · " + missionTitle.slice(0, 180),
-        startsAt: start.toISOString(),
-        endsAt: end.toISOString(),
-        notes: "Jornada " + journeyId + " · missão " + missionId + ". Abra a Journey e selecione Iniciar com a MIKA.",
-        eventType: "appointment",
-        blocksTime: true,
-        category: "personal",
+      // The database RPC serializes bookings and checks mission ownership, conflicts and duplicates atomically.
+      const { error: bookingError } = await createClient().rpc("myryra_book_journey_lesson", {
+        p_journey_id: journeyId,
+        p_mission_id: missionId,
+        p_starts_at: start.toISOString(),
       });
+      if (bookingError) {
+        if (bookingError.code === "23505") throw new Error("Esta missão já foi agendada.");
+        if (bookingError.code === "23P01") throw new Error("O horário está ocupado. Escolha outro.");
+        throw new Error("Não foi possível confirmar a aula na Agenda. Tente novamente.");
+      }
       setMessage("Aula criada na Agenda MYRYRA. Abra a Agenda para visualizar o compromisso. Google Calendar não foi sincronizado.");
       setScheduleMissionId(null);
       setScheduleStart("");
