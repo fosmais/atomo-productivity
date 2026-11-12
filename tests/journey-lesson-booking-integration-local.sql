@@ -47,8 +47,6 @@ begin
  exception when no_data_found then null;
  end;
  -- Another mission owned by this user should conflict with booked time.
- -- Insert another mission using table owner privileges; RLS blocks unrelated writes
- -- but this test should exercise only the booking RPC as authenticated.
 
  begin
   perform public.myryra_book_journey_lesson(
@@ -57,6 +55,38 @@ begin
   raise exception 'Overlapping blocked event accepted';
  exception when exclusion_violation then null;
  end;
+ -- A paused Journey must never allow booking.
+ update public.myryra_journeys set status='paused'
+ where id='00000000-0000-4000-8000-000000000201';
+ begin
+  perform public.myryra_book_journey_lesson(
+  '00000000-0000-4000-8000-000000000201',
+  '00000000-0000-4000-8000-000000000303',v_start+interval '2 hours');
+  raise exception 'Paused Journey accepted';
+ exception when no_data_found then null;
+ end;
+ update public.myryra_journeys set status='active'
+ where id='00000000-0000-4000-8000-000000000201';
+ -- Completed missions are not bookable.
+ update public.myryra_journey_missions set status='completed'
+ where id='00000000-0000-4000-8000-000000000303';
+ begin
+  perform public.myryra_book_journey_lesson(
+  '00000000-0000-4000-8000-000000000201',
+  '00000000-0000-4000-8000-000000000303',v_start+interval '2 hours');
+  raise exception 'Completed mission accepted';
+ exception when no_data_found then null;
+ end;
+ update public.myryra_journey_missions set status='pending'
+ where id='00000000-0000-4000-8000-000000000303';
+ -- Soft-deleted appointments must not reserve time or block a new mission.
+ update public.events set deleted_at=now() where id=v_event;
+ perform public.myryra_book_journey_lesson(
+ '00000000-0000-4000-8000-000000000201',
+ '00000000-0000-4000-8000-000000000303',v_start);
+ select count(*) into v_count from public.events
+ where user_id=auth.uid() and deleted_at is null and starts_at=v_start;
+ if v_count<>1 then raise exception 'Soft-deleted event still blocks slot'; end if;
  raise notice 'Local Journey booking integration smoke passed';
 end $$;
 reset role;
