@@ -592,7 +592,7 @@ export default function MikaJourneyPlanner() {
                                   </div>
                                   <form onSubmit={(event) => { event.preventDefault(); if (lessonInput.trim()) void talkToMika(journey.id, mission.id, lessonInput.trim()); }}
                                     className="flex flex-wrap gap-2">
-                                    <input aria-label="Responder à MIKA" maxLength={1500} value={lessonInput}
+                                    <input aria-label="Responder à MIKA" maxLength={1500} disabled={lessonBusy} value={lessonInput}
                                       onChange={(event) => setLessonInput(event.target.value)}
                                       className="min-w-0 flex-1 rounded-lg border border-white/20 bg-slate-950 p-2 text-sm"
                                       placeholder="Escreva sua resposta" />
@@ -601,6 +601,7 @@ export default function MikaJourneyPlanner() {
                                       {lessonBusy ? "Aguarde..." : "Enviar"}
                                     </button>
                                   </form>
+                                  {lessonBusy && <p role="status" className="text-xs text-violet-200">MIKA está preparando a resposta...</p>}
                                   <p className="text-xs text-slate-400">A conversa não conclui a missão automaticamente nem concede MYRAs.</p>
                                 </div>}
                               </div>
