@@ -66,6 +66,14 @@ test("MIKA rejects blank learner turns before consuming AI quota", () => {
   assert.ok(api.indexOf("content.trim().length >= 1") < api.indexOf("checkConciergeRateLimit(user.id)"));
 });
 
+test("MIKA lesson scrolls to the newest reply in compact mobile chat", () => {
+  const ui = read("src/app/dashboard/mika-journey-planner.tsx");
+  assert.match(ui, /const lessonScrollRef = useRef<HTMLDivElement \| null>\(null\)/);
+  assert.match(ui, /panel\.scrollTop = panel\.scrollHeight/);
+  assert.match(ui, /\}, \[lessonTurns\]\)/);
+  assert.match(ui, /ref=\{lessonScrollRef\} className="max-h-64/);
+});
+
 test("MIKA lesson retains learner input on request failure and resets between missions", () => {
   const ui = read("src/app/dashboard/mika-journey-planner.tsx");
   assert.match(ui, /if \(!answer\) \{\s*setLessonMissionId\(missionId\);\s*setLessonTurns\(\[\]\);/);
