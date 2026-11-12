@@ -24,7 +24,7 @@ export async function PATCH(request: Request) {
   } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
   if (typeof input.sessionId !== "string" || !uuid.test(input.sessionId) ||
       !(input.scheduledAt === null || (typeof input.scheduledAt === "string" &&
-        /^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d+)?(?:Z|[+-]\\d\\d:\\d\\d)$/.test(input.scheduledAt) &&
+        /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:\d\d)$/.test(input.scheduledAt) &&
         Number.isFinite(Date.parse(input.scheduledAt)) &&
         Date.parse(input.scheduledAt) >= Date.now() + 60000 &&
         Date.parse(input.scheduledAt) <= Date.now() + 366 * 86400000)))
