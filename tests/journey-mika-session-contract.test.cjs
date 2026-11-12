@@ -74,6 +74,13 @@ test("MIKA lesson scrolls to the newest reply in compact mobile chat", () => {
   assert.match(ui, /ref=\{lessonScrollRef\} className="max-h-64/);
 });
 
+test("MIKA lesson prevents editing during response and announces progress accessibly", () => {
+  const ui = read("src/app/dashboard/mika-journey-planner.tsx");
+  assert.match(ui, /aria-label="Responder à MIKA" maxLength=\{1500\} disabled=\{lessonBusy\}/);
+  assert.match(ui, /\{lessonBusy && <p role="status"/);
+  assert.match(ui, /MIKA está preparando a resposta/);
+});
+
 test("MIKA lesson retains learner input on request failure and resets between missions", () => {
   const ui = read("src/app/dashboard/mika-journey-planner.tsx");
   assert.match(ui, /if \(!answer\) \{\s*setLessonMissionId\(missionId\);\s*setLessonTurns\(\[\]\);/);
