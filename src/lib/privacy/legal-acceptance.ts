@@ -13,7 +13,7 @@ export async function hasCurrentLegalAcceptance(userId: string): Promise<boolean
     const now = new Date().toISOString();
     const { data: versions, error: versionError } = await supabase
       .from("myryra_privacy_document_versions")
-      .select("id,document_type")
+      .select("id,document_type,public_url")
       .eq("status", "published")
       .lte("published_at", now)
       .lte("effective_at", now)
@@ -22,7 +22,7 @@ export async function hasCurrentLegalAcceptance(userId: string): Promise<boolean
       .order("id", { ascending: false });
     if (versionError) return false;
     const ids = ["terms", "privacy_notice"].map((type) =>
-      (versions ?? []).find((version) => version.document_type === type)?.id,
+      (versions ?? []).find((version) => version.document_type === type && typeof version.public_url === "string" && /^https:\/\//i.test(version.public_url))?.id,
     );
     if (ids.some((id) => !id)) return false;
     const { data: accepted, error: acceptanceError } = await supabase
