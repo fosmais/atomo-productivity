@@ -17,7 +17,29 @@ try {
   & pg_dump --dbname=$env:MYRYRA_SCHEMA_DUMP_URL --schema-only --schema=public --format=plain --file=$tmp --no-owner
   if ($LASTEXITCODE -ne 0) { throw "pg_dump falhou (exit code $LASTEXITCODE)." }
   if (-not (Test-Path $tmp) -or (Get-Item $tmp).Length -eq 0) { throw 'Exportacao vazia.' }
+  $dump = Get-Content -LiteralPath $tmp -Raw
+  # Guard against a truncated or unexpectedly scoped export.
+  foreach ($required in @('public.events', 'public.tasks', 'public.plans', 'public.myryra_journeys')) {
+    $escaped = [regex]::Escape($required)
+    if ($dump -notmatch "(?m)^CREATE TABLE $escaped\\s*\\(") {
+      throw "Exportacao incompleta: CREATE TABLE $required nao encontrado."
+    }
+  }
+  if ($dump -notmatch '(?m)^ALTER TABLE ONLY public\\.myryra_journeys\\s*
+} finally {
+  if (Test-Path $tmp) { Remove-Item -LiteralPath $tmp -Force }
+}
+Write-Host "Exportacao concluida: $out"
+Write-Host 'ATENCAO: dump de public nao e baseline restauravel completo.'
+Write-Host 'Revisar dependencias de auth/storage, extensoes, funcoes, triggers, grants, RLS e migracoes.'
+Write-Host 'Nao compartilhar o dump sem revisar definicoes potencialmente sensiveis.'
+ -and
+      $dump -notmatch '(?m)^ALTER TABLE public\\.myryra_journeys ENABLE ROW LEVEL SECURITY;') {
+    throw 'Exportacao inesperada: nao foi possivel identificar metadados de myryra_journeys.'
+  }
   Move-Item -LiteralPath $tmp -Destination $out -Force
+  $hash = (Get-FileHash -LiteralPath $out -Algorithm SHA256).Hash
+  Write-Host "SHA256: $hash"
 } finally {
   if (Test-Path $tmp) { Remove-Item -LiteralPath $tmp -Force }
 }
