@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   if (queryError) return NextResponse.json({ error: "Não foi possível consultar a jornada." }, { status: 500 });
   if (!journey || journey.status === "archived")
     return NextResponse.json({ error: "Jornada não encontrada." }, { status: 404 });
-  if (journey.status === "paused")
+  if (journey.status !== "active")
     return NextResponse.json({ error: "Retome a jornada antes de planejar aulas." }, { status: 409 });
   try {
     const lesson = proposeMikaLesson({
