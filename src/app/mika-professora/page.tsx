@@ -101,12 +101,11 @@ export default function MikaProfessorPage() {
   async function sendMessage(initialMessage?: string) {
     const message = (initialMessage ?? answer).trim();
     if (!lesson || !journeyId || !sessionId || !message || chatBusy || message.length > 2000) return;
-    const prior = messages.slice(-12);
     setChatBusy(true); setError(""); setSaveWarning(""); setAnswer("");
     try {
       const response = await fetch("/api/mika/lessons/chat", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ journeyId, topic, level, message, history: sessionId ? undefined : prior, sessionId: sessionId || undefined }),
+        body: JSON.stringify({ journeyId, message, sessionId }),
       });
       const json = await response.json();
       if (!response.ok || typeof json.reply !== "string") throw new Error(json.error || "Não foi possível responder.");
