@@ -33,8 +33,8 @@ alter table public.mika_teacher_messages enable row level security;
 
 revoke all on public.mika_teacher_sessions from anon;
 revoke all on public.mika_teacher_messages from anon;
-grant select, insert, update, delete on public.mika_teacher_sessions to authenticated;
-grant select, insert, delete on public.mika_teacher_messages to authenticated;
+grant select, insert, delete on public.mika_teacher_sessions to authenticated;
+grant select, insert on public.mika_teacher_messages to authenticated;
 
 create policy "teacher sessions select own" on public.mika_teacher_sessions
   for select to authenticated using ((select auth.uid()) = owner_id);
@@ -45,12 +45,6 @@ create policy "teacher sessions insert own journey" on public.mika_teacher_sessi
       where j.id = journey_id and j.owner_id = (select auth.uid()) and j.status = 'active'
     )
   );
-create policy "teacher sessions update own" on public.mika_teacher_sessions
-  for update to authenticated using ((select auth.uid()) = owner_id)
-  with check ((select auth.uid()) = owner_id and exists (
-    select 1 from public.myryra_journeys j
-    where j.id = journey_id and j.owner_id = (select auth.uid())
-  ));
 create policy "teacher sessions delete own" on public.mika_teacher_sessions
   for delete to authenticated using ((select auth.uid()) = owner_id);
 
@@ -63,8 +57,6 @@ create policy "teacher messages insert own active session" on public.mika_teache
       where s.id = session_id and s.owner_id = (select auth.uid()) and s.status = 'active'
     )
   );
-create policy "teacher messages delete own" on public.mika_teacher_messages
-  for delete to authenticated using ((select auth.uid()) = owner_id);
-
--- No UPDATE policy on messages: preserve the original transcript.
+-- No UPDATE or DELETE policy on messages: preserve the original transcript.
+-- Sessions are immutable after creation except full owner-controlled deletion.
 -- No automatic rewards, grades, calendar writes, or background jobs.
