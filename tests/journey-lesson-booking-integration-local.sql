@@ -55,6 +55,14 @@ begin
   raise exception 'Overlapping blocked event accepted';
  exception when exclusion_violation then null;
  end;
+ -- A past time must be rejected even if the mission is available.
+ begin
+  perform public.myryra_book_journey_lesson(
+  '00000000-0000-4000-8000-000000000201',
+  '00000000-0000-4000-8000-000000000303',now()-interval '1 day');
+  raise exception 'Past booking was accepted';
+ exception when invalid_parameter_value then null;
+ end;
  -- A paused Journey must never allow booking.
  update public.myryra_journeys set status='paused'
  where id='00000000-0000-4000-8000-000000000201';
