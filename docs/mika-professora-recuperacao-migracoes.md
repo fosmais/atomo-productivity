@@ -41,3 +41,17 @@ select conrelid::regclass, confrelid::regclass, pg_get_constraintdef(oid)
 - Não alterar produção nem ativar pagamentos reais.
 - Não registrar como homologado sem testes E2E e RLS.
 - Evitar commits e builds repetitivos na Vercel; priorizar verificações locais e um deploy controlado após validação.
+
+
+## Procedimento operacional para extracao (sem dados)
+
+Referencia oficial: https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore
+
+1. Na maquina autorizada, obter a **connection string** em **Supabase Dashboard > Connect** do projeto principal. Preferir o session pooler quando aplicavel. Nao enviar a senha pelo chat, nao registrar no Git e nao colocar a URL no codigo.
+2. Instalar cliente PostgreSQL `pg_dump` compativel e configurar `MYRYRA_SCHEMA_DUMP_URL` apenas no ambiente local seguro. Executar `powershell -NoProfile -File scripts/export-myryra-schema.ps1`. O script exporta **somente o schema public**, sem linhas de usuarios, para pasta temporaria fora do repositorio.
+3. Revisar o arquivo e o hash SHA-256. A exportacao do schema public **nao e um backup integral nem baseline restauravel**: avaliar dependencias externas de `auth`, `storage`, extensoes, grants e triggers antes de qualquer restauracao.
+4. Escolher um **ponto de corte** para as 43 migracoes historicas ja aplicadas em producao. Restaurar o baseline em banco local isolado, conferir catalogo e historico e testar migracoes futuras sem reexecutar objetos existentes. Nunca manipular `supabase_migrations.schema_migrations` em producao.
+5. Somente no banco isolado, aplicar `supabase/migrations/20261112235900_mika_teacher_sessions.sql`, executar `docs/sql/mika-professora-assertions-homolog.sql` e testar dois usuarios diferentes, MFA, persistencia, exclusao e reagendamento.
+6. Se e somente se a restauracao local passar, planejar uma homologacao gerenciada com limite de custos e autorizacao para eventual nova branch.
+
+**Gate de liberacao:** sem exportacao validada, ambiente restaurado, RLS aprovado e testes E2E, nenhuma migracao MIKA em PROD. Nunca transportar dados pessoais de producao para teste.
