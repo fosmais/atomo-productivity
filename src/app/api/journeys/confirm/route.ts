@@ -89,7 +89,7 @@ export async function POST(request: Request) {
     // Log the underlying server failure without exposing user data or database internals.
     const reason = error instanceof Error ? error.message : "unknown";
     console.error("[journey-confirm] persistence failed", { reason });
-    if (/Prévia expirada|Snapshot unavailable|Prévia inválida|Origem da prévia não verificada/i.test(reason)) {
+    if (/Prévia expirada|Prévia expirada ou indisponível|Snapshot unavailable|Prévia inválida|Origem da prévia não verificada|Assinatura inválida|Assinatura não configurada|Identificador de prévia inválido/i.test(reason)) {
       return NextResponse.json({
         error: "A prévia da MIKA expirou ou não está mais disponível. Gere uma nova prévia antes de confirmar.",
         code: "JOURNEY_PREVIEW_EXPIRED",
