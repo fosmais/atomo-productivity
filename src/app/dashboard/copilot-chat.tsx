@@ -533,8 +533,9 @@ async function startVoice() {
       }
 
       if (
-        !("proposedTask" in data) ||
-        (data.proposedTask !== null && !isTaskProposal(data.proposedTask))
+        data.proposedTask !== undefined &&
+        data.proposedTask !== null &&
+        !isTaskProposal(data.proposedTask)
       ) {
         throw new Error("A tarefa sugerida pelo Concierge é inválida.");
       }
@@ -550,20 +551,20 @@ async function startVoice() {
         : [];
 
     const proposedTask =
-  data.proposedTask === null
+  data.proposedTask == null
     ? undefined
     : { ...data.proposedTask, completed: false };
 
 if (
-  !("proposedEvent" in data) ||
-  (data.proposedEvent !== null &&
-    !isEventProposal(data.proposedEvent))
+  data.proposedEvent !== undefined &&
+  data.proposedEvent !== null &&
+  !isEventProposal(data.proposedEvent)
 ) {
   throw new Error("O evento sugerido pela MYRYRA e invalido.");
 }
 
 const proposedEvent =
-  data.proposedEvent === null
+  data.proposedEvent == null
     ? undefined
     : data.proposedEvent;
 
