@@ -14,13 +14,13 @@ export default function MykaPortrait({ className = "h-full w-full" }: { classNam
   }
   return (
     <Image
-      src="/mika-flow.svg"
+      src="/mika-flow-portrait.svg"
       alt="MIKA, gata branca com olhos azuis e medalha dourada 1618"
       width={1024}
       height={1024}
       unoptimized
       onError={() => setFailed(true)}
-      className={`${className} mix-blend-screen [mask-image:radial-gradient(circle_at_50%_50%,black_0%,black_54%,transparent_68%)]`}
+      className={`${className} object-cover rounded-full`}
       sizes="(max-width: 640px) 90vw, 420px"
       priority
     />
