@@ -285,6 +285,12 @@ export default function MikaJourneyPlanner() {
           <label className="block text-sm">Data-alvo (opcional)
             <input type="date" value={targetDate} onChange={(e) => { setTargetDate(e.target.value); resetDraft(); }}
               className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-3 text-white" />
+            {targetDate && (
+              <button type="button" onClick={() => { setTargetDate(""); resetDraft(); }}
+                className="mt-2 rounded-lg border border-white/30 px-3 py-2 text-xs text-white">
+                Limpar data-alvo
+              </button>
+            )}
           </label>
           <label className="block text-sm">Dias disponíveis por semana
             <select value={days} onChange={(e) => { setDays(Number(e.target.value)); resetDraft(); }}
