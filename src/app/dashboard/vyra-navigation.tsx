@@ -92,19 +92,6 @@ export default function VyraNavigation({
         </div>
 
         <div className="hidden border-t border-white/10 pt-2 lg:mt-2 lg:block">
-          <button
-            type="button"
-            onClick={() => setMoreOpen((value) => !value)}
-            aria-expanded={moreOpen}
-            aria-controls="vyra-secondary-navigation"
-            className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-medium text-slate-300 hover:bg-violet-500/10"
-          >
-            <span>Espaços</span>
-            <span aria-hidden="true">
-              {moreOpen ? "⌃" : "⌄"}
-            </span>
-          </button>
-
           <div
             id="vyra-secondary-navigation"
             className={
