@@ -6,26 +6,6 @@ import { useVyraActiveModule, useVyraNavigation } from "./vyra-module-context";
 import { loadVyraMetrics } from "./vyra-metrics-service";
 import { getCompletionRate, type VyraMetrics } from "./vyra-metrics";
 import { getCloudEvents } from "@/lib/event-cloud";
-import WhatNowCard from "./what-now-card";
-
-const dailyMessages = [
-  "Um pequeno passo hoje pode transformar o seu amanhã.",
-  "Seu tempo é valioso. Escolha o que realmente importa.",
-  "Grandes conquistas começam com decisões simples.",
-  "Progresso não exige perfeição, exige constância.",
-  "Hoje é uma nova oportunidade de cuidar de você.",
-  "Organize suas prioridades e abra espaço para viver.",
-  "Você não precisa fazer tudo. Comece pelo essencial.",
-  "O futuro que você deseja começa nas escolhas de hoje.",
-  "Cada avanço merece ser reconhecido.",
-  "Faça do seu dia uma experiência com propósito.",
-  "Equilíbrio também é uma forma de progresso.",
-  "O melhor planejamento é aquele que cabe na sua vida.",
-];
-function dayOfYear(date: Date) {
-  const today = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
-  return Math.floor((today - Date.UTC(date.getFullYear(), 0, 1)) / 86400000);
-}
 
 export default function VyraHome() {
   const activeModule = useVyraActiveModule();
@@ -92,73 +72,51 @@ export default function VyraHome() {
           : { message: "Suas tarefas estão em dia. Que tal planejar um novo objetivo?", action: "Criar objetivo", module: "vyra-tasks" };
 
   return (
-    <main className="flex min-w-0 flex-col gap-3 " aria-label="Início MYRYRA">
-      <section className="rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-950/65 via-slate-900/80 to-slate-950 p-4 sm:p-6" aria-label="Boas-vindas MYRYRA">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-300">{today ? new Intl.DateTimeFormat("pt-BR",{weekday:"long",day:"numeric",month:"long"}).format(today) : "MYRYRA · SEU ESPAÇO"}</p>
-        <h1 className="mt-2 max-w-xl text-2xl font-semibold leading-tight text-white sm:text-3xl">Como podemos tornar seu dia extraordinário?</h1>
-        <p className="mt-3 text-sm leading-relaxed text-violet-200" aria-label="Inspiração do dia">{today ? dailyMessages[dayOfYear(today)%dailyMessages.length] : "Um dia de cada vez. Grandes mudanças começam com pequenos passos."}</p>
-        <button type="button" onClick={() => navigateTo("vyra-ai")} className="mt-4 flex w-full items-center gap-3 rounded-xl border border-violet-400/30 bg-violet-500/15 p-3 text-left transition hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-700/60 text-xl text-violet-100" aria-hidden="true">✦</span>
-          <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-white">Sua MIKA está aqui</span><span className="block text-xs text-violet-200">Planeje, converse ou descubra seu próximo passo.</span></span>
+    <main className="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-3" aria-label="Início MYRYRA Pulse">
+      <section className="relative overflow-hidden rounded-3xl border border-violet-400/25 bg-gradient-to-br from-violet-950/80 via-slate-900 to-slate-950 px-4 py-6 sm:px-7 sm:py-8">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-fuchsia-600/10 blur-3xl" />
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-violet-300">✦ MYRYRA PULSE {today ? "· " + new Intl.DateTimeFormat("pt-BR", {day:"numeric",month:"short"}).format(today) : ""}</p>
+        <h1 className="mt-3 text-2xl font-semibold leading-tight text-white sm:text-3xl">O que vamos resolver agora?</h1>
+        <p className="mt-2 text-sm text-slate-300">A MIKA encontra o melhor caminho para você.</p>
+        <button type="button" onClick={() => navigateTo("vyra-ai")} className="mt-5 flex w-full items-center gap-3 rounded-2xl border border-violet-400/40 bg-violet-500/15 px-4 py-4 text-left transition hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">
+          <span className="text-2xl text-violet-200" aria-hidden="true">✦</span>
+          <span className="flex-1 text-sm font-medium text-white">Conversar com a MIKA...</span>
           <span className="text-violet-200" aria-hidden="true">↗</span>
         </button>
+        <div className="mt-3 flex flex-wrap gap-2" aria-label="Ações rápidas">
+          <button type="button" onClick={() => navigateToQuickAction?.("capture")} className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs text-slate-100 hover:bg-white/10">＋ Nova tarefa</button>
+          <button type="button" onClick={() => navigateTo("vyra-calendar")} className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs text-slate-100 hover:bg-white/10">▦ Agenda</button>
+          <Link href="/journey" className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs text-slate-100 hover:bg-white/10">◇ Minha jornada</Link>
+        </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-2 text-xs" aria-label="Resumo rápido">
-        <button type="button" onClick={() => navigateTo("vyra-calendar")} className="min-w-0 rounded-xl border border-white/10 bg-slate-900/50 p-3 text-left hover:border-violet-400/50">
-          <span className="block text-slate-400">Próximo compromisso</span>
-          <span className="mt-1 block truncate font-semibold text-white">{nextEvent ? nextEvent.title : agendaError ? "Agenda indisponível" : "Nenhum compromisso"}</span>
-          {nextEvent && <span className="mt-1 block text-violet-300">{new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(nextEvent.start))}</span>}
+      <section aria-label="Seu próximo passo" className="rounded-2xl border border-violet-400/25 bg-slate-900/75 p-4">
+        <div className="flex items-start gap-3">
+          <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-600/25 text-xl text-violet-200">✦</span>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold uppercase tracking-wider text-violet-300">Seu próximo passo</p>
+            <p className="mt-1 text-sm leading-relaxed text-white">{smartSuggestion.message}</p>
+            <button type="button" onClick={() => navigateTo(smartSuggestion.module)} className="mt-3 text-sm font-semibold text-violet-200 underline-offset-4 hover:underline">{smartSuggestion.action} →</button>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-2 gap-2" aria-label="Seu dia em um olhar">
+        <button type="button" onClick={() => navigateTo("vyra-calendar")} className="min-w-0 rounded-2xl border border-white/10 bg-slate-900/55 p-3 text-left hover:border-violet-400/50">
+          <span className="block text-xs text-slate-400">Próximo evento</span>
+          <span className="mt-1 block truncate text-sm font-semibold text-white">{nextEvent ? nextEvent.title : agendaError ? "Indisponível" : "Agenda livre"}</span>
+          {nextEvent && <span className="mt-1 block text-xs text-violet-200">{new Intl.DateTimeFormat("pt-BR", {day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}).format(new Date(nextEvent.start))}</span>}
         </button>
-        <button type="button" onClick={() => navigateTo("vyra-performance")} className="rounded-xl border border-white/10 bg-slate-900/50 p-3 text-left hover:border-violet-400/50">
-          <span className="block text-slate-400">Seu progresso</span>
+        <button type="button" onClick={() => navigateTo("vyra-tasks")} className="min-w-0 rounded-2xl border border-white/10 bg-slate-900/55 p-3 text-left hover:border-violet-400/50">
+          <span className="block text-xs text-slate-400">Sua evolução hoje</span>
           <span className="mt-1 block text-lg font-semibold text-white">{progress === null ? "—" : `${progress}%`}</span>
-          <span className="block text-slate-400">{metrics?.pending ?? "—"} pendentes</span>
+          <span className="block text-xs text-slate-400">{metrics?.pending ?? "—"} tarefas pendentes</span>
         </button>
       </section>
-
-      <details className="group rounded-2xl border border-violet-400/35 bg-gradient-to-br from-violet-950/70 via-slate-900/85 to-slate-950 p-4 shadow-sm sm:p-5">
-        <summary className="flex cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden">
-          <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-700/45 text-2xl text-violet-200">✦</span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold text-white">Sugestão inteligente da MIKA</span>
-            <span className="mt-1 block text-xs leading-relaxed text-violet-200">{smartSuggestion.message}</span>
-          </span>
-          <span aria-hidden="true" className="text-lg text-violet-200 transition-transform group-open:rotate-90">›</span>
-        </summary>
-        <div className="mt-4 border-t border-violet-400/15 pt-3">
-          <button type="button" onClick={() => navigateTo(smartSuggestion.module)} className="mb-3 rounded-xl border border-violet-400/30 bg-violet-500/15 px-4 py-2 text-xs font-semibold text-violet-100 hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">{smartSuggestion.action} →</button>
-          <WhatNowCard />
-        </div>
-      </details>
-
-      <Link href="/journey" className="group relative isolate overflow-hidden rounded-2xl border border-fuchsia-400/30 bg-gradient-to-r from-violet-950/70 to-slate-950 p-3 transition hover:border-fuchsia-300 focus-visible:outline-2 focus-visible:outline-fuchsia-300 sm:p-4" aria-label="Entrar na aventura MYRYRA Journey">
-        <span aria-hidden="true" className="pointer-events-none absolute -right-8 -top-10 text-[5rem] leading-none text-fuchsia-300/10 transition-transform duration-700 group-hover:rotate-12">✧</span>
-        <span className="relative block text-[10px] font-bold uppercase tracking-[0.22em] text-fuchsia-200">✦ MYRYRA JOURNEY · SUA AVENTURA</span>
-        <span className="relative mt-1 block max-w-lg text-base font-semibold leading-snug text-white sm:text-lg">Seus sonhos merecem mais do que uma lista de tarefas.</span>
-        <span className="relative mt-1 hidden max-w-lg text-xs leading-relaxed text-violet-100 sm:block">Explore sua trilha, vença desafios e celebre cada conquista. Seu próximo capítulo começa aqui.</span>
-        <span className="relative mt-2 inline-flex items-center gap-2 text-xs font-semibold text-fuchsia-200 transition group-hover:text-white">Explorar minha jornada <span aria-hidden="true">→</span></span>
+      <Link href="/journey" className="flex items-center justify-between gap-3 rounded-2xl border border-fuchsia-400/20 bg-gradient-to-r from-fuchsia-950/35 to-slate-950 px-4 py-3 hover:border-fuchsia-400/50">
+        <span className="min-w-0"><span className="block text-sm font-semibold text-white">✧ Sua jornada continua</span><span className="block text-xs text-slate-300">Metas, missões e conquistas</span></span>
+        <span aria-hidden="true" className="text-fuchsia-200">→</span>
       </Link>
-
-      <details className="group rounded-2xl border border-violet-400/20 bg-slate-900/65 p-4 sm:p-5">
-        <summary className="flex cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden"><span aria-hidden="true" className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-700/25 text-xl text-violet-200">▦</span><span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-white">Todas as ferramentas</span><span className="mt-1 block text-xs text-slate-400">Explore os recursos adicionais da MYRYRA</span></span><span aria-hidden="true" className="text-lg text-violet-200 transition-transform group-open:rotate-90">›</span></summary>
-        <div className="mt-3 grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:grid-cols-3">
-          {[
-            {label:"Nova tarefa",module:"vyra-tasks",action:"capture"},
-            {label:"Agenda",module:"vyra-calendar"},
-            {label:"Lembretes",module:"vyra-tasks",action:"capture"},
-            {label:"Metas",module:"vyra-tasks",action:"goals"},
-            {label:"Planejamento",module:"vyra-tasks",action:"kanban"},
-            {label:"Configurações",module:"vyra-settings"},
-            {label:"Ajuda e suporte",module:"support"},
-            {label:"Saúde",module:"vyra-health"},
-            {label:"Finanças",module:"vyra-finance"},
-            {label:"Sua evolução",module:"vyra-performance"}
-          ].map(item=><button key={item.label} type="button" onClick={()=>item.module==="support"?window.dispatchEvent(new CustomEvent("myryra:open-support")):"action" in item && item.action ? navigateToQuickAction?.(item.action) : navigateTo(item.module)} className="min-w-0 break-words rounded-lg border border-white/10 bg-slate-950/70 px-3 py-3 text-left text-xs font-medium text-white transition hover:border-violet-400/50 focus-visible:outline-2 focus-visible:outline-violet-400">{item.label}</button>)}
-        </div>
-      </details>
-
-
     </main>
   );
 }
