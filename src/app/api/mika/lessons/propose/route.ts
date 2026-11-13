@@ -2,8 +2,15 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { proposeMikaLesson } from "@/lib/journey/lesson-plan";
 
+function previewDatabaseIsUnsafe() {
+  if (process.env.VERCEL_ENV !== "preview") return false;
+  return process.env.NEXT_PUBLIC_SUPABASE_URL !== "https://xanavauqzsrgvdfhcrsm.supabase.co";
+}
+
+
 /** Read-only lesson proposal. Never creates events, awards MYRAs or marks progress. */
 export async function POST(request: Request) {
+  if (previewDatabaseIsUnsafe()) return NextResponse.json({ error: "Preview bloqueado: Supabase de homologação não configurado." }, { status: 503 });
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) return NextResponse.json({ error: "Autenticação necessária." }, { status: 401 });
