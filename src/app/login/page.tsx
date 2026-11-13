@@ -319,7 +319,14 @@ export default function LoginPage() {
               <p className="mt-1 text-violet-200/90">Enviaremos um e-mail para confirmar seu endereço. Confira também a pasta de spam.</p>
             </div>
           )}
-          {captchaEnabled && !mfaFactorId && <div className="py-1">{hcaptchaEnabled ? <HcaptchaCaptcha onToken={setCaptchaToken} resetSignal={captchaReset} /> : <TurnstileCaptcha onToken={setCaptchaToken} />}</div>}
+          {captchaEnabled && !mfaFactorId && (
+            <div className="space-y-2 py-1">
+              <p className={`text-sm font-semibold ${captchaToken ? "text-emerald-300" : "text-amber-200"}`} role="status">
+                {captchaToken ? "✓ Verificação de segurança concluída." : "Antes de entrar, marque a opção 'Não sou um robô' abaixo."}
+              </p>
+              {hcaptchaEnabled ? <HcaptchaCaptcha onToken={setCaptchaToken} resetSignal={captchaReset} /> : <TurnstileCaptcha onToken={setCaptchaToken} />}
+            </div>
+          )}
           <button
             type="submit"
             disabled={loading}
