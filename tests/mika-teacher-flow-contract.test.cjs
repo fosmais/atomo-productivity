@@ -48,6 +48,7 @@ test("all teacher endpoints fail closed on preview with wrong Supabase target", 
   for (const endpoint of ["chat", "sessions", "schedule", "messages", "delete", "propose"]) {
     const src = read(`src/app/api/mika/lessons/${endpoint}/route.ts`);
     assert.match(src, /process\.env\.VERCEL_ENV !== "preview"/, endpoint);
+    assert.match(src, /process\.env\.MIKA_TEACHER_HOMOLOGATION_READY !== "true"/, endpoint);
     assert.match(src, /xanavauqzsrgvdfhcrsm/, endpoint);
     assert.match(src, /if \(previewDatabaseIsUnsafe\(\)\) return NextResponse\.json\(/, endpoint);
     assert.match(src, /status: 503/, endpoint);
