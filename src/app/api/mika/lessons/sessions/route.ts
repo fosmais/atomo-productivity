@@ -41,7 +41,7 @@ export async function GET(request: Request) {
     .eq("owner_id", user.id);
   query = journeyId ? query.eq("journey_id", journeyId) : query.is("journey_id", null);
   const pageParam = url.searchParams.get("page") ?? "0";
-  if (!/^(0|[1-9]\\d{0,2})$/.test(pageParam))
+  if (!/^(0|[1-9]\d{0,2})$/.test(pageParam))
     return NextResponse.json({ error: "Página inválida." }, { status: 400 });
   const page = Number(pageParam);
   const pageSize = 30;
