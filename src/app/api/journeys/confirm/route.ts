@@ -85,7 +85,22 @@ export async function POST(request: Request) {
       status: 201,
       headers: { "Cache-Control": "no-store" },
     });
-  } catch {
-    return NextResponse.json({ error: "Não foi possível salvar a jornada. Verifique suas jornadas antes de tentar novamente." }, { status: 500 });
+  } catch (error) {
+    // Log the underlying server failure without exposing user data or database internals.
+    const reason = error instanceof Error ? error.message : "unknown";
+    console.error("[journey-confirm] persistence failed", { reason });
+    if (/Prévia expirada|Snapshot unavailable|Prévia inválida|Origem da prévia não verificada/i.test(reason)) {
+      return NextResponse.json({
+        error: "A prévia da MIKA expirou ou não está mais disponível. Gere uma nova prévia antes de confirmar.",
+        code: "JOURNEY_PREVIEW_EXPIRED",
+      }, { status: 410, headers: { "Cache-Control": "no-store" } });
+    }
+    if (/Autenticação necessária|Authentication and snapshot required/i.test(reason)) {
+      return NextResponse.json({ error: "Sua sessão expirou. Entre novamente e tente salvar a jornada.", code: "JOURNEY_AUTH_REQUIRED" }, { status: 401 });
+    }
+    return NextResponse.json({
+      error: "Não foi possível salvar a jornada no banco de dados. Nenhuma nova tentativa será feita automaticamente. Verifique suas jornadas antes de tentar novamente.",
+      code: "JOURNEY_SAVE_FAILED",
+    }, { status: 500, headers: { "Cache-Control": "no-store" } });
   }
 }
