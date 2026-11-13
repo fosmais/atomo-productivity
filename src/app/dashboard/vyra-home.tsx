@@ -8,14 +8,6 @@ import { getCompletionRate, type VyraMetrics } from "./vyra-metrics";
 import { getCloudEvents } from "@/lib/event-cloud";
 import WhatNowCard from "./what-now-card";
 
-const portals = [
-  { label: "MIKA", subtitle: "Sua inteligência pessoal", icon: "✦", module: "vyra-ai" },
-  { label: "Seu dia e futuro", subtitle: "Agenda, planos e compromissos", icon: "▦", module: "vyra-calendar" },
-  { label: "Corpo e mente", subtitle: "Saúde, treino e bem-estar", icon: "♡", module: "vyra-health" },
-  { label: "Organização", subtitle: "Tarefas, foco e metas", icon: "✓", module: "vyra-tasks" },
-  { label: "Finanças e investimentos", subtitle: "Seu dinheiro e seus objetivos", icon: "◇", module: "vyra-finance" },
-  { label: "Sua evolução", subtitle: "Score, progresso e conquistas", icon: "◎", module: "vyra-performance" },
-];
 const dailyMessages = [
   "Um pequeno passo hoje pode transformar o seu amanhã.",
   "Seu tempo é valioso. Escolha o que realmente importa.",
