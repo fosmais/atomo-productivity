@@ -54,3 +54,16 @@ test("all teacher endpoints fail closed on preview with wrong Supabase target", 
     assert.match(src, /status: 503/, endpoint);
   }
 });
+
+test("teacher history pagination is bounded, owner-scoped and stable", () => {
+  const api = read("src/app/api/mika/lessons/sessions/route.ts");
+  const ui = read("src/app/mika-professora/page.tsx");
+  assert.match(api, /\.eq\("owner_id", user\.id\)/);
+  assert.match(api, /const pageSize = 30/);
+  assert.match(api, /\.order\("created_at", \{ ascending: false \}\)\.order\("id", \{ ascending: false \}\)/);
+  assert.match(api, /\.range\(start, start \+ pageSize\)/);
+  assert.match(api, /nextPage:/);
+  assert.match(ui, /Carregar mais aulas/);
+  assert.match(ui, /loadMoreHistory/);
+  assert.match(ui, /new Set\(current\.map\(\(item\) => item\.id\)\)/);
+});
