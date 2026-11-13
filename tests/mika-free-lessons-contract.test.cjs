@@ -38,3 +38,14 @@ test("teacher interface offers free lessons without requiring a Journey", () => 
   assert.match(page, /\(!journeyId && !topic\.trim\(\)\)/);
   assert.match(page, /journeyId \? \{ journeyId \} : \{\}/);
 });
+
+
+test("teacher chat enforces MFA, per-user quota and server-only persistence", () => {
+  const api = source("src/app/api/mika/lessons/chat/route.ts");
+  assert.match(api, /mfa\.getAuthenticatorAssuranceLevel\(\)/);
+  assert.match(api, /checkConciergeRateLimit\(user\.id\)/);
+  assert.match(api, /status: 429/);
+  assert.match(api, /createSupabaseAdmin\(\)/);
+  assert.match(api, /\.eq\("session_id", sessionId\)\.eq\("owner_id", user\.id\)/);
+  assert.match(api, /progressUpdated: false/);
+});
