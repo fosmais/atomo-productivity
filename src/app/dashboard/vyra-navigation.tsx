@@ -4,16 +4,16 @@ import { useState } from "react";
 
 const primaryItems = [
   { id: "home", label: "Hoje", icon: "⌂", hint: "Resumo e prioridades do dia" },
+  { id: "vyra-ai", label: "MIKA", icon: "✦", hint: "Sua assistente inteligente" },
   { id: "vyra-tasks", label: "Organizar", icon: "✓", hint: "Tarefas, planos e metas" },
   { id: "vyra-calendar", label: "Agenda", icon: "▦", hint: "Compromissos e horários" },
-  { id: "vyra-ai", label: "MIKA", icon: "✦", hint: "Sua assistente inteligente" },
 ];
 
 const secondaryItems = [
+  { id: "vyra-performance", label: "Evolução", icon: "◈" },
   { id: "vyra-finance", label: "Finanças", icon: "◇" },
   { id: "vyra-health", label: "Saúde", icon: "♡" },
   { id: "vyra-scheduling", label: "Agendamentos", icon: "⚡" },
-  { id: "vyra-performance", label: "Evolução", icon: "◈" },
   { id: "vyra-settings", label: "Minha conta", icon: "⚙" },
 ];
 
@@ -92,7 +92,7 @@ export default function VyraNavigation({
             aria-controls="vyra-secondary-navigation"
             className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-medium text-slate-300 hover:bg-violet-500/10"
           >
-            <span>Mais ferramentas</span>
+            <span>Espaços</span>
             <span aria-hidden="true">
               {moreOpen || secondaryActive ? "⌃" : "⌄"}
             </span>
@@ -111,7 +111,7 @@ export default function VyraNavigation({
         </div>
       </nav>
 
-      <div className={current === "home" ? "hidden" : "mb-4 lg:hidden"}>
+      <div className="mb-4 lg:hidden">
         <button
           type="button"
           onClick={() => setMoreOpen((value) => !value)}
@@ -119,7 +119,7 @@ export default function VyraNavigation({
           aria-controls="vyra-mobile-tools"
           className="flex w-full items-center justify-between rounded-xl border border-white/15 bg-slate-900/75 px-4 py-3 text-sm font-medium text-violet-200"
         >
-          <span>Mais ferramentas</span>
+          <span>Espaços</span>
           <span aria-hidden="true">
             {moreOpen || secondaryActive ? "⌃" : "⌄"}
           </span>
@@ -129,11 +129,13 @@ export default function VyraNavigation({
           id="vyra-mobile-tools"
           className={
             moreOpen || secondaryActive
-              ? "mt-2 grid grid-cols-1 gap-2 rounded-xl border border-white/15 bg-slate-900/75 p-2"
+              ? "mt-2 flex gap-2 overflow-x-auto rounded-xl border border-white/15 bg-slate-900/75 p-2 snap-x snap-mandatory"
               : "hidden"
           }
         >
-          <div className="space-y-1">{secondaryItems.map(navigationButton)}            </div>
+          <div className="flex min-w-max gap-2">{secondaryItems.map((item) => (
+            <button key={item.id} type="button" onClick={() => navigateTo(item.id)} aria-current={current === item.id ? "page" : undefined} className={`flex min-w-[110px] snap-start flex-col items-center gap-2 rounded-xl border px-3 py-3 text-xs font-medium ${current === item.id ? "border-violet-400 bg-violet-500/20 text-white" : "border-white/10 bg-slate-800/80 text-slate-200"}`}><span aria-hidden="true" className="text-xl">{item.icon}</span>{item.label}</button>
+          ))}</div>
         </div>
       </div>
     </>
