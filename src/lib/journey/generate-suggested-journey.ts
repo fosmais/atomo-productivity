@@ -7,7 +7,7 @@ import { validateGeneratedJourneyMissions } from "./validate-generated-journey";
  * This helper is intentionally not wired to the draft endpoint: AI missions
  * require an owner-bound, expiring server-side snapshot before confirmation.
  */
-export async function generateSuggestedJourney(base: JourneyDraft): Promise<JourneyDraft> {
+export async function generateSuggestedJourney(base: JourneyDraft, context = ""): Promise<JourneyDraft> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("IA não configurada.");
   // A bounded first release keeps response sizes, latency and cost predictable.
@@ -31,6 +31,7 @@ export async function generateSuggestedJourney(base: JourneyDraft): Promise<Jour
       "Não diga que missões foram executadas. Todas dependem da aprovação do usuário.",
     ].join(" ") }, { role: "user", content: JSON.stringify({
       goal: base.title,
+      userContext: context.slice(0, 800),
       targetDate: base.targetDate ?? null,
       weeks: base.weeks,
       plannedOn: base.plannedOn,
