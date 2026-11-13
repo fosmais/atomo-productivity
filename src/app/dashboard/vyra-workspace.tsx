@@ -1,6 +1,6 @@
 "use client";
 
-import { Children, isValidElement, ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import VyraNavigation from "./vyra-navigation";
 import VyraHeader from "./vyra-header";
 import MykaSupport from "./myka-support";
@@ -59,35 +59,14 @@ export default function VyraWorkspace({
     navigateTo("vyra-tasks");
   };
 
-  const moduleTitles: Record<string, string> = {
-    home: "Seu espaço inteligente",
-    "vyra-ai": "Myka AI",
-    "vyra-planner": "Planner",
-    "vyra-tasks": "Tarefas e Planejamento",
-    "vyra-calendar": "Agenda",
-    "vyra-scheduling": "Smart Scheduling",
-    "vyra-performance": "Performance",
-    "vyra-finance": "MYRYRA Finance",
-    "vyra-health": "MYRYRA Saúde",
-    "vyra-settings": "Preferências",
-  };
+
 
   return (
     <VyraNavigationContext.Provider value={{ activeModule, navigateTo, focusedTaskId, navigateToTask, quickAction, navigateToQuickAction }}>
     <VyraModuleContext.Provider value={activeModule}>
     <div className="min-w-0 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0">
       <div className={activeModule === "home" ? "mb-3" : "mb-6"}><VyraHeader /></div>
-      {activeModule !== "home" && <div className="mb-6 flex items-center justify-between">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-widest text-violet-400">
-            MYRYRA WORKSPACE
-          </p>
 
-          <h2 className="mt-2 text-2xl font-semibold text-white">
-            {moduleTitles[activeModule] ?? "MYRYRA"}
-          </h2>
-        </div>
-      </div>}
 
       <div className="lg:grid lg:grid-cols-[200px_minmax(0,1fr)] lg:items-start lg:gap-6">
         <VyraNavigation
