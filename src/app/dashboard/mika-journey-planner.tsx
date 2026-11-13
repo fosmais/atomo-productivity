@@ -31,7 +31,7 @@ export default function MikaJourneyPlanner() {
   async function readApiJson(response: Response, action: string): Promise<Record<string, any>> {
     const contentType = response.headers.get("content-type") ?? "";
     if (!contentType.toLowerCase().includes("application/json")) {
-      throw new Error(action + ": o servidor retornou uma página em vez de dados. Atualize a sessão e tente novamente.");
+      throw new Error(response.redirected || response.status === 401 || response.status === 403 ? "Sua sessão precisa ser renovada. Entre novamente na MYRYRA e tente criar a jornada." : action + ": o serviço retornou uma resposta inesperada (HTTP " + response.status + "). Tente novamente em instantes.");
     }
     let payload: unknown;
     try { payload = await response.json(); }
@@ -195,7 +195,7 @@ export default function MikaJourneyPlanner() {
       // An AI endpoint can fail with an HTML error page. Recover to the basic
       // draft only when the AI preview failed; never retry confirmation writes.
       const isJson = (response.headers.get("content-type") ?? "").toLowerCase().includes("application/json");
-      const aiUnavailable = !confirm && useAI && (!isJson || response.status === 429 || response.status === 503);
+      const aiUnavailable = !confirm && useAI && (!isJson || response.status >= 500 || response.status === 429);
       let payload = aiUnavailable ? {} : await readApiJson(response, "Não foi possível processar a jornada");
       // A falha da IA não pode impedir o usuário de criar uma jornada básica.
       if (aiUnavailable) {
