@@ -46,6 +46,7 @@ export async function POST(request: Request) {
   const data = input as Record<string, unknown>;
   if (typeof data.title !== "string" ||
       (data.targetDate !== undefined && typeof data.targetDate !== "string") ||
+      (data.context !== undefined && (typeof data.context !== "string" || data.context.length > 800)) ||
       (data.weeklyAvailabilityDays !== undefined && typeof data.weeklyAvailabilityDays !== "number")) {
     return NextResponse.json({ error: "Dados da jornada inválidos." }, { status: 400 });
   }
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
   try {
     let draft;
     try {
-      draft = await generateSuggestedJourney(base);
+      draft = await generateSuggestedJourney(base, typeof data.context === "string" ? data.context : "");
     } catch (cause) {
       console.error("[journey-ai-preview] generation_failed", { category: cause instanceof Error ? cause.name : "unknown" });
       return NextResponse.json({ error: "Não foi possível preparar a sugestão da MIKA. Tente novamente." }, { status: 503 });
