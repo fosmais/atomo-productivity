@@ -496,7 +496,13 @@ async function startVoice() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          messages: nextMessages.slice(-12),
+          // The API caps each message at 1,500 characters. Assistant replies can
+          // exceed that limit, so bound transmitted context without altering
+          // the full conversation displayed to the user.
+          messages: nextMessages.slice(-12).map((message) => ({
+            role: message.role,
+            content: message.content.slice(0, 1500),
+          })),
           conversationId: conversationId ?? undefined,
         }),
       });
