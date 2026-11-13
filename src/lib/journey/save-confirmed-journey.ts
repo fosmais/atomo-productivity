@@ -42,10 +42,30 @@ export async function saveConfirmedJourney(
     p_mission_titles: draft.missions.map((mission) => mission.title),
     ...(snapshotId ? { p_snapshot_id: snapshotId } : {}),
   });
-  if (error || !Array.isArray(data) || data.length !== 1 ||
+  if (error) {
+    // Supabase/PostgREST codes are safe to log; never log the draft, user or tokens.
+    console.error("[journey-confirm] atomic RPC error", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      snapshot: Boolean(snapshotId),
+      missionCount: draft.missions.length,
+    });
+    if (error.code === "22023" && /Snapshot unavailable/i.test(error.message)) {
+      throw new Error("Prévia expirada. Gere uma nova prévia da MIKA.");
+    }
+    throw new Error("Falha na gravação da jornada (código " + (error.code || "DB_UNKNOWN") + ").");
+  }
+  if (!Array.isArray(data) || data.length !== 1 ||
       typeof data[0]?.journey_id !== "string" ||
       data[0]?.mission_count !== draft.missions.length) {
-    throw new Error("Não foi possível salvar a jornada e suas missões.");
+    console.error("[journey-confirm] unexpected RPC result", {
+      snapshot: Boolean(snapshotId),
+      missionCount: draft.missions.length,
+      resultCount: Array.isArray(data) ? data.length : -1,
+    });
+    throw new Error("A confirmação não retornou uma jornada válida.");
   }
   return { id: data[0].journey_id, missionCount: data[0].mission_count };
 }
