@@ -104,7 +104,12 @@ async function DashboardContent() {
     >
       <VyraWorkspace>
       <VyraHome />
-      <MikaResolveMyDay />
+      <VyraModule id="home">
+        <details className="mt-2 rounded-2xl border border-white/10 bg-slate-900/50 p-3">
+          <summary className="cursor-pointer text-sm font-medium text-violet-200">Planejamento avançado com a MIKA</summary>
+          <div className="mt-3"><MikaResolveMyDay /></div>
+        </details>
+      </VyraModule>
 
         <div className="min-w-0 space-y-6">
 
