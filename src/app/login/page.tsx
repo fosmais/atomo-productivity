@@ -37,6 +37,7 @@ export default function LoginPage() {
     queueMicrotask(() => {
       if (!active) return;
       if (params.get("mode") === "signup") setMode("signup");
+      if (params.get("session") === "expired") { setIsError(false); setMessage("Sua sessão expirou. Entre novamente para continuar com segurança."); }
       if (requestedReturn === "/suporte-admin") setReturnTo(requestedReturn);
       if (params.get("mfa") === "required") { setMessage("Acesso Google concluído. Aguarde a verificação do autenticador para finalizar o login."); setIsError(false); }
       if (errorCode === "recovery") {
