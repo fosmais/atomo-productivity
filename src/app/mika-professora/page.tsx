@@ -14,6 +14,29 @@ function isScheduleWithinRange(selected: string): boolean {
   return Number.isFinite(timestamp) && timestamp >= now + 60000 && timestamp <= now + 366 * 86400000;
 }
 
+function downloadCalendarInvite(session: Session) {
+  if (!session.scheduled_at) return;
+  const start = new Date(session.scheduled_at);
+  if (!Number.isFinite(start.getTime())) return;
+  const end = new Date(start.getTime() + 30 * 60000);
+  const stamp = (date: Date) => date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const escapeIcs = (value: string) => value.replace(/\\/g, "\\\\").replace(/\r?\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
+  const lines = [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//MYRYRA//MIKA Professora//PT-BR",
+    "BEGIN:VEVENT", "UID:" + session.id + "@myryra.com",
+    "DTSTAMP:" + stamp(new Date()), "DTSTART:" + stamp(start), "DTEND:" + stamp(end),
+    "SUMMARY:" + escapeIcs("Aula com MIKA: " + session.topic),
+    "DESCRIPTION:" + escapeIcs("Aula da MIKA Professora. Duração estimada de 30 minutos; confirme o horário no calendário."),
+    "END:VEVENT", "END:VCALENDAR",
+  ];
+  const blob = new Blob([lines.join("\r\n") + "\r\n"], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url; link.download = "mika-aula-" + session.id + ".ics";
+  document.body.appendChild(link); link.click(); link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 export default function MikaProfessorPage() {
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [journeyId, setJourneyId] = useState("");
@@ -227,6 +250,7 @@ export default function MikaProfessorPage() {
                 <input type="datetime-local" aria-label={"Nova data de " + session.topic} value={rescheduleInputs[session.id] ?? ""} onChange={(e) => setRescheduleInputs((current) => ({ ...current, [session.id]: e.target.value }))} disabled={historyBusy || busy || chatBusy || session.status !== "active"} className="mt-1 w-full rounded-lg bg-slate-700 p-2 text-xs" />
               </label>
               <button type="button" disabled={historyBusy || busy || chatBusy || session.status !== "active" || !rescheduleInputs[session.id]} onClick={() => void updateSchedule(session)} className="rounded-lg border border-violet-400/60 px-3 py-2 text-xs disabled:opacity-40">Salvar horário</button>
+              {session.scheduled_at && <button type="button" onClick={() => downloadCalendarInvite(session)} className="rounded-lg border border-violet-400/60 px-3 py-2 text-xs">Adicionar ao calendário (.ics)</button>}
               {session.scheduled_at && <button type="button" disabled={historyBusy || busy || chatBusy || session.status !== "active"} onClick={() => void updateSchedule(session, true)} className="rounded-lg border border-slate-400/50 px-3 py-2 text-xs disabled:opacity-40">Remover data (manter aula)</button>}
               <button type="button" disabled={historyBusy || busy || chatBusy || session.status !== "active"} onClick={() => void resumeSession(session)} className="rounded-lg border border-violet-400 px-3 py-2 text-sm disabled:opacity-40">Continuar aula</button>
               <button type="button" disabled={historyBusy || busy || chatBusy} onClick={() => void deleteSession(session)} className="rounded-lg border border-rose-400/50 px-3 py-2 text-xs text-rose-200 disabled:opacity-40">Excluir aula</button>
