@@ -133,7 +133,7 @@ export default function MikaProfessorPage() {
       setLesson(json.lesson);
       const created = await fetch("/api/mika/lessons/sessions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ journeyId, topic: topic.trim() || journeys.find((j) => j.id === journeyId)?.title || "Aula", level, ...(scheduledAt ? { scheduledAt: new Date(scheduledAt).toISOString() } : {}) }) });
       if (created.ok) { const result = await created.json(); setSessionId(result.session.id); setSessions((previous) => [result.session, ...previous]); }
-      else { setHistoryError("Não foi possível criar o histórico da aula. A conversa fica bloqueada para evitar perda de respostas."); setError("A aula foi preparada, mas o salvamento está indisponível. Tente novamente após a liberação do banco."); }
+      else { const failure = await created.json().catch(() => null) as { error?: string } | null; const detail = typeof failure?.error === "string" ? failure.error : "Não foi possível criar a sessão."; setHistoryError(detail); setError(`A aula foi preparada, mas não foi possível iniciar a conversa: ${detail}`); }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao preparar a aula.");
     } finally { setBusy(false); }
