@@ -149,9 +149,9 @@ export default function VyraHome() {
       </Link>
 
       <section aria-label="Explore seu universo">
-        <h2 className="mb-3 text-base font-semibold text-white">Explore seu universo</h2>
-        <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
-          {portals.map(item => <button key={item.label} type="button" onClick={() => navigateTo(item.module)} className="flex min-h-24 min-w-0 flex-col items-start justify-center gap-1.5 rounded-xl border border-violet-400/15 bg-slate-900/65 p-3 text-left transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
+        <div className="mb-3 flex items-center justify-between gap-3"><h2 className="text-base font-semibold text-white">Seus espaços</h2><span className="text-xs text-slate-400">Deslize para explorar →</span></div>
+        <div role="region" aria-label="Carrossel de espaços MYRYRA" tabIndex={0} className="flex snap-x snap-mandatory gap-2 overflow-x-auto pb-2 focus-visible:outline-2 focus-visible:outline-violet-400">
+          {portals.map(item => <button key={item.label} type="button" onClick={() => navigateTo(item.module)} className="flex min-h-28 w-40 shrink-0 snap-start flex-col items-start justify-center gap-1.5 rounded-xl border border-violet-400/15 bg-slate-900/65 p-3 text-left transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400 sm:w-48">
             <span className="text-2xl text-violet-300" aria-hidden="true">{item.icon}</span>
             <span className="break-words text-sm font-semibold leading-snug text-white">{item.label}</span>
             <span className="break-words text-xs leading-snug text-slate-400">{item.subtitle}</span>
