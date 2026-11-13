@@ -8,6 +8,12 @@ type Message = { role: "user" | "assistant"; content: string };
 type Journey = { id: string; title: string; status: string };
 type Lesson = { title: string; objective: string; durationMinutes: number; activities: string[]; assessment: string };
 
+function isScheduleWithinRange(selected: string): boolean {
+  const timestamp = Date.parse(selected);
+  const now = Date.now();
+  return Number.isFinite(timestamp) && timestamp >= now + 60000 && timestamp <= now + 366 * 86400000;
+}
+
 export default function MikaProfessorPage() {
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [journeyId, setJourneyId] = useState("");
@@ -43,9 +49,12 @@ export default function MikaProfessorPage() {
     return () => controller.abort();
   }, []);
   useEffect(() => {
-    setSessions([]); setSessionId(""); setHistoryError(""); setHistoryReady(false); setHistoryLoading(Boolean(journeyId));
-    if (!journeyId) return;
     const controller = new AbortController();
+    queueMicrotask(() => {
+      if (controller.signal.aborted) return;
+      setSessions([]); setSessionId(""); setHistoryError(""); setHistoryReady(false); setHistoryLoading(Boolean(journeyId));
+    });
+    if (!journeyId) return () => controller.abort();
     fetch("/api/mika/lessons/sessions?journeyId=" + encodeURIComponent(journeyId), { signal: controller.signal, cache: "no-store" })
       .then(async (response) => {
         const json = await response.json();
@@ -72,7 +81,7 @@ export default function MikaProfessorPage() {
   async function updateSchedule(session: Session, clear = false) {
     if (historyBusy || chatBusy || busy) return;
     const selected = rescheduleInputs[session.id] ?? "";
-    if (!clear && (!selected || !Number.isFinite(Date.parse(selected)) || Date.parse(selected) < Date.now() + 60000 || Date.parse(selected) > Date.now() + 366 * 86400000)) {
+    if (!clear && (!isScheduleWithinRange(selected))) {
       setError("Escolha uma data válida, entre um minuto e 366 dias a partir de agora."); return;
     }
     setHistoryBusy(true); setError("");
