@@ -14,7 +14,7 @@ async function JourneyContent() {
   const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (assurance.error || (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2")) redirect("/login");
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#070b1a] px-3 py-5 text-white sm:px-6 lg:py-8">
+    <main className="min-h-screen overflow-x-hidden bg-[#070b1a] px-3 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-5 text-white sm:px-6 lg:py-8 lg:pb-8">
       <div className="mx-auto max-w-7xl space-y-5">
         <nav className="flex items-center justify-between gap-3">
           <Link href="/dashboard" className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-violet-400/20 bg-violet-500/10 px-3 text-sm text-violet-200 hover:bg-violet-500/20">← Meu universo</Link>
@@ -62,6 +62,16 @@ async function JourneyContent() {
           <div className="mt-4"><MikaJourneyPlanner /></div>
         </details>
         <p className="pb-4 text-center text-xs text-slate-400">Jornadas compartilhadas estão em desenvolvimento. MYRAs não possuem valor monetário.</p>
+        <nav aria-label="Navegação principal MYRYRA" className="fixed inset-x-0 bottom-0 z-40 border-t border-violet-400/20 bg-[#081321]/95 px-2 pb-[env(safe-area-inset-bottom)] pt-2 shadow-2xl backdrop-blur-xl lg:hidden">
+          <div className="grid grid-cols-4 gap-1.5">
+            {[
+              { label: "Hoje", icon: "⌂", href: "/dashboard" },
+              { label: "MIKA", icon: "✦", href: "/dashboard#vyra-ai" },
+              { label: "Jornadas", icon: "◈", href: "/journey", active: true },
+              { label: "Espaços", icon: "▦", href: "/dashboard#spaces" },
+            ].map(item => <Link key={item.label} href={item.href} aria-current={item.active ? "page" : undefined} className={`flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-[11px] font-medium focus-visible:outline-2 focus-visible:outline-violet-400 ${item.active ? "border-violet-400/70 bg-violet-400/15 text-white" : "border-transparent text-slate-300 hover:bg-slate-800/80 hover:text-white"}`}><span className="text-xl leading-none" aria-hidden="true">{item.icon}</span><span className="truncate">{item.label}</span></Link>)}
+          </div>
+        </nav>
       </div>
     </main>
   );
