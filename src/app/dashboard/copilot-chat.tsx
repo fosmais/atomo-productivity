@@ -109,7 +109,7 @@ function isEventProposal(
     else if (investmentPrompt) sessionStorage.removeItem("myryra:myka:investment-handoff");
     else sessionStorage.removeItem("myryra:myka:health-handoff");
     queueMicrotask(() => {
-      if (conciergePrompt) setPendingConciergePrompt(prompt.slice(0, 3500));
+      if (conciergePrompt) setPendingConciergePrompt(prompt.slice(0, 1500));
       else setInput(prompt.slice(0, 1500));
     });
   }, [activeModule]);
