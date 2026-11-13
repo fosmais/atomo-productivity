@@ -150,14 +150,14 @@ export default function MikaJourneyPlanner() {
     }
   }
 
-  async function refreshJourneys() {
+  async function refreshJourneys(afterSave = false) {
     try {
       const response = await fetch("/api/journeys", { cache: "no-store" });
       if (!response.ok) throw new Error("Falha ao carregar jornadas");
       const payload = await readApiJson(response, "Não foi possível processar a jornada");
       setJourneys(payload.journeys);
     } catch {
-      setMessage("Não foi possível carregar suas jornadas.");
+      setMessage(afterSave ? "Jornada salva com sucesso. Não foi possível atualizar a lista; recarregue a página para visualizar." : "Não foi possível carregar suas jornadas.");
     } finally {
       setLoadingJourneys(false);
     }
@@ -251,7 +251,7 @@ export default function MikaJourneyPlanner() {
         setSaved(true);
         setMessage("Jornada salva com sucesso.");
         window.dispatchEvent(new CustomEvent("myryra:journey-created", { detail: { journeyId: payload.journey.id } }));
-        await refreshJourneys();
+        await refreshJourneys(true);
       } else {
         setDraft(payload.draft);
         setSnapshotId(typeof payload.snapshotId === "string" ? payload.snapshotId : null);
