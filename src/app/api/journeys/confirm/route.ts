@@ -99,7 +99,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Sua sessão expirou. Entre novamente e tente salvar a jornada.", code: "JOURNEY_AUTH_REQUIRED" }, { status: 401 });
     }
     return NextResponse.json({
-      error: "Não foi possível salvar a jornada no banco de dados. Nenhuma nova tentativa será feita automaticamente. Verifique suas jornadas antes de tentar novamente.",
+      error: "Não foi possível salvar a jornada. " + (/^Falha na gravação da jornada \(código [A-Z0-9_]+\)\.$/.test(reason) ? reason : "Verifique suas jornadas antes de tentar novamente."),
       code: "JOURNEY_SAVE_FAILED",
     }, { status: 500, headers: { "Cache-Control": "no-store" } });
   }
