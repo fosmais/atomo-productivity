@@ -44,7 +44,8 @@ test("signed snapshot survives reordered JSONB keys and rejects tampering", asyn
                   })),
                   plannedOn: row.draft.plannedOn, weeks: row.draft.weeks, title: row.draft.title,
                 },
-                // Simulate PostgREST serializing PostgreSQL timestamptz as an offset.\n                expires_at: row.expires_at.replace("Z", "+00:00"), signature: row.signature,
+                // Simulate PostgREST serializing PostgreSQL timestamptz as an offset.
+                expires_at: row.expires_at.replace("Z", "+00:00"), signature: row.signature,
               }, error: null }),
             }),
           }),
