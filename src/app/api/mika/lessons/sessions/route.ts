@@ -40,9 +40,15 @@ export async function GET(request: Request) {
     .select("id,journey_id,topic,level,status,scheduled_at,created_at,updated_at")
     .eq("owner_id", user.id);
   query = journeyId ? query.eq("journey_id", journeyId) : query.is("journey_id", null);
-  const { data, error } = await query.order("created_at", { ascending: false }).limit(30);
+  const pageParam = url.searchParams.get("page") ?? "0";
+  if (!/^(0|[1-9]\\d{0,2})$/.test(pageParam))
+    return NextResponse.json({ error: "Página inválida." }, { status: 400 });
+  const page = Number(pageParam);
+  const pageSize = 30;
+  const start = page * pageSize;
+  const { data, error } = await query.order("created_at", { ascending: false }).order("id", { ascending: false }).range(start, start + pageSize);
   if (error) return NextResponse.json({ error: "Histórico indisponível. Verifique se a migração foi aplicada." }, { status: 503 });
-  return NextResponse.json({ sessions: data ?? [] }, { headers: { "Cache-Control": "private, no-store" } });
+  return NextResponse.json({ sessions: (data ?? []).slice(0, pageSize), hasMore: (data ?? []).length > pageSize, nextPage: (data ?? []).length > pageSize ? page + 1 : null }, { headers: { "Cache-Control": "private, no-store" } });
 }
 
 export async function POST(request: Request) {
