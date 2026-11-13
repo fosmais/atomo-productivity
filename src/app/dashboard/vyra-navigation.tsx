@@ -54,7 +54,7 @@ export default function VyraNavigation({
   function navigationButton(
     item: { id: string; label: string; icon: string; hint?: string }
   ) {
-    const selected = item.id === "spaces" ? secondaryActive || moreOpen : current === item.id;
+    const selected = item.id === "spaces" ? moreOpen || secondaryActive : current === item.id;
     if (item.id === "journey") return (
       <Link key={item.id} href="/journey" title={item.hint} className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium text-slate-300 hover:bg-slate-800/80 hover:text-white lg:w-full lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:py-3 lg:text-sm focus-visible:outline-2 focus-visible:outline-violet-400"><span className="text-xl" aria-hidden="true">{item.icon}</span><span className="truncate">{item.label}</span></Link>
     );
@@ -64,7 +64,7 @@ export default function VyraNavigation({
         key={item.id}
         type="button"
         onClick={() => item.id === "spaces" ? setMoreOpen((value) => !value) : navigateTo(item.id)}
-        aria-expanded={item.id === "spaces" ? moreOpen || secondaryActive : undefined}
+        aria-expanded={item.id === "spaces" ? moreOpen : undefined}
         aria-current={selected ? "page" : undefined}
         title={item.hint ?? item.label}
         className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl border border-transparent px-2 py-2 text-[11px] font-medium transition-colors lg:w-full lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:py-3 lg:text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 ${
@@ -95,20 +95,20 @@ export default function VyraNavigation({
           <button
             type="button"
             onClick={() => setMoreOpen((value) => !value)}
-            aria-expanded={moreOpen || secondaryActive}
+            aria-expanded={moreOpen}
             aria-controls="vyra-secondary-navigation"
             className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-medium text-slate-300 hover:bg-violet-500/10"
           >
             <span>Espaços</span>
             <span aria-hidden="true">
-              {moreOpen || secondaryActive ? "⌃" : "⌄"}
+              {moreOpen ? "⌃" : "⌄"}
             </span>
           </button>
 
           <div
             id="vyra-secondary-navigation"
             className={
-              moreOpen || secondaryActive
+              moreOpen
                 ? "grid grid-cols-1 gap-1 pb-1"
                 : "hidden"
             }
@@ -122,20 +122,20 @@ export default function VyraNavigation({
         <button
           type="button"
           onClick={() => setMoreOpen((value) => !value)}
-          aria-expanded={moreOpen || secondaryActive}
+          aria-expanded={moreOpen}
           aria-controls="vyra-mobile-tools"
           className="flex w-full items-center justify-between rounded-xl border border-white/15 bg-slate-900/75 px-4 py-3 text-sm font-medium text-violet-200"
         >
           <span>Espaços</span>
           <span aria-hidden="true">
-            {moreOpen || secondaryActive ? "⌃" : "⌄"}
+            {moreOpen ? "⌃" : "⌄"}
           </span>
         </button>
 
         <div
           id="vyra-mobile-tools"
           className={
-            moreOpen || secondaryActive
+            moreOpen
               ? "mt-2 flex gap-2 overflow-x-auto rounded-xl border border-white/15 bg-slate-900/75 p-2 snap-x snap-mandatory"
               : "hidden"
           }
