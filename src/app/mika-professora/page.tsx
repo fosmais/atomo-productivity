@@ -8,6 +8,12 @@ type Message = { role: "user" | "assistant"; content: string };
 type Journey = { id: string; title: string; status: string };
 type Lesson = { title: string; objective: string; durationMinutes: number; activities: string[]; assessment: string };
 
+function isScheduleWithinRange(selected: string): boolean {
+  const timestamp = Date.parse(selected);
+  const now = Date.now();
+  return Number.isFinite(timestamp) && timestamp >= now + 60000 && timestamp <= now + 366 * 86400000;
+}
+
 export default function MikaProfessorPage() {
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [journeyId, setJourneyId] = useState("");
@@ -43,9 +49,12 @@ export default function MikaProfessorPage() {
     return () => controller.abort();
   }, []);
   useEffect(() => {
-    setSessions([]); setSessionId(""); setHistoryError(""); setHistoryReady(false); setHistoryLoading(Boolean(journeyId));
-    if (!journeyId) return;
     const controller = new AbortController();
+    queueMicrotask(() => {
+      if (controller.signal.aborted) return;
+      setSessions([]); setSessionId(""); setHistoryError(""); setHistoryReady(false); setHistoryLoading(Boolean(journeyId));
+    });
+    if (!journeyId) return () => controller.abort();
     fetch("/api/mika/lessons/sessions?journeyId=" + encodeURIComponent(journeyId), { signal: controller.signal, cache: "no-store" })
       .then(async (response) => {
         const json = await response.json();
@@ -72,7 +81,7 @@ export default function MikaProfessorPage() {
   async function updateSchedule(session: Session, clear = false) {
     if (historyBusy || chatBusy || busy) return;
     const selected = rescheduleInputs[session.id] ?? "";
-    if (!clear && (!selected || !Number.isFinite(Date.parse(selected)) || Date.parse(selected) < Date.now() + 60000 || Date.parse(selected) > Date.now() + 366 * 86400000)) {
+    if (!clear && (!isScheduleWithinRange(selected))) {
       setError("Escolha uma data válida, entre um minuto e 366 dias a partir de agora."); return;
     }
     setHistoryBusy(true); setError("");
@@ -124,7 +133,7 @@ export default function MikaProfessorPage() {
       setLesson(json.lesson);
       const created = await fetch("/api/mika/lessons/sessions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ journeyId, topic: topic.trim() || journeys.find((j) => j.id === journeyId)?.title || "Aula", level, ...(scheduledAt ? { scheduledAt: new Date(scheduledAt).toISOString() } : {}) }) });
       if (created.ok) { const result = await created.json(); setSessionId(result.session.id); setSessions((previous) => [result.session, ...previous]); }
-      else { setHistoryError("Não foi possível criar o histórico da aula. A conversa fica bloqueada para evitar perda de respostas."); setError("A aula foi preparada, mas o salvamento está indisponível. Tente novamente após a liberação do banco."); }
+      else { const failure = await created.json().catch(() => null) as { error?: string } | null; const detail = typeof failure?.error === "string" ? failure.error : "Não foi possível criar a sessão."; setHistoryError(detail); setError(`A aula foi preparada, mas não foi possível iniciar a conversa: ${detail}`); }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao preparar a aula.");
     } finally { setBusy(false); }
