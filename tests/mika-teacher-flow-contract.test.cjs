@@ -67,3 +67,13 @@ test("teacher history pagination is bounded, owner-scoped and stable", () => {
   assert.match(ui, /loadMoreHistory/);
   assert.match(ui, /new Set\(current\.map\(\(item\) => item\.id\)\)/);
 });
+
+
+test("teacher history page validator accepts subsequent pages and rejects malformed values", () => {
+  const api = read("src/app/api/mika/lessons/sessions/route.ts");
+  const source = api.match(/if \(!\/(.+)\/\.test\(pageParam\)\)/);
+  assert.ok(source, "pagination must use a literal regular expression");
+  const validator = new RegExp(source[1]);
+  for (const value of ["0", "1", "2", "30", "999"]) assert.equal(validator.test(value), true, value);
+  for (const value of ["", "-1", "01", "1a", "1000", " 2"]) assert.equal(validator.test(value), false, value);
+});
