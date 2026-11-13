@@ -18,6 +18,7 @@ export default function MikaProfessorPage() {
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [journeyId, setJourneyId] = useState("");
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [nextHistoryPage, setNextHistoryPage] = useState<number | null>(null);
   const [sessionId, setSessionId] = useState("");
   const [historyError, setHistoryError] = useState("");
   const [saveWarning, setSaveWarning] = useState("");
@@ -52,17 +53,35 @@ export default function MikaProfessorPage() {
     const controller = new AbortController();
     queueMicrotask(() => {
       if (controller.signal.aborted) return;
-      setSessions([]); setSessionId(""); setHistoryError(""); setHistoryReady(false); setHistoryLoading(true);
+      setSessions([]); setNextHistoryPage(null); setSessionId(""); setHistoryError(""); setHistoryReady(false); setHistoryLoading(true);
     });
     fetch("/api/mika/lessons/sessions" + (journeyId ? "?journeyId=" + encodeURIComponent(journeyId) : ""), { signal: controller.signal, cache: "no-store" })
       .then(async (response) => {
         const json = await response.json();
         if (!response.ok) throw new Error(json.error || "Histórico indisponível.");
-        if (!controller.signal.aborted) { setSessions(json.sessions ?? []); setHistoryReady(true); }
+        if (!controller.signal.aborted) { setSessions(json.sessions ?? []); setNextHistoryPage(typeof json.nextPage === "number" ? json.nextPage : null); setHistoryReady(true); }
       }).catch((e) => { if (!controller.signal.aborted) setHistoryError(e instanceof Error ? e.message : "Histórico indisponível."); })
       .finally(() => { if (!controller.signal.aborted) setHistoryLoading(false); });
     return () => controller.abort();
   }, [journeyId]);
+
+  async function loadMoreHistory() {
+    if (nextHistoryPage === null || historyLoading || historyBusy) return;
+    setHistoryBusy(true); setHistoryError("");
+    try {
+      const params = new URLSearchParams({ page: String(nextHistoryPage) });
+      if (journeyId) params.set("journeyId", journeyId);
+      const response = await fetch("/api/mika/lessons/sessions?" + params.toString(), { cache: "no-store" });
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error || "Não foi possível carregar mais aulas.");
+      setSessions((current) => {
+        const known = new Set(current.map((item) => item.id));
+        return [...current, ...(json.sessions ?? []).filter((item: Session) => !known.has(item.id))];
+      });
+      setNextHistoryPage(typeof json.nextPage === "number" ? json.nextPage : null);
+    } catch (e) { setHistoryError(e instanceof Error ? e.message : "Falha ao carregar mais aulas."); }
+    finally { setHistoryBusy(false); }
+  }
 
   async function deleteSession(session: Session) {
     if (historyBusy || chatBusy || busy || !window.confirm("Excluir definitivamente esta aula e todas as mensagens? Esta ação não pode ser desfeita.")) return;
@@ -213,6 +232,7 @@ export default function MikaProfessorPage() {
               <button type="button" disabled={historyBusy || busy || chatBusy} onClick={() => void deleteSession(session)} className="rounded-lg border border-rose-400/50 px-3 py-2 text-xs text-rose-200 disabled:opacity-40">Excluir aula</button>
             </div>
           </div>)}
+          {nextHistoryPage !== null && <button type="button" disabled={historyBusy || historyLoading} onClick={() => void loadMoreHistory()} className="w-full rounded-lg border border-violet-400/60 p-3 text-sm font-semibold disabled:opacity-40">{historyBusy ? "Carregando..." : "Carregar mais aulas"}</button>}
         </section>}
         {lesson && <section className="space-y-3 rounded-2xl border border-violet-400/30 p-5" aria-live="polite">
           <h2 className="text-lg font-semibold">{lesson.title}</h2>
