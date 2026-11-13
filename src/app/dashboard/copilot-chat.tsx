@@ -89,13 +89,13 @@ function isEventProposal(
   const activeModule = useVyraActiveModule();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const historyContainerRef = useRef<HTMLDivElement>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(true);
   useEffect(() => {
     if (historyLoading) return;
     const container = historyContainerRef.current;
     if (container) container.scrollTop = container.scrollHeight;
   }, [messages, historyLoading]);
-  const [conversationId, setConversationId] = useState<string | null>(null);
-  const [historyLoading, setHistoryLoading] = useState(true);
   const [input, setInput] = useState("");
   const [pendingConciergePrompt, setPendingConciergePrompt] = useState<string | null>(null);
   useEffect(() => {
