@@ -105,33 +105,12 @@ export default function VyraNavigation({
         </div>
       </nav>
 
-      <div className="mb-4 lg:hidden">
-        <button
-          type="button"
-          onClick={() => setMoreOpen((value) => !value)}
-          aria-expanded={moreOpen}
-          aria-controls="vyra-mobile-tools"
-          className="flex w-full items-center justify-between rounded-xl border border-white/15 bg-slate-900/75 px-4 py-3 text-sm font-medium text-violet-200"
-        >
-          <span>Espaços</span>
-          <span aria-hidden="true">
-            {moreOpen ? "⌃" : "⌄"}
-          </span>
-        </button>
-
-        <div
-          id="vyra-mobile-tools"
-          className={
-            moreOpen
-              ? "mt-2 flex gap-2 overflow-x-auto rounded-xl border border-white/15 bg-slate-900/75 p-2 snap-x snap-mandatory"
-              : "hidden"
-          }
-        >
-          <div className="flex min-w-max gap-2">{secondaryItems.map((item) => (
-            <button key={item.id} type="button" onClick={() => navigateTo(item.id)} aria-current={current === item.id ? "page" : undefined} className={`flex min-w-[110px] snap-start flex-col items-center gap-2 rounded-xl border px-3 py-3 text-xs font-medium ${current === item.id ? "border-violet-400 bg-violet-500/20 text-white" : "border-white/10 bg-slate-800/80 text-slate-200"}`}><span aria-hidden="true" className="text-xl">{item.icon}</span>{item.label}</button>
-          ))}</div>
-        </div>
-      </div>
+      {moreOpen && <div className="fixed inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 rounded-2xl border border-violet-400/30 bg-slate-900 p-3 shadow-2xl lg:hidden" role="region" aria-label="Espaços MYRYRA" id="vyra-mobile-tools">
+        <div className="mb-3 flex items-center justify-between"><span className="text-sm font-semibold text-white">Seus espaços</span><button type="button" onClick={() => setMoreOpen(false)} aria-label="Fechar espaços" className="rounded-lg px-3 py-1 text-slate-200">Fechar</button></div>
+        <div className="grid grid-cols-2 gap-2">{secondaryItems.map(item => (
+          <button key={item.id} type="button" onClick={() => navigateTo(item.id)} aria-current={current === item.id ? "page" : undefined} className={`flex min-h-12 items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm ${current === item.id ? "border-violet-400 bg-violet-500/20 text-white" : "border-white/10 bg-slate-800 text-slate-200"}`}><span aria-hidden="true">{item.icon}</span>{item.label}</button>
+        ))}</div>
+      </div>}
     </>
   );
 }
