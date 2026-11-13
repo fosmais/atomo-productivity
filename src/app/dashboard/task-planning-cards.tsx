@@ -42,6 +42,15 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
 
   function selectSection(id: View) {
     setActive(id);
+    if (id === "tasks") {
+      window.requestAnimationFrame(() => {
+        const kanban = document.querySelector<HTMLDetailsElement>('[data-feature-id="kanban"]');
+        if (kanban) {
+          kanban.open = true;
+          kanban.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    }
     if (id === "focus") {
       window.requestAnimationFrame(() => {
         const focusPanel = document.querySelector<HTMLDetailsElement>('[data-feature-id="planning-focus"]');
