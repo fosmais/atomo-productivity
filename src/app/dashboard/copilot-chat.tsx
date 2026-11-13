@@ -88,6 +88,12 @@ function isEventProposal(
   const router = useRouter();
   const activeModule = useVyraActiveModule();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const historyContainerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (historyLoading) return;
+    const container = historyContainerRef.current;
+    if (container) container.scrollTop = container.scrollHeight;
+  }, [messages, historyLoading]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [input, setInput] = useState("");
@@ -640,6 +646,7 @@ setConversationId(data.conversationId);
       </div>
 
       <div
+        ref={historyContainerRef}
         className="mb-4 min-h-[320px] max-h-[min(66dvh,700px)] space-y-4 overflow-x-hidden overflow-y-auto rounded-2xl border border-violet-400/15 bg-slate-950/65 p-3 shadow-inner shadow-black/20 sm:min-h-[420px] sm:p-5"
         aria-live="polite"
       >
