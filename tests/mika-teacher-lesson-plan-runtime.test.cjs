@@ -9,9 +9,9 @@ const transpiled = ts.transpileModule(fs.readFileSync(filename, "utf8"), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   fileName: filename,
 });
-const exports = {};
-vm.runInNewContext(transpiled.outputText, { exports }, { filename, timeout: 1000 });
-const { proposeMikaLesson } = exports;
+const moduleExports = {};
+vm.runInNewContext(transpiled.outputText, { exports: moduleExports }, { filename, timeout: 1000 });
+const { proposeMikaLesson } = moduleExports;
 
 test("free lesson proposal produces a useful lesson plan without a journey", () => {
   const lesson = proposeMikaLesson({
