@@ -843,6 +843,7 @@ if (!rateLimit.allowed) {
     } else {
       const lastMessage = messages[messages.length - 1] as ChatMessage;
 
+      stage = "conversation_persistence";
       const { data: created, error: createError } = await mykaAdmin
         .from("myka_conversations")
         .insert({
@@ -861,6 +862,7 @@ if (!rateLimit.allowed) {
 
     const lastUserMessage = messages[messages.length - 1] as ChatMessage;
 
+    stage = "message_persistence";
     const { data: savedMessages, error: saveError } = await mykaAdmin
       .from("myka_messages")
       .insert([
