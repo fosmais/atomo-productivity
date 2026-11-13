@@ -14,7 +14,10 @@ function canonicalJson(value: unknown): string {
 function signature(ownerId: string, draft: JourneyDraft, expiresAt: string): string {
   const key = process.env.JOURNEY_SNAPSHOT_SIGNING_KEY;
   if (!key || Buffer.byteLength(key, "utf8") < 32) throw new Error("Assinatura não configurada.");
-  // PostgreSQL may return timestamptz with +00:00 instead of the inserted Z.\n  // Normalize before signing so storing and loading use identical bytes.\n  const normalizedExpiry = new Date(expiresAt).toISOString();\n  return createHmac("sha256", key).update(canonicalJson({ ownerId, draft, expiresAt: normalizedExpiry })).digest("hex");
+  // PostgreSQL may return timestamptz with +00:00 instead of the inserted Z.
+  // Normalize before signing so storing and loading use identical bytes.
+  const normalizedExpiry = new Date(expiresAt).toISOString();
+  return createHmac("sha256", key).update(canonicalJson({ ownerId, draft, expiresAt: normalizedExpiry })).digest("hex");
 }
 
 const MAX_AGE_MS = 15 * 60 * 1000;
