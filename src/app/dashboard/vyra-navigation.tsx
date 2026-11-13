@@ -56,7 +56,7 @@ export default function VyraNavigation({
   ) {
     const selected = item.id === "spaces" ? moreOpen || secondaryActive : current === item.id;
     if (item.id === "journey") return (
-      <Link key={item.id} href="/journey" title={item.hint} className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium text-slate-300 hover:bg-slate-800/80 hover:text-white lg:w-full lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:py-3 lg:text-sm focus-visible:outline-2 focus-visible:outline-cyan-300"><span className="text-xl" aria-hidden="true">{item.icon}</span><span className="truncate">{item.label}</span></Link>
+      <Link key={item.id} href="/journey" title={item.hint} className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium text-slate-300 hover:bg-slate-800/80 hover:text-white lg:w-full lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:py-3 lg:text-sm focus-visible:outline-2 focus-visible:outline-violet-400"><span className="text-xl" aria-hidden="true">{item.icon}</span><span className="truncate">{item.label}</span></Link>
     );
 
     return (
@@ -67,10 +67,10 @@ export default function VyraNavigation({
         aria-expanded={item.id === "spaces" ? moreOpen : undefined}
         aria-current={selected ? "page" : undefined}
         title={item.hint ?? item.label}
-        className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl border border-transparent px-2 py-2 text-[11px] font-medium transition-colors lg:w-full lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:py-3 lg:text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 ${
+        className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl border border-transparent px-2 py-2 text-[11px] font-medium transition-colors lg:w-full lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:py-3 lg:text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 ${
           selected
-            ? "border-cyan-300/70 bg-cyan-300/15 text-white shadow-sm shadow-cyan-950/20"
-            : "text-slate-300 hover:border-cyan-300/30 hover:bg-slate-800/80 hover:text-white"
+            ? "border-violet-400/70 bg-violet-400/15 text-white shadow-sm shadow-violet-950/20"
+            : "text-slate-300 hover:border-violet-400/30 hover:bg-slate-800/80 hover:text-white"
         }`}
       >
         <span className="text-xl leading-none lg:text-lg" aria-hidden="true">
@@ -85,7 +85,7 @@ export default function VyraNavigation({
     <>
       <nav
         aria-label="Navegação da MYRYRA"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-cyan-300/20 bg-[#081321]/95 px-2 pb-[env(safe-area-inset-bottom)] pt-2 shadow-2xl shadow-cyan-950/30 backdrop-blur-xl lg:sticky lg:top-6 lg:inset-x-auto lg:bottom-auto lg:w-full lg:rounded-2xl lg:border lg:border-white/15 lg:bg-[#101b30]/95 lg:p-3"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-violet-400/20 bg-[#081321]/95 px-2 pb-[env(safe-area-inset-bottom)] pt-2 shadow-2xl shadow-violet-950/30 backdrop-blur-xl lg:sticky lg:top-6 lg:inset-x-auto lg:bottom-auto lg:w-full lg:rounded-2xl lg:border lg:border-white/15 lg:bg-[#101b30]/95 lg:p-3"
       >
         <div className="grid grid-cols-4 gap-1.5 lg:grid-cols-1 lg:gap-2">
           {primaryItems.map(navigationButton)}
@@ -105,10 +105,10 @@ export default function VyraNavigation({
         </div>
       </nav>
 
-      {moreOpen && <div className="fixed inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 rounded-2xl border border-cyan-300/30 bg-[#101b30] p-3 shadow-2xl lg:hidden" role="region" aria-label="Espaços MYRYRA" id="vyra-mobile-tools">
+      {moreOpen && <div className="fixed inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 rounded-2xl border border-violet-400/30 bg-[#101b30] p-3 shadow-2xl lg:hidden" role="region" aria-label="Espaços MYRYRA" id="vyra-mobile-tools">
         <div className="mb-3 flex items-center justify-between"><span className="text-sm font-semibold text-white">Seus espaços</span><button type="button" onClick={() => setMoreOpen(false)} aria-label="Fechar espaços" className="rounded-lg px-3 py-1 text-slate-200">Fechar</button></div>
         <div className="grid grid-cols-2 gap-2">{secondaryItems.map(item => (
-          <button key={item.id} type="button" onClick={() => navigateTo(item.id)} aria-current={current === item.id ? "page" : undefined} className={`flex min-h-12 items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm ${current === item.id ? "border-cyan-300 bg-cyan-300/15 text-white" : "border-white/10 bg-slate-800 text-slate-200"}`}><span aria-hidden="true">{item.icon}</span>{item.label}</button>
+          <button key={item.id} type="button" onClick={() => navigateTo(item.id)} aria-current={current === item.id ? "page" : undefined} className={`flex min-h-12 items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm ${current === item.id ? "border-violet-400 bg-violet-400/15 text-white" : "border-white/10 bg-slate-800 text-slate-200"}`}><span aria-hidden="true">{item.icon}</span>{item.label}</button>
         ))}</div>
       </div>}
     </>
