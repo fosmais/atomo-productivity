@@ -4,6 +4,7 @@ import { proposeMikaLesson } from "@/lib/journey/lesson-plan";
 
 function previewDatabaseIsUnsafe() {
   if (process.env.VERCEL_ENV !== "preview") return false;
+  if (process.env.MIKA_TEACHER_HOMOLOGATION_READY !== "true") return true;
   return process.env.NEXT_PUBLIC_SUPABASE_URL !== "https://xanavauqzsrgvdfhcrsm.supabase.co";
 }
 
