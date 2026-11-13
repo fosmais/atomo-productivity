@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 type SavedJourneySummary = { id: string; title: string; status: string; target_date: string | null };
-import type { JourneyDraft } from "@/lib/journey/create-journey-draft";
+import { createJourneyDraft, type JourneyDraft } from "@/lib/journey/create-journey-draft";
 
 export default function MikaJourneyPlanner() {
   const [title, setTitle] = useState("");
@@ -204,6 +204,14 @@ export default function MikaJourneyPlanner() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title, ...(targetDate ? { targetDate } : {}), weeklyAvailabilityDays: days }),
         });
+        if (!(fallback.headers.get("content-type") ?? "").toLowerCase().includes("application/json")) {
+          const localDraft = createJourneyDraft({ title, ...(targetDate ? { targetDate } : {}), weeklyAvailabilityDays: days });
+          setDraft(localDraft);
+          setSnapshotId(null);
+          setSaved(false);
+          setMessage("Prévia básica preparada no dispositivo porque o servidor de prévias não respondeu corretamente. A confirmação ainda depende de sua sessão.");
+          return;
+        }
         const fallbackPayload = await readApiJson(fallback, "Não foi possível criar a prévia alternativa");
         if (fallback.ok) {
           setDraft(fallbackPayload.draft);
