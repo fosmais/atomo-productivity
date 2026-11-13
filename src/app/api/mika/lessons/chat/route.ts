@@ -59,6 +59,20 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "Histórico indisponível: configuração do servidor ausente." }, { status: 503 });
   }
+  // Apply the same per-user AI quota used by Journey and Concierge before model billing.
+  // The Supabase fallback expects a UUID, not a prefixed feature key.
+  try {
+    const { checkConciergeRateLimit } = await import("@/lib/rate-limit");
+    const limit = await checkConciergeRateLimit(user.id);
+    if (!limit.allowed) {
+      return NextResponse.json({ error: "Limite de mensagens da MIKA atingido. Tente novamente mais tarde." }, {
+        status: 429,
+        headers: { "Retry-After": String(Math.max(1, Math.ceil((limit.reset - Date.now()) / 1000))) },
+      });
+    }
+  } catch {
+    return NextResponse.json({ error: "Controle de mensagens temporariamente indisponível." }, { status: 503 });
+  }
   try {
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 20000, maxRetries: 0 });
     const completion = await client.chat.completions.create({
