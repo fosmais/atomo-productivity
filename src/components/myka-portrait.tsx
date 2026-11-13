@@ -7,15 +7,15 @@ export default function MykaPortrait({ className = "h-full w-full" }: { classNam
   const [failed, setFailed] = useState(false);
   if (failed) {
     return (
-      <span role="img" aria-label="MYKA, sua assistente inteligente" className={`${className} flex items-center justify-center rounded-full bg-violet-900/80 text-violet-100`}>
+      <span role="img" aria-label="MYKA, sua assistente inteligente" className={`${className} flex items-center justify-center rounded-full bg-cyan-950/80 text-cyan-100`}>
         <span aria-hidden="true" className="text-lg font-bold leading-none">M</span>
       </span>
     );
   }
   return (
     <Image
-      src="/myka-transparente.png"
-      alt="MYKA, gata roxa com aura laranja e medalha 1618"
+      src="/mika-flow.svg"
+      alt="MIKA, gata branca com olhos azuis e medalha dourada 1618"
       width={1024}
       height={1024}
       unoptimized
