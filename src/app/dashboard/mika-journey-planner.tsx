@@ -6,6 +6,7 @@ import { createJourneyDraft, type JourneyDraft } from "@/lib/journey/create-jour
 
 export default function MikaJourneyPlanner() {
   const [title, setTitle] = useState("");
+  const [context, setContext] = useState("");
   const [targetDate, setTargetDate] = useState("");
   const [days, setDays] = useState(3);
   const [draft, setDraft] = useState<JourneyDraft | null>(null);
@@ -187,7 +188,7 @@ export default function MikaJourneyPlanner() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title, ...(targetDate ? { targetDate } : {}),
+          title, ...(useAI && !confirm && context.trim() ? { context: context.trim() } : {}), ...(targetDate ? { targetDate } : {}),
           weeklyAvailabilityDays: days,
           ...(confirm ? { confirmed: true, confirmationKey: confirmationKeyRef.current, plannedOn: draft?.plannedOn, ...(snapshotId ? { snapshotId } : {}) } : {}),
         }),
@@ -281,6 +282,12 @@ export default function MikaJourneyPlanner() {
           <input required maxLength={120} value={title} onChange={(e) => { setTitle(e.target.value); resetDraft(); }}
             placeholder="Ex.: aprender italiano para conversar em viagens" className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-3 text-white" />
           <span className="mt-1 block text-xs text-slate-300">Conte o que quer alcançar e para quê. Ex.: correr 10 km sem parar, começando do zero.</span>
+        </label>
+        <label className="block text-sm">Meu contexto (opcional)
+          <textarea rows={3} maxLength={800} value={context} onChange={(e) => { setContext(e.target.value); resetDraft(); }}
+            placeholder="Ex.: sou iniciante, tenho 30 minutos por dia e quero aprender para uma viagem."
+            className="mt-1 w-full resize-y rounded-lg border border-white/20 bg-slate-950 p-3 text-white" />
+          <span className="mt-1 block text-xs text-slate-300">A MIKA usa estas informações ao personalizar a jornada com IA. Na prévia básica, as etapas seguem um modelo geral.</span>
         </label>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-sm">Data-alvo (opcional)
