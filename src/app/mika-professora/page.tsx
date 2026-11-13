@@ -20,7 +20,7 @@ function downloadCalendarInvite(session: Session) {
   if (!Number.isFinite(start.getTime())) return;
   const end = new Date(start.getTime() + 30 * 60000);
   const stamp = (date: Date) => date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-  const escapeIcs = (value: string) => value.replace(/\\/g, "\\\\").replace(/\r?\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
+  const escapeIcs = (value: string) => value.replace(/\\/g, "\\\\").replace(/\r\n|\r|\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
   const lines = [
     "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//MYRYRA//MIKA Professora//PT-BR",
     "BEGIN:VEVENT", "UID:" + session.id + "@myryra.com",
