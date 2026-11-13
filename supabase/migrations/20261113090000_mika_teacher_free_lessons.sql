@@ -20,12 +20,10 @@ WITH CHECK (
   )
 );
 
--- The existing owner-scoped UPDATE policy is ineffective without table privileges.
--- Only allow the fields needed to reschedule an active lesson.
-GRANT UPDATE (scheduled_at) ON TABLE public.mika_teacher_sessions TO authenticated;
+-- Existing column-level UPDATE(scheduled_at) privilege is already present in
+-- the primary and homologation databases; keep its management in the original schema.
 
 -- SELECT/UPDATE/DELETE ownership policies remain unchanged.
 -- Rollback after confirming no free lessons exist:
--- REVOKE UPDATE (scheduled_at) ON TABLE public.mika_teacher_sessions FROM authenticated;
 -- ALTER TABLE public.mika_teacher_sessions ALTER COLUMN journey_id SET NOT NULL;
 -- Recreate original INSERT policy from the preceding migration before rollback.
