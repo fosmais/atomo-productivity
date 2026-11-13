@@ -55,7 +55,7 @@ export async function saveConfirmedJourney(
     if (error.code === "22023" && /Snapshot unavailable/i.test(error.message)) {
       throw new Error("Prévia expirada. Gere uma nova prévia da MIKA.");
     }
-    throw new Error("Falha na gravação da jornada (código " + (error.code || "DB_UNKNOWN") + ").");
+    throw new Error("Não foi possível salvar a jornada e suas missões.");
   }
   if (!Array.isArray(data) || data.length !== 1 ||
       typeof data[0]?.journey_id !== "string" ||
@@ -65,7 +65,7 @@ export async function saveConfirmedJourney(
       missionCount: draft.missions.length,
       resultCount: Array.isArray(data) ? data.length : -1,
     });
-    throw new Error("A confirmação não retornou uma jornada válida.");
+    throw new Error("Não foi possível salvar a jornada e suas missões.");
   }
   return { id: data[0].journey_id, missionCount: data[0].mission_count };
 }
