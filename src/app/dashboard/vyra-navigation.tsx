@@ -1,15 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 const primaryItems = [
   { id: "home", label: "Hoje", icon: "⌂", hint: "Resumo e prioridades do dia" },
   { id: "vyra-ai", label: "MIKA", icon: "✦", hint: "Sua assistente inteligente" },
-  { id: "vyra-tasks", label: "Organizar", icon: "✓", hint: "Tarefas, planos e metas" },
-  { id: "vyra-calendar", label: "Agenda", icon: "▦", hint: "Compromissos e horários" },
+  { id: "journey", label: "Jornadas", icon: "◈", hint: "Suas metas e missões" },
+  { id: "spaces", label: "Espaços", icon: "▦", hint: "Todas as ferramentas" },
 ];
 
 const secondaryItems = [
+  { id: "vyra-tasks", label: "Organizar", icon: "✓" },
+  { id: "vyra-calendar", label: "Agenda", icon: "▦" },
   { id: "vyra-performance", label: "Evolução", icon: "◈" },
   { id: "vyra-finance", label: "Finanças", icon: "◇" },
   { id: "vyra-health", label: "Saúde", icon: "♡" },
@@ -51,13 +54,17 @@ export default function VyraNavigation({
   function navigationButton(
     item: { id: string; label: string; icon: string; hint?: string }
   ) {
-    const selected = current === item.id;
+    const selected = item.id === "spaces" ? secondaryActive || moreOpen : current === item.id;
+    if (item.id === "journey") return (
+      <Link key={item.id} href="/journey" title={item.hint} className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium text-slate-300 hover:bg-slate-800/80 hover:text-white lg:w-full lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:py-3 lg:text-sm focus-visible:outline-2 focus-visible:outline-violet-400"><span className="text-xl" aria-hidden="true">{item.icon}</span><span className="truncate">{item.label}</span></Link>
+    );
 
     return (
       <button
         key={item.id}
         type="button"
-        onClick={() => navigateTo(item.id)}
+        onClick={() => item.id === "spaces" ? setMoreOpen((value) => !value) : navigateTo(item.id)}
+        aria-expanded={item.id === "spaces" ? moreOpen || secondaryActive : undefined}
         aria-current={selected ? "page" : undefined}
         title={item.hint ?? item.label}
         className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl border border-transparent px-2 py-2 text-[11px] font-medium transition-colors lg:w-full lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:py-3 lg:text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 ${
