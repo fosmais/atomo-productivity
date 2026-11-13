@@ -279,7 +279,8 @@ export default function MikaJourneyPlanner() {
       <form className="mt-4 space-y-3" onSubmit={(event) => { event.preventDefault(); if (!busy && !draft) void submit(false); }}>
         <label className="block text-sm">Meu objetivo
           <input required maxLength={120} value={title} onChange={(e) => { setTitle(e.target.value); resetDraft(); }}
-            placeholder="Ex.: aprender italiano" className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-3 text-white" />
+            placeholder="Ex.: aprender italiano para conversar em viagens" className="mt-1 w-full rounded-lg border border-white/20 bg-slate-950 p-3 text-white" />
+          <span className="mt-1 block text-xs text-slate-300">Conte o que quer alcançar e para quê. Ex.: correr 10 km sem parar, começando do zero.</span>
         </label>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-sm">Data-alvo (opcional)
