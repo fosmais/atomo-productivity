@@ -36,6 +36,19 @@ export async function proxy(request: NextRequest) {
         { status: 503, headers: { "Cache-Control": "no-store" } },
       );
     }
+    // An expired/revoked refresh token should not crash a protected page.
+    // Redirect only protected dashboard navigations; never redirect login or
+    // API requests, which would create loops or break JSON clients.
+    const authCode = cause && typeof cause === "object" && "code" in cause
+      ? (cause as { code?: unknown }).code : undefined;
+    if (authCode === "refresh_token_not_found" &&
+        (pathname === "/dashboard" || pathname.startsWith("/dashboard/"))) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = "/login";
+      loginUrl.search = "";
+      loginUrl.searchParams.set("session", "expired");
+      return NextResponse.redirect(loginUrl, 307);
+    }
     throw cause;
   }
 }
