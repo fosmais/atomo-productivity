@@ -151,7 +151,7 @@ export default function JourneyTrail() {
     try {
       const response = await fetch("/api/journeys/" + encodeURIComponent(selected) + "/replan-preview", { method: "POST", cache: "no-store" });
       const payload = await readJourneyJson(response, "Não foi possível preparar a prévia");
-      setReplan(payload);
+      setReplan(payload as NonNullable<typeof replan>);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Falha ao preparar a prévia."); }
     finally { setBusy(""); }
   }
