@@ -3,8 +3,16 @@ import OpenAI from "openai";
 import { createClient } from "@/lib/supabase/server";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 
+/** Prevent Preview teaching requests from using the production Supabase project. */
+function previewDatabaseIsUnsafe() {
+  if (process.env.VERCEL_ENV !== "preview") return false;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  return !url || !/^https:\/\/xanavauqzsrgvdfhcrsm\.supabase\.co\/?$/.test(url);
+}
+
 /** Interactive teaching only. Does not save progress, create events or award MYRAs. */
 export async function POST(request: Request) {
+  if (previewDatabaseIsUnsafe()) return NextResponse.json({ error: "Preview bloqueado: configure o Supabase de homologação antes de testar a MIKA Professora." }, { status: 503 });
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) return NextResponse.json({ error: "Autenticação necessária." }, { status: 401 });
