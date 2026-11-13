@@ -637,9 +637,9 @@ setConversationId(data.conversationId);
   }, [pendingConciergePrompt, historyLoading, loading, error, dailyLimitReached, activeModule]);
 
   return (
-    <section className="min-w-0 rounded-2xl border border-violet-400/20 bg-gradient-to-b from-slate-900 to-slate-950 p-3 text-white shadow-xl shadow-violet-950/20 sm:p-7">
+    <section className="min-w-0 rounded-2xl border border-cyan-400/20 bg-gradient-to-b from-slate-900 to-slate-950 p-3 text-white shadow-xl shadow-cyan-950/20 sm:p-7">
       <div className="mb-5">
-        <p className="text-xs font-semibold uppercase tracking-[.2em] text-violet-300">
+        <p className="text-xs font-semibold uppercase tracking-[.2em] text-cyan-300">
           Myka AI
         </p>
 
@@ -655,11 +655,11 @@ setConversationId(data.conversationId);
 
       <div
         ref={historyContainerRef}
-        className="mb-4 min-h-[320px] max-h-[min(66dvh,700px)] space-y-4 overflow-x-hidden overflow-y-auto rounded-2xl border border-violet-400/15 bg-slate-950/65 p-3 shadow-inner shadow-black/20 sm:min-h-[420px] sm:p-5"
+        className="mb-4 min-h-[320px] max-h-[min(66dvh,700px)] space-y-4 overflow-x-hidden overflow-y-auto rounded-2xl border border-cyan-400/15 bg-slate-950/65 p-3 shadow-inner shadow-black/20 sm:min-h-[420px] sm:p-5"
         aria-live="polite"
       >
         {historyLoading && (
-          <p className="text-sm text-violet-300">Carregando historico...</p>
+          <p className="text-sm text-cyan-300">Carregando historico...</p>
         )}
         {!historyLoading && messages.length === 0 && (
           <div className="space-y-3 text-sm text-slate-300">
@@ -670,7 +670,7 @@ setConversationId(data.conversationId);
                 { label: "Organizar compromissos", prompt: "Ajude-me a revisar meus compromissos e encontrar horários livres." },
                 { label: "Planejamento financeiro", prompt: "Quero organizar minhas receitas, despesas e metas financeiras. Por onde começar?" },
                 { label: "Objetivo de investimento", prompt: "Quero planejar investimentos para alcançar meu objetivo financeiro." },
-              ].map(suggestion => <button key={suggestion.label} type="button" onClick={() => setInput(suggestion.prompt)} className="rounded-xl border border-violet-400/25 bg-violet-500/10 px-3 py-3 text-left text-sm text-violet-100 transition hover:border-violet-300/70 focus-visible:outline-2 focus-visible:outline-violet-400">{suggestion.label} <span aria-hidden="true">↗</span></button>)}
+              ].map(suggestion => <button key={suggestion.label} type="button" onClick={() => setInput(suggestion.prompt)} className="rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-3 py-3 text-left text-sm text-cyan-100 transition hover:border-cyan-300/70 focus-visible:outline-2 focus-visible:outline-cyan-400">{suggestion.label} <span aria-hidden="true">↗</span></button>)}
             </div>
             <p className="text-xs text-slate-400">A MYKA sugere ações; confirme antes de salvar tarefas ou compromissos. Para decisões financeiras, confira os riscos e suas necessidades.</p>
           </div>
@@ -680,12 +680,12 @@ setConversationId(data.conversationId);
           <div key={index} className="space-y-3">
             <div className={message.role === "assistant" ? "flex min-w-0 items-start gap-2 sm:gap-3" : ""}>
               {message.role === "assistant" && (
-                <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-violet-400/40 bg-violet-950/70 sm:h-10 sm:w-10"><MykaPortrait className="h-8 w-8 sm:h-10 sm:w-10" /></span>
+                <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-cyan-400/40 bg-cyan-950/70 sm:h-10 sm:w-10"><MykaPortrait className="h-8 w-8 sm:h-10 sm:w-10" /></span>
               )}
               <div
                 className={
                   message.role === "user"
-                  ? "ml-auto min-w-0 max-w-[94%] rounded-2xl rounded-br-md border border-violet-300/20 bg-gradient-to-br from-violet-700 to-purple-800 p-3 shadow-md sm:max-w-[78%] sm:p-4"
+                  ? "ml-auto min-w-0 max-w-[94%] rounded-2xl rounded-br-md border border-cyan-300/20 bg-gradient-to-br from-cyan-700 to-indigo-800 p-3 shadow-md sm:max-w-[78%] sm:p-4"
                   : "mr-auto min-w-0 max-w-[calc(100%-2.5rem)] rounded-2xl rounded-bl-md border border-white/10 bg-slate-800/85 p-3 shadow-md sm:max-w-[78%] sm:p-4"
               }
             >
@@ -702,7 +702,7 @@ setConversationId(data.conversationId);
   Array.isArray(message.proposedTasks) &&
   message.proposedTasks.length > 0 && (
     <div className="mt-3 space-y-3">
-      <p className="text-sm font-semibold text-violet-300">
+      <p className="text-sm font-semibold text-cyan-300">
         {message.proposedTasks.length} tarefa(s) identificada(s) pela Myka
       </p>
 
@@ -772,8 +772,8 @@ setConversationId(data.conversationId);
               }}
             />
           ) : (
-            <div className="rounded-xl border border-violet-500/30 bg-slate-800 p-4">
-              <p className="text-xs font-semibold text-violet-400">
+            <div className="rounded-xl border border-cyan-500/30 bg-slate-800 p-4">
+              <p className="text-xs font-semibold text-cyan-400">
                 Tarefa {taskIndex + 1}
               </p>
               <h3 className="mt-1 font-semibold text-white">
@@ -902,11 +902,11 @@ setConversationId(data.conversationId);
         ))}
 
         {(!hideOffers && dailyLimitReached && currentPlan !== "premium") && (
-          <section aria-label="Planos MYRYRA" className="rounded-2xl border border-violet-400/40 bg-violet-950/30 p-4">
-            <button type="button" onClick={() => setHideOffers(true)} className="mb-2 text-xs text-violet-200 underline">Ocultar ofertas</button>
-            <div className="flex items-start gap-3"><span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-violet-400/40"><MykaPortrait className="h-9 w-9" /></span><div><p className="font-semibold text-white">{dailyLimitReached ? "Você atingiu o limite diário de mensagens do seu plano." : "Conheça as opções de upgrade da MYRYRA."}</p><p className="mt-1 text-sm text-slate-300">{dailyLimitReached ? `Seu limite será renovado${dailyResetAt && dailyResetAt > Date.now() ? ` em ${new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(dailyResetAt))} (horário de Brasília)` : " automaticamente"}. Gostaria de conhecer outros planos?` : "Compare as opções disponíveis."} Assinaturas pagas em breve.</p></div></div>
+          <section aria-label="Planos MYRYRA" className="rounded-2xl border border-cyan-400/40 bg-cyan-950/30 p-4">
+            <button type="button" onClick={() => setHideOffers(true)} className="mb-2 text-xs text-cyan-200 underline">Ocultar ofertas</button>
+            <div className="flex items-start gap-3"><span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-cyan-400/40"><MykaPortrait className="h-9 w-9" /></span><div><p className="font-semibold text-white">{dailyLimitReached ? "Você atingiu o limite diário de mensagens do seu plano." : "Conheça as opções de upgrade da MYRYRA."}</p><p className="mt-1 text-sm text-slate-300">{dailyLimitReached ? `Seu limite será renovado${dailyResetAt && dailyResetAt > Date.now() ? ` em ${new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(dailyResetAt))} (horário de Brasília)` : " automaticamente"}. Gostaria de conhecer outros planos?` : "Compare as opções disponíveis."} Assinaturas pagas em breve.</p></div></div>
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
-              {currentPlan === "free" && <a href="/planos?plano=pro" className="rounded-xl border border-violet-400/60 bg-violet-500/15 p-3 text-sm text-white hover:bg-violet-500/25"><strong className="block">Pro</strong>R$ 29,90/mês · 100 mensagens/dia</a>}
+              {currentPlan === "free" && <a href="/planos?plano=pro" className="rounded-xl border border-cyan-400/60 bg-cyan-500/15 p-3 text-sm text-white hover:bg-cyan-500/25"><strong className="block">Pro</strong>R$ 29,90/mês · 100 mensagens/dia</a>}
               <a href="/planos?plano=premium" className="rounded-xl border border-white/20 p-3 text-sm text-white hover:bg-white/10"><strong className="block">Premium</strong>R$ 49,90/mês · 250 mensagens/dia</a>
             </div>
             <p className="mt-3 text-xs text-slate-400">Compare os benefícios do Pro e Premium e escolha o ideal para você.</p>
@@ -914,7 +914,7 @@ setConversationId(data.conversationId);
         )}
 
         {loading && (
-          <p className="animate-pulse text-sm font-medium text-violet-300 motion-reduce:animate-none">
+          <p className="animate-pulse text-sm font-medium text-cyan-300 motion-reduce:animate-none">
             Myka está analisando suas tarefas...
           </p>
         )}
@@ -925,9 +925,9 @@ setConversationId(data.conversationId);
         <div role="alert" className="mb-3 space-y-2 text-sm text-red-400">
           <p>{/você atingiu as \d+ mensagens disponíveis hoje/i.test(error) ? `Você utilizou suas 10 mensagens gratuitas de hoje. ${dailyResetAt && dailyResetAt > Date.now() ? `Seu limite será renovado automaticamente às ${new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }).format(new Date(dailyResetAt))} (horário de Brasília).` : "Seu limite será renovado automaticamente no próximo ciclo diário."} Quer continuar conversando? Conheça nossos planos Pro e Premium.` : error}</p>
           <p className="text-slate-300">Precisa de suporte financeiro? Abra um chamado diretamente na Ajuda MYKA, mesmo quando a conversa com IA estiver indisponível.</p>
-          <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("myryra:open-support", { detail: { topic: "billing-payments" } }))} className="rounded-lg border border-violet-400 px-3 py-2 font-semibold text-violet-200">Abrir suporte financeiro</button>
+          <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("myryra:open-support", { detail: { topic: "billing-payments" } }))} className="rounded-lg border border-cyan-400 px-3 py-2 font-semibold text-cyan-200">Abrir suporte financeiro</button>
           {/você atingiu as \d+ mensagens disponíveis hoje/i.test(error) ? (
-            <a href="/planos" className="ml-2 inline-flex rounded-lg bg-violet-600 px-3 py-2 font-semibold text-white hover:bg-violet-500">Conhecer planos e fazer upgrade</a>
+            <a href="/planos" className="ml-2 inline-flex rounded-lg bg-cyan-600 px-3 py-2 font-semibold text-white hover:bg-cyan-500">Conhecer planos e fazer upgrade</a>
           ) : (
             <button type="button" onClick={() => setError("")} className="ml-2 rounded-lg border border-slate-600 px-3 py-2 text-slate-200">Tentar novamente</button>
           )}
@@ -935,7 +935,7 @@ setConversationId(data.conversationId);
       )}
 
       {attachment && (
-        <div className="mb-3 flex items-center gap-2 text-sm text-violet-200">
+        <div className="mb-3 flex items-center gap-2 text-sm text-cyan-200">
           <span className="truncate">ðŸ“Ž {attachment.name}</span>
           <button type="button" onClick={() => {
             setAttachment(null);
@@ -953,7 +953,7 @@ setConversationId(data.conversationId);
           maxLength={1500}
           placeholder="Pergunte algo à Myka..."
           aria-label="Mensagem para a Myka"
-          className="min-w-0 w-full flex-1 rounded-xl border border-white/10 bg-slate-800/80 px-3 py-3 text-base text-white outline-none transition focus:border-violet-400/60 focus:ring-2 focus:ring-violet-500/20 sm:px-4"
+          className="min-w-0 w-full flex-1 rounded-xl border border-white/10 bg-slate-800/80 px-3 py-3 text-base text-white outline-none transition focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-500/20 sm:px-4"
         />
 
 <input
@@ -969,7 +969,7 @@ setConversationId(data.conversationId);
 <button
   type="button"
   onClick={() => attachmentInputRef.current?.click()}
-  className="min-w-11 rounded-xl border border-violet-500 px-2 py-3 text-violet-200 sm:px-4"
+  className="min-w-11 rounded-xl border border-cyan-500 px-2 py-3 text-cyan-200 sm:px-4"
   aria-label="Anexar arquivo"
 >
   📎
@@ -979,14 +979,14 @@ setConversationId(data.conversationId);
   type="button"
   onClick={startVoice}
   disabled={listening || loading}
-  className="min-w-11 rounded-xl border border-violet-500 px-2 py-3 text-violet-200 disabled:opacity-50 sm:px-4"
+  className="min-w-11 rounded-xl border border-cyan-500 px-2 py-3 text-cyan-200 disabled:opacity-50 sm:px-4"
 >
   <span className="sm:hidden" aria-label={listening ? "Ouvindo" : "Voz"}>🎙</span><span className="hidden sm:inline">{listening ? "🎙 Ouvindo..." : "🎙 Voz"}</span>
 </button>
         <button
           type="submit"
           disabled={loading || historyLoading || !!error || (!input.trim() && !attachment)}
-          className="min-w-11 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-2 py-3 font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:px-5"
+          className="min-w-11 rounded-xl bg-gradient-to-r from-cyan-600 to-fuchsia-600 px-2 py-3 font-semibold text-white shadow-lg shadow-cyan-900/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:px-5"
         >
           <span className="sm:hidden" aria-label={loading ? "Enviando" : "Enviar"}>➤</span><span className="hidden sm:inline">{loading ? "Enviando..." : "Enviar"}</span>
         </button>
@@ -997,7 +997,7 @@ setConversationId(data.conversationId);
           type="button"
           onClick={prepareTask}
           disabled={loading || historyLoading || !!error || !input.trim()}
-          className="rounded-lg border border-violet-500 px-4 py-2 text-sm font-semibold text-violet-300 disabled:opacity-50"
+          className="rounded-lg border border-cyan-500 px-4 py-2 text-sm font-semibold text-cyan-300 disabled:opacity-50"
         >
           Preparar tarefa com IA
         </button>
