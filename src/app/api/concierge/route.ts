@@ -908,7 +908,13 @@ if (!rateLimit.allowed) {
       proposedEvent: parsed.proposedEvent ?? null,
     });
   } catch (error) {
-    console.error("Erro no chat do Concierge:", error);
+    // Do not send exception objects to logs: provider/database errors may carry
+    // request details or other sensitive metadata. Record bounded diagnostics only.
+    const failure = error && typeof error === "object" ? error as Record<string, unknown> : {};
+    const status = typeof failure.status === "number" ? failure.status : undefined;
+    const code = typeof failure.code === "string" ? failure.code.slice(0, 64) : undefined;
+    const category = error instanceof Error ? error.name.slice(0, 64) : "unknown";
+    console.error("[MYKA] concierge_request_failed", { category, status, code });
 
     // Fail closed when rate limiting is unavailable, but return an actionable
     // service-unavailable status instead of misclassifying it as a server bug.
