@@ -10,7 +10,7 @@ export default function VyraHeader() {
       <div className="flex items-center gap-3">
         <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl">
           <img
-            src="/myryra-logo.png"
+            src="/myryra-aurora.svg"
             alt="Logotipo MYRYRA"
             className="h-full w-full object-cover"
           />
