@@ -6,6 +6,7 @@ import { createSupabaseAdmin } from "@/lib/supabase/admin";
 /** Prevent Preview teaching requests from using the production Supabase project. */
 function previewDatabaseIsUnsafe() {
   if (process.env.VERCEL_ENV !== "preview") return false;
+  if (process.env.MIKA_TEACHER_HOMOLOGATION_READY !== "true") return true;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   return !url || !/^https:\/\/xanavauqzsrgvdfhcrsm\.supabase\.co\/?$/.test(url);
 }
