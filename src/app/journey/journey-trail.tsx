@@ -404,14 +404,26 @@ export default function JourneyTrail() {
         <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-300">✦ Meu universo em evolução</p><h2 className="mt-2 text-2xl font-bold">O mapa da sua jornada</h2></div>
         <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-sm font-semibold text-amber-200" title="Moedas virtuais de conquistas, sem valor monetário">◈ {myraBalance === null ? "MYRA · Carregando" : myraBalance + " MYRAs"}</div>
       </div>
-      {journeys.length > 1 && <label className="mt-5 block text-sm text-slate-300">Escolha sua aventura
-        <select className="mt-2 w-full rounded-xl border border-violet-400/30 bg-slate-900 p-3 text-white" value={selected} onChange={e => { setSelected(e.target.value); setReplan(null); setEditing(false); setShowAllMissions(false); }}>
-          {journeys.map(j => <option key={j.id} value={j.id}>{j.title}</option>)}
-        </select></label>}
+      {journeys.length > 1 && <div className="mt-5">
+        <p className="mb-3 text-xs font-bold uppercase tracking-[.16em] text-violet-200">Escolha sua jornada</p>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3" role="group" aria-label="Suas jornadas">
+          {journeys.map(j => <button type="button" key={j.id} aria-pressed={selected === j.id} onClick={() => { setSelected(j.id); setReplan(null); setEditing(false); setShowAllMissions(false); }} className={`min-w-0 rounded-2xl border p-4 text-left transition focus-visible:outline-2 focus-visible:outline-violet-300 ${selected === j.id ? "border-violet-400 bg-violet-500/20 shadow-[0_0_24px_rgba(139,92,246,.12)]" : "border-white/10 bg-white/5 hover:border-violet-400/40 hover:bg-violet-500/10"}`}>
+            <span className="text-xl text-violet-200" aria-hidden="true">◇</span>
+            <span className="mt-2 block truncate text-sm font-semibold text-white">{j.title}</span>
+            <span className="mt-1 block text-[11px] text-slate-300">{j.target_date ? "Até " + j.target_date.slice(0,10).split("-").reverse().join("/") : "Sem prazo definido"}</span>
+            <span className="mt-2 block text-[11px] font-medium text-violet-300">{selected === j.id ? "● Jornada selecionada" : "Ver meu caminho →"}</span>
+          </button>)}
+        </div>
+      </div>}
       {current && <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
         <p className="text-xs uppercase tracking-widest text-violet-300">Destino escolhido</p>
         <h3 className="mt-1 text-2xl font-bold">✧ {current.title}</h3>
         <p className="mt-1 text-sm text-slate-300">{current.target_date ? "Meta: " + current.target_date.slice(0, 10).split("-").reverse().join("/") : "Uma conquista de cada vez"}</p>
+        <div className="mt-4 rounded-xl border border-violet-400/20 bg-slate-950/40 p-3" aria-label="Progresso desta jornada">
+          <div className="flex items-center justify-between gap-3 text-xs"><span className="font-semibold text-violet-100">Seu progresso</span><span className="font-bold text-white">{loading ? "Carregando..." : percent + "%"}</span></div>
+          <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-label="Missões concluídas" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}><div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-400 transition-all" style={{ width: percent + "%" }} /></div>
+          <p className="mt-2 text-[11px] text-slate-300">{done} de {missions.length} missões concluídas{finished ? " · Jornada conquistada!" : ""}</p>
+        </div>
         <div className="mt-3 flex flex-wrap gap-2">
           <button type="button" disabled={!!busy} onClick={() => { setGoalTitle(current.title); setGoalDate(current.target_date ?? ""); setEditing(v => !v); }} className="rounded-lg border border-violet-300/40 px-3 py-2 text-xs font-semibold text-violet-100">✎ Editar meta</button>
           <button type="button" disabled={!!busy} onClick={() => void changeGoal(true)} className="rounded-lg border border-rose-300/40 px-3 py-2 text-xs font-semibold text-rose-200">Excluir meta</button>
