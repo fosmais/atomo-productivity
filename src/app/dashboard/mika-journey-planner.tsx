@@ -196,6 +196,14 @@ export default function MikaJourneyPlanner() {
       // draft only when the AI preview failed; never retry confirmation writes.
       const isJson = (response.headers.get("content-type") ?? "").toLowerCase().includes("application/json");
       const aiUnavailable = !confirm && useAI && (!isJson || response.status >= 500 || response.status === 429);
+      if (!confirm && !isJson) {
+        const localDraft = createJourneyDraft({ title, ...(targetDate ? { targetDate } : {}), weeklyAvailabilityDays: days });
+        setDraft(localDraft);
+        setSnapshotId(null);
+        setSaved(false);
+        setMessage("Prévia básica criada no dispositivo. O servidor não respondeu em JSON; para salvar, sua sessão precisa estar válida.");
+        return;
+      }
       let payload = aiUnavailable ? {} : await readApiJson(response, "Não foi possível processar a jornada");
       // A falha da IA não pode impedir o usuário de criar uma jornada básica.
       if (aiUnavailable) {
@@ -321,12 +329,6 @@ export default function MikaJourneyPlanner() {
                   {journey.target_date ? " · Meta: " + journey.target_date.slice(0, 10).split("-").reverse().join("/") : ""}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {(journey.status === "active" || journey.status === "paused") && (
-                    <button type="button" disabled={journeyBusy !== null} onClick={() => void toggleJourneyPause(journey.id, journey.status)}
-                      className="rounded-lg border border-amber-400/50 px-3 py-2 text-xs text-amber-100 disabled:opacity-50">
-                      {journey.status === "active" ? "Pausar" : "Retomar"}
-                    </button>
-                  )}
                   <button type="button" disabled={journeyBusy !== null} onClick={() => {
                     setEditingJourney(journey.id);
                     setEditTitle(journey.title);
