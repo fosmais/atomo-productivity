@@ -434,7 +434,9 @@ async function startVoice() {
 
     const content = input.trim();
 
-    if ((!content && !attachment) || loading || historyLoading || error) return;
+    if ((!content && !attachment) || loading || historyLoading) return;
+    // An earlier recoverable error must not permanently block new messages.
+    setError("");
 
     if (attachment) {
       setLoading(true);
