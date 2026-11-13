@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+function previewDatabaseIsUnsafe() {
+  if (process.env.VERCEL_ENV !== "preview") return false;
+  return process.env.NEXT_PUBLIC_SUPABASE_URL !== "https://xanavauqzsrgvdfhcrsm.supabase.co";
+}
+
+
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 async function authenticatedClient() {
@@ -15,6 +21,7 @@ async function authenticatedClient() {
 }
 
 export async function GET(request: Request) {
+  if (previewDatabaseIsUnsafe()) return NextResponse.json({ error: "Preview bloqueado: Supabase de homologação não configurado." }, { status: 503 });
   const auth = await authenticatedClient();
   if (auth.error) return auth.error;
   const { supabase, user } = auth;
@@ -38,6 +45,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (previewDatabaseIsUnsafe()) return NextResponse.json({ error: "Preview bloqueado: Supabase de homologação não configurado." }, { status: 503 });
   const auth = await authenticatedClient();
   if (auth.error) return auth.error;
   const { supabase, user } = auth;
