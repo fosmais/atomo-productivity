@@ -46,7 +46,7 @@ create table if not exists public.myryra_journey_mission_assessment_policy (
   mission_id uuid primary key references public.myryra_journey_missions(id) on delete cascade,
   owner_id uuid not null references auth.users(id) on delete cascade,
   requires_assessment boolean not null,
-  minimum_score integer not null default 70 check (minimum_score between 0 and 100),
+  minimum_score integer not null default 70 check (minimum_score between 70 and 100),
   created_at timestamptz not null default now()
 );
 -- Ensure service-role writes cannot attach a policy to a different user's mission.
