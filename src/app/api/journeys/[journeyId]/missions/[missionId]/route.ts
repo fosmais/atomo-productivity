@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { hasCurrentLegalAcceptance } from "@/lib/privacy/legal-acceptance";
 
 type Context = { params: Promise<{ journeyId: string; missionId: string }> };
@@ -65,12 +66,28 @@ export async function PATCH(request: Request, context: Context) {
     const { data: missionDetails, error: detailsError } = await supabase.from("myryra_journey_missions")
       .select("title").eq("id", missionId).eq("journey_id", journeyId).maybeSingle();
     if (detailsError || !missionDetails) return NextResponse.json({ error: "Falha ao verificar conteúdo da missão." }, { status: 500 });
-    if (educationalMission.test(missionDetails.title)) {
+    // Explicit policies can add assessment requirements but cannot bypass the legacy gate.
+    // Fail closed when the policy schema is unavailable in this candidate release.
+    const { data: policy, error: policyError } = await supabase
+      .from("myryra_journey_mission_assessment_policy")
+      .select("requires_assessment,minimum_score")
+      .eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
+    if (policyError) return NextResponse.json({ error: "Política de avaliação indisponível." }, { status: 503 });
+    // Any mission linked to a MIKA lesson is educational regardless of its title.
+    // Fail closed on lookup errors rather than accidentally awarding MYRA.
+    const { data: linkedLesson, error: linkedLessonError } = await supabase
+      .from("mika_teacher_sessions")
+      .select("id").eq("mission_id", missionId).eq("journey_id", journeyId)
+      .eq("owner_id", user.id).limit(1).maybeSingle();
+    if (linkedLessonError) return NextResponse.json({ error: "Não foi possível verificar a aula da MIKA." }, { status: 503 });
+    const requiresAssessment = educationalMission.test(missionDetails.title) || policy?.requires_assessment === true || !!linkedLesson;
+    const minimumScore = policy?.minimum_score ?? 70;
+    if (requiresAssessment) {
       const { data: learning, error: learningError } = await supabase.from("myryra_journey_learning_progress")
         .select("answer,feedback,assessment_passed,assessment_score").eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
       if (learningError) return NextResponse.json({ error: "Não foi possível verificar a avaliação da MIKA." }, { status: 503 });
-      if (!learning?.answer?.trim() || !learning?.feedback?.trim() || learning.assessment_passed !== true || typeof learning.assessment_score !== "number" || learning.assessment_score < 70)
-        return NextResponse.json({ error: "Para concluir esta aula, responda ao exercício e obtenha pelo menos 70 pontos na avaliação salva da MIKA. Se necessário, revise o conteúdo e tente novamente." }, { status: 409 });
+      if (!learning?.answer?.trim() || !learning?.feedback?.trim() || learning.assessment_passed !== true || typeof learning.assessment_score !== "number" || learning.assessment_score < minimumScore)
+        return NextResponse.json({ error: `Para concluir esta aula, responda ao exercício e obtenha pelo menos ${minimumScore} pontos na avaliação salva da MIKA. Se necessário, revise o conteúdo e tente novamente.` }, { status: 409 });
     }
   }
 
@@ -79,7 +96,8 @@ export async function PATCH(request: Request, context: Context) {
     : { data: null, error: null };
   if (creditLookupError) return NextResponse.json({ error: "Falha ao verificar recompensa." }, { status: 500 });
 
-  const { data: mission, error: updateError } = await supabase.from("myryra_journey_missions")
+  // Only the authenticated, authorized API may change mission completion; direct client UPDATE is revoked.
+  const { data: mission, error: updateError } = await createSupabaseAdmin().from("myryra_journey_missions")
     .update({ status, completed_at: status === "completed" ? new Date().toISOString() : null })
     .eq("id", missionId).eq("journey_id", journeyId).eq("status", existingMission.status)
     .select("id,title,status,completed_at").maybeSingle();
