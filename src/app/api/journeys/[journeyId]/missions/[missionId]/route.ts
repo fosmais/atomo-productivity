@@ -65,12 +65,21 @@ export async function PATCH(request: Request, context: Context) {
     const { data: missionDetails, error: detailsError } = await supabase.from("myryra_journey_missions")
       .select("title").eq("id", missionId).eq("journey_id", journeyId).maybeSingle();
     if (detailsError || !missionDetails) return NextResponse.json({ error: "Falha ao verificar conteúdo da missão." }, { status: 500 });
-    if (educationalMission.test(missionDetails.title)) {
+    // Explicit assessment policy takes precedence; legacy missions retain the old gate.
+    // Fail closed when the policy schema is unavailable in this candidate release.
+    const { data: policy, error: policyError } = await supabase
+      .from("myryra_journey_mission_assessment_policy")
+      .select("requires_assessment,minimum_score")
+      .eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
+    if (policyError) return NextResponse.json({ error: "Política de avaliação indisponível." }, { status: 503 });
+    const requiresAssessment = policy ? policy.requires_assessment : educationalMission.test(missionDetails.title);
+    const minimumScore = policy?.minimum_score ?? 70;
+    if (requiresAssessment) {
       const { data: learning, error: learningError } = await supabase.from("myryra_journey_learning_progress")
         .select("answer,feedback,assessment_passed,assessment_score").eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
       if (learningError) return NextResponse.json({ error: "Não foi possível verificar a avaliação da MIKA." }, { status: 503 });
-      if (!learning?.answer?.trim() || !learning?.feedback?.trim() || learning.assessment_passed !== true || typeof learning.assessment_score !== "number" || learning.assessment_score < 70)
-        return NextResponse.json({ error: "Para concluir esta aula, responda ao exercício e obtenha pelo menos 70 pontos na avaliação salva da MIKA. Se necessário, revise o conteúdo e tente novamente." }, { status: 409 });
+      if (!learning?.answer?.trim() || !learning?.feedback?.trim() || learning.assessment_passed !== true || typeof learning.assessment_score !== "number" || learning.assessment_score < minimumScore)
+        return NextResponse.json({ error: `Para concluir esta aula, responda ao exercício e obtenha pelo menos ${minimumScore} pontos na avaliação salva da MIKA. Se necessário, revise o conteúdo e tente novamente.` }, { status: 409 });
     }
   }
 
