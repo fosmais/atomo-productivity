@@ -49,6 +49,28 @@ create table if not exists public.myryra_journey_mission_assessment_policy (
   minimum_score integer not null default 70 check (minimum_score between 0 and 100),
   created_at timestamptz not null default now()
 );
+-- Ensure service-role writes cannot attach a policy to a different user's mission.
+create or replace function public.myryra_validate_assessment_policy_owner()
+returns trigger language plpgsql set search_path = '' as $
+begin
+  if not exists (
+    select 1 from public.myryra_journey_missions m
+    join public.myryra_journeys j on j.id = m.journey_id
+    where m.id = new.mission_id and j.owner_id = new.owner_id
+  ) then
+    raise exception 'Politica de avaliacao deve pertencer ao proprietario da missao.'
+      using errcode = '23514';
+  end if;
+  return new;
+end;
+$;
+revoke all on function public.myryra_validate_assessment_policy_owner() from public, anon, authenticated;
+drop trigger if exists myryra_assessment_policy_owner_guard on public.myryra_journey_mission_assessment_policy;
+create trigger myryra_assessment_policy_owner_guard
+  before insert or update of mission_id, owner_id
+  on public.myryra_journey_mission_assessment_policy
+  for each row execute function public.myryra_validate_assessment_policy_owner();
+
 alter table public.myryra_journey_mission_assessment_policy enable row level security;
 revoke all on public.myryra_journey_mission_assessment_policy from public, anon, authenticated;
 grant select on public.myryra_journey_mission_assessment_policy to authenticated;
