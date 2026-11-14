@@ -122,7 +122,7 @@ export default function MikaProfessorPage() {
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Não foi possível excluir a aula.");
       setSessions((current) => current.filter((item) => item.id !== session.id));
-      if (sessionId === session.id) { setSessionId(""); setLesson(null); setMessages([]); setAnswer(""); }
+      if (sessionId === session.id) { setSessionId(""); setLesson(null); setMessages([]); setAnswer(""); setLastMessageSaved(false); }
     } catch (e) { setError(e instanceof Error ? e.message : "Falha ao excluir aula."); }
     finally { setHistoryBusy(false); }
   }
@@ -221,21 +221,21 @@ export default function MikaProfessorPage() {
         </header>
         <section className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-5">
           <label className="block text-sm">Modalidade da aula
-            <select disabled={chatBusy || busy || historyBusy} value={journeyId} onChange={(e) => { setJourneyId(e.target.value); setLesson(null); setMessages([]); setSessionId(""); }} className="mt-1 w-full rounded-lg bg-slate-800 p-3">
+            <select disabled={chatBusy || busy || historyBusy} value={journeyId} onChange={(e) => { setJourneyId(e.target.value); setLesson(null); setMessages([]); setSessionId(""); setLastMessageSaved(false); }} className="mt-1 w-full rounded-lg bg-slate-800 p-3">
               <option value="">Aula livre (sem Journey)</option>
               {journeys.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}
             </select>
           </label>
           <label className="block text-sm">Assunto da aula
-            <input disabled={chatBusy || busy || historyBusy} value={topic} onChange={(e) => { setTopic(e.target.value); setLesson(null); setMessages([]); setSessionId(""); }} maxLength={120} placeholder="Ex.: cumprimentos em italiano" className="mt-1 w-full rounded-lg bg-slate-800 p-3" />
+            <input disabled={chatBusy || busy || historyBusy} value={topic} onChange={(e) => { setTopic(e.target.value); setLesson(null); setMessages([]); setSessionId(""); setLastMessageSaved(false); }} maxLength={120} placeholder="Ex.: cumprimentos em italiano" className="mt-1 w-full rounded-lg bg-slate-800 p-3" />
           </label>
           <label className="block text-sm">Nível
-            <select disabled={chatBusy || busy || historyBusy} value={level} onChange={(e) => { setLevel(e.target.value); setLesson(null); setMessages([]); setSessionId(""); }} className="mt-1 w-full rounded-lg bg-slate-800 p-3">
+            <select disabled={chatBusy || busy || historyBusy} value={level} onChange={(e) => { setLevel(e.target.value); setLesson(null); setMessages([]); setSessionId(""); setLastMessageSaved(false); }} className="mt-1 w-full rounded-lg bg-slate-800 p-3">
               <option value="iniciante">Iniciante</option><option value="intermediário">Intermediário</option><option value="avançado">Avançado</option>
             </select>
           </label>
           <label className="block text-sm">Duração
-            <select disabled={chatBusy || busy || historyBusy} value={durationMinutes} onChange={(e) => { setDurationMinutes(Number(e.target.value)); setLesson(null); setMessages([]); setSessionId(""); }} className="mt-1 w-full rounded-lg bg-slate-800 p-3">
+            <select disabled={chatBusy || busy || historyBusy} value={durationMinutes} onChange={(e) => { setDurationMinutes(Number(e.target.value)); setLesson(null); setMessages([]); setSessionId(""); setLastMessageSaved(false); }} className="mt-1 w-full rounded-lg bg-slate-800 p-3">
               <option value={15}>15 minutos</option><option value={20}>20 minutos</option><option value={30}>30 minutos</option><option value={45}>45 minutos</option><option value={60}>60 minutos</option>
             </select>
           </label>
