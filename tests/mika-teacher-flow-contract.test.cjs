@@ -97,3 +97,13 @@ test("teacher chat does not claim persisted learning progress or calendar side e
   assert.match(schedule, /Does not create calendar events/);
   assert.match(schedule, /\.eq\("owner_id", user\.id\)\.eq\("status", "active"\)/);
 });
+
+
+test("teacher chat UI distinguishes saved conversation from measured learning progress", () => {
+  const ui = read("src/app/mika-professora/page.tsx");
+  assert.match(ui, /setLastMessageSaved\(json\.saved === true\)/);
+  assert.match(ui, /lastMessageSaved && !saveWarning/);
+  assert.match(ui, /O progresso pedagógico ainda não é atualizado automaticamente/);
+  assert.match(ui, /if \(sessionId && !json\.saved\)/);
+  assert.match(ui, /setHistoryOutOfSync\(true\)/);
+});
