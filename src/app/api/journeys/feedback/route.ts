@@ -11,9 +11,9 @@ export async function POST(request: Request) {
   let payload: unknown;
   try { payload = await request.json(); } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
-  const { journeyId, missionId, answer, exercise } = payload as Record<string, unknown>;
+  const { journeyId, missionId, sessionId, answer, exercise } = payload as Record<string, unknown>;
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  if (typeof journeyId !== "string" || !uuid.test(journeyId) || typeof missionId !== "string" || !uuid.test(missionId) || typeof answer !== "string" || answer.trim().length < 30 || answer.length > 2000 || typeof exercise !== "string" || exercise.trim().length < 10 || exercise.length > 600)
+  if (typeof journeyId !== "string" || !uuid.test(journeyId) || typeof missionId !== "string" || !uuid.test(missionId) || typeof answer !== "string" || answer.trim().length < 30 || answer.length > 2000 || typeof exercise !== "string" || exercise.trim().length < 10 || exercise.length > 600 || (sessionId !== undefined && (typeof sessionId !== "string" || !uuid.test(sessionId)))
     return NextResponse.json({ error: "Informe uma resposta de 30 a 2000 caracteres para uma missão válida." }, { status: 400 });
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -35,6 +35,15 @@ export async function POST(request: Request) {
   const { data: mission, error: missionError } = await supabase.from("myryra_journey_missions").select("id,title").eq("id", missionId).eq("journey_id", journeyId).maybeSingle();
   if (missionError) return NextResponse.json({ error: "Falha ao consultar a missão." }, { status: 500 });
   if (!mission) return NextResponse.json({ error: "Missão não encontrada." }, { status: 404 });
+  // A teacher-initiated assessment must be linked to the same owned mission.
+  // Journey-only assessments without sessionId remain backward compatible.
+  if (typeof sessionId === "string") {
+    const { data: session, error: sessionError } = await supabase.from("mika_teacher_sessions")
+      .select("id").eq("id", sessionId).eq("owner_id", user.id)
+      .eq("journey_id", journeyId).eq("mission_id", missionId).maybeSingle();
+    if (sessionError) return NextResponse.json({ error: "Não foi possível verificar a aula vinculada." }, { status: 503 });
+    if (!session) return NextResponse.json({ error: "Aula não vinculada a esta missão." }, { status: 404 });
+  }
   // Use prior feedback only for the same owned mission; never leak another learner's history.
   const { data: priorProgress, error: progressError } = await supabase.from("myryra_journey_learning_progress")
     .select("answer,feedback,assessment_attempts").eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
