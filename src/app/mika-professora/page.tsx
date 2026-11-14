@@ -217,7 +217,7 @@ export default function MikaProfessorPage() {
     try {
       const response = await fetch("/api/mika/lessons/chat", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...(journeyId ? { journeyId } : {}), message, sessionId }),
+        body: JSON.stringify({ message, sessionId }),
       });
       const json = await response.json();
       if (!response.ok || typeof json.reply !== "string") throw new Error(json.error || "Não foi possível responder.");
