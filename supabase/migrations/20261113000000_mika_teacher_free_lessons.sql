@@ -15,9 +15,11 @@ alter table public.mika_teacher_sessions
   add constraint mika_teacher_sessions_duration_minutes_check
   check (duration_minutes in (15, 20, 30, 45, 60));
 
+-- Consolidate legacy and free-lesson policies to avoid overlapping permissive INSERT rules.
 drop policy if exists "teacher sessions insert own journey" on public.mika_teacher_sessions;
+drop policy if exists "teacher sessions insert own or free lesson" on public.mika_teacher_sessions;
 
-create policy "teacher sessions insert own journey"
+create policy "teacher sessions insert own or free lesson"
 on public.mika_teacher_sessions for insert to authenticated
 with check (
   owner_id = (select auth.uid())
