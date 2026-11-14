@@ -77,3 +77,13 @@ test("teacher history page validator accepts subsequent pages and rejects malfor
   for (const value of ["0", "1", "2", "30", "999"]) assert.equal(validator.test(value), true, value);
   for (const value of ["", "-1", "01", "1a", "1000", " 2"]) assert.equal(validator.test(value), false, value);
 });
+
+
+test("teacher calendar export asks for supported duration and does not silently assume 30 minutes", () => {
+  const ui = read("src/app/mika-professora/page.tsx");
+  assert.match(ui, /window\.prompt\("Duração da aula em minutos/);
+  assert.match(ui, /\["15", "20", "30", "45", "60"\]\.includes\(chosen\.trim\(\)\)/);
+  assert.match(ui, /const end = new Date\(start\.getTime\(\) \+ duration \* 60000\)/);
+  assert.match(ui, /if \(chosen === null\) return/);
+  assert.match(ui, /Importação manual: escolha a duração da aula ao exportar/);
+});
