@@ -107,3 +107,11 @@ test("teacher chat UI distinguishes saved conversation from measured learning pr
   assert.match(ui, /if \(sessionId && !json\.saved\)/);
   assert.match(ui, /setHistoryOutOfSync\(true\)/);
 });
+
+
+test("teacher clears prior persistence confirmation on new request or lesson", () => {
+  const ui = read("src/app/mika-professora/page.tsx");
+  assert.match(ui, /setChatBusy\(true\); setError\(""\); setLastMessageSaved\(false\)/);
+  assert.match(ui, /setBusy\(true\); setError\(""\); setLastMessageSaved\(false\)/);
+  assert.match(ui, /setSessionId\(session\.id\); setLastMessageSaved\(false\)/);
+});
