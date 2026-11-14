@@ -87,3 +87,13 @@ test("teacher calendar export asks for supported duration and does not silently 
   assert.match(ui, /if \(chosen === null\) return/);
   assert.match(ui, /Importação manual: escolha a duração da aula ao exportar/);
 });
+
+
+test("teacher chat does not claim persisted learning progress or calendar side effects", () => {
+  const chat = read("src/app/api/mika/lessons/chat/route.ts");
+  const schedule = read("src/app/api/mika/lessons/schedule/route.ts");
+  assert.match(chat, /progressUpdated: false/);
+  assert.match(chat, /Não afirme que salvou progresso, criou aulas, agendou eventos ou concedeu MYRAs/);
+  assert.match(schedule, /Does not create calendar events/);
+  assert.match(schedule, /\.eq\("owner_id", user\.id\)\.eq\("status", "active"\)/);
+});
