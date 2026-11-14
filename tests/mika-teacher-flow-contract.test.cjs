@@ -115,3 +115,10 @@ test("teacher clears prior persistence confirmation on new request or lesson", (
   assert.match(ui, /setBusy\(true\); setError\(""\); setLastMessageSaved\(false\)/);
   assert.match(ui, /setSessionId\(session\.id\); setLastMessageSaved\(false\)/);
 });
+
+
+test("teacher clears saved confirmation when switching or deleting a lesson", () => {
+  const ui = read("src/app/mika-professora/page.tsx");
+  assert.match(ui, /setLesson\(null\); setMessages\(\[\]\); setSessionId\(""\); setLastMessageSaved\(false\)/);
+  assert.match(ui, /setSessionId\(""\); setLesson\(null\); setMessages\(\[\]\); setAnswer\(""\); setLastMessageSaved\(false\)/);
+});
