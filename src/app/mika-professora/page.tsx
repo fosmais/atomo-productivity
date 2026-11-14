@@ -244,7 +244,7 @@ export default function MikaProfessorPage() {
         </header>
         <section className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-5">
           <label className="block text-sm">Modalidade da aula
-            <select disabled={chatBusy || busy || historyBusy} value={journeyId} onChange={(e) => { setJourneyId(e.target.value); setLesson(null); setMessages([]); setSessionId(""); setLastMessageSaved(false); }} className="mt-1 w-full rounded-lg bg-slate-800 p-3">
+            <select disabled={chatBusy || busy || historyBusy} value={journeyId} onChange={(e) => { setJourneyId(e.target.value); setMissionId(""); setMissions([]); setMissionsError(""); setLesson(null); setMessages([]); setSessionId(""); setLastMessageSaved(false); }} className="mt-1 w-full rounded-lg bg-slate-800 p-3">
               <option value="">Aula livre (sem Journey)</option>
               {journeys.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}
             </select>
