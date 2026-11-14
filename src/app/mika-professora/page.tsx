@@ -154,7 +154,7 @@ export default function MikaProfessorPage() {
       const response = await fetch("/api/mika/lessons/messages?sessionId=" + encodeURIComponent(session.id), { cache: "no-store" });
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Não foi possível retomar a aula.");
-      setTopic(session.topic); setLevel(session.level); setSessionId(session.id); setSaveWarning(""); setHistoryOutOfSync(false); setCopyFeedback("");
+      setTopic(session.topic); setLevel(session.level); setSessionId(session.id); setLastMessageSaved(false); setSaveWarning(""); setHistoryOutOfSync(false); setCopyFeedback("");
       setLesson({ title: "Aula: " + session.topic, objective: "Continuar a aula anterior", durationMinutes, activities: [], assessment: "Continue sua conversa com a MIKA." });
       setMessages((json.messages ?? []).map((m: Message) => ({ role: m.role, content: m.content })));
       setAnswer("");
@@ -171,7 +171,7 @@ export default function MikaProfessorPage() {
         return;
       }
     }
-    setBusy(true); setError(""); setSaveWarning(""); setHistoryOutOfSync(false); setHistoryError(""); setLesson(null); setMessages([]); setAnswer(""); setSessionId("");
+    setBusy(true); setError(""); setLastMessageSaved(false); setSaveWarning(""); setHistoryOutOfSync(false); setHistoryError(""); setLesson(null); setMessages([]); setAnswer(""); setSessionId("");
     try {
       const response = await fetch("/api/mika/lessons/propose", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -190,7 +190,7 @@ export default function MikaProfessorPage() {
   async function sendMessage(initialMessage?: string) {
     const message = (initialMessage ?? answer).trim();
     if (!lesson || !sessionId || !message || chatBusy || historyOutOfSync || message.length > 2000) return;
-    setChatBusy(true); setError(""); setSaveWarning(""); setAnswer("");
+    setChatBusy(true); setError(""); setLastMessageSaved(false); setSaveWarning(""); setAnswer("");
     try {
       const response = await fetch("/api/mika/lessons/chat", {
         method: "POST", headers: { "Content-Type": "application/json" },
