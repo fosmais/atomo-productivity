@@ -553,9 +553,19 @@ export default function MikaJourneyPlanner() {
                         <progress aria-label="Progresso da jornada" className="w-full"
                           max={Math.max(1, missions.length)}
                           value={missions.filter((m) => m.status === "completed").length} />
-                        <ul className="max-h-64 space-y-2 overflow-auto">
+                        {journey.status === "active" && missions.some((mission) => mission.status === "pending") && (
+                          <div className="rounded-xl border border-violet-400/40 bg-violet-500/10 p-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-violet-200">Sua próxima missão</p>
+                            <p className="mt-1 font-medium">{missions.find((mission) => mission.status === "pending")?.title}</p>
+                            <button type="button" onClick={() => {
+                              const next = missions.find((mission) => mission.status === "pending");
+                              if (next) document.getElementById("journey-mission-" + next.id)?.scrollIntoView({ behavior: "smooth", block: "center" });
+                            }} className="mt-2 rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500">Ir para próxima missão</button>
+                          </div>
+                        )}
+                        <ul className="max-h-80 space-y-2 overflow-y-auto pr-1">
                           {missions.map((mission) => (
-                            <li key={mission.id} id={"journey-mission-" + mission.id} className="flex items-start gap-2">
+                            <li key={mission.id} id={"journey-mission-" + mission.id} className="flex items-start gap-3 rounded-xl border border-white/15 bg-white/5 p-3">
                               <input type="checkbox" className="mt-1"
                                 aria-label={"Concluir missão: " + mission.title}
                                 checked={mission.status === "completed"}
