@@ -43,4 +43,8 @@ create policy journey_learning_owner_delete on public.myryra_journey_learning_pr
 create policy journey_review_steps_owner_select on public.myryra_journey_review_steps for select to authenticated using(owner_id=(select auth.uid()) and exists(select 1 from public.myryra_journey_missions m join public.myryra_journeys j on j.id=m.journey_id where m.id=mission_id and j.owner_id=(select auth.uid())));
 create policy journey_review_steps_owner_insert on public.myryra_journey_review_steps for insert to authenticated with check(owner_id=(select auth.uid()) and exists(select 1 from public.myryra_journey_missions m join public.myryra_journeys j on j.id=m.journey_id where m.id=mission_id and j.owner_id=(select auth.uid())));
 create policy journey_review_steps_owner_update on public.myryra_journey_review_steps for update to authenticated using(owner_id=(select auth.uid()) and exists(select 1 from public.myryra_journey_missions m join public.myryra_journeys j on j.id=m.journey_id where m.id=mission_id and j.owner_id=(select auth.uid()))) with check(owner_id=(select auth.uid()) and exists(select 1 from public.myryra_journey_missions m join public.myryra_journeys j on j.id=m.journey_id where m.id=mission_id and j.owner_id=(select auth.uid())));
+-- RLS does not grant table access; authenticated needs explicit privileges.
+grant select, insert, update, delete on public.myryra_journey_missions to authenticated;
+grant select, insert, update, delete on public.myryra_journey_learning_progress to authenticated;
+grant select, insert, update on public.myryra_journey_review_steps to authenticated;
 commit;
