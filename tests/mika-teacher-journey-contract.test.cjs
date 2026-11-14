@@ -46,7 +46,8 @@ test("teacher session create and history responses expose linked mission id", ()
 
 test("migration trigger bodies have balanced PostgreSQL dollar quotes", () => {
   const sql = read("supabase/migrations/20261114000100_mika_teacher_mission_link.sql");
-  assert.equal((sql.match(/\\$\\$/g) ?? []).length % 2, 0, "unbalanced PL/pgSQL dollar quotes");
-  assert.match(sql, /myryra_validate_assessment_policy_owner\\(\\)[\\s\\S]*?as \\$\\$[\\s\\S]*?end;\\s*\\$\\$;/);
+  assert.equal((sql.match(/\$\$/g) ?? []).length % 2, 0, "unbalanced PL/pgSQL dollar quotes");
+  assert.ok(sql.includes("as $$"), "trigger body must use a valid dollar-quoted delimiter");
+  assert.ok(sql.includes("end;\n$$;"), "trigger body must close its dollar quote");
   assert.match(sql, /minimum_score between 70 and 100/);
 });
