@@ -37,7 +37,7 @@ export default function LoginPage() {
     queueMicrotask(() => {
       if (!active) return;
       if (params.get("mode") === "signup") setMode("signup");
-      if (requestedReturn === "/suporte-admin") setReturnTo(requestedReturn);
+      if (requestedReturn === "/suporte-admin" || requestedReturn === "/mika-professora") setReturnTo(requestedReturn);
       if (params.get("mfa") === "required") { setMessage("Acesso Google concluído. Aguarde a verificação do autenticador para finalizar o login."); setIsError(false); }
       if (errorCode === "recovery") {
         setIsError(true);
@@ -58,7 +58,7 @@ export default function LoginPage() {
         const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
         if (assurance.error || !active) return;
         if (assurance.data.currentLevel === "aal2" || assurance.data.nextLevel === "aal1") {
-          router.replace(requestedReturn === "/suporte-admin" ? "/suporte-admin" : "/dashboard");
+          router.replace(requestedReturn === "/suporte-admin" || requestedReturn === "/mika-professora" ? requestedReturn : "/dashboard");
           router.refresh();
           return;
         }
@@ -106,7 +106,7 @@ export default function LoginPage() {
 
         if (data.session) {
           // When email confirmation is disabled, Supabase signs the user in immediately.
-          router.replace("/dashboard");
+          router.replace(returnTo);
           router.refresh();
           return;
         }
@@ -221,7 +221,7 @@ export default function LoginPage() {
       });
       if (result.error) throw result.error;
       setMfaCode("");
-      router.push("/dashboard");
+      router.push(returnTo);
       router.refresh();
     } catch (error) {
       setIsError(true);
