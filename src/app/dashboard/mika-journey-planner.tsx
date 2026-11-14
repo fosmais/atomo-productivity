@@ -343,6 +343,7 @@ export default function MikaJourneyPlanner() {
                   {journey.target_date ? " · Meta: " + journey.target_date.slice(0, 10).split("-").reverse().join("/") : ""}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
+                  <a href={"/journey?journey=" + encodeURIComponent(journey.id)} className="inline-flex rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500">Abrir minha jornada →</a>
                   <button type="button" disabled={journeyBusy !== null} onClick={() => {
                     setEditingJourney(journey.id);
                     setEditTitle(journey.title);
