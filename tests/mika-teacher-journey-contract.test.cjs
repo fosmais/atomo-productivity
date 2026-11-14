@@ -95,3 +95,20 @@ test("client cannot create an already completed mission to trigger MYRA", () => 
   assert.match(sql, /current_user in \('authenticated', 'anon'\)/);
   assert.match(sql, /before insert on public\.myryra_journey_missions/);
 });
+
+
+test("MIKA-linked missions require assessment regardless of mission title", () => {
+  const src = read("src/app/api/journeys/[journeyId]/missions/[missionId]/route.ts");
+  assert.match(src, /\.from\("mika_teacher_sessions"\)/);
+  assert.match(src, /\.eq\("mission_id", missionId\)\.eq\("journey_id", journeyId\)/);
+  assert.match(src, /if \(linkedLessonError\) return NextResponse\.json/);
+  assert.match(src, /policy\?\.requires_assessment === true \|\| !!linkedLesson/);
+});
+test("client cannot directly mutate assessment evidence or mission completion", () => {
+  const sql = read("supabase/migrations/20261114000300_protect_journey_assessments.sql");
+  assert.match(sql, /revoke update on public\.myryra_journey_missions from public, anon, authenticated/);
+  assert.match(sql, /revoke insert, update, delete, truncate on public\.myryra_journey_learning_progress from public, anon, authenticated/);
+  const guard = read("supabase/migrations/20261114000400_guard_completed_mission_insert.sql");
+  assert.match(guard, /new\.status = 'completed'/);
+  assert.match(guard, /current_user in \('authenticated', 'anon'\)/);
+});
