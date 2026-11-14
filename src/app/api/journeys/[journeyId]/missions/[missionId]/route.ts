@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { hasCurrentLegalAcceptance } from "@/lib/privacy/legal-acceptance";
 
 type Context = { params: Promise<{ journeyId: string; missionId: string }> };
@@ -88,7 +89,8 @@ export async function PATCH(request: Request, context: Context) {
     : { data: null, error: null };
   if (creditLookupError) return NextResponse.json({ error: "Falha ao verificar recompensa." }, { status: 500 });
 
-  const { data: mission, error: updateError } = await supabase.from("myryra_journey_missions")
+  // Only the authenticated, authorized API may change mission completion; direct client UPDATE is revoked.
+  const { data: mission, error: updateError } = await createSupabaseAdmin().from("myryra_journey_missions")
     .update({ status, completed_at: status === "completed" ? new Date().toISOString() : null })
     .eq("id", missionId).eq("journey_id", journeyId).eq("status", existingMission.status)
     .select("id,title,status,completed_at").maybeSingle();
