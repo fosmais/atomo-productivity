@@ -7,7 +7,8 @@ begin
      or to_regclass('public.myryra_journey_learning_progress') is null then
     raise exception 'MIKA/Journey baseline ausente; aplique as migracoes anteriores.';
   end if;
-end $preflight$;
+end;
+$preflight$;
 
 -- A lesson can optionally target one mission. Existing lessons remain unlinked.
 alter table public.mika_teacher_sessions
