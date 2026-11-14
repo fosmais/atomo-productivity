@@ -33,3 +33,13 @@ test("database rejects cross-owner links and denies client policy writes", () =>
   assert.match(sql, /revoke all on public\.myryra_journey_mission_assessment_policy from public, anon, authenticated/);
   assert.match(sql, /grant select on public\.myryra_journey_mission_assessment_policy to authenticated/);
 });
+
+test("teacher session create and history responses expose linked mission id", () => {
+  const src = read("src/app/api/mika/lessons/sessions/route.ts");
+  const selects = [...src.matchAll(/\.select\("([^"]+)"\)/g)].map((match) => match[1]);
+  const sessionSelects = selects.filter((columns) => columns.includes("scheduled_at") && columns.includes("topic"));
+  assert.equal(sessionSelects.length, 2, "both GET and POST must select session fields");
+  for (const columns of sessionSelects) {
+    assert.ok(columns.split(",").includes("mission_id"), "session response must include mission_id");
+  }
+});
