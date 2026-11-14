@@ -97,7 +97,7 @@ export default function LoginPage() {
           email,
           password,
           options: {
-            emailRedirectTo: "https://www.myryra.com/auth/confirm",
+            emailRedirectTo: `${window.location.origin}/auth/confirm`,
             ...(captchaEnabled ? { captchaToken } : {}),
           },
         });
