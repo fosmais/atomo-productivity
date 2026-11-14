@@ -28,7 +28,7 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
       const details = document.querySelector<HTMLDetailsElement>(`[data-feature-id="${quickAction}"]`);
       if (details) {
         details.open = true;
-        details.scrollIntoView({ behavior: "smooth", block: "center" });
+        details.scrollIntoView({ behavior: "smooth", block: quickAction === "kanban" ? "start" : "center" });
         if (quickAction === "capture") {
           window.setTimeout(() => window.dispatchEvent(new Event("myryra:focus-quick-capture")), 100);
         } else if (quickAction === "goals") {
