@@ -19,6 +19,8 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const tokenHash = url.searchParams.get("token_hash");
   const type = url.searchParams.get("type");
+  const next = url.searchParams.get("next");
+  const safeNext = next === "/mika-professora" ? next : "/dashboard";
 
   if (
     !tokenHash ||
@@ -30,7 +32,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const response = NextResponse.redirect(new URL(type === "recovery" ? "/auth/reset-password" : "/dashboard", url.origin));
+  const response = NextResponse.redirect(new URL(type === "recovery" ? "/auth/reset-password" : safeNext, url.origin));
   const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {
     cookies: {
       getAll: () => request.cookies.getAll(),
