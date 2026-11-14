@@ -65,14 +65,14 @@ export async function PATCH(request: Request, context: Context) {
     const { data: missionDetails, error: detailsError } = await supabase.from("myryra_journey_missions")
       .select("title").eq("id", missionId).eq("journey_id", journeyId).maybeSingle();
     if (detailsError || !missionDetails) return NextResponse.json({ error: "Falha ao verificar conteúdo da missão." }, { status: 500 });
-    // Explicit assessment policy takes precedence; legacy missions retain the old gate.
+    // Explicit policies can add assessment requirements but cannot bypass the legacy gate.
     // Fail closed when the policy schema is unavailable in this candidate release.
     const { data: policy, error: policyError } = await supabase
       .from("myryra_journey_mission_assessment_policy")
       .select("requires_assessment,minimum_score")
       .eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
     if (policyError) return NextResponse.json({ error: "Política de avaliação indisponível." }, { status: 503 });
-    const requiresAssessment = policy ? policy.requires_assessment : educationalMission.test(missionDetails.title);
+    const requiresAssessment = educationalMission.test(missionDetails.title) || policy?.requires_assessment === true;
     const minimumScore = policy?.minimum_score ?? 70;
     if (requiresAssessment) {
       const { data: learning, error: learningError } = await supabase.from("myryra_journey_learning_progress")
