@@ -27,7 +27,7 @@ export async function GET(request: Request) {
   if (journeyError) return NextResponse.json({ error: "Falha ao consultar jornada." }, { status: 500 });
   if (!journey) return NextResponse.json({ error: "Jornada não encontrada." }, { status: 404 });
   const { data, error } = await supabase.from("mika_teacher_sessions")
-    .select("id,journey_id,topic,level,status,scheduled_at,created_at,updated_at")
+    .select("id,journey_id,mission_id,topic,level,status,scheduled_at,created_at,updated_at")
     .eq("owner_id", user.id).eq("journey_id", journeyId)
     .order("created_at", { ascending: false }).limit(30);
   if (error) return NextResponse.json({ error: "Histórico indisponível. Verifique se a migração foi aplicada." }, { status: 503 });
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
   }
   const { data, error } = await supabase.from("mika_teacher_sessions")
     .insert({ owner_id: user.id, journey_id: journey.id, ...(typeof body.missionId === "string" ? { mission_id: body.missionId } : {}), topic: body.topic.trim(), level: typeof body.level === "string" ? body.level.trim() : "iniciante", scheduled_at: typeof body.scheduledAt === "string" ? body.scheduledAt : null })
-    .select("id,journey_id,topic,level,status,scheduled_at,created_at").single();
+    .select("id,journey_id,mission_id,topic,level,status,scheduled_at,created_at").single();
   if (error) return NextResponse.json({ error: "Não foi possível criar sessão. Verifique se a migração foi aplicada." }, { status: 503 });
   return NextResponse.json({ session: data }, { status: 201, headers: { "Cache-Control": "private, no-store" } });
 }
