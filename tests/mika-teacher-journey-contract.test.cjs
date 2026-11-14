@@ -79,3 +79,19 @@ test("assessment requires a saved answer, feedback, passing flag and minimum sco
   assert.match(src, /learning\.assessment_score < minimumScore/);
   assert.match(src, /if \(policyError\) return NextResponse\.json/);
 });
+
+
+test("client cannot update mission status or forge MIKA assessment", () => {
+  const sql = read("supabase/migrations/20261114000300_protect_journey_assessments.sql");
+  assert.match(sql, /revoke update on public\.myryra_journey_missions from public, anon, authenticated/);
+  assert.match(sql, /revoke insert, update, delete, truncate on public\.myryra_journey_learning_progress from public, anon, authenticated/);
+  const route = read("src/app/api/journeys/[journeyId]/missions/[missionId]/route.ts");
+  assert.match(route, /createSupabaseAdmin\(\)\.from\("myryra_journey_missions"\)/);
+});
+
+test("client cannot create an already completed mission to trigger MYRA", () => {
+  const sql = read("supabase/migrations/20261114000400_guard_completed_mission_insert.sql");
+  assert.match(sql, /new\.status = 'completed'/);
+  assert.match(sql, /current_user in \('authenticated', 'anon'\)/);
+  assert.match(sql, /before insert on public\.myryra_journey_missions/);
+});
