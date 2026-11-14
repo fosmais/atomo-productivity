@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-type Session = { id: string; journey_id: string | null; topic: string; level: string; duration_minutes?: number; status: string; created_at: string; scheduled_at?: string | null };
+type Session = { id: string; journey_id: string | null; mission_id?: string | null; topic: string; level: string; duration_minutes?: number; status: string; created_at: string; scheduled_at?: string | null };
 type Message = { role: "user" | "assistant"; content: string };
 type Journey = { id: string; title: string; status: string };
 type Mission = { id: string; title: string; status: string; due_at: string | null };
@@ -177,7 +177,7 @@ export default function MikaProfessorPage() {
       const response = await fetch("/api/mika/lessons/messages?sessionId=" + encodeURIComponent(session.id), { cache: "no-store" });
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Não foi possível retomar a aula.");
-      setTopic(session.topic); setLevel(session.level); setSessionId(session.id); setLastMessageSaved(false); setSaveWarning(""); setHistoryOutOfSync(false); setCopyFeedback("");
+      setTopic(session.topic); setLevel(session.level); setMissionId(session.mission_id ?? ""); setSessionId(session.id); setLastMessageSaved(false); setSaveWarning(""); setHistoryOutOfSync(false); setCopyFeedback("");
       setLesson({ title: "Aula: " + session.topic, objective: "Continuar a aula anterior", durationMinutes, activities: [], assessment: "Continue sua conversa com a MIKA." });
       setMessages((json.messages ?? []).map((m: Message) => ({ role: m.role, content: m.content })));
       setAnswer("");
@@ -203,7 +203,7 @@ export default function MikaProfessorPage() {
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Não foi possível preparar a aula.");
       setLesson(json.lesson);
-      const created = await fetch("/api/mika/lessons/sessions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...(journeyId ? { journeyId } : {}), durationMinutes, topic: topic.trim() || journeys.find((j) => j.id === journeyId)?.title || "Aula", level, ...(scheduledAt ? { scheduledAt: new Date(scheduledAt).toISOString() } : {}) }) });
+      const created = await fetch("/api/mika/lessons/sessions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...(journeyId ? { journeyId } : {}), ...(missionId ? { missionId } : {}), durationMinutes, topic: topic.trim() || journeys.find((j) => j.id === journeyId)?.title || "Aula", level, ...(scheduledAt ? { scheduledAt: new Date(scheduledAt).toISOString() } : {}) }) });
       if (created.ok) { const result = await created.json(); setSessionId(result.session.id); setSessions((previous) => [result.session, ...previous]); }
       else { const failure = await created.json().catch(() => null) as { error?: string } | null; const detail = typeof failure?.error === "string" ? failure.error : "Não foi possível criar a sessão."; setHistoryError(detail); setError(`A aula foi preparada, mas não foi possível iniciar a conversa: ${detail}`); }
     } catch (e) {
