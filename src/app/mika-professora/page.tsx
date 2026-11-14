@@ -52,6 +52,7 @@ export default function MikaProfessorPage() {
   const [sessionId, setSessionId] = useState("");
   const [historyError, setHistoryError] = useState("");
   const [saveWarning, setSaveWarning] = useState("");
+  const [lastMessageSaved, setLastMessageSaved] = useState(false);
   const [historyOutOfSync, setHistoryOutOfSync] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState("");
   const [historyBusy, setHistoryBusy] = useState(false);
@@ -198,12 +199,14 @@ export default function MikaProfessorPage() {
       const json = await response.json();
       if (!response.ok || typeof json.reply !== "string") throw new Error(json.error || "Não foi possível responder.");
       setMessages((current) => [...current, { role: "user", content: message }, { role: "assistant", content: json.reply }]);
+      setLastMessageSaved(json.saved === true);
       if (sessionId && !json.saved) {
         setHistoryOutOfSync(true);
         setSaveWarning(json.warning || "Não foi possível salvar esta resposta no histórico. Copie a resposta antes de sair.");
       }
     } catch (e) {
       if (!initialMessage) setAnswer(message);
+      setLastMessageSaved(false);
       setError(e instanceof Error ? e.message : "Falha na conversa.");
     } finally { setChatBusy(false); }
   }
@@ -275,6 +278,7 @@ export default function MikaProfessorPage() {
         {lesson && <section className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-5">
           <h2 className="font-semibold">Conversar com a MIKA Professora</h2>
           <p className="text-xs text-slate-400">{sessionId ? "Histórico associado à sua conta. A gravação de cada resposta será confirmada pelo servidor." : "Conversa indisponível até que seja possível salvar o histórico da aula."}</p>
+          {lastMessageSaved && !saveWarning && <p className="text-xs text-emerald-300" role="status">Resposta e mensagem salvas no histórico desta aula. O progresso pedagógico ainda não é atualizado automaticamente.</p>}
           {saveWarning && <div className="space-y-2 rounded-lg border border-amber-500/50 p-3 text-sm text-amber-200" role="alert">
             <p>{saveWarning} Novas mensagens ficam bloqueadas até você reabrir a aula pelo histórico.</p>
             <button type="button" className="rounded-lg border border-amber-400/60 px-3 py-2 font-semibold" onClick={async () => {
