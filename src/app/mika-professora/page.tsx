@@ -177,7 +177,7 @@ export default function MikaProfessorPage() {
       const response = await fetch("/api/mika/lessons/messages?sessionId=" + encodeURIComponent(session.id), { cache: "no-store" });
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Não foi possível retomar a aula.");
-      setTopic(session.topic); setLevel(session.level); setMissionId(session.mission_id ?? ""); setSessionId(session.id); setLastMessageSaved(false); setSaveWarning(""); setHistoryOutOfSync(false); setCopyFeedback("");
+      setTopic(session.topic); setLevel(session.level); setDurationMinutes(session.duration_minutes); setMissionId(session.mission_id ?? ""); setSessionId(session.id); setLastMessageSaved(false); setSaveWarning(""); setHistoryOutOfSync(false); setCopyFeedback("");
       setLesson({ title: "Aula: " + session.topic, objective: "Continuar a aula anterior", durationMinutes, activities: [], assessment: "Continue sua conversa com a MIKA." });
       setMessages((json.messages ?? []).map((m: Message) => ({ role: m.role, content: m.content })));
       setAnswer("");
