@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
   const { journeyId, missionId, sessionId, answer, exercise } = payload as Record<string, unknown>;
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  if (typeof journeyId !== "string" || !uuid.test(journeyId) || typeof missionId !== "string" || !uuid.test(missionId) || typeof answer !== "string" || answer.trim().length < 30 || answer.length > 2000 || typeof exercise !== "string" || exercise.trim().length < 10 || exercise.length > 600 || (sessionId !== undefined && (typeof sessionId !== "string" || !uuid.test(sessionId)))
+  if (typeof journeyId !== "string" || !uuid.test(journeyId) || typeof missionId !== "string" || !uuid.test(missionId) || typeof answer !== "string" || answer.trim().length < 30 || answer.length > 2000 || typeof exercise !== "string" || exercise.trim().length < 10 || exercise.length > 600 || (sessionId !== undefined && (typeof sessionId !== "string" || !uuid.test(sessionId))))
     return NextResponse.json({ error: "Informe uma resposta de 30 a 2000 caracteres para uma missão válida." }, { status: 400 });
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
