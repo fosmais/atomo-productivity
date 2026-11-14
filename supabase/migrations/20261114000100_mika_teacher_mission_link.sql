@@ -52,7 +52,7 @@ create table if not exists public.myryra_journey_mission_assessment_policy (
 );
 -- Ensure service-role writes cannot attach a policy to a different user's mission.
 create or replace function public.myryra_validate_assessment_policy_owner()
-returns trigger language plpgsql set search_path = '' as $
+returns trigger language plpgsql set search_path = '' as $$
 begin
   if not exists (
     select 1 from public.myryra_journey_missions m
@@ -64,7 +64,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 revoke all on function public.myryra_validate_assessment_policy_owner() from public, anon, authenticated;
 drop trigger if exists myryra_assessment_policy_owner_guard on public.myryra_journey_mission_assessment_policy;
 create trigger myryra_assessment_policy_owner_guard
