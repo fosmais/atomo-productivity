@@ -54,7 +54,7 @@ test("migration trigger bodies have balanced PostgreSQL dollar quotes", () => {
 
 test("migration preflight block terminates before the schema changes", () => {
   const sql = read("supabase/migrations/20261114000100_mika_teacher_mission_link.sql");
-  assert.ok(sql.includes("do $preflight$\\nbegin"), "preflight must start with a named dollar quote");
-  assert.ok(sql.includes("end;\\n$preflight$;"), "preflight must close the PL/pgSQL block correctly");
+  assert.ok(sql.includes("do $preflight$\nbegin"), "preflight must start with a named dollar quote");
+  assert.ok(sql.includes("end;\n$preflight$;"), "preflight must close the PL/pgSQL block correctly");
   assert.ok(sql.indexOf("$preflight$;") < sql.indexOf("alter table public.mika_teacher_sessions"), "preflight must run before DDL");
 });
