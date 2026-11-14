@@ -43,6 +43,8 @@ export default function MikaProfessorPage() {
     return () => controller.abort();
   }, []);
   useEffect(() => {
+    // Reset dependent session state when the selected journey changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSessions([]); setSessionId(""); setHistoryError(""); setHistoryReady(false); setHistoryLoading(Boolean(journeyId));
     if (!journeyId) return;
     const controller = new AbortController();
@@ -72,6 +74,8 @@ export default function MikaProfessorPage() {
   async function updateSchedule(session: Session, clear = false) {
     if (historyBusy || chatBusy || busy) return;
     const selected = rescheduleInputs[session.id] ?? "";
+    // Validation happens only on a user action; wall-clock time is required here.
+    // eslint-disable-next-line react-hooks/purity
     if (!clear && (!selected || !Number.isFinite(Date.parse(selected)) || Date.parse(selected) < Date.now() + 60000 || Date.parse(selected) > Date.now() + 366 * 86400000)) {
       setError("Escolha uma data válida, entre um minuto e 366 dias a partir de agora."); return;
     }
