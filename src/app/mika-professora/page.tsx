@@ -6,6 +6,7 @@ import Link from "next/link";
 type Session = { id: string; journey_id: string | null; topic: string; level: string; duration_minutes?: number; status: string; created_at: string; scheduled_at?: string | null };
 type Message = { role: "user" | "assistant"; content: string };
 type Journey = { id: string; title: string; status: string };
+type Mission = { id: string; title: string; status: string; due_at: string | null };
 type Lesson = { title: string; objective: string; durationMinutes: number; activities: string[]; assessment: string };
 
 function isScheduleWithinRange(selected: string): boolean {
@@ -47,6 +48,10 @@ function downloadCalendarInvite(session: Session) {
 export default function MikaProfessorPage() {
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [journeyId, setJourneyId] = useState("");
+  const [missions, setMissions] = useState<Mission[]>([]);
+  const [missionsBusy, setMissionsBusy] = useState(false);
+  const [missionsError, setMissionsError] = useState("");
+  const [missionId, setMissionId] = useState("");
   const [sessions, setSessions] = useState<Session[]>([]);
   const [nextHistoryPage, setNextHistoryPage] = useState<number | null>(null);
   const [sessionId, setSessionId] = useState("");
@@ -93,6 +98,24 @@ export default function MikaProfessorPage() {
         if (!controller.signal.aborted) { setSessions(json.sessions ?? []); setNextHistoryPage(typeof json.nextPage === "number" ? json.nextPage : null); setHistoryReady(true); }
       }).catch((e) => { if (!controller.signal.aborted) setHistoryError(e instanceof Error ? e.message : "Histórico indisponível."); })
       .finally(() => { if (!controller.signal.aborted) setHistoryLoading(false); });
+    return () => controller.abort();
+  }, [journeyId]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    queueMicrotask(() => {
+      if (controller.signal.aborted) return;
+      setMissions([]); setMissionId(""); setMissionsError(""); setMissionsBusy(Boolean(journeyId));
+    });
+    if (!journeyId) return () => controller.abort();
+    fetch("/api/mika/lessons/missions?journeyId=" + encodeURIComponent(journeyId), { cache: "no-store", signal: controller.signal })
+      .then(async (response) => {
+        const json = await response.json();
+        if (!response.ok) throw new Error(json.error || "Missões indisponíveis.");
+        if (!controller.signal.aborted) setMissions(json.missions ?? []);
+      })
+      .catch((error) => { if (!controller.signal.aborted) setMissionsError(error instanceof Error ? error.message : "Missões indisponíveis."); })
+      .finally(() => { if (!controller.signal.aborted) setMissionsBusy(false); });
     return () => controller.abort();
   }, [journeyId]);
 
@@ -226,6 +249,24 @@ export default function MikaProfessorPage() {
               {journeys.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}
             </select>
           </label>
+          {journeyId && <div className="space-y-2">
+            <label htmlFor="mika-journey-mission" className="block text-sm">Missão da Journey (opcional)</label>
+            <select id="mika-journey-mission" disabled={chatBusy || busy || historyBusy || missionsBusy || Boolean(missionsError)} value={missionId}
+              onChange={(e) => {
+                const id = e.target.value;
+                const mission = missions.find((item) => item.id === id);
+                setMissionId(id);
+                if (mission) setTopic(mission.title.slice(0, 120));
+                setLesson(null); setMessages([]); setSessionId(""); setLastMessageSaved(false);
+              }} className="w-full rounded-lg bg-slate-800 p-3">
+              <option value="">Escolher assunto livremente</option>
+              {missions.filter((m) => m.status === "pending").map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
+            </select>
+            {missionsBusy && <p className="text-xs text-slate-400">Carregando missões...</p>}
+            {missionsError && <p role="alert" className="text-xs text-amber-300">{missionsError}</p>}
+            {!missionsBusy && !missionsError && missions.length === 0 && <p className="text-xs text-slate-400">Nenhuma missão cadastrada nesta Journey.</p>}
+            <p className="text-xs text-slate-400">Escolher uma missão define o assunto da aula. A associação permanente e a atualização de progresso ainda não estão disponíveis.</p>
+          </div>}
           <label className="block text-sm">Assunto da aula
             <input disabled={chatBusy || busy || historyBusy} value={topic} onChange={(e) => { setTopic(e.target.value); setLesson(null); setMessages([]); setSessionId(""); setLastMessageSaved(false); }} maxLength={120} placeholder="Ex.: cumprimentos em italiano" className="mt-1 w-full rounded-lg bg-slate-800 p-3" />
           </label>
