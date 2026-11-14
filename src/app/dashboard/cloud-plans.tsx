@@ -33,7 +33,9 @@ export default function CloudPlans() {
   }
 
   useEffect(() => {
-    void loadPlans();
+    let active = true;
+    queueMicrotask(() => { if (active) void loadPlans(); });
+    return () => { active = false; };
   }, []);
 
   async function handleSave() {

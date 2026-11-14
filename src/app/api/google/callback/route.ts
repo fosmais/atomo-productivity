@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     return redirect("invalid_state");
   }
 
-  let expectedState: { state: string; userId: string };
+  let expectedState: { state: string; userId: string; writeRequested?: boolean };
 
   try {
     expectedState = JSON.parse(storedState);
@@ -68,6 +68,10 @@ export async function GET(request: NextRequest) {
   try {
     const oauth = createGoogleOAuthClient();
     const { tokens } = await oauth.getToken(code);
+
+    if (expectedState.writeRequested === true && !tokens.scope?.split(" ").includes("https://www.googleapis.com/auth/calendar.events")) {
+      return redirect("write_permission_denied");
+    }
 
     if (!tokens.access_token) {
       return redirect("missing_tokens");

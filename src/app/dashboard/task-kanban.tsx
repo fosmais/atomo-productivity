@@ -16,6 +16,7 @@ type KanbanTask = {
   due_date: string | null;
   status: TaskStatus;
   completed_at: string | null;
+  completed: boolean;
 };
 
 function localDateKey(date: Date): string {
@@ -33,8 +34,12 @@ export default function TaskKanban() {
   const { focusedTaskId } = useVyraNavigation();
   const [tasks, setTasks] = useState<KanbanTask[]>([]);
   const latestLoadRef = useRef(0);
+  const fetchedCountRef = useRef(0);
+  const [hasMoreTasks, setHasMoreTasks] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [expandedColumns, setExpandedColumns] = useState<TaskStatus[]>([]);
   const [mobileColumn, setMobileColumn] = useState<TaskStatus>("todo");
+  const [mobileColumnManuallySelected, setMobileColumnManuallySelected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -53,8 +58,71 @@ export default function TaskKanban() {
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [taskSearch, setTaskSearch] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
+  const [dashboardFilter, setDashboardFilter] = useState<"all" | "pending" | "overdue">("all");
+  // Derive the visible mobile column without synchronous state updates in effects.
+  const visibleMobileColumn = (() => {
+    if (dashboardFilter === "all" || loading || mobileColumnManuallySelected) return mobileColumn;
+    const matches = (task: KanbanTask) =>
+      task.status !== "done" &&
+      (dashboardFilter === "pending" || (!!task.due_date && task.due_date < localDateKey(new Date()))) &&
+      (priorityFilter === "all" || task.priority === priorityFilter) &&
+      (!favoritesOnly || favoriteIds.includes(task.id)) &&
+      task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"));
+    if (tasks.some((task) => task.status === mobileColumn && matches(task))) return mobileColumn;
+    return columns.find((column) => tasks.some((task) => task.status === column.status && matches(task)))?.status ?? mobileColumn;
+  })();
+  useEffect(() => {
+    const apply = (event: Event) => {
+      const filter = (event as CustomEvent<{ filter?: string }>).detail?.filter;
+      if (filter !== "pending" && filter !== "overdue") return;
+      // Consume the handoff even when this mounted board received the event directly.
+      sessionStorage.removeItem("myryra:task-filter-pending");
+      setDashboardFilter(filter);
+      setTaskSearch("");
+      setPriorityFilter("all");
+      setFavoritesOnly(false);
+      setMobileColumn("todo");
+      setMobileColumnManuallySelected(false);
+    };
+    window.addEventListener("myryra:task-filter", apply);
+    const pending = sessionStorage.getItem("myryra:task-filter-pending");
+    if (pending === "pending" || pending === "overdue") {
+      sessionStorage.removeItem("myryra:task-filter-pending");
+      apply(new CustomEvent("myryra:task-filter", { detail: { filter: pending } }));
+    }
+    return () => window.removeEventListener("myryra:task-filter", apply);
+  }, []);
+
   const [taskSort, setTaskSort] = useState<"priority" | "due" | "title" | "recent">("priority");
   const [favoriteSavingId, setFavoriteSavingId] = useState<string | null>(null);
+  const [googleSavingId, setGoogleSavingId] = useState<string | null>(null);
+  const [googleNotice, setGoogleNotice] = useState("");
+  const [googleConsentRequired, setGoogleConsentRequired] = useState(false);
+  async function sendTaskToGoogle(task: KanbanTask) {
+    if (googleSavingId || !task.due_date || task.status === "done") return;
+    if (!window.confirm(`Enviar a tarefa "${task.title}" ao Google Calendar como lembrete de dia inteiro em ${task.due_date}?`)) return;
+    setGoogleSavingId(task.id);
+    setGoogleNotice("");
+    setGoogleConsentRequired(false);
+    try {
+      const response = await fetch("/api/google/tasks/sync-myryra", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId: task.id }),
+      });
+      const result = await response.json() as { error?: string; code?: string; alreadyExists?: boolean; updated?: boolean };
+      if (!response.ok) {
+        if (result.code === "GOOGLE_WRITE_CONSENT_REQUIRED" || result.code === "GOOGLE_CALENDAR_RECONNECT_REQUIRED") setGoogleConsentRequired(true);
+        throw new Error(result.error || "Falha na sincronização com Google Calendar.");
+      }
+      setGoogleNotice(result.updated ? "Lembrete atualizado no Google Calendar com o título e prazo atuais." : result.alreadyExists ? "Esta tarefa já está no Google Calendar." : "Tarefa enviada ao Google Calendar como lembrete de dia inteiro.");
+    } catch (err) {
+      setGoogleNotice(err instanceof Error ? err.message : "Falha ao enviar tarefa ao Google.");
+    } finally {
+      setGoogleSavingId(null);
+    }
+  }
+
 
   const loadTasks = useCallback(async () => {
     const requestId = ++latestLoadRef.current;
@@ -62,6 +130,7 @@ export default function TaskKanban() {
     setError("");
 
     try {
+      const requestedCount = Math.max(200, fetchedCountRef.current);
       const supabase = createClient();
 
       const { data: auth, error: authError } =
@@ -71,34 +140,49 @@ export default function TaskKanban() {
         throw new Error("Faça login para visualizar suas tarefas.");
       }
 
-      const { data, error: tasksError } = await supabase
-        .from("tasks")
-        .select("id, title, priority, category, due_date, status, completed_at")
-        .eq("user_id", auth.user.id)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false })
-        .limit(200);
+      // Keep each database request bounded even after many pages have been loaded.
+      const rows: KanbanTask[] = [];
+      for (let offset = 0; offset < requestedCount; offset += 200) {
+        if (requestId !== latestLoadRef.current) return;
+        const { data: page, error: tasksError } = await supabase
+          .from("tasks")
+          .select("id, title, priority, category, due_date, status, completed_at, completed")
+          .eq("user_id", auth.user.id)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(offset, Math.min(offset + 199, requestedCount - 1));
+        if (tasksError) throw tasksError;
+        rows.push(...((page ?? []) as KanbanTask[]));
+        if ((page ?? []).length < Math.min(200, requestedCount - offset)) break;
+      }
+      const data = rows;
 
-      if (tasksError) throw tasksError;
-
-      let loaded = (data ?? []) as KanbanTask[];
+      // Defer pagination metadata until the entire refresh succeeds.
+      // Legacy records can have completed=true with a stale status. Never display them as pending.
+      let loaded = ((data ?? []) as KanbanTask[]).map((task) => task.completed ? { ...task, status: "done" as const } : task);
       // A busca global pode encontrar tarefas fora das 200 mais recentes.
       if (focusedTaskId && !loaded.some((task) => task.id === focusedTaskId)) {
         const { data: focusedTask, error: focusedError } = await supabase
           .from("tasks")
-          .select("id, title, priority, category, due_date, status, completed_at")
+          .select("id, title, priority, category, due_date, status, completed_at, completed")
           .eq("user_id", auth.user.id)
           .is("deleted_at", null)
           .eq("id", focusedTaskId)
           .maybeSingle();
         if (focusedError) throw focusedError;
-        if (focusedTask) loaded = [focusedTask as KanbanTask, ...loaded];
+        if (focusedTask) {
+          const item = focusedTask as KanbanTask;
+          loaded = [item.completed ? { ...item, status: "done" } : item, ...loaded];
+        }
       }
 
       const { data: favoriteRows, error: favoritesError } = await supabase.from("favorites")
         .select("task_id").eq("user_id", auth.user.id).not("task_id", "is", null);
       if (favoritesError) throw favoritesError;
       if (requestId === latestLoadRef.current) {
+        fetchedCountRef.current = data.length;
+        setHasMoreTasks(data.length === requestedCount);
         setTasks(loaded);
         const focused = loaded.find((task) => task.id === focusedTaskId);
         if (focused) setMobileColumn(focused.status);
@@ -115,11 +199,48 @@ export default function TaskKanban() {
     }
   }, [focusedTaskId]);
 
+  async function loadMoreTasks() {
+    if (loadingMore || loading || !hasMoreTasks) return;
+    const requestId = latestLoadRef.current;
+    const offset = fetchedCountRef.current;
+    setLoadingMore(true);
+    setError("");
+    try {
+      const supabase = createClient();
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError || !auth.user) throw new Error("Faça login para visualizar suas tarefas.");
+      const { data, error: pageError } = await supabase.from("tasks")
+        .select("id, title, priority, category, due_date, status, completed_at, completed")
+        .eq("user_id", auth.user.id)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(offset, offset + 199);
+      if (pageError) throw pageError;
+      if (requestId !== latestLoadRef.current) return;
+      const next = ((data ?? []) as KanbanTask[]).map((task) =>
+        task.completed ? { ...task, status: "done" as const } : task
+      );
+      setTasks((current) => {
+        const ids = new Set(current.map((task) => task.id));
+        return [...current, ...next.filter((task) => !ids.has(task.id))];
+      });
+      fetchedCountRef.current = offset + (data ?? []).length;
+      setHasMoreTasks((data ?? []).length === 200);
+    } catch (err) {
+      if (requestId === latestLoadRef.current) setError(err instanceof Error ? err.message : "Erro ao carregar mais tarefas.");
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
   useEffect(() => {
-    void loadTasks();
+    let active = true;
+    queueMicrotask(() => { if (active) void loadTasks(); });
     const refresh = () => { void loadTasks(); };
     window.addEventListener("myryra:tasks-updated", refresh);
     return () => {
+      active = false;
       ++latestLoadRef.current;
       window.removeEventListener("myryra:tasks-updated", refresh);
     };
@@ -310,7 +431,7 @@ export default function TaskKanban() {
     setTasks((current) =>
       current.map((task) =>
         task.id === id
-          ? { ...task, status, completed_at: completionDate }
+          ? { ...task, status, completed: status === "done", completed_at: completionDate }
           : task
       )
     );
@@ -383,6 +504,12 @@ export default function TaskKanban() {
         </button>
       </div>
 
+      {dashboardFilter !== "all" && (
+        <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border border-violet-400/40 bg-violet-500/10 px-3 py-2 text-sm text-violet-100">
+          <span>{dashboardFilter === "overdue" ? "Exibindo tarefas atrasadas" : "Exibindo tarefas pendentes"}</span>
+          <button type="button" onClick={() => setDashboardFilter("all")} className="rounded border border-violet-400/40 px-2 py-1 text-xs">Ver todas</button>
+        </div>
+      )}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <label className="min-w-[12rem] flex-1">
           <span className="sr-only">Buscar tarefas por nome</span>
@@ -463,6 +590,12 @@ export default function TaskKanban() {
           </div>
         </form>
       )}
+      {googleNotice && <p role="status" className="mb-3 text-sm text-violet-200">{googleNotice}</p>}
+      {googleConsentRequired && (
+        <a href="/api/google/connect?allow_event_creation=1" className="mb-3 inline-flex rounded-lg border border-violet-400 px-3 py-2 text-sm text-violet-100 hover:bg-violet-500/20">
+          Autorizar envio de tarefas ao Google Calendar
+        </a>
+      )}
       {error && (
         <p role="alert" className="mb-4 text-sm text-red-400">
           {error}
@@ -473,18 +606,18 @@ export default function TaskKanban() {
         <p className="text-sm text-slate-400">Carregando tarefas...</p>
       ) : (
         <div className="min-w-0">
-          <div className="mb-3 flex gap-2 overflow-x-auto pb-2 lg:hidden" role="group" aria-label="Etapa do pipeline">
+          <div className="mb-3 flex snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain pb-2 lg:hidden" role="group" aria-label="Etapa do pipeline">
             {columns.map((column) => (
-              <button key={column.status} type="button" aria-pressed={mobileColumn === column.status} onClick={() => setMobileColumn(column.status)}
-                className={`min-h-11 shrink-0 rounded-lg border px-3 py-2 text-sm font-medium ${mobileColumn === column.status ? "border-violet-400 bg-violet-600 text-white" : "border-slate-600 bg-slate-800 text-slate-300"}`}>
-                {column.label} ({tasks.filter((task) => task.status === column.status && (priorityFilter === "all" || task.priority === priorityFilter) && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))).length})
+              <button key={column.status} type="button" aria-pressed={visibleMobileColumn === column.status} onClick={() => { setMobileColumn(column.status); setMobileColumnManuallySelected(true); }}
+                className={`min-h-10 shrink-0 snap-start rounded-xl border px-3 py-2 text-xs font-semibold sm:text-sm ${visibleMobileColumn === column.status ? "border-violet-400 bg-violet-600 text-white" : "border-slate-600 bg-slate-800 text-slate-300"}`}>
+                {column.label} ({tasks.filter((task) => task.status === column.status && (dashboardFilter === "all" || (task.status !== "done" && (dashboardFilter === "pending" || (!!task.due_date && task.due_date < localDateKey(new Date()))))) && (priorityFilter === "all" || task.priority === priorityFilter) && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))).length})
               </button>
             ))}
           </div>
           <div className="grid min-w-0 gap-3 sm:gap-4 lg:grid-cols-2 2xl:grid-cols-4">
           {columns.map((column) => {
             const columnTasks = tasks.filter(
-              (task) => task.status === column.status && (priorityFilter === "all" || task.priority === priorityFilter) && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))
+              (task) => task.status === column.status && (dashboardFilter === "all" || (task.status !== "done" && (dashboardFilter === "pending" || (!!task.due_date && task.due_date < localDateKey(new Date()))))) && (priorityFilter === "all" || task.priority === priorityFilter) && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))
             );
             const priorityOrder: Record<string, number> = { Alta: 0, "Média": 1, Normal: 2, Baixa: 2 };
             columnTasks.sort((a, b) => {
@@ -505,9 +638,9 @@ export default function TaskKanban() {
             return (
               <div
                 key={column.status}
-                className={`min-w-0 rounded-xl border border-white/10 bg-slate-800/65 p-3 sm:p-4 ${mobileColumn === column.status ? "" : "hidden lg:block"}`}
+                className={`min-w-0 rounded-xl border border-white/10 bg-slate-800/65 p-2.5 sm:p-4 ${visibleMobileColumn === column.status ? "" : "hidden lg:block"}`}
               >
-                <h3 className="mb-3 flex items-center justify-between gap-2 text-sm font-semibold">
+                <h3 className="mb-2 flex items-center justify-between gap-2 text-xs font-semibold sm:mb-3 sm:text-sm">
                   {column.label}
                   <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2 py-0.5 text-xs tabular-nums text-violet-200">{columnTasks.length}</span>
                 </h3>
@@ -517,14 +650,14 @@ export default function TaskKanban() {
                     <article
                       key={task.id}
                       id={`vyra-task-${task.id}`}
-                      className={`min-w-0 rounded-xl border p-3.5 transition-all duration-300 ${
+                      className={`min-w-0 rounded-xl border p-2.5 transition-all duration-300 sm:p-3.5 ${
                         focusedTaskId === task.id
                           ? "border-violet-400 bg-violet-500/15 ring-2 ring-violet-400/50 shadow-lg shadow-violet-500/20"
                           : "border-slate-600 bg-slate-900"
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <p className="min-w-0 break-words text-sm font-semibold leading-snug">{task.title}</p>
+                        <p className="min-w-0 break-words text-xs font-semibold leading-snug sm:text-sm">{task.title}</p>
                         <button type="button" onClick={() => void toggleFavorite(task)} disabled={favoriteSavingId !== null}
                           aria-pressed={favoriteIds.includes(task.id)}
                           aria-label={favoriteIds.includes(task.id) ? `Remover ${task.title} dos favoritos` : `Favoritar ${task.title}`}
@@ -545,6 +678,13 @@ export default function TaskKanban() {
                         </p>
                       )}
 
+                      {task.status !== "done" && task.due_date && (
+                        <button type="button" disabled={googleSavingId !== null}
+                          onClick={() => void sendTaskToGoogle(task)}
+                          className="mt-2 rounded-md border border-violet-400/40 px-2 py-1 text-xs text-violet-200 hover:bg-violet-500/15 disabled:opacity-50">
+                          {googleSavingId === task.id ? "Enviando..." : "Enviar ao Google Calendar"}
+                        </button>
+                      )}
                       {task.status !== "done" && task.due_date && task.due_date < localDateKey(new Date()) && (
                         <div className="mt-2 flex flex-wrap gap-2">
                           <button type="button" disabled={savingId !== null} onClick={() => void rescheduleTask(task.id, localDateKey(new Date()))} className="rounded-md border border-violet-400/40 px-2 py-1 text-xs text-violet-200 hover:bg-violet-500/15 disabled:opacity-50">Reagendar para hoje</button>
@@ -597,7 +737,7 @@ export default function TaskKanban() {
                   )}
                   {columnTasks.length === 0 && (
                     <p className="text-xs text-slate-400">
-                      {taskSearch || favoritesOnly || priorityFilter !== "all" ? "Nenhuma tarefa corresponde aos filtros nesta etapa." : "Nenhuma tarefa nesta etapa."}
+                      {dashboardFilter !== "all" || taskSearch || favoritesOnly || priorityFilter !== "all" ? "Nenhuma tarefa corresponde aos filtros nesta etapa." : "Nenhuma tarefa nesta etapa."}
                     </p>
                   )}
                 </div>
@@ -606,6 +746,12 @@ export default function TaskKanban() {
           })}
           </div>
         </div>
+      )}
+      {hasMoreTasks && (
+        <button type="button" disabled={loading || loadingMore} onClick={() => void loadMoreTasks()}
+          className="mt-4 w-full rounded-xl border border-violet-400/40 px-4 py-3 text-sm font-semibold text-violet-100 hover:bg-violet-500/10 disabled:opacity-50">
+          {loadingMore ? "Carregando tarefas antigas..." : "Carregar mais tarefas antigas"}
+        </button>
       )}
     </section>
   );

@@ -32,21 +32,25 @@ export default function LoginPage() {
     // Keep Preview on its own hostname for isolated email/password homologation.
     // Google OAuth remains canonicalized separately until Preview redirect URIs are configured.
     const params = new URLSearchParams(window.location.search);
-    if (params.get("mode") === "signup") setMode("signup");
     const errorCode = params.get("error");
     const requestedReturn = params.get("next");
-    if (requestedReturn === "/suporte-admin") setReturnTo(requestedReturn);
-    if (params.get("mfa") === "required") { setMessage("Acesso Google concluído. Aguarde a verificação do autenticador para finalizar o login."); setIsError(false); }
-    if (errorCode === "recovery") {
-      setIsError(true);
-      setMessage("O link de recuperação é inválido ou expirou. Solicite um novo e-mail.");
-    } else if (errorCode === "oauth") {
-      setIsError(true);
-      setMessage("Não foi possível concluir o acesso com Google. Tente novamente.");
-    } else if (errorCode === "confirm") {
-      setIsError(true);
-      setMessage("Não foi possível confirmar o link. Solicite um novo e-mail.");
-    }
+    queueMicrotask(() => {
+      if (!active) return;
+      if (params.get("mode") === "signup") setMode("signup");
+      if (params.get("session") === "expired") { setIsError(false); setMessage("Sua sessão expirou. Entre novamente para continuar com segurança."); }
+      if (requestedReturn === "/suporte-admin") setReturnTo(requestedReturn);
+      if (params.get("mfa") === "required") { setMessage("Acesso Google concluído. Aguarde a verificação do autenticador para finalizar o login."); setIsError(false); }
+      if (errorCode === "recovery") {
+        setIsError(true);
+        setMessage("O link de recuperação é inválido ou expirou. Solicite um novo e-mail.");
+      } else if (errorCode === "oauth") {
+        setIsError(true);
+        setMessage("Não foi possível concluir o acesso com Google. Tente novamente.");
+      } else if (errorCode === "confirm") {
+        setIsError(true);
+        setMessage("Não foi possível confirmar o link. Solicite um novo e-mail.");
+      }
+    });
     async function resumeMfa() {
       try {
         const supabase = createClient();
@@ -247,7 +251,7 @@ export default function LoginPage() {
           </div>
           <div className="rounded-3xl border border-violet-300/45 bg-slate-950/90 p-4 shadow-2xl shadow-violet-950/40 backdrop-blur-xl sm:p-5 [@media(max-height:850px)]:sm:p-3">
         {(mode === "signup" || mfaFactorId) && <button type="button" disabled={loading} onClick={() => { setMode("login"); setMfaFactorId(""); setMfaCode(""); setMessage(""); setIsError(false); setCaptchaToken(""); setCaptchaReset(n => n + 1); }} className="mb-2 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-violet-200 transition hover:bg-white/10 hover:text-white disabled:opacity-50" aria-label="Voltar para login"><span aria-hidden="true">←</span> Voltar para login</button>}
-        <div className="mb-2 flex items-center gap-3"><span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl"><img src="/myryra-logo.png" alt="Logotipo MYRYRA" className="h-full w-full object-cover" /></span><div><h1 className="text-2xl font-bold tracking-tight">MYRYRA</h1><p className="text-xs tracking-widest text-violet-300">YOUR LIFE. IN SYNC.</p></div></div><h2 className="text-xl font-semibold">{mode === "login" ? "Bem-vindo de volta" : "Comece sua jornada"}</h2>
+        <div className="mb-2 flex items-center gap-3"><span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl"><img src="/myryra-aurora-purple.svg" alt="Logotipo MYRYRA" className="h-full w-full object-contain" /></span><div><h1 className="text-2xl font-bold tracking-tight">MYRYRA</h1><p className="text-xs tracking-widest text-violet-300">YOUR LIFE. IN SYNC.</p></div></div><h2 className="text-xl font-semibold">{mode === "login" ? "Bem-vindo de volta" : "Comece sua jornada"}</h2>
 
         <p className="mt-1 text-sm text-slate-400">
           {mode === "login"
@@ -316,7 +320,14 @@ export default function LoginPage() {
               <p className="mt-1 text-violet-200/90">Enviaremos um e-mail para confirmar seu endereço. Confira também a pasta de spam.</p>
             </div>
           )}
-          {captchaEnabled && !mfaFactorId && <div className="py-1">{hcaptchaEnabled ? <HcaptchaCaptcha onToken={setCaptchaToken} resetSignal={captchaReset} /> : <TurnstileCaptcha onToken={setCaptchaToken} />}</div>}
+          {captchaEnabled && !mfaFactorId && (
+            <div className="space-y-2 py-1">
+              <p className={`text-sm font-semibold ${captchaToken ? "text-emerald-300" : "text-amber-200"}`} role="status">
+                {captchaToken ? "✓ Verificação de segurança concluída." : "Antes de entrar, marque a opção 'Não sou um robô' abaixo."}
+              </p>
+              {hcaptchaEnabled ? <HcaptchaCaptcha onToken={setCaptchaToken} resetSignal={captchaReset} /> : <TurnstileCaptcha onToken={setCaptchaToken} />}
+            </div>
+          )}
           <button
             type="submit"
             disabled={loading}

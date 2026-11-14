@@ -53,7 +53,9 @@ export default function PerformanceInsights() {
   }, []);
 
   useEffect(() => {
-    void loadMetrics();
+    let active = true;
+    queueMicrotask(() => { if (active) void loadMetrics(); });
+    return () => { active = false; };
   }, [loadMetrics]);
 
   const { navigateTo, navigateToTask } = useVyraNavigation();

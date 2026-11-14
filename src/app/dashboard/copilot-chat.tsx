@@ -2,7 +2,6 @@
 
 import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import MykaPortrait from "@/components/myka-portrait";
 import type { FormEvent } from "react";
 import TaskConfirmation from "./task-confirmation";
 import { useVyraActiveModule } from "./vyra-module-context";
@@ -88,8 +87,14 @@ function isEventProposal(
   const router = useRouter();
   const activeModule = useVyraActiveModule();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const historyContainerRef = useRef<HTMLDivElement>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [historyLoading, setHistoryLoading] = useState(true);
+  useEffect(() => {
+    if (historyLoading) return;
+    const container = historyContainerRef.current;
+    if (container) container.scrollTop = container.scrollHeight;
+  }, [messages, historyLoading]);
   const [input, setInput] = useState("");
   const [pendingConciergePrompt, setPendingConciergePrompt] = useState<string | null>(null);
   useEffect(() => {
@@ -102,8 +107,10 @@ function isEventProposal(
     if (conciergePrompt) sessionStorage.removeItem("myryra:myka:concierge-handoff");
     else if (investmentPrompt) sessionStorage.removeItem("myryra:myka:investment-handoff");
     else sessionStorage.removeItem("myryra:myka:health-handoff");
-    if (conciergePrompt) setPendingConciergePrompt(prompt.slice(0, 3500));
-    else setInput(prompt.slice(0, 1500));
+    queueMicrotask(() => {
+      if (conciergePrompt) setPendingConciergePrompt(prompt.slice(0, 1500));
+      else setInput(prompt.slice(0, 1500));
+    });
   }, [activeModule]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -112,7 +119,6 @@ function isEventProposal(
   const [hideOffers, setHideOffers] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<"free" | "pro" | "premium">("free");
   const [pendingTask, setPendingTask] = useState<SavedTask | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
 
 const [listening, setListening] = useState(false);
 
@@ -343,11 +349,8 @@ async function startVoice() {
     return () => { active = false; };
   }, []);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({
-      behavior: "smooth",
-    });
-  }, [messages, loading]);
+  // Never scroll the whole dashboard when chat history loads in a hidden module.
+  // The user controls page navigation; opening MYKA must not jump Home to the bottom.
 
   async function prepareTask() {
     const content = input.trim();
@@ -430,7 +433,9 @@ async function startVoice() {
 
     const content = input.trim();
 
-    if ((!content && !attachment) || loading || historyLoading || error) return;
+    if ((!content && !attachment) || loading || historyLoading) return;
+    // An earlier recoverable error must not permanently block new messages.
+    setError("");
 
     if (attachment) {
       setLoading(true);
@@ -490,7 +495,13 @@ async function startVoice() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          messages: nextMessages.slice(-12),
+          // The API caps each message at 1,500 characters. Assistant replies can
+          // exceed that limit, so bound transmitted context without altering
+          // the full conversation displayed to the user.
+          messages: nextMessages.slice(-12).map((message) => ({
+            role: message.role,
+            content: message.content.slice(0, 1500),
+          })),
           conversationId: conversationId ?? undefined,
         }),
       });
@@ -613,16 +624,21 @@ setConversationId(data.conversationId);
   useEffect(() => {
     if (!pendingConciergePrompt || historyLoading || loading || error || dailyLimitReached || activeModule !== "vyra-ai") return;
     const prompt = pendingConciergePrompt;
-    setPendingConciergePrompt(null);
-    void sendTextMessage(prompt);
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      setPendingConciergePrompt(null);
+      void sendTextMessage(prompt);
+    });
     // Only dispatch a saved Concierge handoff once when the chat becomes ready.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => { active = false; };
   }, [pendingConciergePrompt, historyLoading, loading, error, dailyLimitReached, activeModule]);
 
   return (
     <section className="min-w-0 rounded-2xl border border-violet-400/20 bg-gradient-to-b from-slate-900 to-slate-950 p-3 text-white shadow-xl shadow-violet-950/20 sm:p-7">
       <div className="mb-5">
-        <p className="text-xs font-semibold uppercase tracking-[.2em] text-violet-300">
+        <p className="text-xs font-semibold uppercase tracking-[.2em] text-cyan-300">
           Myka AI
         </p>
 
@@ -637,11 +653,12 @@ setConversationId(data.conversationId);
       </div>
 
       <div
+        ref={historyContainerRef}
         className="mb-4 min-h-[320px] max-h-[min(66dvh,700px)] space-y-4 overflow-x-hidden overflow-y-auto rounded-2xl border border-violet-400/15 bg-slate-950/65 p-3 shadow-inner shadow-black/20 sm:min-h-[420px] sm:p-5"
         aria-live="polite"
       >
         {historyLoading && (
-          <p className="text-sm text-violet-300">Carregando historico...</p>
+          <p className="text-sm text-cyan-300">Carregando historico...</p>
         )}
         {!historyLoading && messages.length === 0 && (
           <div className="space-y-3 text-sm text-slate-300">
@@ -652,7 +669,7 @@ setConversationId(data.conversationId);
                 { label: "Organizar compromissos", prompt: "Ajude-me a revisar meus compromissos e encontrar horários livres." },
                 { label: "Planejamento financeiro", prompt: "Quero organizar minhas receitas, despesas e metas financeiras. Por onde começar?" },
                 { label: "Objetivo de investimento", prompt: "Quero planejar investimentos para alcançar meu objetivo financeiro." },
-              ].map(suggestion => <button key={suggestion.label} type="button" onClick={() => setInput(suggestion.prompt)} className="rounded-xl border border-violet-400/25 bg-violet-500/10 px-3 py-3 text-left text-sm text-violet-100 transition hover:border-violet-300/70 focus-visible:outline-2 focus-visible:outline-violet-400">{suggestion.label} <span aria-hidden="true">↗</span></button>)}
+              ].map(suggestion => <button key={suggestion.label} type="button" onClick={() => setInput(suggestion.prompt)} className="rounded-xl border border-violet-400/25 bg-violet-500/10 px-3 py-3 text-left text-sm text-cyan-100 transition hover:border-cyan-300/70 focus-visible:outline-2 focus-visible:outline-violet-400">{suggestion.label} <span aria-hidden="true">↗</span></button>)}
             </div>
             <p className="text-xs text-slate-400">A MYKA sugere ações; confirme antes de salvar tarefas ou compromissos. Para decisões financeiras, confira os riscos e suas necessidades.</p>
           </div>
@@ -662,12 +679,12 @@ setConversationId(data.conversationId);
           <div key={index} className="space-y-3">
             <div className={message.role === "assistant" ? "flex min-w-0 items-start gap-2 sm:gap-3" : ""}>
               {message.role === "assistant" && (
-                <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-violet-400/40 bg-violet-950/70 sm:h-10 sm:w-10"><MykaPortrait className="h-8 w-8 sm:h-10 sm:w-10" /></span>
+                <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-violet-400/40 bg-violet-950/70 sm:h-10 sm:w-10"><img src="/myka-transparente.png" alt="MIKA original" className="h-8 w-8 object-contain sm:h-10 sm:w-10" /></span>
               )}
               <div
                 className={
                   message.role === "user"
-                  ? "ml-auto min-w-0 max-w-[94%] rounded-2xl rounded-br-md border border-violet-300/20 bg-gradient-to-br from-violet-700 to-purple-800 p-3 shadow-md sm:max-w-[78%] sm:p-4"
+                  ? "ml-auto min-w-0 max-w-[94%] rounded-2xl rounded-br-md border border-cyan-300/20 bg-gradient-to-br from-cyan-700 to-indigo-800 p-3 shadow-md sm:max-w-[78%] sm:p-4"
                   : "mr-auto min-w-0 max-w-[calc(100%-2.5rem)] rounded-2xl rounded-bl-md border border-white/10 bg-slate-800/85 p-3 shadow-md sm:max-w-[78%] sm:p-4"
               }
             >
@@ -684,7 +701,7 @@ setConversationId(data.conversationId);
   Array.isArray(message.proposedTasks) &&
   message.proposedTasks.length > 0 && (
     <div className="mt-3 space-y-3">
-      <p className="text-sm font-semibold text-violet-300">
+      <p className="text-sm font-semibold text-cyan-300">
         {message.proposedTasks.length} tarefa(s) identificada(s) pela Myka
       </p>
 
@@ -886,7 +903,7 @@ setConversationId(data.conversationId);
         {(!hideOffers && dailyLimitReached && currentPlan !== "premium") && (
           <section aria-label="Planos MYRYRA" className="rounded-2xl border border-violet-400/40 bg-violet-950/30 p-4">
             <button type="button" onClick={() => setHideOffers(true)} className="mb-2 text-xs text-violet-200 underline">Ocultar ofertas</button>
-            <div className="flex items-start gap-3"><span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-violet-400/40"><MykaPortrait className="h-9 w-9" /></span><div><p className="font-semibold text-white">{dailyLimitReached ? "Você atingiu o limite diário de mensagens do seu plano." : "Conheça as opções de upgrade da MYRYRA."}</p><p className="mt-1 text-sm text-slate-300">{dailyLimitReached ? `Seu limite será renovado${dailyResetAt && dailyResetAt > Date.now() ? ` em ${new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(dailyResetAt))} (horário de Brasília)` : " automaticamente"}. Gostaria de conhecer outros planos?` : "Compare as opções disponíveis."} Assinaturas pagas em breve.</p></div></div>
+            <div className="flex items-start gap-3"><span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-violet-400/40"><img src="/myka-transparente.png" alt="MIKA original" className="h-9 w-9 object-contain" /></span><div><p className="font-semibold text-white">{dailyLimitReached ? "Você atingiu o limite diário de mensagens do seu plano." : "Conheça as opções de upgrade da MYRYRA."}</p><p className="mt-1 text-sm text-slate-300">{dailyLimitReached ? `Seu limite será renovado${dailyResetAt && dailyResetAt > Date.now() ? ` em ${new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(dailyResetAt))} (horário de Brasília)` : " automaticamente"}. Gostaria de conhecer outros planos?` : "Compare as opções disponíveis."} Assinaturas pagas em breve.</p></div></div>
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
               {currentPlan === "free" && <a href="/planos?plano=pro" className="rounded-xl border border-violet-400/60 bg-violet-500/15 p-3 text-sm text-white hover:bg-violet-500/25"><strong className="block">Pro</strong>R$ 29,90/mês · 100 mensagens/dia</a>}
               <a href="/planos?plano=premium" className="rounded-xl border border-white/20 p-3 text-sm text-white hover:bg-white/10"><strong className="block">Premium</strong>R$ 49,90/mês · 250 mensagens/dia</a>
@@ -896,17 +913,16 @@ setConversationId(data.conversationId);
         )}
 
         {loading && (
-          <p className="animate-pulse text-sm font-medium text-violet-300 motion-reduce:animate-none">
+          <p className="animate-pulse text-sm font-medium text-cyan-300 motion-reduce:animate-none">
             Myka está analisando suas tarefas...
           </p>
         )}
 
-        <div ref={bottomRef} />
       </div>
 
       {error && (
         <div role="alert" className="mb-3 space-y-2 text-sm text-red-400">
-          <p>{/você atingiu as \d+ mensagens disponíveis hoje/i.test(error) ? `Você utilizou suas 10 mensagens gratuitas de hoje. ${dailyResetAt && dailyResetAt > Date.now() ? `Seu limite será renovado automaticamente às ${new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }).format(new Date(dailyResetAt))} (horário de Brasília).` : "Seu limite será renovado automaticamente no próximo ciclo diário."} Quer continuar conversando? Conheça nossos planos Pro e Premium.` : error}</p>
+          <p>{/você atingiu as \d+ mensagens disponíveis hoje/i.test(error) ? `Você atingiu o limite diário de ${currentPlan === "free" ? "mensagens gratuitas" : `mensagens do plano ${currentPlan}`}. ${dailyResetAt && dailyResetAt > Date.now() ? `Seu limite será renovado automaticamente às ${new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }).format(new Date(dailyResetAt))} (horário de Brasília).` : "Seu limite será renovado automaticamente no próximo ciclo diário."} Quer continuar conversando? Conheça nossos planos Pro e Premium.` : error}</p>
           <p className="text-slate-300">Precisa de suporte financeiro? Abra um chamado diretamente na Ajuda MYKA, mesmo quando a conversa com IA estiver indisponível.</p>
           <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("myryra:open-support", { detail: { topic: "billing-payments" } }))} className="rounded-lg border border-violet-400 px-3 py-2 font-semibold text-violet-200">Abrir suporte financeiro</button>
           {/você atingiu as \d+ mensagens disponíveis hoje/i.test(error) ? (
@@ -969,7 +985,7 @@ setConversationId(data.conversationId);
         <button
           type="submit"
           disabled={loading || historyLoading || !!error || (!input.trim() && !attachment)}
-          className="min-w-11 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-2 py-3 font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:px-5"
+          className="min-w-11 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-2 py-3 font-semibold text-white shadow-lg shadow-cyan-900/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:px-5"
         >
           <span className="sm:hidden" aria-label={loading ? "Enviando" : "Enviar"}>➤</span><span className="hidden sm:inline">{loading ? "Enviando..." : "Enviar"}</span>
         </button>
@@ -980,7 +996,7 @@ setConversationId(data.conversationId);
           type="button"
           onClick={prepareTask}
           disabled={loading || historyLoading || !!error || !input.trim()}
-          className="rounded-lg border border-violet-500 px-4 py-2 text-sm font-semibold text-violet-300 disabled:opacity-50"
+          className="rounded-lg border border-violet-500 px-4 py-2 text-sm font-semibold text-cyan-300 disabled:opacity-50"
         >
           Preparar tarefa com IA
         </button>

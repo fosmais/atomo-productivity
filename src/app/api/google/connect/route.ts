@@ -29,16 +29,18 @@ export async function GET(request: Request) {
 
   try {
     const oauth = createGoogleOAuthClient();
+    const writeRequested = new URL(request.url).searchParams.get("allow_event_creation") === "1";
     const state = randomBytes(32).toString("hex");
     const statePayload = JSON.stringify({
       state,
       userId: user.id,
+      writeRequested,
     });
 
     const authorizationUrl = oauth.generateAuthUrl({
       access_type: "offline",
       prompt: "consent",
-      scope: GOOGLE_CALENDAR_SCOPES,
+      scope: writeRequested ? [...GOOGLE_CALENDAR_SCOPES, "https://www.googleapis.com/auth/calendar.events"] : GOOGLE_CALENDAR_SCOPES,
       state,
     });
 

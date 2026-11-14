@@ -36,7 +36,8 @@ export default function WhatNowCard() {
   }, []);
 
   useEffect(() => {
-    void load();
+    let active = true;
+    queueMicrotask(() => { if (active) void load(); });
     const refresh = () => { void load(); };
     window.addEventListener("myryra:tasks-updated", refresh);
     window.addEventListener("myryra:events-updated", refresh);
@@ -45,6 +46,7 @@ export default function WhatNowCard() {
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
+      active = false;
       requestId.current += 1;
       window.removeEventListener("myryra:tasks-updated", refresh);
       window.removeEventListener("myryra:events-updated", refresh);

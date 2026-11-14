@@ -9,10 +9,10 @@ test("calendar passes a bounded concierge prompt to MIKA", () => {
   assert.match(calendar, /sessionStorage\.setItem\("myryra:myka:concierge-handoff", prompt\.slice\(0, 3500\)\)/);
   assert.match(calendar, /navigateTo\("vyra-ai"\)/);
 });
-test("MIKA receives the full handoff and clears its pending storage entry", () => {
+test("MIKA bounds the handoff to the API limit and clears pending storage", () => {
   assert.match(chat, /sessionStorage\.getItem\("myryra:myka:concierge-handoff"\)/);
   assert.match(chat, /sessionStorage\.removeItem\("myryra:myka:concierge-handoff"\)/);
-  assert.match(chat, /setPendingConciergePrompt\(prompt\.slice\(0, 3500\)\)/);
+  assert.match(chat, /setPendingConciergePrompt\(prompt\.slice\(0, 1500\)\)/);
 });
 test("failed chat requests preserve the draft without duplicate messages", () => {
   assert.match(chat, /setMessages\(previous => previous\.slice\(0, -1\)\)/);

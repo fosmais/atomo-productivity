@@ -50,7 +50,6 @@ export default function FocusMode() {
         void saveCompletedSession();
       }
     };
-    tick();
     const interval = window.setInterval(tick, 500);
     document.addEventListener("visibilitychange", tick);
     return () => {

@@ -2,6 +2,7 @@ import { isEventCategory } from "@/lib/event-categories";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
+import { hasCurrentLegalAcceptance } from "@/lib/privacy/legal-acceptance";
 
 function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
@@ -98,7 +99,7 @@ export async function PATCH(request: Request) {
     }
 
     if (kind === "event") {
-      const { data: result, error: cancelError } = await createSupabaseAdmin().rpc("myka_cancel_event", { p_message_id: messageId, p_user_id: auth.user.id });
+      const { data: result, error: cancelError } = await createSupabaseAdmin().rpc("myka_cancel_event_v2", { p_message_id: messageId, p_user_id: auth.user.id });
       if (cancelError) throw cancelError;
       if (!result || typeof result !== "object" || Array.isArray(result) || result.status !== "cancelled") {
         return NextResponse.json({ error: "Proposta não está pendente." }, { status: 409 });
@@ -134,6 +135,13 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const { data: auth, error: authError } = await supabase.auth.getUser();
     if (authError || !auth.user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+    if (process.env.MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true" &&
+        !(await hasCurrentLegalAcceptance(auth.user.id))) {
+      return NextResponse.json(
+        { error: "Aceite dos documentos legais vigentes necessário.", code: "LEGAL_ACCEPTANCE_REQUIRED" },
+        { status: 403, headers: { "Cache-Control": "private, no-store" } },
+      );
+    }
     const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
     if (assurance.error) return NextResponse.json({ error: "Sessão indisponível." }, { status: 503 });
     if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
@@ -142,10 +150,28 @@ export async function POST(request: Request) {
     if ((request.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase() !== "application/json") {
       return NextResponse.json({ error: "Envie JSON." }, { status: 415 });
     }
-    const raw = await request.text();
-    if (new TextEncoder().encode(raw).length > 4096) return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+    const contentLength = Number(request.headers.get("content-length"));
+    if (Number.isFinite(contentLength) && contentLength > 4096) {
+      return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+    }
+    const reader = request.body?.getReader();
+    if (!reader) return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
+    const decoder = new TextDecoder();
+    const chunks: string[] = [];
+    let bytes = 0;
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      bytes += chunk.value.byteLength;
+      if (bytes > 4096) {
+        await reader.cancel();
+        return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+      }
+      chunks.push(decoder.decode(chunk.value, { stream: true }));
+    }
+    chunks.push(decoder.decode());
     let input: unknown;
-    try { input = JSON.parse(raw); } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
+    try { input = JSON.parse(chunks.join("")); } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
     if (!input || typeof input !== "object" || Array.isArray(input)) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
     const messageId = (input as Record<string, unknown>).messageId;
     const categoryInput = (input as Record<string, unknown>).category;
@@ -169,7 +195,7 @@ export async function POST(request: Request) {
         Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime()) || endsAt <= startsAt) {
       return NextResponse.json({ error: "Dados do compromisso inválidos." }, { status: 422 });
     }
-    if (startsAt.getTime() < Date.now() - 60_000) {
+    if (message.event_status !== "saved" && startsAt.getTime() < Date.now() - 60_000) {
       return NextResponse.json(
         { error: "O horário sugerido já passou. Solicite um novo horário à MIKA." },
         { status: 422 }
@@ -179,33 +205,28 @@ export async function POST(request: Request) {
     if (eventType !== "appointment" && eventType !== "unavailable") {
       return NextResponse.json({ error: "Tipo inválido." }, { status: 422 });
     }
-    // Recheck local overlaps at confirmation time, not only in the browser.
+    // The database RPC is the single source of truth for overlap checks and idempotency.
     const acknowledgeConflict = (input as Record<string, unknown>).acknowledgeConflict === true;
-    const { data: overlaps, error: overlapsError } = await admin.from("events")
-      .select("id, title")
-      .eq("user_id", auth.user.id)
-      .is("deleted_at", null)
-      .lt("starts_at", endsAt.toISOString())
-      .gt("ends_at", startsAt.toISOString())
-      .limit(5);
-    if (overlapsError) throw overlapsError;
-    if ((overlaps?.length ?? 0) > 0 && !acknowledgeConflict) {
-      return NextResponse.json({
-        error: "O horário coincide com outro compromisso. Revise o conflito e confirme novamente se desejar continuar.",
-        code: "EVENT_CONFLICT",
-        conflicts: (overlaps ?? []).map((item) => ({ title: item.title })),
-      }, { status: 409 });
-    }
     // A single database transaction serializes confirmation and cancellation.
-    const { data: result, error: confirmError } = await admin.rpc("myka_confirm_event", {
+    const { data: result, error: confirmError } = await admin.rpc("myka_confirm_event_v2", {
       p_message_id: messageId,
       p_user_id: auth.user.id,
+      p_acknowledge_conflict: acknowledgeConflict,
     });
     if (confirmError) throw confirmError;
     if (!result || typeof result !== "object" || Array.isArray(result)) {
       throw new Error("Resposta inválida da confirmação.");
     }
     const outcome = result as Record<string, unknown>;
+    if (outcome.status === "conflict") {
+      return NextResponse.json({ error: "O horário coincide com outro compromisso. Revise o conflito e confirme novamente se desejar continuar.", code: "EVENT_CONFLICT", conflictCount: typeof outcome.conflictCount === "number" ? outcome.conflictCount : undefined }, { status: 409 });
+    }
+    if (outcome.status === "expired_or_invalid" || outcome.status === "invalid") {
+      return NextResponse.json({ error: "Dados ou horário do compromisso inválidos. Solicite uma nova proposta à MIKA." }, { status: 422 });
+    }
+    if (outcome.status === "legacy_saved") {
+      return NextResponse.json({ error: "Compromisso já confirmado anteriormente; identificador original indisponível.", code: "LEGACY_EVENT_SAVED" }, { status: 409 });
+    }
     if (outcome.status === "cancelled") {
       return NextResponse.json({ error: "Proposta descartada." }, { status: 409 });
     }

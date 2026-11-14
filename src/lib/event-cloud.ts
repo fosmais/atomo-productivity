@@ -95,7 +95,7 @@ export async function getCloudEvents(): Promise<CalendarEvent[]> {
 
 export async function saveCloudEvent(
   event: NewCalendarEvent
-): Promise<void> {
+): Promise<string> {
   const { supabase, userId } = await getAuthenticatedUser();
 
   const title = event.title.trim();
@@ -164,6 +164,7 @@ export async function saveCloudEvent(
       throw new Error("Não foi possível ativar o Concierge. Verifique a configuração e tente novamente.");
     }
   }
+  return saved.id;
 }
 
 export async function deleteCloudEvent(eventId: string): Promise<void> {

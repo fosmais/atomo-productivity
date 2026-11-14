@@ -46,6 +46,8 @@ import FinanceSubscriptions from "./finance-subscriptions";
 import FinanceWorkspace from "./finance-workspace";
 import HealthWorkspace from "./health-workspace";
 import ThemePreferences from "./theme-preferences";
+import MikaResolveMyDay from "./mika-resolve-my-day";
+import MikaJourneyPlanner from "./mika-journey-planner";
 
 async function DashboardContent() {
   await connection();
@@ -66,6 +68,35 @@ async function DashboardContent() {
     redirect("/login");
   }
 
+  // Rollout is deliberately opt-in until legal documents are published and tested.
+  // This server-side gate covers the dashboard; API mutations require separate enforcement.
+  if (process.env.MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true") {
+    const now = new Date().toISOString();
+    const { data: versions, error: versionsError } = await supabase
+      .from("myryra_privacy_document_versions")
+      .select("id,document_type")
+      .eq("status", "published")
+      .lte("published_at", now)
+      .lte("effective_at", now)
+      .order("effective_at", { ascending: false })
+      .order("published_at", { ascending: false })
+      .order("id", { ascending: false });
+    if (versionsError) redirect("/privacy/accept");
+    const current = ["terms", "privacy_notice"].map((type) =>
+      (versions ?? []).find((version) => version.document_type === type)?.id,
+    );
+    if (current.some((id) => !id)) redirect("/privacy/accept");
+    const { data: accepted, error: acceptedError } = await supabase
+      .from("myryra_privacy_acceptances")
+      .select("document_version_id")
+      .eq("user_id", user.id)
+      .eq("action", "accepted")
+      .in("document_version_id", current as string[]);
+    if (acceptedError || current.some((id) => !(accepted ?? []).some((entry) => entry.document_version_id === id))) {
+      redirect("/privacy/accept");
+    }
+  }
+
   return (
     <div
       id="dashboard-top"
@@ -73,6 +104,12 @@ async function DashboardContent() {
     >
       <VyraWorkspace>
       <VyraHome />
+      <VyraModule id="home">
+        <details className="mt-2 rounded-2xl border border-white/10 bg-slate-900/50 p-3">
+          <summary className="cursor-pointer text-sm font-medium text-violet-200">Planejamento avançado com a MIKA</summary>
+          <div className="mt-3"><MikaResolveMyDay /></div>
+        </details>
+      </VyraModule>
 
         <div className="min-w-0 space-y-6">
 
@@ -100,6 +137,7 @@ async function DashboardContent() {
             <section className="min-w-0 rounded-2xl border border-white/15 bg-slate-900/75 p-3 sm:p-5" aria-label="Conversa com a MYKA">
               <CopilotChat />
             </section>
+            <MikaJourneyPlanner />
           </div>
         </VyraSection>
       </VyraModule>

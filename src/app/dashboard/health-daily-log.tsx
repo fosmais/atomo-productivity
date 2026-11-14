@@ -31,7 +31,11 @@ export default function HealthDailyLog() {
     else setLogs((data || []) as Log[]);
     setLoading(false);
   }
-  useEffect(() => { void refresh(); }, []);
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => { if (active) void refresh(); });
+    return () => { active = false; };
+  }, []);
   const selected = options.find(item => item.id === category)!;
   async function save() {
     const number = selected.unit ? Number(value.replace(",", ".")) : null;

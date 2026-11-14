@@ -15,7 +15,12 @@ export default function App() {
   const [verifiedToken, setVerifiedToken] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
-    if (!session) { setRequiresMfa(false); setVerifiedToken(null); return; }
+    if (!session) {
+      queueMicrotask(() => {
+        if (!cancelled) { setRequiresMfa(false); setVerifiedToken(null); }
+      });
+      return () => { cancelled = true; };
+    }
     const token = session.access_token;
     supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data, error }) => {
       if (!cancelled) {

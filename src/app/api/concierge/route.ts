@@ -108,6 +108,7 @@ function isConciergeResponse(value: unknown): value is ConciergeResponse {
 }
 
 export async function POST(request: Request) {
+  let stage = "authentication";
   try {
     const { supabase, user, mfaRequired, assuranceUnavailable } = await authenticateRequest(request);
     if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
@@ -199,6 +200,7 @@ export async function POST(request: Request) {
       );
     }
 
+    stage = "conversation_history";
     // Contexto recuperado exclusivamente da conversa autenticada.
     // Nunca confiar no identificador enviado pelo cliente sem verificar o dono.
     let recentConversationHistory: Array<{ role: string; content: string }> = [];
@@ -228,6 +230,7 @@ export async function POST(request: Request) {
         .map((item) => ({ role: item.role, content: item.content.slice(0, 1500) }));
     }
 
+stage = "rate_limit";
 let rateLimit;
 try {
   rateLimit = await checkConciergeRateLimit(user.id);
@@ -270,6 +273,7 @@ if (!rateLimit.allowed) {
 
     // Busca tarefas diretamente no banco usando a sessão autenticada.
     // As políticas RLS do Supabase devem restringir o acesso ao dono.
+    stage = "tasks";
     const { data: tasks, error: tasksError } = await supabase
       .from("tasks")
       .select("title, priority, due_date, completed")
@@ -294,6 +298,7 @@ if (!rateLimit.allowed) {
     const periodEnd = new Date(now);
     periodEnd.setDate(periodEnd.getDate() + 30);
 
+    stage = "events";
     const { data: events, error: eventsError } = await supabase
       .from("events")
       .select(
@@ -444,6 +449,7 @@ if (!rateLimit.allowed) {
       maxRetries: 0,
     });
 
+    stage = "ai_provider";
     const response = await client.responses.create({
       model: "gpt-4.1-mini",
       store: false,
@@ -722,6 +728,7 @@ if (!rateLimit.allowed) {
       max_output_tokens: 2000,
     });
 
+    stage = "ai_response_validation";
     let parsed: unknown;
 
     try {
@@ -836,6 +843,7 @@ if (!rateLimit.allowed) {
     } else {
       const lastMessage = messages[messages.length - 1] as ChatMessage;
 
+      stage = "conversation_persistence";
       const { data: created, error: createError } = await mykaAdmin
         .from("myka_conversations")
         .insert({
@@ -854,6 +862,7 @@ if (!rateLimit.allowed) {
 
     const lastUserMessage = messages[messages.length - 1] as ChatMessage;
 
+    stage = "message_persistence";
     const { data: savedMessages, error: saveError } = await mykaAdmin
       .from("myka_messages")
       .insert([
@@ -908,7 +917,13 @@ if (!rateLimit.allowed) {
       proposedEvent: parsed.proposedEvent ?? null,
     });
   } catch (error) {
-    console.error("Erro no chat do Concierge:", error);
+    // Do not send exception objects to logs: provider/database errors may carry
+    // request details or other sensitive metadata. Record bounded diagnostics only.
+    const failure = error && typeof error === "object" ? error as Record<string, unknown> : {};
+    const status = typeof failure.status === "number" ? failure.status : undefined;
+    const code = typeof failure.code === "string" ? failure.code.slice(0, 64) : undefined;
+    const category = error instanceof Error ? error.name.slice(0, 64) : "unknown";
+    console.error("[MYKA] concierge_request_failed", { stage, category, status, code });
 
     // Fail closed when rate limiting is unavailable, but return an actionable
     // service-unavailable status instead of misclassifying it as a server bug.
