@@ -58,3 +58,24 @@ test("migration preflight block terminates before the schema changes", () => {
   assert.ok(sql.includes("end;\n$preflight$;"), "preflight must close the PL/pgSQL block correctly");
   assert.ok(sql.indexOf("$preflight$;") < sql.indexOf("alter table public.mika_teacher_sessions"), "preflight must run before DDL");
 });
+
+
+test("MYRA migration preserves unique reward and owner-only access", () => {
+  const sql = read("supabase/migrations/20261114000200_restore_myra_ledger.sql");
+  assert.match(sql, /mission_id uuid not null unique references public\.myryra_journey_missions/);
+  assert.match(sql, /amount integer not null default 10 check \(amount = 10\)/);
+  assert.match(sql, /enable row level security/);
+  assert.match(sql, /grant select on public\.myryra_journey_myra_ledger to authenticated/);
+  assert.match(sql, /revoke all on public\.myryra_journey_myra_ledger from public, anon, authenticated/);
+  assert.match(sql, /on conflict \(mission_id\) do nothing/);
+  assert.match(sql, /revoke all on function public\.myryra_credit_completed_mission\(\) from public, anon, authenticated/);
+});
+
+test("assessment requires a saved answer, feedback, passing flag and minimum score", () => {
+  const src = read("src/app/api/journeys/[journeyId]/missions/[missionId]/route.ts");
+  assert.match(src, /learning\?\.answer\?\.trim\(\)/);
+  assert.match(src, /learning\?\.feedback\?\.trim\(\)/);
+  assert.match(src, /learning\.assessment_passed !== true/);
+  assert.match(src, /learning\.assessment_score < minimumScore/);
+  assert.match(src, /if \(policyError\) return NextResponse\.json/);
+});
