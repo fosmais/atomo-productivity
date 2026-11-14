@@ -61,7 +61,14 @@ export default function JourneyTrail() {
       if (!alive) return;
       const items = Array.isArray(data.journeys) ? data.journeys as Journey[] : [];
       setJourneys(items);
-      if (items.length) setSelected(items[0].id);
+      if (items.length) {
+        const requestedId = new URLSearchParams(window.location.search).get("journey");
+        const requestedJourney = items.find((item) => item.id === requestedId);
+        setSelected(requestedJourney?.id ?? items[0].id);
+        if (requestedJourney) {
+          window.requestAnimationFrame(() => document.getElementById("journey-map")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+        }
+      }
     }).catch(e => { if (alive) setError(e instanceof Error ? e.message : "Falha ao carregar."); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
