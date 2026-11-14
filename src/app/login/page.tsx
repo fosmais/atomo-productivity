@@ -97,7 +97,7 @@ export default function LoginPage() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/confirm`,
+            emailRedirectTo: `${window.location.origin}/auth/confirm${returnTo === "/mika-professora" ? "?next=%2Fmika-professora" : ""}`,
             ...(captchaEnabled ? { captchaToken } : {}),
           },
         });
