@@ -73,7 +73,14 @@ export async function PATCH(request: Request, context: Context) {
       .select("requires_assessment,minimum_score")
       .eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
     if (policyError) return NextResponse.json({ error: "Política de avaliação indisponível." }, { status: 503 });
-    const requiresAssessment = educationalMission.test(missionDetails.title) || policy?.requires_assessment === true;
+    // Any mission linked to a MIKA lesson is educational regardless of its title.
+    // Fail closed on lookup errors rather than accidentally awarding MYRA.
+    const { data: linkedLesson, error: linkedLessonError } = await supabase
+      .from("mika_teacher_sessions")
+      .select("id").eq("mission_id", missionId).eq("journey_id", journeyId)
+      .eq("owner_id", user.id).limit(1).maybeSingle();
+    if (linkedLessonError) return NextResponse.json({ error: "Não foi possível verificar a aula da MIKA." }, { status: 503 });
+    const requiresAssessment = educationalMission.test(missionDetails.title) || policy?.requires_assessment === true || !!linkedLesson;
     const minimumScore = policy?.minimum_score ?? 70;
     if (requiresAssessment) {
       const { data: learning, error: learningError } = await supabase.from("myryra_journey_learning_progress")
