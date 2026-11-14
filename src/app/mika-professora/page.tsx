@@ -265,10 +265,10 @@ export default function MikaProfessorPage() {
             {missionsBusy && <p className="text-xs text-slate-400">Carregando missões...</p>}
             {missionsError && <p role="alert" className="text-xs text-amber-300">{missionsError}</p>}
             {!missionsBusy && !missionsError && missions.length === 0 && <p className="text-xs text-slate-400">Nenhuma missão cadastrada nesta Journey.</p>}
-            <p className="text-xs text-slate-400">Escolher uma missão define o assunto da aula. A associação permanente e a atualização de progresso ainda não estão disponíveis.</p>
+            <p className="text-xs text-slate-400">Escolher uma missão define o assunto da aula. A aula ficará vinculada à missão selecionada. O progresso da Journey não será atualizado automaticamente.</p>
           </div>}
           <label className="block text-sm">Assunto da aula
-            <input disabled={chatBusy || busy || historyBusy} value={topic} onChange={(e) => { setTopic(e.target.value); setLesson(null); setMessages([]); setSessionId(""); setLastMessageSaved(false); }} maxLength={120} placeholder="Ex.: cumprimentos em italiano" className="mt-1 w-full rounded-lg bg-slate-800 p-3" />
+            <input disabled={chatBusy || busy || historyBusy} value={topic} onChange={(e) => { setTopic(e.target.value); setMissionId(""); setLesson(null); setMessages([]); setSessionId(""); setLastMessageSaved(false); }} maxLength={120} placeholder="Ex.: cumprimentos em italiano" className="mt-1 w-full rounded-lg bg-slate-800 p-3" />
           </label>
           <label className="block text-sm">Nível
             <select disabled={chatBusy || busy || historyBusy} value={level} onChange={(e) => { setLevel(e.target.value); setLesson(null); setMessages([]); setSessionId(""); setLastMessageSaved(false); }} className="mt-1 w-full rounded-lg bg-slate-800 p-3">
