@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-type Session = { id: string; journey_id: string | null; topic: string; level: string; status: string; created_at: string; scheduled_at?: string | null };
+type Session = { id: string; journey_id: string | null; topic: string; level: string; duration_minutes?: number; status: string; created_at: string; scheduled_at?: string | null };
 type Message = { role: "user" | "assistant"; content: string };
 type Journey = { id: string; title: string; status: string };
 type Lesson = { title: string; objective: string; durationMinutes: number; activities: string[]; assessment: string };
@@ -18,7 +18,7 @@ function downloadCalendarInvite(session: Session) {
   if (!session.scheduled_at) return;
   const start = new Date(session.scheduled_at);
   if (!Number.isFinite(start.getTime())) return;
-  const chosen = window.prompt("Duração da aula em minutos (15, 20, 30, 45 ou 60):", "30");
+  const chosen = window.prompt("Duração da aula em minutos (15, 20, 30, 45 ou 60):", String(session.duration_minutes ?? 30));
   if (chosen === null) return;
   const duration = Number(chosen.trim());
   if (!["15", "20", "30", "45", "60"].includes(chosen.trim())) {
@@ -179,7 +179,7 @@ export default function MikaProfessorPage() {
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Não foi possível preparar a aula.");
       setLesson(json.lesson);
-      const created = await fetch("/api/mika/lessons/sessions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...(journeyId ? { journeyId } : {}), topic: topic.trim() || journeys.find((j) => j.id === journeyId)?.title || "Aula", level, ...(scheduledAt ? { scheduledAt: new Date(scheduledAt).toISOString() } : {}) }) });
+      const created = await fetch("/api/mika/lessons/sessions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...(journeyId ? { journeyId } : {}), durationMinutes, topic: topic.trim() || journeys.find((j) => j.id === journeyId)?.title || "Aula", level, ...(scheduledAt ? { scheduledAt: new Date(scheduledAt).toISOString() } : {}) }) });
       if (created.ok) { const result = await created.json(); setSessionId(result.session.id); setSessions((previous) => [result.session, ...previous]); }
       else { const failure = await created.json().catch(() => null) as { error?: string } | null; const detail = typeof failure?.error === "string" ? failure.error : "Não foi possível criar a sessão."; setHistoryError(detail); setError(`A aula foi preparada, mas não foi possível iniciar a conversa: ${detail}`); }
     } catch (e) {
