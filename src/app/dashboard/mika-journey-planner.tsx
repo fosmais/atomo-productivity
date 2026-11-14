@@ -297,7 +297,7 @@ export default function MikaJourneyPlanner() {
     const journeyId = url.searchParams.get("journey");
     const missionId = url.searchParams.get("mission");
     const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!journeyId || !missionId || !uuid.test(journeyId) || !uuid.test(missionId)) return;
+    if (!journeyId || !uuid.test(journeyId) || (missionId !== null && !uuid.test(missionId))) return;
     url.searchParams.delete("journey");
     url.searchParams.delete("mission");
     window.history.replaceState(window.history.state, "", url.toString());
@@ -316,7 +316,10 @@ export default function MikaJourneyPlanner() {
         const list = Array.isArray(payload.missions) ? payload.missions : [];
         setExpandedId(journeyId);
         setMissions(list);
-        if (list.some((mission: { id: string }) => mission.id === missionId)) {
+        if (missionId === null) {
+          setMessage("Jornada aberta. Escolha sua próxima missão para continuar.");
+          document.getElementById("myryra-saved-journeys")?.scrollIntoView({ block: "start", behavior: "smooth" });
+        } else if (list.some((mission: { id: string }) => mission.id === missionId)) {
           setMessage("Missão localizada. Selecione Iniciar com a MIKA para começar sua aula.");
           pendingMissionScrollRef.current = missionId;
         } else {
@@ -413,7 +416,7 @@ export default function MikaJourneyPlanner() {
       if (confirm) {
         if (typeof payload.journey?.id !== "string") throw new Error("A jornada foi salva, mas não foi possível identificá-la. Atualize a página para encontrá-la.");
         setSaved(true);
-        setMessage("Jornada salva com sucesso.");
+        setMessage("Jornada salva com sucesso. Abra sua jornada para iniciar as missões.");
         window.dispatchEvent(new CustomEvent("myryra:journey-created", { detail: { journeyId: payload.journey.id } }));
         await refreshJourneys();
       } else {
@@ -483,7 +486,7 @@ export default function MikaJourneyPlanner() {
       </div>}
       {message && <div role="status" className="mt-3 space-y-2 text-sm"><p>{message}</p>{message.startsWith("Aula criada na Agenda MYRYRA.") && <a href="/dashboard#vyra-calendar" className="inline-flex rounded-lg border border-violet-400/60 px-3 py-2 font-semibold text-violet-200 underline underline-offset-2">Abrir minha Agenda</a>}</div>}
       <div className="mt-5 border-t border-white/15 pt-4">
-        <h4 className="font-semibold">Minhas jornadas</h4>
+        <h4 id="myryra-saved-journeys" className="font-semibold">Minhas jornadas</h4>
         {loadingJourneys ? <p className="mt-2 text-sm text-slate-300">Carregando...</p> :
           journeys.length === 0 ? <p className="mt-2 text-sm text-slate-300">Nenhuma jornada cadastrada.</p> :
           <ul className="mt-2 space-y-2">
@@ -494,6 +497,7 @@ export default function MikaJourneyPlanner() {
                   {journey.target_date ? " · Meta: " + journey.target_date.slice(0, 10).split("-").reverse().join("/") : ""}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
+                  <a href={"/journey?journey=" + encodeURIComponent(journey.id)} className="inline-flex rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500">Abrir minha jornada →</a>
                   {(journey.status === "active" || journey.status === "paused") && (
                     <button type="button" disabled={journeyBusy !== null} onClick={() => void toggleJourneyPause(journey.id, journey.status)}
                       className="rounded-lg border border-amber-400/50 px-3 py-2 text-xs text-amber-100 disabled:opacity-50">
