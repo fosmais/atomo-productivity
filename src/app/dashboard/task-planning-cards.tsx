@@ -29,6 +29,7 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
       const details = document.querySelector<HTMLDetailsElement>(`[data-feature-id="${quickAction}"]`);
       if (details) {
         details.open = true;
+        if (quickAction === "kanban") details.style.scrollMarginTop = "5rem";
         details.scrollIntoView({ behavior: "smooth", block: quickAction === "kanban" ? "start" : "center" });
         if (quickAction === "capture") {
           window.setTimeout(() => window.dispatchEvent(new Event("myryra:focus-quick-capture")), 100);
@@ -57,6 +58,7 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
       const kanban = document.querySelector<HTMLDetailsElement>('[data-feature-id="kanban"]');
       if (!kanban) return;
       kanban.open = true;
+      kanban.style.scrollMarginTop = "5rem";
       kanban.scrollIntoView({ behavior: "smooth", block: "start" });
     });
     return () => window.cancelAnimationFrame(frame);
@@ -70,7 +72,8 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
         const kanban = document.querySelector<HTMLDetailsElement>('[data-feature-id="kanban"]');
         if (kanban) {
           kanban.open = true;
-          kanban.scrollIntoView({ behavior: "smooth", block: "start" });
+          kanban.style.scrollMarginTop = "5rem";
+      kanban.scrollIntoView({ behavior: "smooth", block: "start" });
         }
       });
     }
