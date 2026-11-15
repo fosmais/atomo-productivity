@@ -666,7 +666,9 @@ export default function TaskKanban() {
               return 0;
             });
             const expanded = expandedColumns.includes(column.status);
-            const visibleTasks = expanded ? columnTasks : columnTasks.filter((task) => task.id === focusedTaskId).concat(columnTasks.filter((task) => task.id !== focusedTaskId).slice(0, focusedTaskId && columnTasks.some((task) => task.id === focusedTaskId) ? 3 : 4));
+            const initialLimit = dashboardFilter === "all" ? 4 : 12;
+            const hasFocusedTask = !!focusedTaskId && columnTasks.some((task) => task.id === focusedTaskId);
+            const visibleTasks = expanded ? columnTasks : columnTasks.filter((task) => task.id === focusedTaskId).concat(columnTasks.filter((task) => task.id !== focusedTaskId).slice(0, initialLimit - (hasFocusedTask ? 1 : 0)));
 
             return (
               <div
