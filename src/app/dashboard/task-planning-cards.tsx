@@ -19,6 +19,7 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
   focus: ReactNode;
 }) {
   const [active, setActive] = useState<View>("tasks");
+  const [filteredNavigation, setFilteredNavigation] = useState(0);
   const { activeModule, quickAction } = useVyraNavigation();
   useEffect(() => {
     if (activeModule !== "vyra-tasks" || !quickAction) return;
@@ -43,16 +44,23 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
       const filter = (event as CustomEvent<{ filter?: string }>).detail?.filter;
       if (filter !== "pending" && filter !== "overdue") return;
       setActive("tasks");
-      window.requestAnimationFrame(() => {
-        const kanban = document.querySelector<HTMLDetailsElement>('[data-feature-id="kanban"]');
-        if (!kanban) return;
-        kanban.open = true;
-        kanban.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
+      // Trigger a post-render effect even when the Tasks tab was already active.
+      setFilteredNavigation(value => value + 1);
     };
     window.addEventListener("myryra:task-filter", openFilteredTasks);
     return () => window.removeEventListener("myryra:task-filter", openFilteredTasks);
   }, []);
+  useEffect(() => {
+    if (!filteredNavigation || active !== "tasks") return;
+    // React has committed the visible Tasks panel before this effect runs.
+    const frame = window.requestAnimationFrame(() => {
+      const kanban = document.querySelector<HTMLDetailsElement>('[data-feature-id="kanban"]');
+      if (!kanban) return;
+      kanban.open = true;
+      kanban.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [active, filteredNavigation]);
   const panels: Record<View, ReactNode> = { tasks, today, intelligence, focus };
 
   function selectSection(id: View) {
