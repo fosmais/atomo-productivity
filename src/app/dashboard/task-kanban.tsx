@@ -89,6 +89,11 @@ export default function TaskKanban() {
     if (pending === "pending" || pending === "overdue") {
       sessionStorage.removeItem("myryra:task-filter-pending");
       apply(new CustomEvent("myryra:task-filter", { detail: { filter: pending } }));
+      // Notify the parent panel after mount so it can select the Tasks tab and
+      // scroll the expanded Kanban into view even when navigation remounts it.
+      queueMicrotask(() => {
+        window.dispatchEvent(new CustomEvent("myryra:task-filter", { detail: { filter: pending } }));
+      });
     }
     return () => window.removeEventListener("myryra:task-filter", apply);
   }, []);
