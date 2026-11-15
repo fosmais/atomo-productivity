@@ -163,9 +163,37 @@ export default function TaskKanban() {
       }
       const data = rows;
 
+      // When opening a filtered view from Meu Dia, fetch all matching tasks,
+      // including older records outside the initial 200-task Kanban page.
+      // Keep each database request bounded to 200 rows.
+      const filteredRows: KanbanTask[] = [];
+      if (dashboardFilter !== "all") {
+        const today = localDateKey(new Date());
+        for (let offset = 0; ; offset += 200) {
+          if (requestId !== latestLoadRef.current) return;
+          let query = supabase.from("tasks")
+            .select("id, title, priority, category, due_date, status, completed_at, completed")
+            .eq("user_id", auth.user.id)
+            .is("deleted_at", null)
+            .eq("completed", false)
+            .neq("status", "done")
+            .order("created_at", { ascending: false })
+            .order("id", { ascending: false })
+            .range(offset, offset + 199);
+          query = dashboardFilter === "overdue"
+            ? query.lt("due_date", today)
+            : query.or(`due_date.is.null,due_date.lte.${today}`);
+          const { data: page, error: filteredError } = await query;
+          if (filteredError) throw filteredError;
+          filteredRows.push(...((page ?? []) as KanbanTask[]));
+          if ((page ?? []).length < 200) break;
+        }
+      }
+
       // Defer pagination metadata until the entire refresh succeeds.
       // Legacy records can have completed=true with a stale status. Never display them as pending.
-      let loaded = ((data ?? []) as KanbanTask[]).map((task) => task.completed ? { ...task, status: "done" as const } : task);
+      let loaded = [...new Map([...data, ...filteredRows].map((task) => [task.id, task])).values()]
+        .map((task) => task.completed ? { ...task, status: "done" as const } : task);
       // A busca global pode encontrar tarefas fora das 200 mais recentes.
       if (focusedTaskId && !loaded.some((task) => task.id === focusedTaskId)) {
         const { data: focusedTask, error: focusedError } = await supabase
@@ -202,7 +230,7 @@ export default function TaskKanban() {
     } finally {
       if (requestId === latestLoadRef.current) setLoading(false);
     }
-  }, [focusedTaskId]);
+  }, [focusedTaskId, dashboardFilter]);
 
   async function loadMoreTasks() {
     if (loadingMore || loading || !hasMoreTasks) return;
