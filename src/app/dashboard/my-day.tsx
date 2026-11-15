@@ -3,6 +3,7 @@ import FeatureHint from "./feature-hint";
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useVyraNavigation } from "./vyra-module-context";
 
 type Item = { id?: string; title: string; priority: string; dueDate: string | null; completed: boolean };
 type Appointment = { title: string; startsAt: string; endsAt: string };
@@ -12,6 +13,12 @@ function localDateKey(date: Date): string {
 }
 
 export default function MyDay() {
+  const { navigateTo } = useVyraNavigation();
+  function openTasks(filter: "pending" | "overdue") {
+    sessionStorage.setItem("myryra:task-filter-pending", filter);
+    navigateTo("vyra-tasks");
+    window.dispatchEvent(new CustomEvent("myryra:task-filter", { detail: { filter } }));
+  }
   const [tasks, setTasks] = useState<Item[]>([]);
   const [events, setEvents] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,13 +118,14 @@ export default function MyDay() {
     {loading ? <p className="mt-3 text-sm text-slate-300">Carregando suas prioridades...</p> : error ? <p role="alert" className="mt-3 text-rose-300">{error}</p> : <>
       <p className="mt-3 text-sm text-slate-300">{finished} de {todayTasks.length} tarefas com prazo hoje concluídas · {appointments.length} compromisso(s) hoje</p>
       <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-700" role="progressbar" aria-valuenow={finished} aria-valuemin={0} aria-valuemax={todayTasks.length || 1} aria-label="Progresso das tarefas com prazo hoje"><div className="h-full rounded-full bg-violet-500" style={{ width: `${todayTasks.length ? finished / todayTasks.length * 100 : 0}%` }} /></div>
-      <h4 className="mt-5 font-semibold text-violet-200">Suas 3 próximas prioridades</h4>
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-2"><h4 className="font-semibold text-violet-200">Suas 3 próximas prioridades</h4><button type="button" onClick={() => openTasks("pending")} className="rounded-lg border border-violet-400/50 px-3 py-2 text-sm font-semibold text-violet-100 hover:bg-violet-500/20">Ver tarefas pendentes</button></div>
       {pending.length ? <ol className="mt-2 space-y-2">{pending.slice(0, 3).map(task => <li key={task.id ?? task.title} className="rounded-lg border border-slate-700 p-3 text-sm">{task.title} <span className="text-slate-400">· {task.priority}{task.dueDate && task.dueDate < today ? " · Atrasada" : ""}</span></li>)}</ol> : <p className="mt-2 text-sm text-slate-400">Nenhuma tarefa pendente ou atrasada. Aproveite para planejar o próximo passo.</p>}
       <h4 className="mt-5 font-semibold text-violet-200">Agenda de hoje</h4>
       {appointments.length ? <ul className="mt-2 space-y-2">{appointments.slice(0, 5).map((event, index) => <li key={index} className="text-sm text-slate-300">{localDateKey(new Date(event.startsAt)) < today ? "Iniciado anteriormente" : new Date(event.startsAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} · {event.title}</li>)}</ul> : <p className="mt-2 text-sm text-slate-400">Sem compromissos na agenda MYRYRA hoje.</p>}
       <div className="mt-5 rounded-xl border border-violet-400/25 bg-violet-500/5 p-4" aria-label="Revisão do dia">
         <h4 className="font-semibold text-violet-200">Revisão do dia</h4>
         <p className="mt-2 text-sm text-slate-300">Das {todayTasks.length} tarefas com prazo hoje, {finished} estão concluídas. {overdue.length} tarefa(s) estão atrasadas.</p>
+        {overdue.length > 0 && <button type="button" onClick={() => openTasks("overdue")} className="mt-3 rounded-lg border border-amber-400/50 px-3 py-2 text-sm font-semibold text-amber-100 hover:bg-amber-500/15">Ver {overdue.length} tarefa(s) atrasada(s)</button>}
         <h5 className="mt-3 text-sm font-medium text-violet-100">Prepare amanhã</h5>
         {tomorrowTasks.length ? <ul className="mt-2 space-y-1 text-sm text-slate-300">{tomorrowTasks.slice(0, 3).map(task => <li key={task.id ?? task.title}>• {task.title}</li>)}</ul> : <p className="mt-2 text-sm text-slate-400">Nenhuma tarefa com prazo amanhã. Aproveite para definir suas prioridades.</p>}
       </div>
