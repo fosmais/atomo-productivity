@@ -10,10 +10,10 @@ export async function GET() {
     return NextResponse.json({ error: "Verificação adicional necessária." }, { status: 403 });
   }
   let balance = 0;
-  const recent: { amount: number; created_at: string; mission_id: string; journey_id: string }[] = [];
+  const recent: { amount: number; created_at: string; source_mission_id: string; mission_id: string | null; journey_id: string | null }[] = [];
   for (let offset = 0; ; offset += 1000) {
     const { data, error: dbError } = await supabase.from("myryra_journey_myra_ledger")
-      .select("amount,created_at,mission_id,journey_id")
+      .select("amount,created_at,source_mission_id,mission_id,journey_id")
       .eq("owner_id", user.id).order("created_at", { ascending: false })
       .order("id", { ascending: false }).range(offset, offset + 999);
     if (dbError) return NextResponse.json({ error: "Não foi possível consultar suas MYRAs." }, { status: 500 });
