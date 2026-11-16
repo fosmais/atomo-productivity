@@ -141,3 +141,15 @@ test("mission completion uses privileged conditional write only after ownership 
   assert.match(src, /\.eq\("id", missionId\)\.eq\("journey_id", journeyId\)\.eq\("status", existingMission\.status\)/);
   assert.doesNotMatch(src, /await supabase\.from\("myryra_journey_missions"\)\s*\.update\(/);
 });
+
+
+test("MIKA lesson creation requires legal acceptance when gate is enabled", () => {
+  const src = read("src/app/api/mika/lessons/sessions/route.ts");
+  assert.match(src, /import \{ hasCurrentLegalAcceptance \} from "@\/lib\/privacy\/legal-acceptance"/);
+  const post = src.slice(src.indexOf("export async function POST("));
+  assert.match(post, /MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true"/);
+  assert.match(post, /hasCurrentLegalAcceptance\(user\.id\)/);
+  assert.match(post, /code: "LEGAL_ACCEPTANCE_REQUIRED"/);
+  assert.match(post, /status: 403/);
+  assert.ok(post.indexOf("hasCurrentLegalAcceptance(user.id)") < post.indexOf('.from("mika_teacher_sessions")'), "legal gate must precede session insert");
+});
