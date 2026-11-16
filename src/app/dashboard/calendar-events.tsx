@@ -647,7 +647,7 @@ export default function CalendarEvents() {
           </button>)}
         </div>
         {selectedDay && <div className="mt-4 rounded-xl border border-violet-400/20 bg-violet-500/5 p-3">
-          <p className="text-sm font-semibold text-violet-100">Horários potencialmente livres · 1 hora</p>
+          <p className="text-sm font-semibold text-violet-100">Horários potencialmente livres · {selectedDay.split("-").reverse().join("/")} · 1 hora</p>
           <p className="mt-1 text-xs text-slate-400">Sugestões locais com base nos compromissos carregados. Não garantem disponibilidade e ainda não utilizam IA.</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {suggestFreeHours(selectedDay).length ? suggestFreeHours(selectedDay).map((hour) => <button key={hour} type="button" onClick={() => startEventAtHour(selectedDay, hour)} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-100 hover:bg-violet-500/25">{String(hour).padStart(2, "0")}:00</button>) : <span className="text-xs text-slate-400">Nenhum horário sugerido neste período.</span>}
