@@ -222,7 +222,7 @@ test("MIKA assessment persistence failure returns HTTP 503 instead of false succ
 
 test("saving a Journey draft uses compare-and-set and rejects stale sessions", () => {
   const src = read("src/app/api/journeys/learning/route.ts");
-  assert.match(src, /\.eq\("answer", previous\.answer\)\.select\("mission_id"\)/);
+  assert.match(src, /\.eq\("answer", previous\.answer\)\.eq\("updated_at", previous\.updated_at\)\.select\("mission_id"\)/);
   assert.match(src, /if \(!updated\?\.length\) return NextResponse\.json\(\{ error: "A resposta foi alterada em outra sessão/);
   assert.match(src, /if \(error\?\.code === "23505"\) return NextResponse\.json/);
   assert.match(src, /assessment_score: null, assessment_passed: null/);
