@@ -648,7 +648,7 @@ export default function CalendarEvents() {
           </button>)}
         </div>
         {selectedDay && <div className="mt-3 rounded-xl border border-white/10 bg-slate-950/60 p-3" aria-live="polite">
-          <p className="text-sm font-semibold text-white">Itens de {selectedDay.split("-").reverse().join("/")}</p>
+          <p className="text-sm font-semibold text-white">Itens de {selectedDay.split("-").reverse().join("/")} · {calendarDays.find((day) => day.key === selectedDay)?.items.length ?? 0} {(calendarDays.find((day) => day.key === selectedDay)?.items.length ?? 0) === 1 ? "item" : "itens"}</p>
           {calendarDays.find((day) => day.key === selectedDay)?.items.length ? (
             <ul className="mt-2 space-y-1.5">
               {calendarDays.find((day) => day.key === selectedDay)?.items.slice(0, showAllSelectedDayItems ? undefined : 5).map((item) => (
@@ -658,7 +658,7 @@ export default function CalendarEvents() {
                 </li>
               ))}
               {(calendarDays.find((day) => day.key === selectedDay)?.items.length ?? 0) > 5 && (
-                <li><button type="button" onClick={() => setShowAllSelectedDayItems((current) => !current)} className="min-h-11 rounded-lg px-2 text-xs font-semibold text-violet-300 underline hover:text-violet-200">{showAllSelectedDayItems ? "Mostrar menos" : `Ver mais ${(calendarDays.find((day) => day.key === selectedDay)?.items.length ?? 0) - 5} itens`}</button></li>
+                <li><button type="button" aria-expanded={showAllSelectedDayItems} aria-label={showAllSelectedDayItems ? "Mostrar apenas os cinco primeiros itens do dia" : `Mostrar todos os ${calendarDays.find((day) => day.key === selectedDay)?.items.length ?? 0} itens do dia`} onClick={() => setShowAllSelectedDayItems((current) => !current)} className="min-h-11 rounded-lg px-2 text-xs font-semibold text-violet-300 underline hover:text-violet-200">{showAllSelectedDayItems ? "Mostrar menos" : `Ver mais ${(calendarDays.find((day) => day.key === selectedDay)?.items.length ?? 0) - 5} itens`}</button></li>
               )}
             </ul>
           ) : <p className="mt-2 text-xs text-slate-400">Nenhum evento ou tarefa neste dia.</p>}
