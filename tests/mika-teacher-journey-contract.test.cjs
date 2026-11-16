@@ -130,3 +130,14 @@ test("MIKA feedback enforces scoring consistency and only reports saved success"
   assert.match(src, /feedback, saved: false/);
   assert.match(src, /feedback, saved: true, score: assessment\.score, passed: assessment\.passed/);
 });
+
+
+test("mission completion uses privileged conditional write only after ownership and assessment gates", () => {
+  const src = read("src/app/api/journeys/[journeyId]/missions/[missionId]/route.ts");
+  assert.match(src, /\.eq\("owner_id", user\.id\)\.maybeSingle\(\)/);
+  assert.match(src, /learning\.assessment_passed !== true/);
+  assert.match(src, /learning\.assessment_score < minimumScore/);
+  assert.match(src, /createSupabaseAdmin\(\)\.from\("myryra_journey_missions"\)/);
+  assert.match(src, /\.eq\("id", missionId\)\.eq\("journey_id", journeyId\)\.eq\("status", existingMission\.status\)/);
+  assert.doesNotMatch(src, /await supabase\.from\("myryra_journey_missions"\)\s*\.update\(/);
+});
