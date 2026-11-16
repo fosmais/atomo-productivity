@@ -177,3 +177,17 @@ test("MYRA account deletion and owner RLS remain in force", () => {
   assert.match(original, /owner_id uuid not null references auth\.users\(id\) on delete cascade/i);
   assert.match(original, /auth\.uid\(\).*owner_id|owner_id.*auth\.uid\(\)/i);
 });
+
+
+test("MYRA balance API requires authentication and MFA and does not cache rewards", () => {
+  const api = read("src/app/api/journeys/myra/route.ts");
+  assert.match(api, /supabase\.auth\.getUser\(\)/);
+  assert.match(api, /status: 401/);
+  assert.match(api, /getAuthenticatorAssuranceLevel\(\)/);
+  assert.match(api, /nextLevel === "aal2"/);
+  assert.match(api, /status: 403/);
+  assert.match(api, /\.eq\("owner_id", user\.id\)/);
+  assert.match(api, /\.range\(offset, offset \+ 999\)/);
+  assert.match(api, /balance \+= entries\.reduce/);
+  assert.match(api, /"Cache-Control": "private, no-store"/);
+});
