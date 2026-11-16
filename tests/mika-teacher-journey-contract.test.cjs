@@ -204,3 +204,11 @@ test("database completion trigger validates saved MIKA assessment under row lock
   assert.match(sql, /new\.title ~\*/);
   assert.match(sql, /raise exception 'Missao educacional exige avaliacao aprovada e persistida\.'/);
 });
+
+test("database assessment conflict returns actionable HTTP 409 without caching", () => {
+  const src = read("src/app/api/journeys/[journeyId]/missions/[missionId]/route.ts");
+  assert.match(src, /updateError\?\.code === "23514" && status === "completed"/);
+  assert.match(src, /code: "MISSION_ASSESSMENT_REQUIRED"/);
+  assert.match(src, /status: 409, headers: \{ "Cache-Control": "private, no-store" \}/);
+  assert.match(src, /if \(updateError\) return NextResponse\.json\(\{ error: "Não foi possível atualizar a missão\." \}, \{ status: 500 \}\)/);
+});
