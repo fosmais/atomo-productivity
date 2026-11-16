@@ -662,7 +662,7 @@ export default function CalendarEvents() {
                 <li key={item.key} className="flex min-w-0 items-start gap-2 rounded-lg bg-white/5 px-2.5 py-2 text-xs text-slate-200">
                   <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: item.color }} />
                   <span className="min-w-0 flex-1 break-words">{item.at !== "Dia inteiro" ? `${item.at} · ` : ""}{item.title}</span>
-                  {"eventId" in item && typeof item.eventId === "string" && <button type="button" onClick={() => { setShowAllLocal(true); setFavoritesOnly(false); setPendingEventScrollId(item.eventId); }} className="min-h-11 shrink-0 rounded-lg border border-violet-400/30 px-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/15" aria-label={`Abrir detalhes do compromisso ${item.title}`}>Detalhes</button>}
+                  {"eventId" in item && typeof item.eventId === "string" && <button type="button" onClick={() => { setShowAllLocal(true); setFavoritesOnly(false); setPendingEventScrollId(String(item.eventId)); }} className="min-h-11 shrink-0 rounded-lg border border-violet-400/30 px-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/15" aria-label={`Abrir detalhes do compromisso ${item.title}`}>Detalhes</button>}
                 </li>
               ))}
               {(calendarDays.find((day) => day.key === selectedDay)?.items.length ?? 0) > 5 && (
