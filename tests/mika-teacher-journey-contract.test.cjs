@@ -153,3 +153,27 @@ test("MIKA lesson creation requires legal acceptance when gate is enabled", () =
   assert.match(post, /status: 403/);
   assert.ok(post.indexOf("hasCurrentLegalAcceptance(user.id)") < post.indexOf('.from("mika_teacher_sessions")'), "legal gate must precede session insert");
 });
+
+
+test("MYRA ledger retains immutable source after mission or journey deletion", () => {
+  const sql = read("supabase/migrations/20261115000200_preserve_myra_history.sql");
+  assert.match(sql, /source_mission_id uuid/);
+  assert.match(sql, /source_mission_id set not null/);
+  assert.match(sql, /unique \(source_mission_id\)/);
+  assert.match(sql, /foreign key \(mission_id\)[\s\S]*?on delete set null/);
+  assert.match(sql, /foreign key \(journey_id\)[\s\S]*?on delete set null/);
+  assert.match(sql, /on conflict \(source_mission_id\) do nothing/);
+  const api = read("src/app/api/journeys/myra/route.ts");
+  assert.match(api, /source_mission_id: string/);
+  assert.match(api, /mission_id: string \| null/);
+  assert.match(api, /journey_id: string \| null/);
+  assert.match(api, /\.select\("amount,created_at,source_mission_id,mission_id,journey_id"\)/);
+});
+
+test("MYRA account deletion and owner RLS remain in force", () => {
+  const migration = read("supabase/migrations/20261115000200_preserve_myra_history.sql");
+  assert.doesNotMatch(migration, /drop constraint myryra_journey_myra_ledger_owner_id_fkey/);
+  const original = read("supabase/migrations/20261114000200_restore_myra_ledger.sql");
+  assert.match(original, /owner_id uuid not null references auth\.users\(id\) on delete cascade/i);
+  assert.match(original, /auth\.uid\(\).*owner_id|owner_id.*auth\.uid\(\)/i);
+});
