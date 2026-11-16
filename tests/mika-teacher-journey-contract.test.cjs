@@ -112,3 +112,21 @@ test("client cannot directly mutate assessment evidence or mission completion", 
   assert.match(guard, /new\.status = 'completed'/);
   assert.match(guard, /current_user in \('authenticated', 'anon'\)/);
 });
+
+
+test("MIKA feedback rejects changed drafts and conflicting concurrent assessments", () => {
+  const src = read("src/app/api/journeys/feedback/route.ts");
+  assert.match(src, /priorProgress\?\.answer\?\.trim\(\) !== answer\.trim\(\)/);
+  assert.match(src, /currentProgress\?\.answer !== priorProgress\?\.answer/);
+  assert.match(src, /\.eq\("answer", priorProgress!\.answer\)/);
+  assert.match(src, /\.eq\("assessment_attempts", priorProgress\?\.assessment_attempts \?\? 0\)/);
+  assert.match(src, /if \(!savedRows\?\.length\)/);
+});
+
+test("MIKA feedback enforces scoring consistency and only reports saved success", () => {
+  const src = read("src/app/api/journeys/feedback/route.ts");
+  assert.match(src, /assessment\.score < 0 \|\| assessment\.score > 100/);
+  assert.match(src, /assessment\.passed !== \(assessment\.score >= 70\)/);
+  assert.match(src, /feedback, saved: false/);
+  assert.match(src, /feedback, saved: true, score: assessment\.score, passed: assessment\.passed/);
+});
