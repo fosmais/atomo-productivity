@@ -101,6 +101,8 @@ export async function PATCH(request: Request, context: Context) {
     .update({ status, completed_at: status === "completed" ? new Date().toISOString() : null })
     .eq("id", missionId).eq("journey_id", journeyId).eq("status", existingMission.status)
     .select("id,title,status,completed_at").maybeSingle();
+  if (updateError?.code === "23514" && status === "completed")
+    return NextResponse.json({ error: "A avaliação salva da MIKA não atende aos requisitos atuais da missão. Atualize a jornada e tente novamente.", code: "MISSION_ASSESSMENT_REQUIRED" }, { status: 409, headers: { "Cache-Control": "private, no-store" } });
   if (updateError) return NextResponse.json({ error: "Não foi possível atualizar a missão." }, { status: 500 });
   if (!mission) return NextResponse.json({ error: "A missão foi alterada por outra operação. Atualize a jornada e tente novamente." }, { status: 409 });
   const { data: confirmedCredit, error: rewardError } = status === "completed" && !existingCredit
