@@ -560,7 +560,7 @@ export default function CalendarEvents() {
     const date = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() + i);
     const key = date.toLocaleDateString("en-CA");
     const items = [
-      ...events.filter((e) => dateKey(e.startsAt) === key && (categoryFilter === "all" || e.category === categoryFilter)).map((e) => ({ key: `local-${e.id}`, title: e.title, at: timeLabel(e.startsAt), color: EVENT_CATEGORIES[e.category].color })),
+      ...events.filter((e) => dateKey(e.startsAt) === key && (categoryFilter === "all" || e.category === categoryFilter)).map((e) => ({ key: `local-${e.id}`, eventId: e.id, title: e.title, at: timeLabel(e.startsAt), color: EVENT_CATEGORIES[e.category].color })),
       ...googleEvents.filter((e) => dateKey(e.start) === key).map((e, j) => ({ key: `google-${e.id ?? j}`, title: e.title, at: timeLabel(e.start), color: "#64748B" })),
       ...tasks.filter((t) => dateKey(t.due_date) === key).map((t) => ({ key: `task-${t.id}`, title: `${t.completed ? "✓ " : "□ "}${t.title}`, at: "Tarefa", color: "#64748B" })),
     ].sort((a, b) => a.at.localeCompare(b.at));
@@ -654,7 +654,8 @@ export default function CalendarEvents() {
               {calendarDays.find((day) => day.key === selectedDay)?.items.slice(0, showAllSelectedDayItems ? undefined : 5).map((item) => (
                 <li key={item.key} className="flex min-w-0 items-start gap-2 rounded-lg bg-white/5 px-2.5 py-2 text-xs text-slate-200">
                   <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="min-w-0 break-words">{item.at !== "Dia inteiro" ? `${item.at} · ` : ""}{item.title}</span>
+                  <span className="min-w-0 flex-1 break-words">{item.at !== "Dia inteiro" ? `${item.at} · ` : ""}{item.title}</span>
+                  {"eventId" in item && <button type="button" onClick={() => { setShowAllLocal(true); setFavoritesOnly(false); window.requestAnimationFrame(() => document.getElementById(`myryra-event-${item.eventId}`)?.scrollIntoView({ behavior: "smooth", block: "center" })); }} className="min-h-11 shrink-0 rounded-lg border border-violet-400/30 px-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/15" aria-label={`Abrir detalhes do compromisso ${item.title}`}>Detalhes</button>}
                 </li>
               ))}
               {(calendarDays.find((day) => day.key === selectedDay)?.items.length ?? 0) > 5 && (
@@ -935,7 +936,7 @@ export default function CalendarEvents() {
           </p>
         ) : (
           visibleLocal.map((event, index) => (
-            <div key={event.id} className="space-y-2">
+            <div key={event.id} id={`myryra-event-${event.id}`} className="scroll-mt-24 space-y-2">
               {(index === 0 || dateKey(visibleLocal[index - 1].startsAt) !== dateKey(event.startsAt)) && <h4 className="pt-2 text-xs font-semibold uppercase tracking-wider text-violet-300">{dateHeading(event.startsAt)}</h4>}
             <div
               className="relative ml-0 min-w-0 rounded-lg border border-slate-700 border-l-4 bg-slate-950/50 p-3 sm:ml-2" style={{ borderLeftColor: EVENT_CATEGORIES[event.category].color }}
