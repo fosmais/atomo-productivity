@@ -22,7 +22,7 @@ test("Editing an answer invalidates old feedback before reevaluation", () => {
   const route = read("src/app/api/journeys/learning/route.ts");
   assert.match(route, /const changed = previous\.answer !== answer/);
   assert.match(route, /feedback: null, assessment_score: null, assessment_passed: null/);
-  assert.match(route, /\.eq\("answer", previous\.answer\)\.select\("mission_id"\)/);
+  assert.match(route, /\.eq\("answer", previous\.answer\)\.eq\("updated_at", previous\.updated_at\)\.select\("mission_id"\)/);
 });
 
 test("Adaptive MIKA feedback reads only the learner's own previous attempt", () => {
