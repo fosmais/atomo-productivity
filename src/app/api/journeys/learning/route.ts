@@ -57,7 +57,7 @@ export async function PUT(request: Request) {
   if (missionError) return NextResponse.json({ error: "Erro ao consultar a missão." }, { status: 500 });
   if (!mission) return NextResponse.json({ error: "Missão não encontrada." }, { status: 404 });
   const { data: previous, error: readError } = await supabase.from("myryra_journey_learning_progress")
-    .select("answer,feedback,assessment_score,assessment_passed,assessed_at").eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
+    .select("answer,feedback,assessment_score,assessment_passed,assessed_at,updated_at").eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
   if (readError) return NextResponse.json({ error: "Não foi possível consultar a resposta anterior." }, { status: 503 });
   // Compare-and-set prevents a stale tab from overwriting a newer draft or its grade.
   // Ownership was verified above; only the server performs privileged writes.
@@ -70,7 +70,7 @@ export async function PUT(request: Request) {
       : { updated_at: new Date().toISOString() };
     const { data: updated, error } = await admin.from("myryra_journey_learning_progress")
       .update(patch).eq("mission_id", missionId).eq("owner_id", user.id)
-      .eq("answer", previous.answer).select("mission_id");
+      .eq("answer", previous.answer).eq("updated_at", previous.updated_at).select("mission_id");
     if (error) return NextResponse.json({ error: "Não foi possível salvar o exercício." }, { status: 503 });
     if (!updated?.length) return NextResponse.json({ error: "A resposta foi alterada em outra sessão. Atualize a jornada antes de salvar." }, { status: 409 });
   } else {
