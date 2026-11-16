@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   }
   // Use prior feedback only for the same owned mission; never leak another learner's history.
   const { data: priorProgress, error: progressError } = await supabase.from("myryra_journey_learning_progress")
-    .select("answer,feedback,assessment_attempts").eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
+    .select("answer,feedback,assessment_attempts,updated_at").eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
   if (progressError) return NextResponse.json({ error: "Histórico de aprendizagem indisponível." }, { status: 503 });
   // Never assess an unsaved or different answer. The saved draft is the
   // canonical learner submission used for progress and completion checks.
@@ -91,6 +91,7 @@ export async function POST(request: Request) {
         assessed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
       .eq("mission_id", missionId).eq("owner_id", user.id)
       .eq("answer", priorProgress!.answer)
+      .eq("updated_at", priorProgress!.updated_at)
       .eq("assessment_attempts", priorProgress?.assessment_attempts ?? 0)
       .select("mission_id");
     if (saveError) {
