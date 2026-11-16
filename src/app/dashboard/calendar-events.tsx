@@ -767,7 +767,7 @@ export default function CalendarEvents() {
       </div>}
       {error && <p role="alert" className="mt-3 text-sm text-red-300">{error}</p>}
       <label className="mt-4 flex items-center gap-2 text-sm text-slate-200"><input type="checkbox" checked={syncToGoogle} onChange={(event) => setSyncToGoogle(event.target.checked)} className="accent-violet-500" />Adicionar também ao Google Calendar (requer autorização de escrita)</label>
-      <div className="sticky bottom-0 z-10 mt-4 flex flex-wrap items-center gap-2 border-t border-white/10 bg-slate-950/95 py-3 backdrop-blur-sm sm:gap-3">
+      <div className="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-10 mt-4 flex flex-wrap items-center gap-2 border-t border-white/10 bg-slate-950/95 py-3 backdrop-blur-sm sm:gap-3 lg:bottom-0">
       <button type="button" onClick={() => setShowForm(false)} disabled={saving}
         className="min-h-11 flex-1 rounded-xl border border-slate-600 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800 disabled:opacity-50 sm:flex-none sm:px-4 sm:py-3">Cancelar</button>
       <button
