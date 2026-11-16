@@ -191,3 +191,16 @@ test("MYRA balance API requires authentication and MFA and does not cache reward
   assert.match(api, /balance \+= entries\.reduce/);
   assert.match(api, /"Cache-Control": "private, no-store"/);
 });
+
+
+test("database completion trigger validates saved MIKA assessment under row lock", () => {
+  const sql = read("supabase/migrations/20261116000100_guard_assessed_mission_completion.sql");
+  assert.match(sql, /before insert or update of status on public\.myryra_journey_missions/);
+  assert.match(sql, /from public\.myryra_journey_learning_progress[\s\S]*?for update/);
+  assert.match(sql, /assessment_passed is distinct from true/);
+  assert.match(sql, /assessment_score < required_score/);
+  assert.match(sql, /mika_teacher_sessions/);
+  assert.match(sql, /myryra_journey_mission_assessment_policy/);
+  assert.match(sql, /new\.title ~\*/);
+  assert.match(sql, /raise exception 'Missao educacional exige avaliacao aprovada e persistida\.'/);
+});
