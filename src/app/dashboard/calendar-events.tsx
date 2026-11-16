@@ -646,6 +646,22 @@ export default function CalendarEvents() {
             {items.length > (calendarView === "month" ? 2 : 3) && <span className="mt-1 block text-xs text-slate-400">+{items.length - (calendarView === "month" ? 2 : 3)} itens</span>}
           </button>)}
         </div>
+        {selectedDay && <div className="mt-3 rounded-xl border border-white/10 bg-slate-950/60 p-3" aria-live="polite">
+          <p className="text-sm font-semibold text-white">Itens de {selectedDay.split("-").reverse().join("/")}</p>
+          {calendarDays.find((day) => day.key === selectedDay)?.items.length ? (
+            <ul className="mt-2 space-y-1.5">
+              {calendarDays.find((day) => day.key === selectedDay)?.items.slice(0, 5).map((item) => (
+                <li key={item.key} className="flex min-w-0 items-start gap-2 rounded-lg bg-white/5 px-2.5 py-2 text-xs text-slate-200">
+                  <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: item.color }} />
+                  <span className="min-w-0 break-words">{item.at !== "Dia inteiro" ? `${item.at} · ` : ""}{item.title}</span>
+                </li>
+              ))}
+              {(calendarDays.find((day) => day.key === selectedDay)?.items.length ?? 0) > 5 && (
+                <li className="text-xs text-slate-400">+{(calendarDays.find((day) => day.key === selectedDay)?.items.length ?? 0) - 5} itens adicionais na listagem abaixo</li>
+              )}
+            </ul>
+          ) : <p className="mt-2 text-xs text-slate-400">Nenhum evento ou tarefa neste dia.</p>}
+        </div>}
         {selectedDay && <div className="mt-4 rounded-xl border border-violet-400/20 bg-violet-500/5 p-3">
           <p className="text-sm font-semibold text-violet-100">Horários potencialmente livres · {selectedDay.split("-").reverse().join("/")} · 1 hora</p>
           <p className="mt-1 text-xs text-slate-400">Sugestões locais com base nos compromissos carregados. Não garantem disponibilidade e ainda não utilizam IA.</p>
