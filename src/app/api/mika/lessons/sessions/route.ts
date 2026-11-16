@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { hasCurrentLegalAcceptance } from "@/lib/privacy/legal-acceptance";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -38,6 +39,13 @@ export async function POST(request: Request) {
   const auth = await authenticatedClient();
   if (auth.error) return auth.error;
   const { supabase, user } = auth;
+  if (process.env.MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true" &&
+      !(await hasCurrentLegalAcceptance(user.id))) {
+    return NextResponse.json(
+      { error: "Aceite dos documentos legais vigentes necessário.", code: "LEGAL_ACCEPTANCE_REQUIRED" },
+      { status: 403, headers: { "Cache-Control": "private, no-store" } },
+    );
+  }
   if (!(request.headers.get("content-type") ?? "").toLowerCase().startsWith("application/json"))
     return NextResponse.json({ error: "Envie JSON." }, { status: 415 });
   let body: Record<string, unknown>;
