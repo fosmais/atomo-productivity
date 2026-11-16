@@ -97,7 +97,7 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
 
   return (
     <div className="min-w-0 space-y-5">
-      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2" role="tablist" aria-label="Áreas de tarefas e planejamento">
+      <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3" role="tablist" aria-label="Áreas de tarefas e planejamento">
         {sections.map((section, index) => (
           <button
             key={section.id}
@@ -109,15 +109,15 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
             onKeyDown={event => onTabKeyDown(event, index)}
             aria-controls={`planning-panel-${section.id}`}
             onClick={() => selectSection(section.id)}
-            className={`flex min-h-[116px] min-w-0 flex-col justify-center rounded-2xl border p-5 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 ${
+            className={`flex min-h-[88px] min-w-0 flex-col justify-center rounded-2xl border p-3 text-left transition sm:min-h-[116px] sm:p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 ${
               active === section.id
                 ? "border-violet-400/70 bg-violet-600/15 shadow-lg shadow-violet-950/20"
                 : "border-white/15 bg-slate-900/75 hover:border-violet-400/50 hover:bg-slate-800/80"
             }`}
           >
-            <span aria-hidden="true" className="mb-3 block text-2xl text-violet-300">{section.icon}</span>
-            <span className="block text-base font-semibold text-white">{section.title}</span>
-            <span className="mt-1 block text-xs text-slate-300">{section.description}</span>
+            <span aria-hidden="true" className="mb-2 block text-xl text-violet-300 sm:mb-3 sm:text-2xl">{section.icon}</span>
+            <span className="block text-sm font-semibold leading-snug text-white sm:text-base">{section.title}</span>
+            <span className="mt-1 hidden text-xs text-slate-300 sm:block">{section.description}</span>
           </button>
         ))}
       </div>
