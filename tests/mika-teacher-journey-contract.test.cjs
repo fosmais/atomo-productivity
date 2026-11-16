@@ -127,7 +127,7 @@ test("MIKA feedback enforces scoring consistency and only reports saved success"
   const src = read("src/app/api/journeys/feedback/route.ts");
   assert.match(src, /assessment\.score < 0 \|\| assessment\.score > 100/);
   assert.match(src, /assessment\.passed !== \(assessment\.score >= 70\)/);
-  assert.match(src, /feedback, saved: false/);
+  assert.match(src, /saved: false/);
   assert.match(src, /feedback, saved: true, score: assessment\.score, passed: assessment\.passed/);
 });
 
@@ -211,4 +211,11 @@ test("database assessment conflict returns actionable HTTP 409 without caching",
   assert.match(src, /code: "MISSION_ASSESSMENT_REQUIRED"/);
   assert.match(src, /status: 409, headers: \{ "Cache-Control": "private, no-store" \}/);
   assert.match(src, /if \(updateError\) return NextResponse\.json\(\{ error: "Não foi possível atualizar a missão\." \}, \{ status: 500 \}\)/);
+});
+
+test("MIKA assessment persistence failure returns HTTP 503 instead of false success", () => {
+  const src = read("src/app/api/journeys/feedback/route.ts");
+  assert.match(src, /if \(saveError\) \{/);
+  assert.match(src, /saved: false \}, \{ status: 503, headers: \{ "Cache-Control": "private, no-store" \} \}/);
+  assert.doesNotMatch(src, /return NextResponse\.json\(\{ feedback, saved: false \}/);
 });
