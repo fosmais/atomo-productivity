@@ -95,7 +95,7 @@ export async function POST(request: Request) {
       .select("mission_id");
     if (saveError) {
       console.error("MIKA Journey feedback persistence failed", saveError.code);
-      return NextResponse.json({ feedback, saved: false }, { headers: { "Cache-Control": "private, no-store" } });
+      return NextResponse.json({ error: "A avaliação foi gerada, mas não pôde ser salva. Tente novamente antes de concluir a missão.", saved: false }, { status: 503, headers: { "Cache-Control": "private, no-store" } });
     }
     if (!savedRows?.length) return NextResponse.json({ error: "A resposta ou avaliação mudou durante o processamento. Solicite uma nova avaliação." }, { status: 409 });
     return NextResponse.json({ feedback, saved: true, score: assessment.score, passed: assessment.passed }, { headers: { "Cache-Control": "private, no-store" } });
