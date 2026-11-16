@@ -228,3 +228,10 @@ test("saving a Journey draft uses compare-and-set and rejects stale sessions", (
   assert.match(src, /assessment_score: null, assessment_passed: null/);
   assert.doesNotMatch(src, /\.upsert\(\{/);
 });
+
+test("MIKA grading cannot save against a superseded draft revision", () => {
+  const src = read("src/app/api/journeys/feedback/route.ts");
+  assert.match(src, /\.select\("answer,feedback,assessment_attempts,updated_at"\)/);
+  assert.match(src, /\.eq\("answer", priorProgress!\.answer\)\s*\.eq\("updated_at", priorProgress!\.updated_at\)/);
+  assert.match(src, /\.eq\("assessment_attempts", priorProgress\?\.assessment_attempts \?\? 0\)/);
+});
