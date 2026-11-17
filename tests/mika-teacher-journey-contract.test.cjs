@@ -300,3 +300,11 @@ test("MIKA canonical lesson prompts are shared between Journey UI and grading AP
   assert.match(grading, /exercise\.trim\(\) !== canonicalLesson\.exercise/);
   assert.match(grading, /Exercício divergente da aula oficial/);
 });
+
+test("MIKA rechecks the latest assigned exercise after AI grading", () => {
+  const grading = read("src/app/api/journeys/feedback/route.ts");
+  assert.match(grading, /const \{ data: latestAssignment, error: latestAssignmentError \}/);
+  assert.match(grading, /if \(\(latestAssignment\?\.id \?\? null\) !== assessedExerciseId\)/);
+  assert.match(grading, /O exercício mudou durante a avaliação/);
+  assert.ok(grading.indexOf("const { data: latestAssignment") < grading.indexOf(".update({ feedback, assessed_exercise_id: assessedExerciseId"));
+});
