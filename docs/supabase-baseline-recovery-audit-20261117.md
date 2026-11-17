@@ -396,3 +396,12 @@ This validates DDL syntax and a uniqueness invariant only after CI runs. It does
 Commit `e102b2f` passed all six workflows: core secondary-index smoke [44127116620](https://github.com/fosmais/atomo-productivity/actions/runs/44127116620), Journey SQL smoke 44127116658, calendar overlap guard smoke 44127116884, migration registry audit 44127116594, MYRYRA regression 44127116858, and MVP1 quality/security 44127116990. The secondary-index job's **Replay secondary indexes and assert uniqueness** step passed on PostgreSQL 16.
 
 This confirms the candidate DDL executes against minimal disposable fixtures and the duplicate-favorite uniqueness assertion works. It is not a complete schema replay or preview validation; no Supabase database was changed.
+
+
+## Core constraints and RLS checks passed; index parity verified (2026-11-17)
+
+All eight workflows passed at commit `b0d938c`, including [core RLS smoke run 44152551658](https://github.com/fosmais/atomo-productivity/actions/runs/44152551658), core constraints smoke run 44152551761, and MVP1 quality/security run 44152551770. The RLS candidate recreates 24 policies across six core tables, with the seventh (`google_calendar_connections`) deliberately RLS-enabled and without client policies. This test is isolated PostgreSQL, not a Supabase migration replay.
+
+Read-only inspection of PROD `pg_indexes` confirmed the **names, uniqueness, key order, partial predicates and DESC ordering of all 11 candidate secondary indexes** match the corresponding PROD index definitions. Note `myka_conversations_id_user_unique` is also backed by a unique constraint in PROD; the foundational baseline must not create a duplicate independent index alongside the unique constraint.
+
+**Open gates:** construct full foundational seven-table DDL including column types/defaults, replay complete migration dependency chain against a disposable database, validate policies with negative INSERT/UPDATE cases, and only then consider Supabase preview recovery. Do not apply these candidate scripts to existing PROD/preview schemas.
