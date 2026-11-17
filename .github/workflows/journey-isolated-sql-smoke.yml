@@ -1,0 +1,69 @@
+name: Journey isolated SQL smoke test
+on:
+  pull_request:
+    paths:
+      - 'docs/sql/myryra-journey-isolated-baseline-candidate.sql'
+      - 'supabase/migrations/20261112235900_mika_teacher_sessions.sql'
+      - '.github/workflows/journey-isolated-sql-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d testdb"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: testdb
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create minimal Supabase auth stubs in disposable Postgres
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          create schema auth;
+          create table auth.users (id uuid primary key);
+          create role authenticated nologin;
+          create role anon nologin;
+          create role service_role nologin;
+          create function auth.uid() returns uuid language sql stable as 'select null::uuid';
+          SQL
+      - name: Apply Journey baseline then MIKA Teacher migration
+        run: |
+          psql -v ON_ERROR_STOP=1 -f docs/sql/myryra-journey-isolated-baseline-candidate.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261112235900_mika_teacher_sessions.sql
+      - name: Assert required tables, RLS, policies and FK
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          do $test$
+          declare n int;
+          begin
+            select count(*) into n from pg_class c join pg_namespace s on s.oid=c.relnamespace
+            where s.nspname='public' and c.relname in
+              ('myryra_journeys','mika_teacher_sessions','mika_teacher_messages')
+              and c.relkind='r' and c.relrowsecurity;
+            if n <> 3 then raise exception 'Missing table or RLS: % of 3',n; end if;
+            select count(*) into n from pg_policies where schemaname='public'
+              and tablename='myryra_journeys';
+            if n <> 4 then raise exception 'Journey policy count mismatch: %',n; end if;
+            select count(*) into n from pg_constraint where conrelid='public.mika_teacher_sessions'::regclass
+              and contype='f' and confrelid='public.myryra_journeys'::regclass;
+            if n <> 1 then raise exception 'Teacher/Journey FK missing'; end if;
+          end $test$;
+          SQL
