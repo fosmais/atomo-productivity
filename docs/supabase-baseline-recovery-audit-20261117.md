@@ -150,3 +150,19 @@ where n.nspname='public' and c.relkind='r';
 ```
 
 Next gate: identify first failing migration from branch logs, then export and compare complete DDL including security privileges before constructing an executable baseline.
+
+
+## Migration-history fork confirmed (2026-11-17)
+
+Read-only inspection of `supabase_migrations.schema_migrations` in three projects confirms:
+
+- All three start with version `20261030174834` (`autopilot_transactional_reservation`).
+- Production's **second** registered migration is `20261030195840` (`autopilot_unique_task_reservation_guard`).
+- Event preview's **second** registered migration is `20261101170550` (`myryra_homolog_event_schema_baseline`), followed by event-specific test harnesses.
+- Finance preview's **second** registered migration is `20261108015537` (`finance_isolated_rls_harness`), followed by Finance-specific test harnesses.
+
+Thus both existing previews have **divergent migration histories**, not merely fewer tables. A direct merge/rebase/reset is not an approved recovery action: investigate migration reconciliation and data-loss risk first.
+
+A recent `postgres_logs` query in the Event preview returned no matching ERROR/migration messages in the available default log window. This does **not** establish the original failure statement.
+
+**Next gate:** recover historical branch creation/build error from a reliable source, and compare complete Git migration files to production migration history before drafting an executable initial baseline.
