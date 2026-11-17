@@ -287,3 +287,16 @@ test("mission completion rejects stale server-assigned exercise grades", () => {
   assert.match(sql, /evidence\.assessed_exercise_id is distinct from current_exercise/);
   assert.match(sql, /errcode = '23514'/);
 });
+
+test("MIKA canonical lesson prompts are shared between Journey UI and grading API", () => {
+  const topics = read("src/lib/journey/lesson-topics.ts");
+  const ui = read("src/app/journey/journey-trail.tsx");
+  const grading = read("src/app/api/journeys/feedback/route.ts");
+  assert.match(topics, /export const lessonTopics = \[/);
+  assert.match(topics, /export function lessonFor\(title: string\)/);
+  assert.match(ui, /import \{ lessonFor \} from "@\/lib\/journey\/lesson-topics"/);
+  assert.match(grading, /import \{ lessonFor \} from "@\/lib\/journey\/lesson-topics"/);
+  assert.match(grading, /const canonicalLesson = lessonFor\(mission\.title\)/);
+  assert.match(grading, /exercise\.trim\(\) !== canonicalLesson\.exercise/);
+  assert.match(grading, /Exercício divergente da aula oficial/);
+});
