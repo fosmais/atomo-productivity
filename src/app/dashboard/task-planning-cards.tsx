@@ -20,7 +20,7 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
 }) {
   const [active, setActive] = useState<View>("tasks");
   const [filteredNavigation, setFilteredNavigation] = useState(0);
-  const { activeModule, quickAction } = useVyraNavigation();
+  const { activeModule, quickAction, focusedTaskId } = useVyraNavigation();
   useEffect(() => {
     if (activeModule !== "vyra-tasks" || !quickAction) return;
     let active = true;
@@ -40,6 +40,11 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
     }, 80);
     return () => { active = false; window.clearTimeout(timer); };
   }, [activeModule, quickAction]);
+  useEffect(() => {
+    if (activeModule !== "vyra-tasks" || !focusedTaskId) return;
+    // Ensure a task handoff is visible even if the user previously selected another tab.
+    queueMicrotask(() => setActive("tasks"));
+  }, [activeModule, focusedTaskId]);
   useEffect(() => {
     const openFilteredTasks = (event: Event) => {
       const filter = (event as CustomEvent<{ filter?: string }>).detail?.filter;
