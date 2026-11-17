@@ -379,3 +379,13 @@ Added a second concurrent-insert test to `.github/workflows/calendar-overlap-gua
 Commit `551cc4d` workflow run [44126510886](https://github.com/fosmais/atomo-productivity/actions/runs/44126510886) completed successfully. Job metadata confirms both **Run overlap guard behavior smoke** and **Verify concurrent overlapping inserts serialize per user** passed. The concurrency test used two independent psql sessions inserting the same blocking interval for one user; exactly one insert succeeded and exactly one row remained. Journey SQL smoke, migration registry audit and MYRYRA regression checks also passed on this commit. MVP1 Quality and Security workflow was still in progress when checked.
 
 This remains disposable PostgreSQL CI. It does not validate Supabase Preview parity, app/API behavior or complete baseline replay. No Supabase environment was modified.
+
+
+## Core secondary-index candidate and smoke added (2026-11-17)
+
+Added:
+- `docs/sql/myryra-core-secondary-indexes-candidate.sql` (`20f9b4b`): 11 non-primary-key indexes reconstructed from PROD definitions. PK indexes are intentionally omitted because they belong in foundational table constraints.
+- `docs/sql/myryra-core-secondary-indexes-smoke.sql` (`8c2a483`): creates disposable minimal table fixtures, applies candidate indexes, checks all 11 names exist and verifies duplicate event favorites are rejected.
+- `.github/workflows/core-secondary-indexes-smoke.yml` (`e102b2f`): PostgreSQL 16 CI smoke.
+
+This validates DDL syntax and a uniqueness invariant only after CI runs. It does not validate full production schema compatibility, all partial-index semantics, RLS, or the complete baseline. Candidate is not applied to Supabase projects.
