@@ -18,5 +18,10 @@ if [[ "$(jq -r '.truncated // false' <<<"$payload")" != false ]]; then
   echo "GitHub tree response truncated; inventory incomplete" >&2
   exit 4
 fi
-jq -r '.tree[] | select(.type=="blob" and (.path | startswith("supabase/migrations/")) and (.path | endswith(".sql"))) | .path | split("/") | last' <<<"$payload" | sort -u
+files="$(jq -r '.tree[] | select(.type=="blob" and (.path | startswith("supabase/migrations/")) and (.path | endswith(".sql"))) | .path | split("/") | last' <<<"$payload" | sort -u)"
+if [[ -z "$files" ]]; then
+  echo "No migration SQL files found in Git tree; cannot claim a complete comparison" >&2
+  exit 5
+fi
+printf '%s\\n' "$files"
 echo "Enumerated Git-tracked migration SQL filenames at commit $sha (read-only)" >&2
