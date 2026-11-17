@@ -198,3 +198,20 @@ Read-only `count(*)` against `supabase_migrations.schema_migrations` returned:
 | Finance preview | 29 | 20261116230713 |
 
 Earlier documentation mentioned 37 production migrations; that figure is **superseded** by this later observation. This does not establish when or why the count changed. Compare the registry with Git-tracked files before attempting repair. The GitHub migration inventory script has not yet been executed, so the file-to-registry comparison remains open.
+
+
+## Exact migration version-set reconciliation (2026-11-17)
+
+Executed read-only queries against all three `supabase_migrations.schema_migrations` registries, comparing **version strings** rather than migration names:
+
+| Comparison with production (45 registered versions) | Event preview | Finance preview |
+|---|---:|---:|
+| Shared versions | 1 | 1 |
+| Preview-only versions | 8 | 28 |
+| Production versions absent in preview | 44 | 44 |
+
+The sole shared version is `20261030174834` (`autopilot_transactional_reservation`).
+
+**Important distinction:** a missing migration-history record does not, by itself, prove the corresponding table/column is absent. Conversely, inserting migration-history rows cannot create missing schema objects. Structural parity and migration replay need separate verification.
+
+The version-set comparison was executed using the connected Supabase database tools. Git repository migration file inventory is still unverified, and no migration DDL or schema mutation was executed.
