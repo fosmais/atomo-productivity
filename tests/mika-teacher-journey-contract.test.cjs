@@ -244,3 +244,14 @@ test("MVP2 preview admin client fails closed against production Supabase", () =>
   assert.match(src, /throw new Error\("Preview MVP2 não pode usar Supabase fora da homologação\."\)/);
   assert.match(src, /if \(!supabaseUrl \|\| !secretKey\)/);
 });
+
+test("versioned exercises are server-issued and owner-readable only", () => {
+  const src = read("supabase/migrations/20261117000100_journey_assigned_exercises_foundation.sql");
+  assert.match(src, /unique \(mission_id, version\)/);
+  assert.match(src, /enable row level security/);
+  assert.match(src, /revoke all on public\.myryra_journey_assigned_exercises from public, anon, authenticated/);
+  assert.match(src, /grant select on public\.myryra_journey_assigned_exercises to authenticated/);
+  assert.match(src, /for select to authenticated/);
+  assert.match(src, /owner_id = \(select auth\.uid\(\)\)/);
+  assert.doesNotMatch(src, /grant (?:insert|update|delete|all) on public\.myryra_journey_assigned_exercises to authenticated/i);
+});
