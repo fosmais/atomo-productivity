@@ -11,8 +11,8 @@ commit;
 
 set role authenticated;
 select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',false);
-insert into public.myryra_journeys(owner_id,title) values
-('11111111-1111-4111-8111-111111111111','Journey user A');
+insert into public.myryra_journeys(id,owner_id,title) values
+('33333333-3333-4333-8333-333333333333','11111111-1111-4111-8111-111111111111','Journey user A');
 do $test$
 declare n int;
 begin
