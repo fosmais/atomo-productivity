@@ -1,5 +1,5 @@
-import { lessonFor } from "@/lib/journey/lesson-topics";
 "use client";
+import { lessonFor } from "@/lib/journey/lesson-topics";
 
 import { useEffect, useState } from "react";
 import JourneyAchievementCard from "./journey-achievement-card";
