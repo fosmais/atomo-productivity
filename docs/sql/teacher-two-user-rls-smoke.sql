@@ -33,15 +33,11 @@ end $test$;
 -- A forged session must fail even when the foreign Journey ID is known.
 -- Test a direct insert, rather than SELECTing an invisible row (which inserts nothing).
 do $test$
-declare foreign_journey uuid;
 begin
-  reset role;
-  select id into strict foreign_journey
-    from public.myryra_journeys where title='Journey user A';
-  set role authenticated;
   begin
     insert into public.mika_teacher_sessions(owner_id,journey_id,topic)
-    values ('22222222-2222-4222-8222-222222222222',foreign_journey,'forged journey');
+    values ('22222222-2222-4222-8222-222222222222',
+            '33333333-3333-4333-8333-333333333333','forged journey');
     raise exception 'Cross-owner session insert was allowed';
   exception when insufficient_privilege then null;
   end;
