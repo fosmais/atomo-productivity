@@ -650,9 +650,19 @@ export default function TaskKanban() {
           </div>
           <div className="grid min-w-0 gap-3 sm:gap-4 lg:grid-cols-2 2xl:grid-cols-4">
           {columns.map((column) => {
-            const columnTasks = tasks.filter(
-              (task) => task.status === column.status && (task.id === focusedTaskId || (dashboardFilter === "all" || (task.status !== "done" && ((dashboardFilter === "pending" ? (!task.due_date || task.due_date <= localDateKey(new Date())) : (!!task.due_date && task.due_date < localDateKey(new Date())))))) && (priorityFilter === "all" || task.priority === priorityFilter) && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))))
-            );
+            const columnTasks = tasks.filter((task) => {
+              if (task.status !== column.status) return false;
+              if (task.id === focusedTaskId) return true;
+              const matchesDashboard = dashboardFilter === "all" ||
+                (task.status !== "done" &&
+                  (dashboardFilter === "pending"
+                    ? (!task.due_date || task.due_date <= localDateKey(new Date()))
+                    : (!!task.due_date && task.due_date < localDateKey(new Date()))));
+              return matchesDashboard &&
+                (priorityFilter === "all" || task.priority === priorityFilter) &&
+                (!favoritesOnly || favoriteIds.includes(task.id)) &&
+                task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"));
+            });
             const priorityOrder: Record<string, number> = { Alta: 0, "Média": 1, Normal: 2, Baixa: 2 };
             columnTasks.sort((a, b) => {
               if (taskSort === "priority") {
