@@ -332,3 +332,14 @@ Added `docs/sql/myryra-core-constraints-rls-readonly.sql` (commit `526f714`). Re
 | Finance preview | 3 | 13 | 12 |
 
 All present tables in this subset have RLS enabled. In PROD, `google_calendar_connections` has RLS enabled and zero explicit policies; do **not** infer client access or copy token grants blindly. The PROD core includes composite `myka_messages(conversation_id,user_id)` → `myka_conversations(id,user_id)` FK, `tasks.plan_id` → `plans.id` FK, and favorites FKs to tasks/events. This catalog snapshot is not an executable reconstruction and does not prove semantic equivalence of preview policies. No DB mutation was performed.
+
+
+## Core indexes and event-overlap trigger inventory (2026-11-17)
+
+Added `docs/sql/myryra-core-indexes-triggers-readonly.sql` (commit `4066ab3`). Read-only PROD catalog inspection found 17 indexes across the seven foundational tables, including:
+- Events: per-user start/category/deleted indexes and a partial unique index preventing duplicate AutoPilot-generated events by `(user_id, notes)`.
+- Favorites: per-user chronological index and separate partial unique indexes for task/event targets.
+- MIKA conversations/messages: conversation update ordering and message chronological ordering indexes.
+- Tasks: per-user soft-delete index.
+
+The only trigger on these seven tables is `myryra_guard_blocking_event_overlap`, BEFORE INSERT/UPDATE on `events`. Its function serializes checks per user with an advisory transaction lock, rejects overlapping active blocking events, validates intervals, and deliberately preserves legacy overlaps when an update does not change owner or interval. This is business-critical behavior and must be preserved in any reconstructed baseline. No SQL was applied to any database.
