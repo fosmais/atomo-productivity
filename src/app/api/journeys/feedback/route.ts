@@ -51,21 +51,35 @@ export async function POST(request: Request) {
     if (sessionError) return NextResponse.json({ error: "Não foi possível verificar a aula vinculada." }, { status: 503 });
     if (!session) return NextResponse.json({ error: "Aula não vinculada a esta missão." }, { status: 404 });
   }
-  // Fail closed for versioned exercises. A client-supplied prompt is never
-  // authoritative when the server has assigned an exercise to this mission.
-  const { data: assigned, error: assignedError } = await supabase
+  // Resolve an authoritative server-issued exercise. Template missions receive
+  // their first immutable assignment here; arbitrary client exercises are
+  // never issued. Existing dynamic assignments must be issued by a trusted
+  // server workflow, not by this grading endpoint.
+  const readAssignment = () => supabase
     .from("myryra_journey_assigned_exercises")
     .select("id,version,exercise,session_id")
     .eq("mission_id", missionId).eq("owner_id", user.id)
     .order("version", { ascending: false }).limit(1).maybeSingle();
+  let { data: assigned, error: assignedError } = await readAssignment();
   if (assignedError) return NextResponse.json({ error: "Exercício oficial indisponível." }, { status: 503 });
-  if (assigned && (assigned.exercise !== exercise.trim() ||
-      (assigned.session_id && assigned.session_id !== (sessionId ?? null))))
+  if (!assigned && canonicalLesson) {
+    const { error: issueError } = await createSupabaseAdmin()
+      .from("myryra_journey_assigned_exercises")
+      .insert({ mission_id: missionId, owner_id: user.id, version: 1, exercise: canonicalLesson.exercise });
+    // Two concurrent first assessments may race on (mission_id, version).
+    // Only a unique-key conflict is recoverable by re-reading the winner.
+    if (issueError && issueError.code !== "23505")
+      return NextResponse.json({ error: "Não foi possível emitir o exercício oficial." }, { status: 503 });
+    ({ data: assigned, error: assignedError } = await readAssignment());
+    if (assignedError || !assigned)
+      return NextResponse.json({ error: "Não foi possível confirmar o exercício oficial." }, { status: 503 });
+  }
+  if (!assigned)
+    return NextResponse.json({ error: "Esta missão ainda não possui exercício oficial. Solicite uma aula da MIKA." }, { status: 409 });
+  if (assigned.exercise !== exercise.trim() ||
+      (assigned.session_id && assigned.session_id !== (sessionId ?? null)))
     return NextResponse.json({ error: "O exercício foi atualizado. Reabra a missão para responder à versão atual." }, { status: 409 });
-  // Only a server-issued exercise can carry version-bound assessment evidence.
-  // Legacy missions without an assigned exercise retain their previous flow
-  // until the issuing endpoint and completion gate are rolled out.
-  const assessedExerciseId = assigned?.id ?? null;
+  const assessedExerciseId = assigned.id;
   // Use prior feedback only for the same owned mission; never leak another learner's history.
   const { data: priorProgress, error: progressError } = await supabase.from("myryra_journey_learning_progress")
     .select("answer,feedback,assessment_attempts,updated_at").eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
