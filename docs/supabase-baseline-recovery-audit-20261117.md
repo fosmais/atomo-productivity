@@ -389,3 +389,10 @@ Added:
 - `.github/workflows/core-secondary-indexes-smoke.yml` (`e102b2f`): PostgreSQL 16 CI smoke.
 
 This validates DDL syntax and a uniqueness invariant only after CI runs. It does not validate full production schema compatibility, all partial-index semantics, RLS, or the complete baseline. Candidate is not applied to Supabase projects.
+
+
+## Core secondary-index smoke passed (2026-11-17)
+
+Commit `e102b2f` passed all six workflows: core secondary-index smoke [44127116620](https://github.com/fosmais/atomo-productivity/actions/runs/44127116620), Journey SQL smoke 44127116658, calendar overlap guard smoke 44127116884, migration registry audit 44127116594, MYRYRA regression 44127116858, and MVP1 quality/security 44127116990. The secondary-index job's **Replay secondary indexes and assert uniqueness** step passed on PostgreSQL 16.
+
+This confirms the candidate DDL executes against minimal disposable fixtures and the duplicate-favorite uniqueness assertion works. It is not a complete schema replay or preview validation; no Supabase database was changed.
