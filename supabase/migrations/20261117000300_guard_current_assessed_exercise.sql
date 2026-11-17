@@ -56,7 +56,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 revoke all on function public.myryra_guard_assessed_mission_completion() from public, anon, authenticated;
 drop trigger if exists myryra_assessed_mission_completion_guard on public.myryra_journey_missions;
 create trigger myryra_assessed_mission_completion_guard
