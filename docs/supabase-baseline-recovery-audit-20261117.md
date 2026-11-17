@@ -253,3 +253,16 @@ Read-only `to_regclass` checks against all three Supabase environments:
 Source migration `supabase/migrations/20261112235900_mika_teacher_sessions.sql` contains an explicit preflight that raises an exception when `public.myryra_journeys` is missing. Thus Events preview cannot replay this migration successfully until Journey's baseline exists.
 
 **Caution:** table existence is not proof of correct schema, grants, RLS, policy parity, migration replay, or feature readiness. Do not replay the Teacher migration in Events until Journey DDL, constraints and ownership policies have been restored and verified. No database changes were made during these checks.
+
+
+## Isolated Journey → MIKA Teacher SQL replay verified (2026-11-17)
+
+GitHub Actions [run 44119229116](https://github.com/fosmais/atomo-productivity/actions/runs/44119229116) completed **successfully** on commit `54baeda`.
+
+Individual successful steps confirmed via workflow job metadata:
+1. Initialize disposable PostgreSQL 16 service.
+2. Create minimal Supabase auth role/table/function stubs.
+3. Execute `docs/sql/myryra-journey-isolated-baseline-candidate.sql` followed by `supabase/migrations/20261112235900_mika_teacher_sessions.sql`.
+4. Assert all three tables exist with RLS enabled, four Journey policies, and Teacher→Journey foreign key.
+
+This verifies **isolated SQL replay with mocked auth**, not a real Supabase branch migration, auth.uid() isolation with multiple users, end-to-end product behavior, or complete schema parity. The candidate SQL remains under docs/sql and has not been applied to any Supabase environment.
