@@ -40,8 +40,6 @@ export async function POST(request: Request) {
   // never from a user-controlled prompt. Keep legacy non-template missions
   // separate until server issuance is mandatory for every learning mission.
   const canonicalLesson = lessonFor(mission.title);
-  if (canonicalLesson && exercise.trim() !== canonicalLesson.exercise)
-    return NextResponse.json({ error: "Exercício divergente da aula oficial. Atualize a jornada." }, { status: 409 });
   // A teacher-initiated assessment must be linked to the same owned mission.
   // Journey-only assessments without sessionId remain backward compatible.
   if (typeof sessionId === "string") {
@@ -62,6 +60,8 @@ export async function POST(request: Request) {
     .order("version", { ascending: false }).limit(1).maybeSingle();
   let { data: assigned, error: assignedError } = await readAssignment();
   if (assignedError) return NextResponse.json({ error: "Exercício oficial indisponível." }, { status: 503 });
+  if (!assigned && canonicalLesson && exercise.trim() !== canonicalLesson.exercise)
+    return NextResponse.json({ error: "Exercício divergente da aula oficial. Atualize a jornada." }, { status: 409 });
   if (!assigned && canonicalLesson) {
     const { error: issueError } = await createSupabaseAdmin()
       .from("myryra_journey_assigned_exercises")
