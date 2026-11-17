@@ -355,3 +355,13 @@ Read-only preview inventory:
 - Neither preview returned the `myryra_guard_blocking_event_overlap` trigger in its catalog inventory. PROD has the trigger on events for BEFORE INSERT and BEFORE UPDATE, using the function `public.myryra_guard_blocking_event_overlap()`.
 
 The gate is diagnostic only; index-name presence does not prove identical definitions. Trigger/function behavior must be compared by definition/checksum and tested for overlap, concurrent inserts and legacy updates before any replay. No database was changed.
+
+
+## Calendar overlap guard candidate and isolated smoke (2026-11-17)
+
+Created:
+- `docs/sql/myryra-calendar-overlap-guard-candidate.sql` (commit `781dd5d`): candidate recreation of the PROD BEFORE INSERT/UPDATE trigger and function, guarded by a preflight requiring the events table.
+- `docs/sql/myryra-calendar-overlap-guard-smoke.sql` (commit `b3198c0`): disposable-Postgres behavior tests for blocking overlap rejection, non-blocking overlap allowance, soft-deleted event allowance, unchanged legacy overlap update, and invalid interval rejection.
+- `.github/workflows/calendar-overlap-guard-smoke.yml` (commit `f68b2bb`): runs the smoke script on PostgreSQL 16.
+
+**Not yet validated:** workflow execution result; concurrent two-session insertion race; equivalence of function definition/checksum against PROD; complete core baseline. This candidate is not applied to any Supabase project.
