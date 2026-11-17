@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { hasCurrentLegalAcceptance } from "@/lib/privacy/legal-acceptance";
 
 type Context = { params: Promise<{ journeyId: string }> };
@@ -73,7 +74,9 @@ async function changeJourney(request: Request, context: Context, archive: boolea
       { status: 403, headers: { "Cache-Control": "private, no-store" } },
     );
   }
-  const { data, error } = await supabase.from("myryra_journeys").update(updates)
+  // Ownership, MFA, legal acceptance and allowed fields were validated above.
+  // Authenticated users have no direct UPDATE grant; keep writes server-side.
+  const { data, error } = await createSupabaseAdmin().from("myryra_journeys").update(updates)
     .eq("id", journeyId).eq("owner_id", user.id)
     .in("status", updates.status === "paused" ? ["active"] : updates.status === "active" ? ["paused"] : archive ? ["active", "paused", "completed"] : ["active", "paused", "completed"])
     .select("id,title,status,target_date").maybeSingle();
