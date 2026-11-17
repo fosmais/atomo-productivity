@@ -67,7 +67,7 @@ export async function PUT(request: Request) {
     // assessment already in flight rather than invalidating it needlessly.
     if (previous.answer === answer)
       return NextResponse.json({ saved: true }, { headers: { "Cache-Control": "private, no-store" } });
-    const patch = { answer, feedback: null, assessment_score: null, assessment_passed: null,
+    const patch = { answer, feedback: null, assessed_exercise_id: null, assessment_score: null, assessment_passed: null,
       assessed_at: null, updated_at: new Date().toISOString() };
     const { data: updated, error } = await admin.from("myryra_journey_learning_progress")
       .update(patch).eq("mission_id", missionId).eq("owner_id", user.id)
