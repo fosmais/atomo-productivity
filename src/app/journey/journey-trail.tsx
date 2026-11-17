@@ -1,7 +1,7 @@
 "use client";
 import { lessonFor } from "@/lib/journey/lesson-topics";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import JourneyAchievementCard from "./journey-achievement-card";
 import TaskConfirmation from "../dashboard/task-confirmation";
 import MikaReviewCalendar from "./mika-review-calendar";
@@ -28,24 +28,28 @@ export default function JourneyTrail() {
   const [openLesson, setOpenLesson] = useState<string | null>(null);
   const [officialExercises, setOfficialExercises] = useState<Record<string, string>>({});
   const [exerciseLoading, setExerciseLoading] = useState<string | null>(null);
+  const officialExerciseRequest = useRef(0);
   const [exerciseLoadError, setExerciseLoadError] = useState<Record<string, string>>({});
   async function openOfficialLesson(mission: Mission) {
     if (openLesson === mission.id) { setOpenLesson(null); return; }
     setOpenLesson(mission.id);
     if (!selected) return;
+    const requestId = ++officialExerciseRequest.current;
     setExerciseLoading(mission.id);
     setExerciseLoadError(old => ({ ...old, [mission.id]: "" }));
     setOfficialExercises(old => { const next = { ...old }; delete next[mission.id]; return next; });
     try {
       const response = await fetch(`/api/journeys/exercise?journeyId=${encodeURIComponent(selected)}&missionId=${encodeURIComponent(mission.id)}`, { cache: "no-store" });
       const data = await response.json();
+      if (requestId !== officialExerciseRequest.current) return;
       if (!response.ok) throw new Error(data.error || "Não foi possível consultar o exercício oficial.");
       const exercise = data.assignment?.exercise ?? lessonFor(mission.title)?.exercise;
       if (!exercise) throw new Error("Esta missão ainda não possui exercício oficial.");
       setOfficialExercises(old => ({ ...old, [mission.id]: exercise }));
     } catch (error) {
-      setExerciseLoadError(old => ({ ...old, [mission.id]: error instanceof Error ? error.message : "Exercício indisponível." }));
-    } finally { setExerciseLoading(null); }
+      if (requestId === officialExerciseRequest.current)
+        setExerciseLoadError(old => ({ ...old, [mission.id]: error instanceof Error ? error.message : "Exercício indisponível." }));
+    } finally { if (requestId === officialExerciseRequest.current) setExerciseLoading(null); }
   }
 
   const [exerciseAnswers, setExerciseAnswers] = useState<Record<string, string>>({});
@@ -63,6 +67,7 @@ export default function JourneyTrail() {
   const [exerciseMessage, setExerciseMessage] = useState<Record<string, string>>({});
   // Never reuse an exercise or open lesson from another selected journey.
   useEffect(() => {
+    ++officialExerciseRequest.current;
     setOpenLesson(null);
     setOfficialExercises({});
     setExerciseLoadError({});
