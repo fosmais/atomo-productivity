@@ -273,3 +273,10 @@ This verifies **isolated SQL replay with mocked auth**, not a real Supabase bran
 GitHub Actions [run 44119562357](https://github.com/fosmais/atomo-productivity/actions/runs/44119562357) completed successfully on commit `2c079287`. The dedicated step **Verify two-user Journey RLS isolation** passed after isolated Journey→MIKA Teacher replay and schema assertions. The test file `docs/sql/journey-two-user-rls-smoke.sql` checks own-row visibility, cross-user read/update/delete isolation, and rejection of a forged-owner insert using simulated JWT claims.
 
 The migration audit, regression checks and MVP1 quality/security workflows also passed on that commit. These results do **not** establish real Supabase Auth integration or full MVP2 schema replay. No existing database was modified.
+
+
+## MIKA Teacher two-user RLS smoke passed (2026-11-17)
+
+GitHub Actions [run 44120541177](https://github.com/fosmais/atomo-productivity/actions/runs/44120541177) on commit `e6139aca` completed **successfully**. The job's dedicated step **Verify two-user MIKA Teacher RLS isolation** passed, alongside Journey two-user isolation, Journey→Teacher SQL replay, schema assertions, and the separate migration inventory, regression, and MVP1 quality workflows.
+
+Test source: `docs/sql/teacher-two-user-rls-smoke.sql`. Checks Teacher session/message visibility and deletion isolation for two simulated JWT users, and attempts cross-owner Journey association. **Limit:** This test uses a disposable PostgreSQL database and simulated `auth.uid()`; it is not a real Supabase Auth, API, mobile or production test. The broader Supabase migration baseline remains unrecovered.
