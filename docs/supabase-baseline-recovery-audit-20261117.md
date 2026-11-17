@@ -319,3 +319,16 @@ Added `docs/sql/myryra-core-baseline-readonly-gate.sql` (commit `da825ea`). The 
 | Finance preview | 14 | 13 | 0 |
 
 The 27-column gate is a **subset**, not full DDL/schema parity. Neither preview is ready for full MVP2 replay. No databases were changed. Next: recover versioned foundational table definitions and their RLS/constraints in a separate, isolated migration chain; do not mark registry history applied without executing migrations.
+
+
+## Core constraint and RLS drift (2026-11-17)
+
+Added `docs/sql/myryra-core-constraints-rls-readonly.sql` (commit `526f714`). Read-only catalog inspection of seven foundational tables:
+
+| Environment | Present tables / 7 | Constraints | Policies |
+| --- | ---: | ---: | ---: |
+| PROD | 7 | 31 | 24 |
+| Events preview | 2 | 8 | 5 |
+| Finance preview | 3 | 13 | 12 |
+
+All present tables in this subset have RLS enabled. In PROD, `google_calendar_connections` has RLS enabled and zero explicit policies; do **not** infer client access or copy token grants blindly. The PROD core includes composite `myka_messages(conversation_id,user_id)` → `myka_conversations(id,user_id)` FK, `tasks.plan_id` → `plans.id` FK, and favorites FKs to tasks/events. This catalog snapshot is not an executable reconstruction and does not prove semantic equivalence of preview policies. No DB mutation was performed.
