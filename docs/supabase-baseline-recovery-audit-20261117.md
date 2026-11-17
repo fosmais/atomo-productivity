@@ -372,3 +372,10 @@ Created:
 The isolated PostgreSQL 16 workflow [run 44125959980](https://github.com/fosmais/atomo-productivity/actions/runs/44125959980) passed the behavior smoke for overlap rejection, non-blocking/deleted event allowance, unchanged legacy overlap edits, and invalid interval rejection.
 
 Added a second concurrent-insert test to `.github/workflows/calendar-overlap-guard-smoke.yml` (commit `551cc4d`). It launches two independent psql sessions attempting the same blocking interval for the same user and asserts exactly one succeeds and exactly one row remains. This new concurrency assertion is **pending CI execution**; no claim of concurrency test success yet. No Supabase project was changed.
+
+
+## Calendar overlap guard concurrency test passed (2026-11-17)
+
+Commit `551cc4d` workflow run [44126510886](https://github.com/fosmais/atomo-productivity/actions/runs/44126510886) completed successfully. Job metadata confirms both **Run overlap guard behavior smoke** and **Verify concurrent overlapping inserts serialize per user** passed. The concurrency test used two independent psql sessions inserting the same blocking interval for one user; exactly one insert succeeded and exactly one row remained. Journey SQL smoke, migration registry audit and MYRYRA regression checks also passed on this commit. MVP1 Quality and Security workflow was still in progress when checked.
+
+This remains disposable PostgreSQL CI. It does not validate Supabase Preview parity, app/API behavior or complete baseline replay. No Supabase environment was modified.
