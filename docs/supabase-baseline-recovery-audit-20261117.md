@@ -280,3 +280,10 @@ The migration audit, regression checks and MVP1 quality/security workflows also 
 GitHub Actions [run 44120541177](https://github.com/fosmais/atomo-productivity/actions/runs/44120541177) on commit `e6139aca` completed **successfully**. The job's dedicated step **Verify two-user MIKA Teacher RLS isolation** passed, alongside Journey two-user isolation, Journey→Teacher SQL replay, schema assertions, and the separate migration inventory, regression, and MVP1 quality workflows.
 
 Test source: `docs/sql/teacher-two-user-rls-smoke.sql`. Checks Teacher session/message visibility and deletion isolation for two simulated JWT users, and attempts cross-owner Journey association. **Limit:** This test uses a disposable PostgreSQL database and simulated `auth.uid()`; it is not a real Supabase Auth, API, mobile or production test. The broader Supabase migration baseline remains unrecovered.
+
+
+## Stronger Teacher cross-owner negative tests passed (2026-11-17)
+
+GitHub Actions [run 44121869217](https://github.com/fosmais/atomo-productivity/actions/runs/44121869217), commit `0eb12f5d`, passed the Journey→Teacher SQL replay, two-user Journey RLS and two-user Teacher RLS steps. The updated Teacher test now uses a deterministic **known foreign Journey UUID** to attempt a direct cross-owner session insert (rather than `INSERT ... SELECT` from an RLS-invisible Journey), and checks that cross-user rescheduling updates zero rows. The separate Supabase migration inventory workflow also passed. At the time of this note, regression and MVP1 quality workflows were still running.
+
+Scope remains disposable PostgreSQL with mocked auth; real Supabase Auth and full MVP2 baseline parity have not been validated.
