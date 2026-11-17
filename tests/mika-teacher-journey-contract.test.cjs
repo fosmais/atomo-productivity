@@ -348,3 +348,12 @@ test("Journey displays the latest owner-scoped official exercise before grading"
   assert.match(ui, /const exercise = officialExercises\[mission\.id\]/);
   assert.match(ui, /!officialExercises\[m\.id\]/);
 });
+
+test("Journey discards stale official exercise responses on navigation", () => {
+  const ui = read("src/app/journey/journey-trail.tsx");
+  assert.match(ui, /const officialExerciseRequest = useRef\(0\)/);
+  assert.match(ui, /const requestId = \+\+officialExerciseRequest\.current/);
+  assert.match(ui, /if \(requestId !== officialExerciseRequest\.current\) return/);
+  assert.match(ui, /if \(requestId === officialExerciseRequest\.current\)/);
+  assert.match(ui, /\+\+officialExerciseRequest\.current;\s*setOpenLesson\(null\);\s*setOfficialExercises\(\{\}\)/);
+});
