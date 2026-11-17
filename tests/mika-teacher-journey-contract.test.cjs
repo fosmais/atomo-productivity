@@ -317,3 +317,20 @@ test("grading never trusts unassigned exercises and issues canonical templates s
   assert.match(grading, /if \(!assigned\)\s*return NextResponse\.json/);
   assert.match(grading, /const assessedExerciseId = assigned\.id/);
 });
+
+test("versioned server assignments can supersede static lesson prompts", () => {
+  const grading = read("src/app/api/journeys/feedback/route.ts");
+  assert.match(grading, /if \(!assigned && canonicalLesson && exercise\.trim\(\) !== canonicalLesson\.exercise\)/);
+  assert.match(grading, /if \(assigned\.exercise !== exercise\.trim\(\)/);
+  const staticCheck = grading.indexOf("if (!assigned && canonicalLesson && exercise.trim()");
+  const assignmentLookup = grading.indexOf("let { data: assigned, error: assignedError }");
+  assert.ok(assignmentLookup >= 0 && staticCheck > assignmentLookup);
+});
+
+test("database rejects cross-owner and mutable official exercise assignments", () => {
+  const sql = read("supabase/migrations/20261117000400_validate_assigned_exercise_ownership.sql");
+  assert.match(sql, /actual_owner is distinct from new\.owner_id/);
+  assert.match(sql, /s\.mission_id = new\.mission_id and s\.journey_id = actual_journey/);
+  assert.match(sql, /if tg_op = 'UPDATE' then/);
+  assert.match(sql, /before insert or update on public\.myryra_journey_assigned_exercises/);
+});
