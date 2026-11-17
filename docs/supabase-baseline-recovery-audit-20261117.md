@@ -294,3 +294,10 @@ Scope remains disposable PostgreSQL with mocked auth; real Supabase Auth and ful
 GitHub Actions [run 44122424796](https://github.com/fosmais/atomo-productivity/actions/runs/44122424796), commit `1b91f23d`, completed **successfully**. Job metadata confirms that all three steps passed: **Verify two-user Journey RLS isolation**, **Verify two-user MIKA Teacher RLS isolation**, and **Verify anonymous and authenticated role grants**. The latter asserts anonymous SELECT denial; authenticated read access; client-side Teacher message write denial; protected Teacher session field update denial; and permission to update `scheduled_at`.
 
 This remains an isolated PostgreSQL test with mocked Supabase Auth. It does not verify real Supabase authentication, API gateway grants, full database migration history, or application behavior.
+
+
+## 2026-11-17: Teacher owner reschedule / client message denial passed
+
+Commit `84005e7` passed all four workflows: isolated SQL [44123191819](https://github.com/fosmais/atomo-productivity/actions/runs/44123191819), migration audit 44123192068, MYRYRA regression 44123191829, MVP1 quality/security 44123191980. The Teacher two-user test now asserts an owner can reschedule a session and authenticated clients cannot directly insert Teacher messages.
+
+Read-only `list_branches` confirmed that existing preview branches `myryra-mvp1-event-homolog` and `myryra-mvp2-finance-homolog` both remain `MIGRATIONS_FAILED` (though their projects are ACTIVE_HEALTHY). Neither is a clean full-baseline candidate for real Supabase Auth testing. Do not mutate these previews or create a paid branch without an explicit decision. Real Supabase Auth and full MVP2 baseline replay remain outstanding.
