@@ -334,3 +334,17 @@ test("database rejects cross-owner and mutable official exercise assignments", (
   assert.match(sql, /if tg_op = 'UPDATE' then/);
   assert.match(sql, /before insert or update on public\.myryra_journey_assigned_exercises/);
 });
+
+test("Journey displays the latest owner-scoped official exercise before grading", () => {
+  const route = read("src/app/api/journeys/exercise/route.ts");
+  const ui = read("src/app/journey/journey-trail.tsx");
+  assert.match(route, /supabase\.auth\.getUser\(\)/);
+  assert.match(route, /\.eq\("owner_id", user\.id\)/);
+  assert.match(route, /\.eq\("journey_id", journeyId\)/);
+  assert.match(route, /\.order\("version", \{ ascending: false \}\)/);
+  assert.match(route, /"Cache-Control": "private, no-store"/);
+  assert.match(ui, /async function openOfficialLesson\(mission: Mission\)/);
+  assert.match(ui, /\/api\/journeys\/exercise\?journeyId=/);
+  assert.match(ui, /const exercise = officialExercises\[mission\.id\]/);
+  assert.match(ui, /!officialExercises\[m\.id\]/);
+});
