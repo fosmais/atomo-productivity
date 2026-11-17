@@ -71,6 +71,23 @@ jobs:
           end $test$;
           SQL
 
+      - name: Verify Journey baseline rejects replay without schema mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          before=$(psql -At -v ON_ERROR_STOP=1 -c "select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p');")
+          if psql -v ON_ERROR_STOP=1 -f docs/sql/myryra-journey-isolated-baseline-candidate.sql > /tmp/journey-replay.log 2>&1; then
+            echo 'ERROR: replay unexpectedly succeeded'
+            exit 1
+          fi
+          if ! grep -q 'Journey baseline expects an absent table' /tmp/journey-replay.log; then
+            echo 'ERROR: replay failed for an unexpected reason'
+            cat /tmp/journey-replay.log
+            exit 1
+          fi
+          after=$(psql -At -v ON_ERROR_STOP=1 -c "select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p');")
+          test "$before" = "$after" || { echo 'ERROR: schema changed after rejected replay'; exit 1; }
+
       - name: Verify two-user Journey RLS isolation
         run: psql -v ON_ERROR_STOP=1 -f docs/sql/journey-two-user-rls-smoke.sql
 
