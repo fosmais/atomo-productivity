@@ -301,3 +301,8 @@ This remains an isolated PostgreSQL test with mocked Supabase Auth. It does not 
 Commit `84005e7` passed all four workflows: isolated SQL [44123191819](https://github.com/fosmais/atomo-productivity/actions/runs/44123191819), migration audit 44123192068, MYRYRA regression 44123191829, MVP1 quality/security 44123191980. The Teacher two-user test now asserts an owner can reschedule a session and authenticated clients cannot directly insert Teacher messages.
 
 Read-only `list_branches` confirmed that existing preview branches `myryra-mvp1-event-homolog` and `myryra-mvp2-finance-homolog` both remain `MIGRATIONS_FAILED` (though their projects are ACTIVE_HEALTHY). Neither is a clean full-baseline candidate for real Supabase Auth testing. Do not mutate these previews or create a paid branch without an explicit decision. Real Supabase Auth and full MVP2 baseline replay remain outstanding.
+
+
+## Journey candidate fail-closed replay verified (2026-11-17)
+
+GitHub Actions [run 44124360467](https://github.com/fosmais/atomo-productivity/actions/runs/44124360467), commit `99eacd7`, completed successfully. The workflow explicitly attempted to replay the Journey candidate after initial application, required the exact expected preflight failure, and verified the count of public base tables was unchanged. Two-user Journey RLS, two-user Teacher RLS, and role-grant assertions passed in the same job. The migration inventory audit also passed. This proves a narrow isolated fail-closed property, **not** full Supabase migration reproducibility or absence of all schema drift.
