@@ -61,6 +61,14 @@ export default function JourneyTrail() {
   const [reviewStatus, setReviewStatus] = useState<Record<string, string>>({});
   const [savingExercise, setSavingExercise] = useState<string | null>(null);
   const [exerciseMessage, setExerciseMessage] = useState<Record<string, string>>({});
+  // Never reuse an exercise or open lesson from another selected journey.
+  useEffect(() => {
+    setOpenLesson(null);
+    setOfficialExercises({});
+    setExerciseLoadError({});
+    setExerciseLoading(null);
+  }, [selected]);
+
   const [replan, setReplan] = useState<{ previewOnly: boolean; revision: string; preserved: { completed: { id: string; title: string }[]; existingMissionCount: number }; proposed: { title: string; week: number }[]; planning?: { targetDate: string | null; originalTargetDate: string | null; deadlineNeedsReview: boolean; remainingMissions: number } } | null>(null);
   async function readJourneyJson(response: Response, context: string) {
     const type = response.headers.get("content-type") ?? "";
