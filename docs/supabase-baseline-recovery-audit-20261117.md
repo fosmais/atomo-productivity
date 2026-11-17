@@ -238,3 +238,18 @@ Six additional legacy SQL files use an 8-digit date prefix and were **excluded**
 - `20261104_event_reminders.sql`
 
 **Release gate:** Do not mark migration versions as applied to silence drift. First retrieve/reconstruct missing baseline DDL, establish clean-replay ordering in an isolated environment, and verify core schema, constraints, RLS and policies before any production proposal.
+
+
+## MIKA Teacher baseline dependency verification (2026-11-17)
+
+Read-only `to_regclass` checks against all three Supabase environments:
+
+| Table | PROD | Events preview | Finance preview |
+|---|---|---|---|
+| `public.myryra_journeys` | exists | **missing** | exists |
+| `public.mika_teacher_sessions` | exists | **missing** | exists |
+| `public.mika_teacher_messages` | exists | **missing** | exists |
+
+Source migration `supabase/migrations/20261112235900_mika_teacher_sessions.sql` contains an explicit preflight that raises an exception when `public.myryra_journeys` is missing. Thus Events preview cannot replay this migration successfully until Journey's baseline exists.
+
+**Caution:** table existence is not proof of correct schema, grants, RLS, policy parity, migration replay, or feature readiness. Do not replay the Teacher migration in Events until Journey DDL, constraints and ownership policies have been restored and verified. No database changes were made during these checks.
