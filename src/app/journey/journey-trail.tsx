@@ -26,6 +26,28 @@ export default function JourneyTrail() {
   const [goalDate, setGoalDate] = useState("");
   const [showAllMissions, setShowAllMissions] = useState(false);
   const [openLesson, setOpenLesson] = useState<string | null>(null);
+  const [officialExercises, setOfficialExercises] = useState<Record<string, string>>({});
+  const [exerciseLoading, setExerciseLoading] = useState<string | null>(null);
+  const [exerciseLoadError, setExerciseLoadError] = useState<Record<string, string>>({});
+  async function openOfficialLesson(mission: Mission) {
+    if (openLesson === mission.id) { setOpenLesson(null); return; }
+    setOpenLesson(mission.id);
+    if (!selected) return;
+    setExerciseLoading(mission.id);
+    setExerciseLoadError(old => ({ ...old, [mission.id]: "" }));
+    setOfficialExercises(old => { const next = { ...old }; delete next[mission.id]; return next; });
+    try {
+      const response = await fetch(`/api/journeys/exercise?journeyId=${encodeURIComponent(selected)}&missionId=${encodeURIComponent(mission.id)}`, { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Não foi possível consultar o exercício oficial.");
+      const exercise = data.assignment?.exercise ?? lessonFor(mission.title)?.exercise;
+      if (!exercise) throw new Error("Esta missão ainda não possui exercício oficial.");
+      setOfficialExercises(old => ({ ...old, [mission.id]: exercise }));
+    } catch (error) {
+      setExerciseLoadError(old => ({ ...old, [mission.id]: error instanceof Error ? error.message : "Exercício indisponível." }));
+    } finally { setExerciseLoading(null); }
+  }
+
   const [exerciseAnswers, setExerciseAnswers] = useState<Record<string, string>>({});
   const [showReview, setShowReview] = useState<string | null>(null);
   const [aiFeedback, setAiFeedback] = useState<Record<string, string>>({});
@@ -263,7 +285,7 @@ export default function JourneyTrail() {
   async function evaluateExercise(mission: Mission) {
     const answer = (exerciseAnswers[mission.id] ?? "").trim();
     if (!selected || answer.length < 30 || feedbackBusy) return;
-    const exercise = lessonFor(mission.title)?.exercise;
+    const exercise = officialExercises[mission.id];
     if (!exercise) return;
     setFeedbackBusy(mission.id);
     setAiFeedback(old => ({ ...old, [mission.id]: "" }));
@@ -512,12 +534,12 @@ export default function JourneyTrail() {
                   </button>
                   </div>
                   {lessonFor(m.title) && <div className="mx-auto w-[92%] rounded-xl border border-violet-300/25 bg-slate-900/80 p-3 sm:w-[85%]">
-                    <button type="button" onClick={() => setOpenLesson(value => value === m.id ? null : m.id)} aria-expanded={openLesson === m.id} className="w-full text-left text-xs font-semibold text-amber-200">{openLesson === m.id ? "▾ Fechar treinamento" : "▸ Estudar com a MIKA · Aula e exercício"}</button>
-                    {openLesson === m.id && (() => { const lesson = lessonFor(m.title)!; return <div className="mt-3 space-y-3 text-sm leading-relaxed text-slate-200"><p className="font-bold text-white">{lesson.heading}</p><p>{lesson.explanation}</p><p className="rounded-lg bg-violet-800/25 p-3">{lesson.example}</p><p className="font-semibold text-amber-100">Sua prática: {lesson.exercise}</p>
+                    <button type="button" onClick={() => void openOfficialLesson(m) } aria-expanded={openLesson === m.id} className="w-full text-left text-xs font-semibold text-amber-200">{openLesson === m.id ? "▾ Fechar treinamento" : "▸ Estudar com a MIKA · Aula e exercício"}</button>
+                    {openLesson === m.id && (() => { const lesson = lessonFor(m.title)!; return <div className="mt-3 space-y-3 text-sm leading-relaxed text-slate-200"><p className="font-bold text-white">{lesson.heading}</p><p>{lesson.explanation}</p><p className="rounded-lg bg-violet-800/25 p-3">{lesson.example}</p><p className="font-semibold text-amber-100">Sua prática: {officialExercises[m.id] ?? (exerciseLoading === m.id ? "Carregando exercício oficial..." : exerciseLoadError[m.id] || "Abra a aula para consultar o exercício.")}</p>
                     <label className="block space-y-2"><span className="block text-xs font-semibold text-violet-100">Sua resposta (salve para continuar depois)</span><textarea value={exerciseAnswers[m.id] ?? ""} disabled={feedbackBusy === m.id || savingExercise === m.id} onChange={event => { setExerciseAnswers(old => ({ ...old, [m.id]: event.target.value.slice(0, 2000) })); setShowReview(null); setAiFeedback(oldFeedback => ({ ...oldFeedback, [m.id]: "" })); setExerciseMessage(old => ({ ...old, [m.id]: "Resposta alterada. Salve novamente para manter seu histórico atualizado." })); }} rows={4} maxLength={2000} placeholder="Registre seu raciocínio e os exemplos aqui..." className="w-full rounded-lg border border-violet-300/30 bg-slate-950 p-3 text-sm text-white placeholder:text-slate-400" /></label>
                     <button type="button" disabled={savingExercise === m.id || feedbackBusy === m.id} onClick={() => void saveExercise(m)} className="rounded-lg border border-violet-300/40 px-3 py-2 text-xs font-semibold text-violet-100 disabled:opacity-40">{savingExercise === m.id ? "Salvando..." : "Salvar resposta"}</button>
                     {exerciseMessage[m.id] && <p role="status" className="text-xs text-violet-100">{exerciseMessage[m.id]}</p>}
-                    <button type="button" disabled={(exerciseAnswers[m.id] ?? "").trim().length < 30 || !!feedbackBusy} onClick={() => void evaluateExercise(m)} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">{feedbackBusy === m.id ? "MIKA está avaliando..." : "Avaliar com a MIKA"}</button>
+                    <button type="button" disabled={(exerciseAnswers[m.id] ?? "").trim().length < 30 || !!feedbackBusy || !officialExercises[m.id] || exerciseLoading === m.id} onClick={() => void evaluateExercise(m)} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">{feedbackBusy === m.id ? "MIKA está avaliando..." : "Avaliar com a MIKA"}</button>
                     {aiFeedback[m.id] && <div role="status" className="space-y-3 rounded-lg border border-violet-300/30 bg-violet-800/20 p-3 text-xs leading-relaxed text-white">
                       <p className="whitespace-pre-wrap">{aiFeedback[m.id]}</p>
                       <div className="rounded-lg border border-amber-300/30 bg-amber-300/10 p-3">
