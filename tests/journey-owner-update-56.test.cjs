@@ -21,3 +21,38 @@ test("Journey route limits mutation fields and archive remains a soft delete", (
   assert.match(route, /updates\.target_date = data\.targetDate/);
   assert.match(route, /export async function DELETE/);
 });
+
+const admin = fs.readFileSync(path.join(process.cwd(), "src/lib/supabase/admin.ts"), "utf8");
+
+test("Journey requires MFA and valid identity before any privileged write", () => {
+  const authPosition = route.indexOf("supabase.auth.getUser()");
+  const mfaPosition = route.indexOf("supabase.auth.mfa.getAuthenticatorAssuranceLevel()", route.indexOf("async function changeJourney"));
+  const adminPosition = route.indexOf('createSupabaseAdmin().from("myryra_journeys").update(updates)');
+  assert.ok(authPosition >= 0 && mfaPosition >= 0 && adminPosition > mfaPosition);
+  assert.match(route, /assurance\.data\.nextLevel === "aal2"/);
+  assert.match(route, /assurance\.data\.currentLevel !== "aal2"/);
+  assert.match(route, /if \(authError \|\| !user\)/);
+});
+
+test("Journey enforces owner filter and only allowed status transitions", () => {
+  assert.match(route, /\.eq\("id", journeyId\)\.eq\("owner_id", user\.id\)/);
+  assert.match(route, /data\.status !== "active" && data\.status !== "paused"/);
+  assert.match(route, /updates\.status === "paused" \? \["active"\]/);
+  assert.match(route, /updates\.status === "active" \? \["paused"\]/);
+  assert.doesNotMatch(route, /\.delete\(\)/);
+});
+
+test("Legal gate preserves pause and archive while restricting edits and resume", () => {
+  assert.match(route, /!archive && updates\.status !== "paused"/);
+  assert.match(route, /MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED/);
+  assert.match(route, /LEGAL_ACCEPTANCE_REQUIRED/);
+});
+
+test("Admin client rejects production Supabase URL in the two MVP2 preview branches", () => {
+  assert.match(admin, /VERCEL_ENV === "preview"/);
+  assert.match(admin, /VERCEL_GIT_COMMIT_REF === "feat\/mvp2-professora-journey-myra-26"/);
+  assert.match(admin, /VERCEL_GIT_COMMIT_REF === "fix\/mvp2-journey-owner-update-56"/);
+  assert.match(admin, /stagingUrl\.protocol !== "https:"/);
+  assert.match(admin, /stagingUrl\.hostname !== "xanavauqzsrgvdfhcrsm\.supabase\.co"/);
+  assert.match(admin, /throw new Error\("Preview MVP2 não pode usar Supabase fora da homologação\."\)/);
+});
