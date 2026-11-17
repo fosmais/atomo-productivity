@@ -60,3 +60,27 @@ order by version;
 5. Keep production schema and current app unchanged. Do not merge a speculative baseline or enable Finance trash/payment flags.
 
 This audit file is intentionally non-executable documentation.
+
+
+## Core foreign-key dependency graph (verified in production, 2026-11-17)
+
+The following constraints were inspected using `pg_constraint` and `pg_get_constraintdef`. They are a **partial graph**, not a full schema export:
+
+- `auth.users(id)` → `public.plans.user_id` (ON DELETE CASCADE).
+- `public.plans(id)` → `public.tasks.plan_id` (ON DELETE CASCADE).
+- `auth.users(id)` → `public.tasks.user_id` and `public.events.user_id` (ON DELETE CASCADE).
+- `auth.users(id)` → `public.myka_conversations.user_id` (ON DELETE CASCADE).
+- `public.myka_conversations(id, user_id)` → `public.myka_messages(conversation_id, user_id)` (composite FK, ON DELETE CASCADE). The parent has UNIQUE(id, user_id).
+- `auth.users(id)` → `public.myka_messages.user_id` (ON DELETE CASCADE).
+
+Relevant checks: `events.ends_at > events.starts_at`; `tasks.status` permits `todo`, `in_progress`, `waiting`, `done`; `tasks.duration_minutes` is null or 5–1440; `myka_messages.role` permits `user` or `assistant`.
+
+### Non-executable dependency-order proposal
+
+1. Supabase-managed `auth.users` exists first.
+2. Define `plans` and `myka_conversations` before their dependents.
+3. Define `tasks`, `events`, and `myka_messages` with verified constraints.
+4. Define remaining tables, indexes, grants and policies from a complete schema-only export; do not infer their definitions from names.
+5. Only then replay existing migrations in order and compare resulting schema with production.
+
+**Important:** This order alone is insufficient to reconstruct all 62 public tables. Do not generate or apply a migration from this partial graph.
