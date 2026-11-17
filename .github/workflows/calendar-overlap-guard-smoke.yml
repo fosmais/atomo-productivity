@@ -1,0 +1,37 @@
+name: Calendar overlap guard isolated smoke
+on:
+  pull_request:
+    paths:
+      - 'docs/sql/myryra-calendar-overlap-guard-candidate.sql'
+      - 'docs/sql/myryra-calendar-overlap-guard-smoke.sql'
+      - '.github/workflows/calendar-overlap-guard-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d testdb"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: testdb
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run overlap guard behavior smoke
+        run: psql -v ON_ERROR_STOP=1 -f docs/sql/myryra-calendar-overlap-guard-smoke.sql
