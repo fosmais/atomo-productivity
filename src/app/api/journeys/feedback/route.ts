@@ -104,6 +104,17 @@ export async function POST(request: Request) {
     if (currentError) return NextResponse.json({ error: "Não foi possível verificar a versão atual da resposta." }, { status: 503 });
     if (currentProgress?.answer !== priorProgress?.answer)
       return NextResponse.json({ error: "A resposta foi alterada durante a avaliação. Solicite uma nova avaliação para a versão atual." }, { status: 409 });
+    // Reject a grade when a newer official exercise was issued while the
+    // model was responding. The DB completion guard independently checks it.
+    const { data: latestAssignment, error: latestAssignmentError } = await supabase
+      .from("myryra_journey_assigned_exercises")
+      .select("id")
+      .eq("mission_id", missionId).eq("owner_id", user.id)
+      .order("version", { ascending: false }).limit(1).maybeSingle();
+    if (latestAssignmentError)
+      return NextResponse.json({ error: "Não foi possível confirmar o exercício atual." }, { status: 503 });
+    if ((latestAssignment?.id ?? null) !== assessedExerciseId)
+      return NextResponse.json({ error: "O exercício mudou durante a avaliação. Reabra a missão." }, { status: 409 });
     // Atomic compare-and-set: do not replace an edited answer or overwrite a
     // concurrent assessment. An existing saved draft is mandatory above.
     const { data: savedRows, error: saveError } = await createSupabaseAdmin()
