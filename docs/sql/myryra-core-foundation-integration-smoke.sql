@@ -25,6 +25,14 @@ begin
  select count(*) into n from pg_policies where schemaname='public'
  and tablename in ('plans','tasks','events','favorites','myka_conversations','myka_messages','google_calendar_connections');
  if n<>24 then raise exception 'Expected 24 core policies, got %',n; end if;
+ -- A UNIQUE constraint must own the (id,user_id) index; no independent duplicate.
+ select count(*) into n from pg_constraint c
+ join pg_class i on i.oid=c.conindid
+ where c.conrelid='public.myka_conversations'::regclass
+ and c.conname='myka_conversations_id_user_unique'
+ and c.contype='u' and i.relname='myka_conversations_id_user_unique';
+ if n<>1 then raise exception 'Conversation unique index is not constraint-backed'; end if;
+
 end $test$;
 insert into auth.users values ('11111111-1111-4111-8111-111111111111'),('22222222-2222-4222-8222-222222222222');
 set role authenticated;
