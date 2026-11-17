@@ -166,3 +166,22 @@ Thus both existing previews have **divergent migration histories**, not merely f
 A recent `postgres_logs` query in the Event preview returned no matching ERROR/migration messages in the available default log window. This does **not** establish the original failure statement.
 
 **Next gate:** recover historical branch creation/build error from a reliable source, and compare complete Git migration files to production migration history before drafting an executable initial baseline.
+
+
+## Initial migration dependency preflight executed (2026-11-17)
+
+File: `docs/sql/supabase-migration-dependency-preflight.sql`.
+
+The preflight checks 13 required columns across `public.tasks` and `public.events`, referenced by the first AutoPilot function and the second AutoPilot index migration.
+
+| Environment | Missing required columns |
+|---|---:|
+| Production | 0 |
+| Event preview | 5 |
+| Finance preview | 0 |
+
+Event preview missing: `tasks.id`, `tasks.user_id`, `tasks.title`, `tasks.completed`, `tasks.duration_minutes`. The table itself is absent.
+
+This is a **current-state dependency failure**, not proof of the historical failed statement. The function-creation migration can be registered before the referenced tables exist because PL/pgSQL statement planning is deferred; the subsequent `CREATE INDEX ... ON public.events` requires the events table at execution time. Verify branch-build logs for exact historical failure.
+
+GitHub repository inspection confirmed `supabase/migrations` is a directory, but its file inventory was not obtained. Do not assume that the production migration registry and tracked Git files match.
