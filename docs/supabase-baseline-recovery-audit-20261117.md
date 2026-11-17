@@ -120,3 +120,33 @@ order by c.relname;
 ```
 
 Do not auto-generate broad `GRANT SELECT` or permissive policies to make missing tables work. Grants and RLS are separate controls.
+
+
+## Executed parity smoke-test results (2026-11-17)
+
+Read-only catalog aggregate query was executed against all three environments:
+
+| Metric | Production | Event preview | Finance preview |
+|---|---:|---:|---:|
+| Public base tables | 62 | 5 | 27 |
+| RLS-enabled tables | 62 | 5 | 27 |
+| Explicit RLS policies | 122 | 10 | 67 |
+| Public constraints | 310 | 27 | 133 |
+
+These are **inventory counts only**, not proof of policy semantic parity, matching DDL, or successful migration replay. Both preview branches remain structurally incomplete. Do not modify production or use these previews to approve the baseline.
+
+Read-only aggregate used:
+
+```sql
+select count(*)::int as tables,
+       count(*) filter (where c.relrowsecurity)::int as rls_enabled,
+       (select count(*)::int from pg_policies where schemaname='public') as policies,
+       (select count(*)::int from pg_constraint con
+        join pg_namespace n2 on n2.oid=con.connamespace
+        where n2.nspname='public') as constraints
+from pg_class c
+join pg_namespace n on n.oid=c.relnamespace
+where n.nspname='public' and c.relkind='r';
+```
+
+Next gate: identify first failing migration from branch logs, then export and compare complete DDL including security privileges before constructing an executable baseline.
