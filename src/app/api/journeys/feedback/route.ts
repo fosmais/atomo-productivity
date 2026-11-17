@@ -55,6 +55,10 @@ export async function POST(request: Request) {
   if (assigned && (assigned.exercise !== exercise.trim() ||
       (assigned.session_id && assigned.session_id !== (sessionId ?? null))))
     return NextResponse.json({ error: "O exercício foi atualizado. Reabra a missão para responder à versão atual." }, { status: 409 });
+  // Only a server-issued exercise can carry version-bound assessment evidence.
+  // Legacy missions without an assigned exercise retain their previous flow
+  // until the issuing endpoint and completion gate are rolled out.
+  const assessedExerciseId = assigned?.id ?? null;
   // Use prior feedback only for the same owned mission; never leak another learner's history.
   const { data: priorProgress, error: progressError } = await supabase.from("myryra_journey_learning_progress")
     .select("answer,feedback,assessment_attempts,updated_at").eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
@@ -97,7 +101,7 @@ export async function POST(request: Request) {
     // concurrent assessment. An existing saved draft is mandatory above.
     const { data: savedRows, error: saveError } = await createSupabaseAdmin()
       .from("myryra_journey_learning_progress")
-      .update({ feedback, assessment_score: assessment.score, assessment_passed: assessment.passed,
+      .update({ feedback, assessed_exercise_id: assessedExerciseId, assessment_score: assessment.score, assessment_passed: assessment.passed,
         assessment_attempts: (priorProgress?.assessment_attempts ?? 0) + 1,
         assessed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
       .eq("mission_id", missionId).eq("owner_id", user.id)
