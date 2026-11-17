@@ -306,3 +306,16 @@ Read-only `list_branches` confirmed that existing preview branches `myryra-mvp1-
 ## Journey candidate fail-closed replay verified (2026-11-17)
 
 GitHub Actions [run 44124360467](https://github.com/fosmais/atomo-productivity/actions/runs/44124360467), commit `99eacd7`, completed successfully. The workflow explicitly attempted to replay the Journey candidate after initial application, required the exact expected preflight failure, and verified the count of public base tables was unchanged. Two-user Journey RLS, two-user Teacher RLS, and role-grant assertions passed in the same job. The migration inventory audit also passed. This proves a narrow isolated fail-closed property, **not** full Supabase migration reproducibility or absence of all schema drift.
+
+
+## Seven-table core baseline gate (2026-11-17)
+
+Added `docs/sql/myryra-core-baseline-readonly-gate.sql` (commit `da825ea`). The read-only gate checks 27 key columns across `plans`, `tasks`, `events`, `favorites`, `myka_conversations`, `myka_messages`, and `google_calendar_connections`, including types and nullability. Executed the equivalent catalog-only summary against all three Supabase projects:
+
+| Environment | OK | Missing | Type/nullability mismatch |
+| --- | ---: | ---: | ---: |
+| PROD | 27 | 0 | 0 |
+| Events preview | 9 | 18 | 0 |
+| Finance preview | 14 | 13 | 0 |
+
+The 27-column gate is a **subset**, not full DDL/schema parity. Neither preview is ready for full MVP2 replay. No databases were changed. Next: recover versioned foundational table definitions and their RLS/constraints in a separate, isolated migration chain; do not mark registry history applied without executing migrations.
