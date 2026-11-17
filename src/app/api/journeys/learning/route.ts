@@ -63,11 +63,12 @@ export async function PUT(request: Request) {
   // Ownership was verified above; only the server performs privileged writes.
   const admin = createSupabaseAdmin();
   if (previous) {
-    const changed = previous.answer !== answer;
-    const patch = changed
-      ? { answer, feedback: null, assessment_score: null, assessment_passed: null,
-          assessed_at: null, updated_at: new Date().toISOString() }
-      : { updated_at: new Date().toISOString() };
+    // An identical re-save is a no-op: preserve the draft revision and any
+    // assessment already in flight rather than invalidating it needlessly.
+    if (previous.answer === answer)
+      return NextResponse.json({ saved: true }, { headers: { "Cache-Control": "private, no-store" } });
+    const patch = { answer, feedback: null, assessment_score: null, assessment_passed: null,
+      assessed_at: null, updated_at: new Date().toISOString() };
     const { data: updated, error } = await admin.from("myryra_journey_learning_progress")
       .update(patch).eq("mission_id", missionId).eq("owner_id", user.id)
       .eq("answer", previous.answer).eq("updated_at", previous.updated_at).select("mission_id");
