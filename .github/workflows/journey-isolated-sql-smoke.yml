@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'docs/sql/myryra-journey-isolated-baseline-candidate.sql'
+      - 'docs/sql/journey-two-user-rls-smoke.sql'
       - 'supabase/migrations/20261112235900_mika_teacher_sessions.sql'
       - '.github/workflows/journey-isolated-sql-smoke.yml'
   workflow_dispatch:
@@ -67,3 +68,6 @@ jobs:
             if n <> 1 then raise exception 'Teacher/Journey FK missing'; end if;
           end $test$;
           SQL
+
+      - name: Verify two-user Journey RLS isolation
+        run: psql -v ON_ERROR_STOP=1 -f docs/sql/journey-two-user-rls-smoke.sql
