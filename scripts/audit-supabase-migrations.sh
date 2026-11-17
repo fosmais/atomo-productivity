@@ -23,5 +23,5 @@ if [[ -z "$files" ]]; then
   echo "No migration SQL files found in Git tree; cannot claim a complete comparison" >&2
   exit 5
 fi
-printf '%s\\n' "$files"
+printf '%s\n' "$files"
 echo "Enumerated Git-tracked migration SQL filenames at commit $sha (read-only)" >&2
