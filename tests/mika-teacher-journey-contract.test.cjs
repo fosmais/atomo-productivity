@@ -240,7 +240,7 @@ test("MVP2 preview admin client fails closed against production Supabase", () =>
   const src = read("src/lib/supabase/admin.ts");
   assert.match(src, /process\.env\.VERCEL_ENV === "preview"/);
   assert.match(src, /process\.env\.VERCEL_GIT_COMMIT_REF === "feat\/mvp2-professora-journey-myra-26"/);
-  assert.match(src, /qothgddrvrpeqsprslqk\.supabase\.co/);
-  assert.match(src, /throw new Error\("Preview MVP2 não pode usar Supabase de produção\."\)/);
+  assert.match(src, /xanavauqzsrgvdfhcrsm\.supabase\.co/);
+  assert.match(src, /throw new Error\("Preview MVP2 não pode usar Supabase fora da homologação\."\)/);
   assert.match(src, /if \(!supabaseUrl \|\| !secretKey\)/);
 });
