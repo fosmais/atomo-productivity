@@ -23,18 +23,26 @@ begin
   if n <> 0 then raise exception 'Other user can read Teacher session'; end if;
   select count(*) into n from public.mika_teacher_messages;
   if n <> 0 then raise exception 'Other user can read Teacher messages'; end if;
+  update public.mika_teacher_sessions set scheduled_at=now();
+  get diagnostics n = row_count;
+  if n <> 0 then raise exception 'Other user rescheduled Teacher session'; end if;
   delete from public.mika_teacher_sessions;
   get diagnostics n = row_count;
   if n <> 0 then raise exception 'Other user deleted Teacher session'; end if;
 end $test$;
+-- A forged session must fail even when the foreign Journey ID is known.
+-- Test a direct insert, rather than SELECTing an invisible row (which inserts nothing).
 do $test$
+declare foreign_journey uuid;
 begin
+  reset role;
+  select id into strict foreign_journey
+    from public.myryra_journeys where title='Journey user A';
+  set role authenticated;
   begin
     insert into public.mika_teacher_sessions(owner_id,journey_id,topic)
-    select '22222222-2222-4222-8222-222222222222',id,'forged journey'
-    from public.myryra_journeys where title='Journey user A';
-    -- RLS SELECT hides the foreign Journey row; zero rows inserted.
-    if found then raise exception 'Other user inserted session on owner Journey'; end if;
+    values ('22222222-2222-4222-8222-222222222222',foreign_journey,'forged journey');
+    raise exception 'Cross-owner session insert was allowed';
   exception when insufficient_privilege then null;
   end;
 end $test$;
