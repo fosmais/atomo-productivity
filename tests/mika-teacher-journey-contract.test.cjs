@@ -272,7 +272,7 @@ test("graded exercise evidence is saved and cleared on draft edits", () => {
   const learning = read("src/app/api/journeys/learning/route.ts");
   const migration = read("supabase/migrations/20261117000200_learning_assessed_exercise_reference.sql");
   assert.match(grading, /assessed_exercise_id: assessedExerciseId/);
-  assert.match(grading, /const assessedExerciseId = assigned\?\.id \?\? null/);
+  assert.match(grading, /const assessedExerciseId = assigned\.id/);
   assert.match(learning, /assessed_exercise_id: null/);
   assert.match(migration, /add column if not exists assessed_exercise_id uuid/);
   assert.match(migration, /references public\.myryra_journey_assigned_exercises\(id\)/);
@@ -307,4 +307,13 @@ test("MIKA rechecks the latest assigned exercise after AI grading", () => {
   assert.match(grading, /if \(\(latestAssignment\?\.id \?\? null\) !== assessedExerciseId\)/);
   assert.match(grading, /O exercício mudou durante a avaliação/);
   assert.ok(grading.indexOf("const { data: latestAssignment") < grading.indexOf(".update({ feedback, assessed_exercise_id: assessedExerciseId"));
+});
+
+test("grading never trusts unassigned exercises and issues canonical templates server-side", () => {
+  const grading = read("src/app/api/journeys/feedback/route.ts");
+  assert.match(grading, /if \(!assigned && canonicalLesson\)/);
+  assert.match(grading, /\.insert\(\{ mission_id: missionId, owner_id: user\.id, version: 1, exercise: canonicalLesson\.exercise \}\)/);
+  assert.match(grading, /issueError\.code !== "23505"/);
+  assert.match(grading, /if \(!assigned\)\s*return NextResponse\.json/);
+  assert.match(grading, /const assessedExerciseId = assigned\.id/);
 });
