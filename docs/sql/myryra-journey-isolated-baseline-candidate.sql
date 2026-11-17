@@ -27,6 +27,11 @@ create table public.myryra_journeys (
   updated_at timestamptz not null default now(),
   confirmation_key uuid
 );
+create index myryra_journeys_owner_idx
+  on public.myryra_journeys(owner_id, created_at desc);
+create unique index myryra_journeys_owner_confirmation_key_uq
+  on public.myryra_journeys(owner_id, confirmation_key)
+  where confirmation_key is not null;
 alter table public.myryra_journeys enable row level security;
 revoke all on public.myryra_journeys from public, anon, authenticated;
 grant select, insert, update, delete on public.myryra_journeys to authenticated;
