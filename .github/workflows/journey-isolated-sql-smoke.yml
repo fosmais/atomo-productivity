@@ -5,6 +5,7 @@ on:
       - 'docs/sql/myryra-journey-isolated-baseline-candidate.sql'
       - 'docs/sql/journey-two-user-rls-smoke.sql'
       - 'docs/sql/teacher-two-user-rls-smoke.sql'
+      - 'docs/sql/teacher-role-grants-smoke.sql'
       - 'supabase/migrations/20261112235900_mika_teacher_sessions.sql'
       - '.github/workflows/journey-isolated-sql-smoke.yml'
   workflow_dispatch:
@@ -75,3 +76,6 @@ jobs:
 
       - name: Verify two-user MIKA Teacher RLS isolation
         run: psql -v ON_ERROR_STOP=1 -f docs/sql/teacher-two-user-rls-smoke.sql
+
+      - name: Verify anonymous and authenticated role grants
+        run: psql -v ON_ERROR_STOP=1 -f docs/sql/teacher-role-grants-smoke.sql
