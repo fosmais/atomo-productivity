@@ -287,3 +287,10 @@ Test source: `docs/sql/teacher-two-user-rls-smoke.sql`. Checks Teacher session/m
 GitHub Actions [run 44121869217](https://github.com/fosmais/atomo-productivity/actions/runs/44121869217), commit `0eb12f5d`, passed the Journey→Teacher SQL replay, two-user Journey RLS and two-user Teacher RLS steps. The updated Teacher test now uses a deterministic **known foreign Journey UUID** to attempt a direct cross-owner session insert (rather than `INSERT ... SELECT` from an RLS-invisible Journey), and checks that cross-user rescheduling updates zero rows. The separate Supabase migration inventory workflow also passed. At the time of this note, regression and MVP1 quality workflows were still running.
 
 Scope remains disposable PostgreSQL with mocked auth; real Supabase Auth and full MVP2 baseline parity have not been validated.
+
+
+## Effective Teacher role grants smoke passed (2026-11-17)
+
+GitHub Actions [run 44122424796](https://github.com/fosmais/atomo-productivity/actions/runs/44122424796), commit `1b91f23d`, completed **successfully**. Job metadata confirms that all three steps passed: **Verify two-user Journey RLS isolation**, **Verify two-user MIKA Teacher RLS isolation**, and **Verify anonymous and authenticated role grants**. The latter asserts anonymous SELECT denial; authenticated read access; client-side Teacher message write denial; protected Teacher session field update denial; and permission to update `scheduled_at`.
+
+This remains an isolated PostgreSQL test with mocked Supabase Auth. It does not verify real Supabase authentication, API gateway grants, full database migration history, or application behavior.
