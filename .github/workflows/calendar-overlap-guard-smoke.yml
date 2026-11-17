@@ -35,3 +35,24 @@ jobs:
       - uses: actions/checkout@v4
       - name: Run overlap guard behavior smoke
         run: psql -v ON_ERROR_STOP=1 -f docs/sql/myryra-calendar-overlap-guard-smoke.sql
+
+      - name: Verify concurrent overlapping inserts serialize per user
+        shell: bash
+        run: |
+          set -euo pipefail
+          USER_ID='22222222-2222-4222-8222-222222222222'
+          SQL="select pg_sleep(1); insert into public.events(user_id,starts_at,ends_at,blocks_time,notes) values ('$USER_ID','2026-12-02 09:00+00','2026-12-02 10:00+00',true,'concurrency');"
+          set +e
+          psql -v ON_ERROR_STOP=1 -c "$SQL" >/tmp/overlap-a.log 2>&1 &
+          PID_A=$!
+          psql -v ON_ERROR_STOP=1 -c "$SQL" >/tmp/overlap-b.log 2>&1 &
+          PID_B=$!
+          wait "$PID_A"; RC_A=$?
+          wait "$PID_B"; RC_B=$?
+          set -e
+          if { [ "$RC_A" -eq 0 ] && [ "$RC_B" -eq 0 ]; } || { [ "$RC_A" -ne 0 ] && [ "$RC_B" -ne 0 ]; }; then
+            echo "Expected exactly one concurrent insert to succeed (rc A=$RC_A, rc B=$RC_B)"
+            cat /tmp/overlap-a.log /tmp/overlap-b.log
+            exit 1
+          fi
+          psql -v ON_ERROR_STOP=1 -c "do \$test\$ declare n int; begin select count(*) into n from public.events where user_id='$USER_ID' and notes='concurrency'; if n <> 1 then raise exception 'Expected exactly one concurrent blocking event, got %',n; end if; end \$test\$;"
