@@ -84,3 +84,39 @@ Relevant checks: `events.ends_at > events.starts_at`; `tasks.status` permits `to
 5. Only then replay existing migrations in order and compare resulting schema with production.
 
 **Important:** This order alone is insufficient to reconstruct all 62 public tables. Do not generate or apply a migration from this partial graph.
+
+
+## Production-wide RLS and privileges audit (2026-11-17)
+
+Verified with read-only catalog queries:
+
+- 62/62 `public` base tables have RLS enabled.
+- 122 explicit policies across 44 distinct tables; 18 tables have no explicit policy.
+- 310 constraints in `public` (including 82 foreign keys, 143 check constraints, 23 unique constraints).
+- Of 18 no-policy tables, 17 have SELECT denied to both `anon` and `authenticated`, but allowed to `service_role`. These include server-side payment/billing, OAuth connection, support, and quota tables. **Preserve this server-only posture in the baseline.**
+- The remaining no-policy table `public."VYRA"` has SQL SELECT grants to `anon` and `authenticated`, but RLS is enabled with no policies. Therefore those grants do **not** alone imply row visibility. Review its purpose before changing grants or policies.
+
+Catalog queries:
+
+```sql
+select count(*) as tables,
+       count(*) filter (where c.relrowsecurity) as rls_enabled
+from pg_class c join pg_namespace n on n.oid = c.relnamespace
+where n.nspname = 'public' and c.relkind = 'r';
+```
+
+```sql
+select c.relname as table_name,
+       has_table_privilege('anon', c.oid, 'SELECT') as anon_select,
+       has_table_privilege('authenticated', c.oid, 'SELECT') as authenticated_select,
+       has_table_privilege('service_role', c.oid, 'SELECT') as service_select
+from pg_class c join pg_namespace n on n.oid = c.relnamespace
+where n.nspname = 'public' and c.relkind = 'r'
+  and not exists (
+    select 1 from pg_policies p
+    where p.schemaname = 'public' and p.tablename = c.relname
+  )
+order by c.relname;
+```
+
+Do not auto-generate broad `GRANT SELECT` or permissive policies to make missing tables work. Grants and RLS are separate controls.
