@@ -235,3 +235,12 @@ test("MIKA grading cannot save against a superseded draft revision", () => {
   assert.match(src, /\.eq\("answer", priorProgress!\.answer\)\s*\.eq\("updated_at", priorProgress!\.updated_at\)/);
   assert.match(src, /\.eq\("assessment_attempts", priorProgress\?\.assessment_attempts \?\? 0\)/);
 });
+
+test("MVP2 preview admin client fails closed against production Supabase", () => {
+  const src = read("src/lib/supabase/admin.ts");
+  assert.match(src, /process\.env\.VERCEL_ENV === "preview"/);
+  assert.match(src, /process\.env\.VERCEL_GIT_COMMIT_REF === "feat\/mvp2-professora-journey-myra-26"/);
+  assert.match(src, /qothgddrvrpeqsprslqk\.supabase\.co/);
+  assert.match(src, /throw new Error\("Preview MVP2 não pode usar Supabase de produção\."\)/);
+  assert.match(src, /if \(!supabaseUrl \|\| !secretKey\)/);
+});
