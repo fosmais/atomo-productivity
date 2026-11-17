@@ -185,3 +185,16 @@ Event preview missing: `tasks.id`, `tasks.user_id`, `tasks.title`, `tasks.comple
 This is a **current-state dependency failure**, not proof of the historical failed statement. The function-creation migration can be registered before the referenced tables exist because PL/pgSQL statement planning is deferred; the subsequent `CREATE INDEX ... ON public.events` requires the events table at execution time. Verify branch-build logs for exact historical failure.
 
 GitHub repository inspection confirmed `supabase/migrations` is a directory, but its file inventory was not obtained. Do not assume that the production migration registry and tracked Git files match.
+
+
+## Migration registry refreshed (2026-11-17, later check)
+
+Read-only `count(*)` against `supabase_migrations.schema_migrations` returned:
+
+| Environment | Registered migrations | Latest version |
+|---|---:|---|
+| Production | 45 | 20261113182502 |
+| Event preview | 9 | 20261104155422 |
+| Finance preview | 29 | 20261116230713 |
+
+Earlier documentation mentioned 37 production migrations; that figure is **superseded** by this later observation. This does not establish when or why the count changed. Compare the registry with Git-tracked files before attempting repair. The GitHub migration inventory script has not yet been executed, so the file-to-registry comparison remains open.
