@@ -215,3 +215,26 @@ The sole shared version is `20261030174834` (`autopilot_transactional_reservatio
 **Important distinction:** a missing migration-history record does not, by itself, prove the corresponding table/column is absent. Conversely, inserting migration-history rows cannot create missing schema objects. Structural parity and migration replay need separate verification.
 
 The version-set comparison was executed using the connected Supabase database tools. Git repository migration file inventory is still unverified, and no migration DDL or schema mutation was executed.
+
+
+## GitHub Actions migration inventory result (2026-11-17)
+
+The read-only GitHub Actions workflow **completed successfully**: [run 44114722406](https://github.com/fosmais/atomo-productivity/actions/runs/44114722406). This validates that the inventory/comparison script ran, **not** that database migration replay succeeds.
+
+Comparing SQL filename version identifiers in the Git tree of `feat/myryra-mvp2-mika-agent-engine` to Supabase migration registries:
+
+| Environment | Registry versions with no matching Git SQL version | Git SQL versions not in registry |
+|---|---:|---:|
+| Production | 43 | 7 |
+| Events preview | 9 | 9 |
+| Finance preview | 29 | 9 |
+
+Six additional legacy SQL files use an 8-digit date prefix and were **excluded** from the 14-digit version matching:
+- `20261101_billing_queue_atomic_claim.sql`
+- `20261101_billing_queue_finalize.sql`
+- `20261101_billing_reconciliation_queue.sql`
+- `20261104_event_categories.sql`
+- `20261104_event_category_permissions.sql`
+- `20261104_event_reminders.sql`
+
+**Release gate:** Do not mark migration versions as applied to silence drift. First retrieve/reconstruct missing baseline DDL, establish clean-replay ordering in an isolated environment, and verify core schema, constraints, RLS and policies before any production proposal.
