@@ -343,3 +343,15 @@ Added `docs/sql/myryra-core-indexes-triggers-readonly.sql` (commit `4066ab3`). R
 - Tasks: per-user soft-delete index.
 
 The only trigger on these seven tables is `myryra_guard_blocking_event_overlap`, BEFORE INSERT/UPDATE on `events`. Its function serializes checks per user with an advisory transaction lock, rejects overlapping active blocking events, validates intervals, and deliberately preserves legacy overlaps when an update does not change owner or interval. This is business-critical behavior and must be preserved in any reconstructed baseline. No SQL was applied to any database.
+
+
+## Critical index and calendar-trigger parity (2026-11-17)
+
+Added `docs/sql/myryra-core-index-trigger-parity-readonly.sql` (commit `4ad7e81`), checking 18 named PROD indexes and the calendar conflict trigger/function.
+
+Read-only preview inventory:
+- Events preview has only 3 of the required core index names in this subset: `events_pkey`, `events_user_category_idx`, `myka_messages_pkey`.
+- Finance preview has 8: `events_autopilot_task_once_per_user_idx`, `events_pkey`, `events_user_category_idx`, `events_user_deleted_at_idx`, `events_user_start_idx`, `plans_pkey`, `tasks_pkey`, `tasks_user_deleted_at_idx`.
+- Neither preview returned the `myryra_guard_blocking_event_overlap` trigger in its catalog inventory. PROD has the trigger on events for BEFORE INSERT and BEFORE UPDATE, using the function `public.myryra_guard_blocking_event_overlap()`.
+
+The gate is diagnostic only; index-name presence does not prove identical definitions. Trigger/function behavior must be compared by definition/checksum and tested for overlap, concurrent inserts and legacy updates before any replay. No database was changed.
