@@ -255,3 +255,14 @@ test("versioned exercises are server-issued and owner-readable only", () => {
   assert.match(src, /owner_id = \(select auth\.uid\(\)\)/);
   assert.doesNotMatch(src, /grant (?:insert|update|delete|all) on public\.myryra_journey_assigned_exercises to authenticated/i);
 });
+
+test("MIKA grading rejects forged prompts for assigned server exercises", () => {
+  const src = read("src/app/api/journeys/feedback/route.ts");
+  assert.match(src, /from\("myryra_journey_assigned_exercises"\)/);
+  assert.match(src, /\.eq\("mission_id", missionId\)\.eq\("owner_id", user\.id\)/);
+  assert.match(src, /\.order\("version", \{ ascending: false \}\)\.limit\(1\)\.maybeSingle\(\)/);
+  assert.match(src, /assigned\.exercise !== exercise\.trim\(\)/);
+  assert.match(src, /assigned\.session_id && assigned\.session_id !== \(sessionId \?\? null\)/);
+  assert.match(src, /exercise: assigned\?\.exercise \?\? exercise\.trim\(\)/);
+  assert.match(src, /Exercício oficial indisponível/);
+});
