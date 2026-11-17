@@ -61,6 +61,7 @@ export default function TaskKanban() {
   const [dashboardFilter, setDashboardFilter] = useState<"all" | "pending" | "overdue">("all");
   // Derive the visible mobile column without synchronous state updates in effects.
   const visibleMobileColumn = (() => {
+    if (focusedTaskId) return tasks.find((task) => task.id === focusedTaskId)?.status ?? mobileColumn;
     if (dashboardFilter === "all" || loading || mobileColumnManuallySelected) return mobileColumn;
     const matches = (task: KanbanTask) =>
       task.status !== "done" &&
@@ -643,14 +644,14 @@ export default function TaskKanban() {
             {columns.map((column) => (
               <button key={column.status} type="button" aria-pressed={visibleMobileColumn === column.status} onClick={() => { setMobileColumn(column.status); setMobileColumnManuallySelected(true); }}
                 className={`min-h-10 shrink-0 snap-start rounded-xl border px-3 py-2 text-xs font-semibold sm:text-sm ${visibleMobileColumn === column.status ? "border-violet-400 bg-violet-600 text-white" : "border-slate-600 bg-slate-800 text-slate-300"}`}>
-                {column.label} ({tasks.filter((task) => task.status === column.status && (dashboardFilter === "all" || (task.status !== "done" && ((dashboardFilter === "pending" ? (!task.due_date || task.due_date <= localDateKey(new Date())) : (!!task.due_date && task.due_date < localDateKey(new Date())))))) && (priorityFilter === "all" || task.priority === priorityFilter) && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))).length})
+                {column.label} ({tasks.filter((task) => task.status === column.status && (task.id === focusedTaskId || (dashboardFilter === "all" || (task.status !== "done" && ((dashboardFilter === "pending" ? (!task.due_date || task.due_date <= localDateKey(new Date())) : (!!task.due_date && task.due_date < localDateKey(new Date())))))) && (priorityFilter === "all" || task.priority === priorityFilter) && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))).length})
               </button>
             ))}
           </div>
           <div className="grid min-w-0 gap-3 sm:gap-4 lg:grid-cols-2 2xl:grid-cols-4">
           {columns.map((column) => {
             const columnTasks = tasks.filter(
-              (task) => task.status === column.status && (dashboardFilter === "all" || (task.status !== "done" && ((dashboardFilter === "pending" ? (!task.due_date || task.due_date <= localDateKey(new Date())) : (!!task.due_date && task.due_date < localDateKey(new Date())))))) && (priorityFilter === "all" || task.priority === priorityFilter) && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))
+              (task) => task.status === column.status && (dashboardFilter === "all" || (task.status !== "done" && ((dashboardFilter === "pending" ? (!task.due_date || task.due_date <= localDateKey(new Date())) : (!!task.due_date && task.due_date < localDateKey(new Date())))))) && (priorityFilter === "all" || task.priority === priorityFilter) && (!favoritesOnly || favoriteIds.includes(task.id)) && task.title.toLocaleLowerCase("pt-BR").includes(taskSearch.trim().toLocaleLowerCase("pt-BR"))))
             );
             const priorityOrder: Record<string, number> = { Alta: 0, "Média": 1, Normal: 2, Baixa: 2 };
             columnTasks.sort((a, b) => {
