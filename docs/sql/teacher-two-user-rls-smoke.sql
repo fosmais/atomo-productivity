@@ -11,6 +11,26 @@ begin
   select count(*) into n from public.mika_teacher_sessions;
   if n <> 1 then raise exception 'Owner cannot read Teacher session'; end if;
 end $test$;
+-- Owner can reschedule the active session using the allowed column.
+update public.mika_teacher_sessions set scheduled_at='2026-12-01 12:00:00+00';
+do $test$
+declare n int;
+begin
+  select count(*) into n from public.mika_teacher_sessions
+    where scheduled_at='2026-12-01 12:00:00+00';
+  if n <> 1 then raise exception 'Owner could not reschedule Teacher session'; end if;
+end $test$;
+-- Direct client writes to Teacher messages must fail.
+do $test$
+begin
+  begin
+    insert into public.mika_teacher_messages(session_id,owner_id,role,content)
+    select id,owner_id,'user','unauthorized client write'
+    from public.mika_teacher_sessions;
+    raise exception 'Client inserted Teacher message';
+  exception when insufficient_privilege then null;
+  end;
+end $test$;
 reset role;
 insert into public.mika_teacher_messages(session_id,owner_id,role,content)
 select id,owner_id,'assistant','Benvenuto' from public.mika_teacher_sessions;
