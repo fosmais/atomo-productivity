@@ -277,3 +277,13 @@ test("graded exercise evidence is saved and cleared on draft edits", () => {
   assert.match(migration, /add column if not exists assessed_exercise_id uuid/);
   assert.match(migration, /references public\.myryra_journey_assigned_exercises\(id\)/);
 });
+
+test("mission completion rejects stale server-assigned exercise grades", () => {
+  const sql = read("supabase/migrations/20261117000300_guard_current_assessed_exercise.sql");
+  assert.match(sql, /create or replace function public\.myryra_guard_assessed_mission_completion/);
+  assert.match(sql, /exists \(select 1 from public\.myryra_journey_assigned_exercises ae/);
+  assert.match(sql, /assessed_exercise_id/);
+  assert.match(sql, /order by ae\.version desc limit 1/);
+  assert.match(sql, /evidence\.assessed_exercise_id is distinct from current_exercise/);
+  assert.match(sql, /errcode = '23514'/);
+});
