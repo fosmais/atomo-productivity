@@ -266,3 +266,10 @@ Individual successful steps confirmed via workflow job metadata:
 4. Assert all three tables exist with RLS enabled, four Journey policies, and Teacher→Journey foreign key.
 
 This verifies **isolated SQL replay with mocked auth**, not a real Supabase branch migration, auth.uid() isolation with multiple users, end-to-end product behavior, or complete schema parity. The candidate SQL remains under docs/sql and has not been applied to any Supabase environment.
+
+
+## Two-user Journey RLS isolation smoke passed (2026-11-17)
+
+GitHub Actions [run 44119562357](https://github.com/fosmais/atomo-productivity/actions/runs/44119562357) completed successfully on commit `2c079287`. The dedicated step **Verify two-user Journey RLS isolation** passed after isolated Journey→MIKA Teacher replay and schema assertions. The test file `docs/sql/journey-two-user-rls-smoke.sql` checks own-row visibility, cross-user read/update/delete isolation, and rejection of a forged-owner insert using simulated JWT claims.
+
+The migration audit, regression checks and MVP1 quality/security workflows also passed on that commit. These results do **not** establish real Supabase Auth integration or full MVP2 schema replay. No existing database was modified.
