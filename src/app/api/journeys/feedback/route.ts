@@ -1,3 +1,4 @@
+import { lessonFor } from "@/lib/journey/lesson-topics";
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createClient } from "@/lib/supabase/server";
@@ -35,6 +36,12 @@ export async function POST(request: Request) {
   const { data: mission, error: missionError } = await supabase.from("myryra_journey_missions").select("id,title").eq("id", missionId).eq("journey_id", journeyId).maybeSingle();
   if (missionError) return NextResponse.json({ error: "Falha ao consultar a missão." }, { status: 500 });
   if (!mission) return NextResponse.json({ error: "Missão não encontrada." }, { status: 404 });
+  // The exercise definition is derived from the server-fetched mission title,
+  // never from a user-controlled prompt. Keep legacy non-template missions
+  // separate until server issuance is mandatory for every learning mission.
+  const canonicalLesson = lessonFor(mission.title);
+  if (canonicalLesson && exercise.trim() !== canonicalLesson.exercise)
+    return NextResponse.json({ error: "Exercício divergente da aula oficial. Atualize a jornada." }, { status: 409 });
   // A teacher-initiated assessment must be linked to the same owned mission.
   // Journey-only assessments without sessionId remain backward compatible.
   if (typeof sessionId === "string") {
