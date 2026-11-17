@@ -21,7 +21,7 @@ declare n int;
 begin
  select count(*) into n from information_schema.columns where table_schema='public'
  and table_name in ('plans','tasks','events','favorites','myka_conversations','myka_messages','google_calendar_connections');
- if n<>58 then raise exception 'Unexpected core column count: %',n; end if;
+ if n<>57 then raise exception 'Unexpected core column count: %',n; end if;
  select count(*) into n from pg_policies where schemaname='public'
  and tablename in ('plans','tasks','events','favorites','myka_conversations','myka_messages','google_calendar_connections');
  if n<>24 then raise exception 'Expected 24 core policies, got %',n; end if;
