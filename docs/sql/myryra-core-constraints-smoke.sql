@@ -36,8 +36,8 @@ insert into public.myka_messages values ('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
 do $test$
 begin
  begin
-  insert into public.favorites(user_id,task_id,event_id) values
-  ('11111111-1111-4111-8111-111111111111','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','cccccccc-cccc-4ccc-8ccc-cccccccccccc');
+  insert into public.favorites(id,user_id,task_id,event_id) values
+  (gen_random_uuid(),'11111111-1111-4111-8111-111111111111','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','cccccccc-cccc-4ccc-8ccc-cccccccccccc');
   raise exception 'Favorite accepted two targets';
  exception when check_violation then null; end;
  begin
