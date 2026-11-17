@@ -365,3 +365,10 @@ Created:
 - `.github/workflows/calendar-overlap-guard-smoke.yml` (commit `f68b2bb`): runs the smoke script on PostgreSQL 16.
 
 **Not yet validated:** workflow execution result; concurrent two-session insertion race; equivalence of function definition/checksum against PROD; complete core baseline. This candidate is not applied to any Supabase project.
+
+
+## Calendar overlap guard behavior smoke passed; concurrency test added (2026-11-17)
+
+The isolated PostgreSQL 16 workflow [run 44125959980](https://github.com/fosmais/atomo-productivity/actions/runs/44125959980) passed the behavior smoke for overlap rejection, non-blocking/deleted event allowance, unchanged legacy overlap edits, and invalid interval rejection.
+
+Added a second concurrent-insert test to `.github/workflows/calendar-overlap-guard-smoke.yml` (commit `551cc4d`). It launches two independent psql sessions attempting the same blocking interval for the same user and asserts exactly one succeeds and exactly one row remains. This new concurrency assertion is **pending CI execution**; no claim of concurrency test success yet. No Supabase project was changed.
