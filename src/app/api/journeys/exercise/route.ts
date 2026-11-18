@@ -1,4 +1,4 @@
-import { lessonFor } from "@/lib/journey/lesson-topics";
+import { educationalLessonFor } from "@/lib/journey/lesson-topics";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { hasCurrentLegalAcceptance } from "@/lib/privacy/legal-acceptance";
 import { NextResponse } from "next/server";
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
   let { data: assignment, error: assignmentError } = await latest();
   if (assignmentError) return NextResponse.json({ error: "Exercício indisponível." }, { status: 503 });
   if (!assignment) {
-    const lesson = lessonFor(mission.title);
+    const lesson = educationalLessonFor(mission.title);
     if (!lesson) return NextResponse.json({ error: "Esta missão ainda não possui exercício oficial." }, { status: 409 });
     const { error: insertError } = await createSupabaseAdmin()
       .from("myryra_journey_assigned_exercises")
