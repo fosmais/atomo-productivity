@@ -48,4 +48,6 @@ create policy "Users can read own action proposals" on public.mika_action_propos
  for select to authenticated using ((select auth.uid())=user_id);
 create policy "Users can read own action audit" on public.mika_action_audit
  for select to authenticated using ((select auth.uid())=user_id);
+-- Both preview branches grant authenticated SELECT on these tables.
+grant select on public.mika_action_proposals, public.mika_action_audit to authenticated;
 commit;
