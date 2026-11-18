@@ -394,3 +394,10 @@ test("Journey invalidates stale exercise and assessment after a 409 conflict", (
   assert.match(ui, /setAssessmentResults\(old => \{ const next = \{ \.\.\.old \}; delete next\[mission\.id\]; return next; \}\)/);
   assert.match(ui, /Feche e reabra a aula para carregar o exercício oficial atualizado/);
 });
+
+test("reloading an official exercise invalidates the previous local grade", () => {
+  const ui = read("src/app/journey/journey-trail.tsx");
+  assert.match(ui, /A newly loaded official exercise must never inherit an older local grade/);
+  assert.match(ui, /setAssessmentResults\(previous => \{ const next = \{ \.\.\.previous \}; delete next\[mission\.id\]; return next; \}\);/);
+  assert.match(ui, /setAiFeedback\(previous => \(\{ \.\.\.previous, \[mission\.id\]: "" \}\)\);/);
+});
