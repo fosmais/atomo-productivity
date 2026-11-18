@@ -457,3 +457,23 @@ The newer preview includes staging-only Journey exercise migrations through
 `20261113182502_fix_journey_snapshot_confirmation_owner_rls`.
 
 **Decision:** do not issue `migration repair`, delete registry rows, or apply missing migrations to either existing preview. First create a version-to-file mapping and a complete dependency-ordered disposable replay; compare all objects and grants against intended target. A migration version count alone cannot establish recovery safety.
+
+
+## Migration filename collisions — release blocker (2026-11-18)
+
+Read-only GitHub directory inspection found **15 SQL files** in `supabase/migrations`, but only
+**11 distinct numeric version prefixes**. The following prefixes are duplicated:
+- `20261101`: `20261101_billing_queue_atomic_claim.sql`,
+  `20261101_billing_queue_finalize.sql`, `20261101_billing_reconciliation_queue.sql`.
+- `20261104`: `20261104_event_categories.sql`,
+  `20261104_event_category_permissions.sql`, `20261104_event_reminders.sql`.
+
+These two prefixes also have **8 digits**, rather than the usual 14-digit Supabase timestamp format.
+Added `scripts/audit-supabase-migration-filenames.py` and
+`.github/workflows/supabase-migration-filename-audit.yml` to fail closed on collisions
+or nonstandard prefix lengths. **The new audit is expected to fail on the current repository**
+until a safe version mapping is approved. This is a newly detected repository defect, not
+evidence that an existing database migration failed because of these filenames.
+
+Do not rename already-applied migration files without comparing actual registry versions,
+file checksums and dependent SQL. No production/preview database changes were made.
