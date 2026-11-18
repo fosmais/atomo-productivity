@@ -401,3 +401,10 @@ test("reloading an official exercise invalidates the previous local grade", () =
   assert.match(ui, /setAssessmentResults\(previous => \{ const next = \{ \.\.\.previous \}; delete next\[mission\.id\]; return next; \}\);/);
   assert.match(ui, /setAiFeedback\(previous => \(\{ \.\.\.previous, \[mission\.id\]: "" \}\)\);/);
 });
+
+test("completion redirects into the official lesson issuer rather than opening an empty lesson", () => {
+  const ui = read("src/app/journey/journey-trail.tsx");
+  const complete = ui.slice(ui.indexOf("async function complete(mission: Mission)"));
+  assert.match(complete, /if \(openLesson !== mission\.id\) void openOfficialLesson\(mission\)/);
+  assert.doesNotMatch(complete, /setOpenLesson\(mission\.id\)/);
+});
