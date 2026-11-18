@@ -405,3 +405,12 @@ All eight workflows passed at commit `b0d938c`, including [core RLS smoke run 44
 Read-only inspection of PROD `pg_indexes` confirmed the **names, uniqueness, key order, partial predicates and DESC ordering of all 11 candidate secondary indexes** match the corresponding PROD index definitions. Note `myka_conversations_id_user_unique` is also backed by a unique constraint in PROD; the foundational baseline must not create a duplicate independent index alongside the unique constraint.
 
 **Open gates:** construct full foundational seven-table DDL including column types/defaults, replay complete migration dependency chain against a disposable database, validate policies with negative INSERT/UPDATE cases, and only then consider Supabase preview recovery. Do not apply these candidate scripts to existing PROD/preview schemas.
+
+
+## MIKA Agent schema drift — blocker for migration 20261109120000 (2026-11-17)
+
+Read-only `information_schema.columns` inspection found that `public.mika_action_proposals` and `public.mika_action_audit` are **absent from PROD** `qothgddrvrpeqsprslqk` but **present in both failed preview branches** `xanavauqzsrgvdfhcrsm` and `vzgahbceixjrdlqdtwoy`. The checked-in migration `20261109120000_mika_execution_approved_plan_compat.sql` references these tables directly, so it cannot be safely included in a fresh replay based solely on the seven-table PROD foundation. This is an environment/schema divergence, not proof of successful deployment to PROD.
+
+Preview tables have 11 proposal columns (UUID id/user_id, action_type, JSONB payload/result, status, created/expires/approved/executed timestamps, execution_key) and 6 audit columns (bigint id, UUID proposal_id/user_id, event_type, created_at, JSONB metadata). This is metadata only; no user records or credentials were read.
+
+**Gate:** reconstruct and compare preview PK/FK/CHECK/index/RLS/grants and sequence/identity semantics; test MIKA Agent separately in a disposable DB, including approval authorization and tenant isolation. Do not copy preview objects into PROD, and do not claim this migration is production-compatible.
