@@ -244,7 +244,7 @@ declare n int;
 begin
  if has_function_privilege('anon','public.mika_execute_approved_task(uuid,uuid)','EXECUTE')
     or has_function_privilege('service_role','public.mika_execute_approved_task(uuid,uuid)','EXECUTE')
-    or has_function_privilege('public','public.mika_execute_approved_task(uuid,uuid)','EXECUTE') then
+    or exists (select 1 from pg_proc p where p.oid='public.mika_execute_approved_task(uuid,uuid)'::regprocedure and aclcontains(coalesce(p.proacl,acldefault('f',p.proowner)),'=X/'::aclitem)) then
   raise exception 'MIKA Agent execution function exposed to unauthorized role';
  end if;
  if not has_function_privilege('authenticated','public.mika_execute_approved_task(uuid,uuid)','EXECUTE') then
