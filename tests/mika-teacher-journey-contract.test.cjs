@@ -427,3 +427,12 @@ test("non-template educational missions receive server-issued exercises without 
   assert.match(grading, /const canonicalLesson = educationalLessonFor\(mission\.title\)/);
   assert.match(ui, /educationalLessonFor\(m\.title\)/);
 });
+
+test("database guard protects generic educational missions and preserves versioned assessment checks", () => {
+  const migration = read("supabase/migrations/20261118000100_guard_generic_educational_missions.sql");
+  assert.match(migration, /aprender\|estudar\|estudo\|aula\|curso\|idioma/);
+  assert.match(migration, /new\.title ~\*/);
+  assert.match(migration, /evidence\.assessed_exercise_id is distinct from current_exercise/);
+  assert.match(migration, /evidence\.assessment_score < required_score/);
+  assert.match(migration, /before insert or update of status on public\.myryra_journey_missions/);
+});
