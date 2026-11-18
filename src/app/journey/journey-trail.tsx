@@ -44,11 +44,11 @@ export default function JourneyTrail() {
     setExerciseLoadError(old => ({ ...old, [mission.id]: "" }));
     setOfficialExercises(old => { const next = { ...old }; delete next[mission.id]; return next; });
     try {
-      const response = await fetch(`/api/journeys/exercise?journeyId=${encodeURIComponent(selected)}&missionId=${encodeURIComponent(mission.id)}`, { cache: "no-store" });
+      const response = await fetch("/api/journeys/exercise", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ journeyId: selected, missionId: mission.id }), cache: "no-store" });
       const data = await response.json();
       if (requestId !== officialExerciseRequest.current) return;
       if (!response.ok) throw new Error(data.error || "Não foi possível consultar o exercício oficial.");
-      const exercise = data.assignment?.exercise ?? lessonFor(mission.title)?.exercise;
+      const exercise = data.assignment?.exercise;
       if (!exercise) throw new Error("Esta missão ainda não possui exercício oficial.");
       setOfficialExercises(old => ({ ...old, [mission.id]: exercise }));
     } catch (error) {
