@@ -1,5 +1,5 @@
 "use client";
-import { lessonFor } from "@/lib/journey/lesson-topics";
+import { educationalLessonFor } from "@/lib/journey/lesson-topics";
 
 import { useEffect, useRef, useState } from "react";
 import JourneyAchievementCard from "./journey-achievement-card";
@@ -347,7 +347,7 @@ export default function JourneyTrail() {
   }
   async function complete(mission: Mission) {
     if (busy) return;
-    if (mission.status !== "completed" && lessonFor(mission.title) && (!aiFeedback[mission.id]?.trim() || assessmentResults[mission.id]?.passed !== true)) {
+    if (mission.status !== "completed" && educationalLessonFor(mission.title) && (!aiFeedback[mission.id]?.trim() || assessmentResults[mission.id]?.passed !== true)) {
       if (openLesson !== mission.id) void openOfficialLesson(mission);
       setError("Para concluir esta aula, abra o treinamento, responda ao exercício e peça a avaliação da MIKA. A avaliação deve ser salva e alcançar pelo menos 70 pontos.");
       return;
@@ -563,9 +563,9 @@ export default function JourneyTrail() {
                     <span className={"mt-3 inline-flex rounded-full px-3 py-1 text-[11px] font-bold " + (completed ? "bg-emerald-400/20 text-emerald-200" : next ? "bg-amber-300/20 text-amber-200" : "bg-white/10 text-violet-200")}>{completed ? "✓ Conquista realizada" : next ? "✦ Sua próxima missão" : "◇ Aguardando sua vez"}</span>
                   </button>
                   </div>
-                  {lessonFor(m.title) && <div className="mx-auto w-[92%] rounded-xl border border-violet-300/25 bg-slate-900/80 p-3 sm:w-[85%]">
+                  {educationalLessonFor(m.title) && <div className="mx-auto w-[92%] rounded-xl border border-violet-300/25 bg-slate-900/80 p-3 sm:w-[85%]">
                     <button type="button" onClick={() => void openOfficialLesson(m) } aria-expanded={openLesson === m.id} className="w-full text-left text-xs font-semibold text-amber-200">{openLesson === m.id ? "▾ Fechar treinamento" : "▸ Estudar com a MIKA · Aula e exercício"}</button>
-                    {openLesson === m.id && (() => { const lesson = lessonFor(m.title)!; return <div className="mt-3 space-y-3 text-sm leading-relaxed text-slate-200"><p className="font-bold text-white">{lesson.heading}</p><p>{lesson.explanation}</p><p className="rounded-lg bg-violet-800/25 p-3">{lesson.example}</p><p className="font-semibold text-amber-100">Sua prática: {officialExercises[m.id] ?? (exerciseLoading === m.id ? "Carregando exercício oficial..." : exerciseLoadError[m.id] || "Abra a aula para consultar o exercício.")}</p>
+                    {openLesson === m.id && (() => { const lesson = educationalLessonFor(m.title)!; return <div className="mt-3 space-y-3 text-sm leading-relaxed text-slate-200"><p className="font-bold text-white">{lesson.heading}</p><p>{lesson.explanation}</p><p className="rounded-lg bg-violet-800/25 p-3">{lesson.example}</p><p className="font-semibold text-amber-100">Sua prática: {officialExercises[m.id] ?? (exerciseLoading === m.id ? "Carregando exercício oficial..." : exerciseLoadError[m.id] || "Abra a aula para consultar o exercício.")}</p>
                     <label className="block space-y-2"><span className="block text-xs font-semibold text-violet-100">Sua resposta (salve para continuar depois)</span><textarea value={exerciseAnswers[m.id] ?? ""} disabled={feedbackBusy === m.id || savingExercise === m.id} onChange={event => { setExerciseAnswers(old => ({ ...old, [m.id]: event.target.value.slice(0, 2000) })); setShowReview(null); setAiFeedback(oldFeedback => ({ ...oldFeedback, [m.id]: "" })); setAssessmentResults(previous => { const next = { ...previous }; delete next[m.id]; return next; }); setExerciseMessage(old => ({ ...old, [m.id]: "Resposta alterada. Salve novamente para manter seu histórico atualizado." })); }} rows={4} maxLength={2000} placeholder="Registre seu raciocínio e os exemplos aqui..." className="w-full rounded-lg border border-violet-300/30 bg-slate-950 p-3 text-sm text-white placeholder:text-slate-400" /></label>
                     <button type="button" disabled={savingExercise === m.id || feedbackBusy === m.id} onClick={() => void saveExercise(m)} className="rounded-lg border border-violet-300/40 px-3 py-2 text-xs font-semibold text-violet-100 disabled:opacity-40">{savingExercise === m.id ? "Salvando..." : "Salvar resposta"}</button>
                     {exerciseMessage[m.id] && <p role="status" className="text-xs text-violet-100">{exerciseMessage[m.id]}</p>}
