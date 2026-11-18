@@ -31,7 +31,12 @@ export default function JourneyTrail() {
   const officialExerciseRequest = useRef(0);
   const [exerciseLoadError, setExerciseLoadError] = useState<Record<string, string>>({});
   async function openOfficialLesson(mission: Mission) {
-    if (openLesson === mission.id) { setOpenLesson(null); return; }
+    if (openLesson === mission.id) {
+      ++officialExerciseRequest.current;
+      setExerciseLoading(null);
+      setOpenLesson(null);
+      return;
+    }
     setOpenLesson(mission.id);
     if (!selected) return;
     const requestId = ++officialExerciseRequest.current;
