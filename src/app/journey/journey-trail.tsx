@@ -348,7 +348,7 @@ export default function JourneyTrail() {
   async function complete(mission: Mission) {
     if (busy) return;
     if (mission.status !== "completed" && lessonFor(mission.title) && (!aiFeedback[mission.id]?.trim() || assessmentResults[mission.id]?.passed !== true)) {
-      setOpenLesson(mission.id);
+      if (openLesson !== mission.id) void openOfficialLesson(mission);
       setError("Para concluir esta aula, abra o treinamento, responda ao exercício e peça a avaliação da MIKA. A avaliação deve ser salva e alcançar pelo menos 70 pontos.");
       return;
     }
