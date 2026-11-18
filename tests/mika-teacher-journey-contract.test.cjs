@@ -294,9 +294,9 @@ test("MIKA canonical lesson prompts are shared between Journey UI and grading AP
   const grading = read("src/app/api/journeys/feedback/route.ts");
   assert.match(topics, /export const lessonTopics = \[/);
   assert.match(topics, /export function lessonFor\(title: string\)/);
-  assert.match(ui, /import \{ lessonFor \} from "@\/lib\/journey\/lesson-topics"/);
-  assert.match(grading, /import \{ lessonFor \} from "@\/lib\/journey\/lesson-topics"/);
-  assert.match(grading, /const canonicalLesson = lessonFor\(mission\.title\)/);
+  assert.match(ui, /import \{ educationalLessonFor \} from "@\/lib\/journey\/lesson-topics"/);
+  assert.match(grading, /import \{ educationalLessonFor \} from "@\/lib\/journey\/lesson-topics"/);
+  assert.match(grading, /const canonicalLesson = educationalLessonFor\(mission\.title\)/);
   assert.match(grading, /exercise\.trim\(\) !== canonicalLesson\.exercise/);
   assert.match(grading, /Exercício divergente da aula oficial/);
 });
@@ -367,7 +367,7 @@ test("MIKA issues the canonical exercise before the learner answers", () => {
   const route = read("src/app/api/journeys/exercise/route.ts");
   const ui = read("src/app/journey/journey-trail.tsx");
   assert.match(route, /export async function POST\(request: Request\)/);
-  assert.match(route, /const lesson = lessonFor\(mission\.title\)/);
+  assert.match(route, /const lesson = educationalLessonFor\(mission\.title\)/);
   assert.match(route, /exercise: lesson\.exercise/);
   assert.match(route, /insertError\.code !== "23505"/);
   assert.match(route, /hasCurrentLegalAcceptance\(user\.id\)/);
@@ -422,7 +422,7 @@ test("non-template educational missions receive server-issued exercises without 
   const grading = read("src/app/api/journeys/feedback/route.ts");
   const ui = read("src/app/journey/journey-trail.tsx");
   assert.match(topics, /export function educationalLessonFor\(title: string\)/);
-  assert.match(topics, /if \(!\/\\b\(aprender\|estudar/);
+  assert.match(topics, /if \(!\/\\b\(aprender/);
   assert.match(route, /const lesson = educationalLessonFor\(mission\.title\)/);
   assert.match(grading, /const canonicalLesson = educationalLessonFor\(mission\.title\)/);
   assert.match(ui, /educationalLessonFor\(m\.title\)/);
