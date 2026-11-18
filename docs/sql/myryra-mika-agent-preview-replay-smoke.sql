@@ -180,3 +180,37 @@ begin
  where proposal_id='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee' and event_type='expired';
  if n<>1 then raise exception 'Expired proposal audit missing'; end if;
 end $test$;
+
+
+-- Rejected proposal must never execute, even with an approval audit.
+insert into public.mika_action_proposals(id,user_id,action_type,payload,status,approved_at)
+values (
+ 'ffffffff-ffff-4fff-8fff-ffffffffffff',
+ '11111111-1111-4111-8111-111111111111',
+ 'create_task',
+ '{"type":"create_task","title":"Rejected test task","reason":"Smoke test","due_at":null,"plan_id":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"}'::jsonb,
+ 'rejected',now()
+);
+insert into public.mika_action_audit(proposal_id,user_id,event_type)
+values ('ffffffff-ffff-4fff-8fff-ffffffffffff','11111111-1111-4111-8111-111111111111','approved');
+set role authenticated;
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',false);
+do $test$
+begin
+ begin
+  perform public.mika_execute_approved_task(
+   'ffffffff-ffff-4fff-8fff-ffffffffffff',
+   'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+  raise exception 'Rejected proposal unexpectedly executed';
+ exception when sqlstate 'P0001' then null; end;
+end $test$;
+reset role;
+do $test$
+declare n int;
+begin
+ select count(*) into n from public.tasks;
+ if n<>1 then raise exception 'Rejected proposal created a task'; end if;
+ select count(*) into n from public.mika_action_proposals
+ where id='ffffffff-ffff-4fff-8fff-ffffffffffff' and status='rejected';
+ if n<>1 then raise exception 'Rejected proposal status changed'; end if;
+end $test$;
