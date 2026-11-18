@@ -35,7 +35,7 @@ export async function POST(_request: Request, context: Context) {
   // Do not ask the user to redo an already completed mission.
   // Compare normalized titles while keeping the original achievements untouched.
   const normalizedTitle = (value: string) => value.normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, "").trim().replace(/\\s+/g, " ").toLowerCase();
+    .replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " ").toLowerCase();
   const completedTitles = new Set(completed.map(m => normalizedTitle(m.title)));
   const proposed = draft.missions
     .filter(m => !completedTitles.has(normalizedTitle(m.title)))
