@@ -67,6 +67,42 @@ begin
 end $test$;
 
 
+-- Approved proposals must match the exact plan and have an approval audit.
+insert into public.mika_action_proposals(id,user_id,action_type,payload,status,approved_at)
+values (
+ 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+ '11111111-1111-4111-8111-111111111111',
+ 'create_task',
+ '{"type":"create_task","title":"Unapproved audit test","reason":"Smoke test","due_at":null,"plan_id":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"}'::jsonb,
+ 'approved',now()
+);
+set role authenticated;
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',false);
+do $test$
+begin
+ begin
+  perform public.mika_execute_approved_task(
+   'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+   'dddddddd-dddd-4ddd-8ddd-dddddddddddd');
+  raise exception 'Plan mismatch unexpectedly succeeded';
+ exception when sqlstate '22023' then null; end;
+ begin
+  perform public.mika_execute_approved_task(
+   'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+   'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+  raise exception 'Missing approval audit unexpectedly succeeded';
+ exception when sqlstate 'P0001' then null; end;
+end $test$;
+reset role;
+do $test$
+declare n int;
+begin
+ select count(*) into n from public.tasks;
+ if n<>0 then raise exception 'Invalid approvals created tasks'; end if;
+ select count(*) into n from public.mika_action_proposals where status='approved';
+ if n<>2 then raise exception 'Invalid approvals modified proposal status'; end if;
+end $test$;
+
 -- Authorized execution: approved proposal and owner-scoped approval audit.
 insert into public.plans(id,user_id,title)
 values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','11111111-1111-4111-8111-111111111111','Owner plan');
