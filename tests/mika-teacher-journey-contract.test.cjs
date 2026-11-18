@@ -375,3 +375,14 @@ test("MIKA issues the canonical exercise before the learner answers", () => {
   assert.match(ui, /const exercise = data\.assignment\?\.exercise;/);
   assert.doesNotMatch(ui, /data\.assignment\?\.exercise \?\? lessonFor/);
 });
+
+test("official exercise GET and POST both enforce legal acceptance and MFA", () => {
+  const route = read("src/app/api/journeys/exercise/route.ts");
+  const get = route.slice(route.indexOf("export async function GET"), route.indexOf("export async function POST"));
+  const post = route.slice(route.indexOf("export async function POST"));
+  for (const handler of [get, post]) {
+    assert.match(handler, /hasCurrentLegalAcceptance\(user\.id\)/);
+    assert.match(handler, /getAuthenticatorAssuranceLevel\(\)/);
+    assert.match(handler, /\.eq\("owner_id", user\.id\)/);
+  }
+});
