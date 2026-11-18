@@ -441,3 +441,19 @@ replay beyond the currently selected files; validate API behavior against a fres
 Supabase preview; obtain explicit approval before any PROD change. Passing CI does **not**
 mean the existing preview branches are repaired or the MIKA Agent is deployed to PROD.
 No PROD or Supabase preview DDL was executed by this audit.
+
+
+## Migration registry divergence quantified — read-only (2026-11-18)
+
+Queried `supabase_migrations.schema_migrations` (SELECT only) in PROD and both failed preview branches:
+- PROD `qothgddrvrpeqsprslqk`: **45** registered migration versions.
+- Preview `xanavauqzsrgvdfhcrsm`: **33** versions, only **1 shared** with PROD; **32 preview-exclusive**.
+- Preview `vzgahbceixjrdlqdtwoy`: **9** versions, only **1 shared** with PROD; **8 preview-exclusive**.
+
+These are exact version-ID intersections, not SQL-content equivalence or a causal diagnosis.
+The newer preview includes staging-only Journey exercise migrations through
+`20261117161601_validate_assigned_exercise_ownership`; the older preview ends at
+`20261104155422_myryra_homolog_event_category_update_permissions`. PROD ends at
+`20261113182502_fix_journey_snapshot_confirmation_owner_rls`.
+
+**Decision:** do not issue `migration repair`, delete registry rows, or apply missing migrations to either existing preview. First create a version-to-file mapping and a complete dependency-ordered disposable replay; compare all objects and grants against intended target. A migration version count alone cannot establish recovery safety.
