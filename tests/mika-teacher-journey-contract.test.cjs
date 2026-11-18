@@ -344,7 +344,7 @@ test("Journey displays the latest owner-scoped official exercise before grading"
   assert.match(route, /\.order\("version", \{ ascending: false \}\)/);
   assert.match(route, /"Cache-Control": "private, no-store"/);
   assert.match(ui, /async function openOfficialLesson\(mission: Mission\)/);
-  assert.match(ui, /\/api\/journeys\/exercise\?journeyId=/);
+  assert.match(ui, /fetch\("\/api\/journeys\/exercise", \{ method: "POST"/);
   assert.match(ui, /const exercise = officialExercises\[mission\.id\]/);
   assert.match(ui, /!officialExercises\[m\.id\]/);
 });
@@ -361,4 +361,17 @@ test("Journey discards stale official exercise responses on navigation", () => {
 test("closing a lesson invalidates its pending official exercise request", () => {
   const ui = read("src/app/journey/journey-trail.tsx");
   assert.match(ui, /if \(openLesson === mission\.id\) \{\s*\+\+officialExerciseRequest\.current;\s*setExerciseLoading\(null\);\s*setOpenLesson\(null\);/);
+});
+
+test("MIKA issues the canonical exercise before the learner answers", () => {
+  const route = read("src/app/api/journeys/exercise/route.ts");
+  const ui = read("src/app/journey/journey-trail.tsx");
+  assert.match(route, /export async function POST\(request: Request\)/);
+  assert.match(route, /const lesson = lessonFor\(mission\.title\)/);
+  assert.match(route, /exercise: lesson\.exercise/);
+  assert.match(route, /insertError\.code !== "23505"/);
+  assert.match(route, /hasCurrentLegalAcceptance\(user\.id\)/);
+  assert.match(route, /getAuthenticatorAssuranceLevel\(\)/);
+  assert.match(ui, /const exercise = data\.assignment\?\.exercise;/);
+  assert.doesNotMatch(ui, /data\.assignment\?\.exercise \?\? lessonFor/);
 });
