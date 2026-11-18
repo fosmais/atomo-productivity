@@ -321,6 +321,15 @@ export default function JourneyTrail() {
       }
       const response = await fetch("/api/journeys/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ journeyId: selected, missionId: mission.id, answer, exercise }) });
       const payload = await response.json();
+      if (response.status === 409) {
+        // An exercise may have been reassigned while the learner was answering.
+        // Clear the obsolete prompt and require a fresh official assignment.
+        ++officialExerciseRequest.current;
+        setOfficialExercises(old => { const next = { ...old }; delete next[mission.id]; return next; });
+        setAssessmentResults(old => { const next = { ...old }; delete next[mission.id]; return next; });
+        setAiFeedback(old => ({ ...old, [mission.id]: "" }));
+        throw new Error("A avaliação não pôde ser concluída. Feche e reabra a aula para carregar o exercício oficial atualizado. Sua resposta permanece salva.");
+      }
       if (!response.ok) throw new Error(payload.error || "Não foi possível avaliar.");
       const feedback = typeof payload.feedback === "string" ? payload.feedback.trim() : "";
       if (!feedback) throw new Error("A avaliação veio vazia. Tente novamente.");
