@@ -50,14 +50,10 @@ export default function JourneyTrail() {
       if (!response.ok) throw new Error(data.error || "Não foi possível consultar o exercício oficial.");
       const exercise = data.assignment?.exercise;
       if (!exercise) throw new Error("Esta missão ainda não possui exercício oficial.");
-      setOfficialExercises(old => {
-        // If the server replaced the exercise, any locally displayed grade is stale.
-        if (old[mission.id] && old[mission.id] !== exercise) {
-          setAssessmentResults(previous => { const next = { ...previous }; delete next[mission.id]; return next; });
-          setAiFeedback(previous => ({ ...previous, [mission.id]: "" }));
-        }
-        return { ...old, [mission.id]: exercise };
-      });
+      // A newly loaded official exercise must never inherit an older local grade.
+      setAssessmentResults(previous => { const next = { ...previous }; delete next[mission.id]; return next; });
+      setAiFeedback(previous => ({ ...previous, [mission.id]: "" }));
+      setOfficialExercises(old => ({ ...old, [mission.id]: exercise }));
     } catch (error) {
       if (requestId === officialExerciseRequest.current)
         setExerciseLoadError(old => ({ ...old, [mission.id]: error instanceof Error ? error.message : "Exercício indisponível." }));
