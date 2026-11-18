@@ -386,3 +386,11 @@ test("official exercise GET and POST both enforce legal acceptance and MFA", () 
     assert.match(handler, /\.eq\("owner_id", user\.id\)/);
   }
 });
+
+test("Journey invalidates stale exercise and assessment after a 409 conflict", () => {
+  const ui = read("src/app/journey/journey-trail.tsx");
+  assert.match(ui, /if \(response\.status === 409\) \{/);
+  assert.match(ui, /setOfficialExercises\(old => \{ const next = \{ \.\.\.old \}; delete next\[mission\.id\]; return next; \}\)/);
+  assert.match(ui, /setAssessmentResults\(old => \{ const next = \{ \.\.\.old \}; delete next\[mission\.id\]; return next; \}\)/);
+  assert.match(ui, /Feche e reabra a aula para carregar o exercício oficial atualizado/);
+});
