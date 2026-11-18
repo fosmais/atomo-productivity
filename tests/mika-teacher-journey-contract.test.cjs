@@ -439,7 +439,7 @@ test("database guard protects generic educational missions and preserves version
 
 test("accented learning subjects use Unicode word boundaries like the database guard", () => {
   const topics = read("src/lib/journey/lesson-topics.ts");
-  assert.match(topics, /\\p\\{L\\}/);
+  assert.ok(topics.includes(String.raw`\p{L}`));
   assert.match(topics, /\/iu\\.test\\(title\\)/);
   assert.match(topics, /inglês\\|espanhol\\|francês/);
 });
