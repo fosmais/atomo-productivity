@@ -9,7 +9,8 @@ const consistency = read('20261118033000_journey_learning_assessment_consistency
 
 test('Journey UPDATE is granted only to server role', () => {
   assert.match(grant, /grant\s+update\s+on\s+table\s+public\.myryra_journeys\s+to\s+service_role\s*;/i);
-  assert.doesNotMatch(grant, /\bto\s+(?:authenticated|anon|public)\b/i);
+  const executableSql = grant.split('\n').filter((line) => !/^\s*--/.test(line)).join('\n');
+  assert.doesNotMatch(executableSql, /\bto\s+(?:authenticated|anon|public)\b/i);
 });
 
 test('Assessment consistency migration checks existence before creation', () => {
