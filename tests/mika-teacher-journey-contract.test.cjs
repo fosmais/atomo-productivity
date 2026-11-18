@@ -415,3 +415,15 @@ test("editing a Journey answer clears prior feedback and assessment score", () =
   assert.match(answerEditor, /setAiFeedback\(oldFeedback => \(\{ \.\.\.oldFeedback, \[m\.id\]: "" \}\)\)/);
   assert.match(answerEditor, /setAssessmentResults\(previous => \{ const next = \{ \.\.\.previous \}; delete next\[m\.id\]; return next; \}\)/);
 });
+
+test("non-template educational missions receive server-issued exercises without grading noneducational goals", () => {
+  const topics = read("src/lib/journey/lesson-topics.ts");
+  const route = read("src/app/api/journeys/exercise/route.ts");
+  const grading = read("src/app/api/journeys/feedback/route.ts");
+  const ui = read("src/app/journey/journey-trail.tsx");
+  assert.match(topics, /export function educationalLessonFor\(title: string\)/);
+  assert.match(topics, /if \(!\/\\b\(aprender\|estudar/);
+  assert.match(route, /const lesson = educationalLessonFor\(mission\.title\)/);
+  assert.match(grading, /const canonicalLesson = educationalLessonFor\(mission\.title\)/);
+  assert.match(ui, /educationalLessonFor\(m\.title\)/);
+});
