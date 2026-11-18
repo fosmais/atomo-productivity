@@ -422,7 +422,7 @@ test("non-template educational missions receive server-issued exercises without 
   const grading = read("src/app/api/journeys/feedback/route.ts");
   const ui = read("src/app/journey/journey-trail.tsx");
   assert.match(topics, /export function educationalLessonFor\(title: string\)/);
-  assert.match(topics, /if \(!\/\\b\(aprender/);
+  assert.match(topics, /if \(!\/\(\^\|\[\^\\p\{L\}\]\)\(aprender/);
   assert.match(route, /const lesson = educationalLessonFor\(mission\.title\)/);
   assert.match(grading, /const canonicalLesson = educationalLessonFor\(mission\.title\)/);
   assert.match(ui, /educationalLessonFor\(m\.title\)/);
@@ -435,4 +435,11 @@ test("database guard protects generic educational missions and preserves version
   assert.match(migration, /evidence\.assessed_exercise_id is distinct from current_exercise/);
   assert.match(migration, /evidence\.assessment_score < required_score/);
   assert.match(migration, /before insert or update of status on public\.myryra_journey_missions/);
+});
+
+test("accented learning subjects use Unicode word boundaries like the database guard", () => {
+  const topics = read("src/lib/journey/lesson-topics.ts");
+  assert.match(topics, /\\p\\{L\\}/);
+  assert.match(topics, /\/iu\\.test\\(title\\)/);
+  assert.match(topics, /inglês\\|espanhol\\|francês/);
 });
