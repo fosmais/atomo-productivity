@@ -67,3 +67,21 @@ test("Journey pause, resume and archive never delete MYRA history", () => {
   assert.doesNotMatch(route, /\.from\("myryra_journey_myra_ledger"\)/);
   assert.match(route, /Histórico e MYRAs preservados/);
 });
+
+
+test("Journey rejects unauthenticated mutation and enforces ownership in the write query", () => {
+  const change = route.slice(route.indexOf("async function changeJourney"));
+  const unauthenticated = change.indexOf('if (authError || !user)');
+  const privilegedWrite = change.indexOf('createSupabaseAdmin().from("myryra_journeys").update(updates)');
+  const ownerFilter = change.indexOf('.eq("id", journeyId).eq("owner_id", user.id)', privilegedWrite);
+  assert.ok(unauthenticated >= 0 && unauthenticated < privilegedWrite);
+  assert.ok(ownerFilter > privilegedWrite);
+  assert.match(change, /if \(!data\) return NextResponse\.json\(\{ error: "Meta não encontrada ou já excluída\." \}, \{ status: 404 \}\)/);
+  assert.match(change, /if \(!uuid\.test\(journeyId\)\).*status: 400/);
+});
+
+test("Journey archive cannot be resumed or modified by privileged update", () => {
+  const change = route.slice(route.indexOf("async function changeJourney"));
+  assert.match(change, /\.in\("status", updates\.status === "paused" \? \["active"\] : updates\.status === "active" \? \["paused"\] : archive \? \["active", "paused", "completed"\]/);
+  assert.doesNotMatch(change, /\.delete\s*\(/);
+});
