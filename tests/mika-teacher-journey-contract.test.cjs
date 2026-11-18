@@ -443,3 +443,18 @@ test("accented learning subjects use Unicode word boundaries like the database g
   assert.ok(topics.includes("/iu.test(title)"));
   assert.ok(topics.includes("inglês|espanhol|francês"));
 });
+
+test("educational mission matcher executes correctly for accents and word boundaries", () => {
+  const topics = read("src/lib/journey/lesson-topics.ts");
+  const sourceLine = topics.split("\n").find(line => line.includes("if (!/") && line.includes(".test(title)) return null;"));
+  assert.ok(sourceLine, "generic educational matcher must exist");
+  const match = sourceLine.match(/if \(!\/(.+)\/([a-z]+)\.test\(title\)\) return null;/);
+  assert.ok(match, "generic matcher must be parseable as a regex literal");
+  const matcher = new RegExp(match[1], match[2]);
+  for (const title of ["Aprender inglês", "Estudar francês", "Curso de espanhol", "Aula de italiano", "Quero aprender japonês"]) {
+    assert.equal(matcher.test(title), true, title);
+  }
+  for (const title of ["Correr 10 km", "superaprender", "desaprender", "estudante", "cursograma"]) {
+    assert.equal(matcher.test(title), false, title);
+  }
+});
