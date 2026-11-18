@@ -414,3 +414,30 @@ Read-only `information_schema.columns` inspection found that `public.mika_action
 Preview tables have 11 proposal columns (UUID id/user_id, action_type, JSONB payload/result, status, created/expires/approved/executed timestamps, execution_key) and 6 audit columns (bigint id, UUID proposal_id/user_id, event_type, created_at, JSONB metadata). This is metadata only; no user records or credentials were read.
 
 **Gate:** reconstruct and compare preview PK/FK/CHECK/index/RLS/grants and sequence/identity semantics; test MIKA Agent separately in a disposable DB, including approval authorization and tenant isolation. Do not copy preview objects into PROD, and do not claim this migration is production-compatible.
+
+
+## MIKA Agent isolated replay and authorization gates passed (2026-11-18)
+
+The preview-only MIKA Agent tables were reconstructed in
+`docs/sql/myryra-mika-agent-preview-foundation-candidate.sql` from read-only preview metadata:
+11 proposal columns, 6 audit columns (audit id is GENERATED ALWAYS AS IDENTITY),
+primary/foreign/check/unique constraints, eight indexes, RLS enabled and two owner-read policies.
+The preview-derived foundation is deliberately separate from the seven-table PROD-derived core.
+
+`docs/sql/myryra-mika-agent-preview-replay-smoke.sql` replays the actual
+`20261109120000_mika_execution_approved_plan_compat.sql` migration on disposable PostgreSQL 16.
+It tests owner-authorized task creation, retry idempotency, audit success, cross-tenant rejection,
+unauthenticated rejection, mismatched plan, missing approval audit, expired/rejected proposals,
+unsupported action types and execute-role grants.
+
+At commit `9df41ac`, **11 of 11 workflows passed**, including
+[MIKA Agent replay run 44229836946](https://github.com/fosmais/atomo-productivity/actions/runs/44229836946).
+The preceding CI failure was a malformed ACL assertion in the smoke test, corrected to inspect
+`aclexplode`; it was not a demonstrated product function defect.
+
+**Remaining release gates:** confirm preview schema parity including role grants and all object
+definitions; reconcile the divergent Supabase migration history; expand isolated migration
+replay beyond the currently selected files; validate API behavior against a fresh dedicated
+Supabase preview; obtain explicit approval before any PROD change. Passing CI does **not**
+mean the existing preview branches are repaired or the MIKA Agent is deployed to PROD.
+No PROD or Supabase preview DDL was executed by this audit.
