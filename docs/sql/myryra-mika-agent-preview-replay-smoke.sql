@@ -65,3 +65,40 @@ begin
  select count(*) into n from public.mika_action_proposals where status='approved';
  if n<>1 then raise exception 'Unauthorized execution changed proposal status'; end if;
 end $test$;
+
+
+-- Authorized execution: approved proposal and owner-scoped approval audit.
+insert into public.plans(id,user_id,title)
+values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','11111111-1111-4111-8111-111111111111','Owner plan');
+set role authenticated;
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',false);
+do $test$
+declare r record;
+begin
+ select * into r from public.mika_execute_approved_task(
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+ );
+ if r.execution_status <> 'executed' or r.task_id is null then
+  raise exception 'Approved MIKA execution did not create a task';
+ end if;
+ select * into r from public.mika_execute_approved_task(
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+ );
+ if r.execution_status <> 'already_executed' then
+  raise exception 'MIKA execution is not idempotent';
+ end if;
+end $test$;
+reset role;
+do $test$
+declare n int;
+begin
+ select count(*) into n from public.tasks
+ where user_id='11111111-1111-4111-8111-111111111111'
+ and plan_id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+ if n<>1 then raise exception 'Expected exactly one authorized task, got %',n; end if;
+ select count(*) into n from public.mika_action_audit
+ where proposal_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and event_type='succeeded';
+ if n<>1 then raise exception 'Expected one success audit record, got %',n; end if;
+end $test$;
