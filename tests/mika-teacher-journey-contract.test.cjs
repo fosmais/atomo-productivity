@@ -357,3 +357,8 @@ test("Journey discards stale official exercise responses on navigation", () => {
   assert.match(ui, /if \(requestId === officialExerciseRequest\.current\)/);
   assert.match(ui, /\+\+officialExerciseRequest\.current;\s*setOpenLesson\(null\);\s*setOfficialExercises\(\{\}\)/);
 });
+
+test("closing a lesson invalidates its pending official exercise request", () => {
+  const ui = read("src/app/journey/journey-trail.tsx");
+  assert.match(ui, /if \(openLesson === mission\.id\) \{\s*\+\+officialExerciseRequest\.current;\s*setExerciseLoading\(null\);\s*setOpenLesson\(null\);/);
+});
