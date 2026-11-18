@@ -65,6 +65,15 @@ export async function POST(request: Request) {
     officialExerciseId = assigned.id;
     canonicalExercise = assigned.exercise;
   }
+  // Prevent legacy text-only requests from bypassing an already-issued official exercise.
+  if (!officialExerciseId) {
+    const { data: issued, error: issuedError } = await supabase
+      .from("myryra_journey_assigned_exercises").select("id")
+      .eq("mission_id", missionId).eq("owner_id", user.id)
+      .order("version", { ascending: false }).limit(1).maybeSingle();
+    if (issuedError) return NextResponse.json({ error: "Não foi possível verificar o exercício oficial." }, { status: 503 });
+    if (issued) return NextResponse.json({ error: "Informe o identificador do exercício oficial vigente." }, { status: 409 });
+  }
   // Use prior feedback only for the same owned mission; never leak another learner's history.
   const { data: priorProgress, error: progressError } = await supabase.from("myryra_journey_learning_progress")
     .select("answer,feedback,assessment_attempts,updated_at").eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
