@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
   const { journeyId, missionId, sessionId, answer, exercise, exerciseId } = payload as Record<string, unknown>;
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  if (typeof journeyId !== "string" || !uuid.test(journeyId) || typeof missionId !== "string" || !uuid.test(missionId) || typeof answer !== "string" || answer.trim().length < 30 || answer.length > 2000 || typeof exercise !== "string" || exercise.trim().length < 10 || exercise.length > 600 || (sessionId !== undefined && (typeof sessionId !== "string" || !uuid.test(sessionId))) || (exerciseId !== undefined && (typeof exerciseId !== "string" || !uuid.test(exerciseId))))
+  if (typeof journeyId !== "string" || !uuid.test(journeyId) || typeof missionId !== "string" || !uuid.test(missionId) || typeof answer !== "string" || answer.trim().length < 30 || answer.length > 2000 || (typeof exerciseId !== "string" && (typeof exercise !== "string" || exercise.trim().length < 10 || exercise.length > 600)) || (sessionId !== undefined && (typeof sessionId !== "string" || !uuid.test(sessionId))) || (exerciseId !== undefined && (typeof exerciseId !== "string" || !uuid.test(exerciseId))))
     return NextResponse.json({ error: "Informe uma resposta de 30 a 2000 caracteres para uma missão válida." }, { status: 400 });
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
   // Resolve official exercises on the server. Legacy text-based assessment remains
   // supported until the official issuance endpoint is rolled out.
   let officialExerciseId: string | null = null;
-  let canonicalExercise = exercise.trim();
+  let canonicalExercise = typeof exercise === "string" ? exercise.trim() : "";
   if (typeof exerciseId === "string") {
     const { data: assigned, error: assignedError } = await supabase
       .from("myryra_journey_assigned_exercises")
