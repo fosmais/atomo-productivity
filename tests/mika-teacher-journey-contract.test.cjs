@@ -441,5 +441,5 @@ test("accented learning subjects use Unicode word boundaries like the database g
   const topics = read("src/lib/journey/lesson-topics.ts");
   assert.ok(topics.includes(String.raw`\p{L}`));
   assert.ok(topics.includes("/iu.test(title)"));
-  assert.match(topics, /inglês\\|espanhol\\|francês/);
+  assert.ok(topics.includes("inglês|espanhol|francês"));
 });
