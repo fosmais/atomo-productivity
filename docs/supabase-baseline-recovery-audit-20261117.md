@@ -477,3 +477,32 @@ evidence that an existing database migration failed because of these filenames.
 
 Do not rename already-applied migration files without comparing actual registry versions,
 file checksums and dependent SQL. No production/preview database changes were made.
+
+
+## Collision prefixes versus live migration registries (read-only, 2026-11-18)
+
+Checked exact `version` and `name` in `supabase_migrations.schema_migrations` where
+`version LIKE '20261101%'` or `version LIKE '20261104%'`:
+
+- PROD: `20261104180708_finance_goals_priority`,
+  `20261104180716_finance_goals_owner_update_policy`,
+  `20261104190324_event_concierge_preferences`.
+- Preview `xanavauqzsrgvdfhcrsm`: no matching records.
+- Preview `vzgahbceixjrdlqdtwoy`: `20261101170550_myryra_homolog_event_schema_baseline`,
+  `20261101170557_myka_confirm_event_atomic`,
+  `20261101170804_myka_cancel_event_atomic`,
+  `20261101171349_myka_invoker_security_homolog`,
+  `20261104154552_myryra_homolog_events_soft_delete_baseline`,
+  `20261104154640_myryra_event_reminders_homolog`,
+  `20261104155254_myryra_event_categories_homolog`,
+  `20261104155422_myryra_homolog_event_category_update_permissions`.
+
+**Important:** none of the three inspected registries contains an *exact*
+`20261101` or `20261104` version. The longer 14-digit versions above must **not**
+be conflated with the eight-digit filenames. Similar migration names do not establish
+that SQL is identical or safely replayable. No registry repair or migration application
+was performed.
+
+The filename-audit workflow failed as expected on commit `b1e7537`
+([run 44232107009](https://github.com/fosmais/atomo-productivity/actions/runs/44232107009)).
+Maintain this release gate until a deliberate filename/version plan is approved.
