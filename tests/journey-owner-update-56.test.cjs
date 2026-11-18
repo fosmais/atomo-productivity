@@ -56,3 +56,14 @@ test("Admin client rejects production Supabase URL in the two MVP2 preview branc
   assert.match(admin, /stagingUrl\.hostname !== "xanavauqzsrgvdfhcrsm\.supabase\.co"/);
   assert.match(admin, /throw new Error\("Preview MVP2 não pode usar Supabase fora da homologação\."\)/);
 });
+
+
+test("Journey pause, resume and archive never delete MYRA history", () => {
+  assert.match(route, /if \(archive\)\s*\{\s*updates\.status = "archived"/);
+  assert.match(route, /updates\.status === "paused" \? \["active"\]/);
+  assert.match(route, /updates\.status === "active" \? \["paused"\]/);
+  assert.match(route, /\.update\(updates\)/);
+  assert.doesNotMatch(route, /\.delete\s*\(/);
+  assert.doesNotMatch(route, /\.from\("myryra_journey_myra_ledger"\)/);
+  assert.match(route, /Histórico e MYRAs preservados/);
+});
