@@ -1,0 +1,17 @@
+name: Supabase migration filename audit
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'scripts/audit-supabase-migration-filenames.py'
+      - '.github/workflows/supabase-migration-filename-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit migration version prefixes
+        run: python3 scripts/audit-supabase-migration-filenames.py
