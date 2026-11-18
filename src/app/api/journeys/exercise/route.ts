@@ -14,6 +14,12 @@ export async function GET(request: Request) {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return NextResponse.json({ error: "Autenticação necessária." }, { status: 401 });
+  if (process.env.MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true" &&
+      !(await hasCurrentLegalAcceptance(user.id)))
+    return NextResponse.json({ error: "Aceite dos documentos legais vigentes necessário." }, { status: 403 });
+  const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (assurance.error || (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2"))
+    return NextResponse.json({ error: "Verificação adicional necessária." }, { status: 403 });
   const { data: journey, error: journeyError } = await supabase.from("myryra_journeys")
     .select("id").eq("id", journeyId).eq("owner_id", user.id).maybeSingle();
   if (journeyError) return NextResponse.json({ error: "Jornada indisponível." }, { status: 503 });
