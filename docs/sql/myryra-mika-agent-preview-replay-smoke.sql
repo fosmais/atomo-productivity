@@ -214,3 +214,42 @@ begin
  where id='ffffffff-ffff-4fff-8fff-ffffffffffff' and status='rejected';
  if n<>1 then raise exception 'Rejected proposal status changed'; end if;
 end $test$;
+
+
+-- Unsupported action types must not execute through the task-only function.
+insert into public.mika_action_proposals(id,user_id,action_type,payload,status,approved_at)
+values (
+ '99999999-9999-4999-8999-999999999999',
+ '11111111-1111-4111-8111-111111111111',
+ 'create_event',
+ '{"type":"create_event","title":"Unsupported event","reason":"Smoke test","due_at":null,"plan_id":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"}'::jsonb,
+ 'approved',now()
+);
+insert into public.mika_action_audit(proposal_id,user_id,event_type)
+values ('99999999-9999-4999-8999-999999999999','11111111-1111-4111-8111-111111111111','approved');
+set role authenticated;
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',false);
+do $test$
+begin
+ begin
+  perform public.mika_execute_approved_task(
+   '99999999-9999-4999-8999-999999999999',
+   'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+  raise exception 'Unsupported action unexpectedly executed';
+ exception when sqlstate 'P0001' then null; end;
+end $test$;
+reset role;
+do $test$
+declare n int;
+begin
+ if has_function_privilege('anon','public.mika_execute_approved_task(uuid,uuid)','EXECUTE')
+    or has_function_privilege('service_role','public.mika_execute_approved_task(uuid,uuid)','EXECUTE')
+    or has_function_privilege('public','public.mika_execute_approved_task(uuid,uuid)','EXECUTE') then
+  raise exception 'MIKA Agent execution function exposed to unauthorized role';
+ end if;
+ if not has_function_privilege('authenticated','public.mika_execute_approved_task(uuid,uuid)','EXECUTE') then
+  raise exception 'Authenticated role missing MIKA Agent execute grant';
+ end if;
+ select count(*) into n from public.tasks;
+ if n<>1 then raise exception 'Unsupported action created task'; end if;
+end $test$;
