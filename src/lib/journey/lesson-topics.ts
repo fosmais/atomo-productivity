@@ -9,3 +9,17 @@ export const lessonTopics = [
     { match: /apresentar o projeto|demonstração curta/i, heading: "Aula MIKA · Demonstração", explanation: "Uma apresentação convincente mostra o problema, a solução, a evidência, as limitações e os próximos passos. Separe resultados observados de expectativas.", example: "Exemplo: demonstrar três casos de teste e explicar quando o sistema falha.", exercise: "Prepare uma apresentação de três minutos com um resultado verificável e uma limitação." },
   ];
 export function lessonFor(title: string) { return lessonTopics.find(topic => topic.match.test(title)); }
+
+/** Only explicitly educational missions receive a generic lesson. Other goals stay non-graded. */
+export function educationalLessonFor(title: string) {
+  const known = lessonFor(title);
+  if (known) return known;
+  if (!/\b(aprender|estudar|estudo|aula|curso|idioma|italiano|ingles|inglês|espanhol|francês)\b/i.test(title)) return null;
+  const topic = title.trim().slice(0, 120);
+  return {
+    heading: "Aula MIKA · " + topic,
+    explanation: "Identifique o conceito principal desta etapa e explique como ele contribui para sua jornada de aprendizagem.",
+    example: "Exemplo de estudo: descreva uma situação concreta em que você aplicaria o que está aprendendo.",
+    exercise: "Sobre a etapa \"" + topic + "\": explique um conceito que você aprendeu, dê um exemplo concreto de aplicação e descreva como verificaria se compreendeu corretamente.",
+  };
+}
