@@ -37,3 +37,30 @@ test("official exercise issuance remains a release gate, not an implemented feat
   assert.match(contract, /versão mais recente/);
   assert.match(contract, /duas contas autenticadas/);
 });
+
+test("official exercise read is scoped to authenticated owner, mission and legal acceptance", () => {
+  const route = source("src/app/api/journeys/exercises/route.ts");
+  assert.match(route, /supabase\.auth\.getUser\(\)/);
+  assert.match(route, /hasCurrentLegalAcceptance\(user\.id\)/);
+  assert.match(route, /\.eq\("id", journeyId\)\.eq\("owner_id", user\.id\)/);
+  assert.match(route, /\.eq\("id", missionId\)\.eq\("journey_id", journeyId\)/);
+  assert.match(route, /\.eq\("mission_id", missionId\)\.eq\("owner_id", user\.id\)/);
+  assert.match(route, /\.order\("version", \{ ascending: false \}\)/);
+  assert.doesNotMatch(route, /export async function POST/);
+});
+
+test("official feedback uses server exercise text and blocks legacy bypass", () => {
+  const route = source("src/app/api/journeys/feedback/route.ts");
+  assert.match(route, /canonicalExercise = assigned\.exercise/);
+  assert.match(route, /if \(!officialExerciseId\)/);
+  assert.match(route, /if \(issued\) return NextResponse\.json/);
+  assert.match(route, /latest\.id !== assigned\.id/);
+  assert.match(route, /assessed_exercise_id: officialExerciseId/);
+  assert.match(route, /typeof exerciseId !== "string" && \(typeof exercise !== "string"/);
+});
+
+test("PR60 preview admin connection is restricted to staging", () => {
+  const admin = source("src/lib/supabase/admin.ts");
+  assert.match(admin, /test\/mvp2-journey-security-integration-57-59/);
+  assert.match(admin, /stagingUrl\.hostname !== "xanavauqzsrgvdfhcrsm\.supabase\.co"/);
+});
