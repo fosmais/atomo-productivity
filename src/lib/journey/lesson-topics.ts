@@ -14,7 +14,7 @@ export function lessonFor(title: string) { return lessonTopics.find(topic => top
 export function educationalLessonFor(title: string) {
   const known = lessonFor(title);
   if (known) return known;
-  if (!/\b(aprender|estudar|estudo|aula|curso|idioma|italiano|ingles|inglês|espanhol|francês)\b/i.test(title)) return null;
+  if (!/(^|[^\p{L}])(aprender|estudar|estudo|aula|curso|idioma|italiano|ingles|inglês|espanhol|francês)(?=$|[^\p{L}])/iu.test(title)) return null;
   const topic = title.trim().slice(0, 120);
   return {
     heading: "Aula MIKA · " + topic,
