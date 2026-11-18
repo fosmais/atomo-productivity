@@ -23,6 +23,7 @@ begin
                   where s.mission_id = new.id and s.journey_id = new.journey_id and s.owner_id = mission_owner) or
           exists (select 1 from public.myryra_journey_assigned_exercises ae
                   where ae.mission_id = new.id and ae.owner_id = mission_owner) or
+          new.title ~* '(^|[^[:alpha:]])(aprender|estudar|estudo|aula|curso|idioma|italiano|ingles|inglês|espanhol|francês)([^[:alpha:]]|$)' or
           new.title ~* 'IA, machine learning e IA generativa|diferença entre IA, ML e modelos generativos|treino, validação, teste|vazamento|vieses|classificação, regressão|métricas de avaliação|métricas adequadas|prompts estruturados|respostas de IA|embeddings|RAG|busca semântica|fontes verificáveis|LGPD|uso responsável|privacidade, segurança|riscos e controles|pequeno projeto aplicado|problema, dados, indicadores|protótipo viável|apresentar o projeto|demonstração curta'),
          coalesce(p.minimum_score, 70)
     into needs_assessment, required_score
