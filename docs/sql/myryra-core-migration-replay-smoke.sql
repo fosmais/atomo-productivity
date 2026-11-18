@@ -20,6 +20,8 @@ grant select,insert,update,delete on all tables in schema public to authenticate
 \i supabase/migrations/20261101000200_myka_event_invoker_security.sql
 \i supabase/migrations/20261104_event_category_permissions.sql
 \i supabase/migrations/20261104_event_reminders.sql
+\i supabase/migrations/20261108234929_autopilot_ignore_soft_deleted_events.sql
+\i supabase/migrations/20261108235224_autopilot_reject_soft_deleted_tasks.sql
 
 do $test$
 declare n integer;
@@ -30,6 +32,7 @@ begin
  if n<>4 then raise exception 'Expected four concierge policies, got %',n; end if;
  select count(*) into n from pg_constraint where conrelid='public.events'::regclass and conname='events_category_check';
  if n<>1 then raise exception 'Expected event category constraint'; end if;
+ if to_regprocedure('public.reserve_autopilot_task(uuid,timestamp with time zone,timestamp with time zone)') is null then raise exception 'Missing AutoPilot reservation function'; end if;
  if to_regclass('public.event_reminders') is null then raise exception 'Missing reminders table'; end if;
  select count(*) into n from pg_policies where schemaname='public' and tablename='event_reminders';
  if n<>3 then raise exception 'Expected three reminder policies, got %',n; end if;
