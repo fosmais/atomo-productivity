@@ -138,3 +138,45 @@ begin
  where proposal_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and event_type='succeeded';
  if n<>1 then raise exception 'Expected one success audit record, got %',n; end if;
 end $test$;
+
+
+-- Expired proposal: no task creation; function marks expiry and writes an audit.
+insert into public.mika_action_proposals(id,user_id,action_type,payload,status,approved_at,created_at,expires_at)
+values (
+ 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+ '11111111-1111-4111-8111-111111111111',
+ 'create_task',
+ '{"type":"create_task","title":"Expired test task","reason":"Smoke test","due_at":null,"plan_id":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"}'::jsonb,
+ 'approved',now()-interval '40 minutes',now()-interval '45 minutes',now()-interval '15 minutes'
+);
+insert into public.mika_action_audit(proposal_id,user_id,event_type,created_at)
+values (
+ 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+ '11111111-1111-4111-8111-111111111111',
+ 'approved',now()-interval '40 minutes'
+);
+set role authenticated;
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',false);
+do $test$
+declare r record;
+begin
+ select * into r from public.mika_execute_approved_task(
+  'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+  'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+ if r.execution_status <> 'expired' or r.task_id is not null then
+  raise exception 'Expired proposal did not return expired without task';
+ end if;
+end $test$;
+reset role;
+do $test$
+declare n int;
+begin
+ select count(*) into n from public.tasks;
+ if n<>1 then raise exception 'Expired proposal created an extra task'; end if;
+ select count(*) into n from public.mika_action_proposals
+ where id='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee' and status='expired';
+ if n<>1 then raise exception 'Expired proposal status not persisted'; end if;
+ select count(*) into n from public.mika_action_audit
+ where proposal_id='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee' and event_type='expired';
+ if n<>1 then raise exception 'Expired proposal audit missing'; end if;
+end $test$;
