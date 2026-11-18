@@ -253,3 +253,19 @@ begin
  select count(*) into n from public.tasks;
  if n<>1 then raise exception 'Unsupported action created task'; end if;
 end $test$;
+
+
+-- Preview-derived table permissions: authenticated can read but cannot mutate directly.
+do $test$
+begin
+ if not has_table_privilege('authenticated','public.mika_action_proposals','SELECT')
+ or not has_table_privilege('authenticated','public.mika_action_audit','SELECT') then
+  raise exception 'Authenticated SELECT parity with previews is missing';
+ end if;
+ if has_table_privilege('authenticated','public.mika_action_proposals','INSERT,UPDATE,DELETE')
+ or has_table_privilege('authenticated','public.mika_action_audit','INSERT,UPDATE,DELETE')
+ or has_table_privilege('anon','public.mika_action_proposals','SELECT')
+ or has_table_privilege('anon','public.mika_action_audit','SELECT') then
+  raise exception 'MIKA Agent table privilege escalation detected';
+ end if;
+end $test$;
