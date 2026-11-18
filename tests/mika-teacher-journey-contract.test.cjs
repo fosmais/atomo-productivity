@@ -408,3 +408,10 @@ test("completion redirects into the official lesson issuer rather than opening a
   assert.match(complete, /if \(openLesson !== mission\.id\) void openOfficialLesson\(mission\)/);
   assert.doesNotMatch(complete, /setOpenLesson\(mission\.id\)/);
 });
+
+test("editing a Journey answer clears prior feedback and assessment score", () => {
+  const ui = read("src/app/journey/journey-trail.tsx");
+  const answerEditor = ui.slice(ui.indexOf("Sua resposta (salve para continuar depois)"), ui.indexOf("Sua resposta (salve para continuar depois)") + 1100);
+  assert.match(answerEditor, /setAiFeedback\(oldFeedback => \(\{ \.\.\.oldFeedback, \[m\.id\]: "" \}\)\)/);
+  assert.match(answerEditor, /setAssessmentResults\(previous => \{ const next = \{ \.\.\.previous \}; delete next\[m\.id\]; return next; \}\)/);
+});
