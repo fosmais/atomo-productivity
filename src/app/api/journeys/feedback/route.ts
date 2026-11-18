@@ -1,4 +1,4 @@
-import { lessonFor } from "@/lib/journey/lesson-topics";
+import { educationalLessonFor } from "@/lib/journey/lesson-topics";
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createClient } from "@/lib/supabase/server";
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
   // The exercise definition is derived from the server-fetched mission title,
   // never from a user-controlled prompt. Keep legacy non-template missions
   // separate until server issuance is mandatory for every learning mission.
-  const canonicalLesson = lessonFor(mission.title);
+  const canonicalLesson = educationalLessonFor(mission.title);
   // A teacher-initiated assessment must be linked to the same owned mission.
   // Journey-only assessments without sessionId remain backward compatible.
   if (typeof sessionId === "string") {
