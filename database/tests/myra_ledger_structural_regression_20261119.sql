@@ -17,6 +17,7 @@ BEGIN
     SELECT 1 FROM pg_constraint c
     WHERE c.conrelid = 'public.myryra_journey_myra_ledger'::regclass
       AND c.conname = required.required_name
+      AND c.convalidated
   );
   IF missing_constraints IS NOT NULL THEN
     RAISE EXCEPTION 'MYRA ledger constraints missing: %', missing_constraints;
@@ -25,6 +26,7 @@ BEGIN
   SELECT count(*) INTO trigger_count FROM pg_trigger
   WHERE tgrelid = 'public.myryra_journey_missions'::regclass
     AND NOT tgisinternal
+    AND tgenabled IN ('O', 'A')
     AND tgname IN (
       'myryra_assessed_mission_completion_guard',
       'myryra_guard_completed_mission_insert',
