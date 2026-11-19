@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       .select("id,exercise,version,session_id")
       .eq("id", exerciseId).eq("mission_id", missionId).eq("owner_id", user.id).maybeSingle();
     if (assignedError) return NextResponse.json({ error: "Exercício oficial indisponível." }, { status: 503 });
-    if (!assigned || (typeof sessionId === "string" && assigned.session_id !== sessionId))
+    if (!assigned || (assigned.session_id !== null && assigned.session_id !== sessionId) || (typeof sessionId === "string" && assigned.session_id !== sessionId))
       return NextResponse.json({ error: "Exercício não vinculado à missão e aula." }, { status: 404 });
     const { data: latest, error: latestError } = await supabase
       .from("myryra_journey_assigned_exercises").select("id")
