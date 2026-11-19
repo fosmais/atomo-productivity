@@ -1,6 +1,8 @@
 // Static guard regression for the Journey mission PATCH endpoint.
 // No network, credentials, Supabase mutation or test user required.
 // Run: node scripts/test-journey-myra-route-guards.cjs
+// CommonJS test runner: Node require is intentional for this standalone .cjs script.
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { readFileSync } = require("node:fs");
 const { join } = require("node:path");
 const assert = require("node:assert/strict");
