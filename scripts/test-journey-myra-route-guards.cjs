@@ -28,3 +28,20 @@ for (const [name, pattern] of required) {
 assert.match(source, /if\s*\(!mission\)\s*return NextResponse\.json\([^\n]*409/, "Missing concurrent-update conflict response");
 console.log("Journey MYRA route static guards: PASS (" + (required.length + 1) + " checks)");
 console.log("Note: static checks do not prove runtime authorization or concurrency safety.");
+
+
+// Verify the read-only balance endpoint does not expose another user's ledger.
+const balanceRoute = readFileSync(
+  join(__dirname, "../src/app/api/journeys/myra/route.ts"), "utf8"
+);
+const balanceGuards = [
+  ["balance authentication", /supabase\.auth\.getUser\(\)/],
+  ["balance MFA assurance", /getAuthenticatorAssuranceLevel\(\)/],
+  ["balance owner filter", /\.eq\("owner_id",\s*user\.id\)/],
+  ["balance non-monetary unit", /monetaryValue:\s*false/],
+  ["balance no-store", /Cache-Control":\s*"private, no-store"/],
+];
+for (const [name, pattern] of balanceGuards) {
+  assert.match(balanceRoute, pattern, "Missing MYRA balance guard: " + name);
+}
+console.log("MYRA balance endpoint static guards: PASS (" + balanceGuards.length + " checks)");
