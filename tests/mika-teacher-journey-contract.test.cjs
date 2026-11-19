@@ -263,7 +263,7 @@ test("MIKA grading rejects forged prompts for assigned server exercises", () => 
   assert.match(src, /\.order\("version", \{ ascending: false \}\)\.limit\(1\)\.maybeSingle\(\)/);
   assert.match(src, /assigned\.exercise !== exercise\.trim\(\)/);
   assert.match(src, /assigned\.session_id && assigned\.session_id !== \(sessionId \?\? null\)/);
-  assert.match(src, /exercise: assigned\?\.exercise \?\? exercise\.trim\(\)/);
+  assert.match(src, /exercise: assigned\.exercise/);
   assert.match(src, /Exercício oficial indisponível/);
 });
 
@@ -320,9 +320,9 @@ test("grading never trusts unassigned exercises and issues canonical templates s
 
 test("versioned server assignments can supersede static lesson prompts", () => {
   const grading = read("src/app/api/journeys/feedback/route.ts");
-  assert.match(grading, /if \(!assigned && canonicalLesson && exercise\.trim\(\) !== canonicalLesson\.exercise\)/);
-  assert.match(grading, /if \(assigned\.exercise !== exercise\.trim\(\)/);
-  const staticCheck = grading.indexOf("if (!assigned && canonicalLesson && exercise.trim()");
+  assert.match(grading, /if \(!assigned && canonicalLesson && typeof exercise === "string" && exercise\.trim\(\) !== canonicalLesson\.exercise\)/);
+  assert.match(grading, /typeof exercise === "string" && assigned\.exercise !== exercise\.trim\(\)/);
+  const staticCheck = grading.indexOf("if (!assigned && canonicalLesson && typeof exercise === \"string\" && exercise.trim()");
   const assignmentLookup = grading.indexOf("let { data: assigned, error: assignedError }");
   assert.ok(assignmentLookup >= 0 && staticCheck > assignmentLookup);
 });
