@@ -64,3 +64,10 @@ test("PR60 preview admin connection is restricted to staging", () => {
   assert.match(admin, /test\/mvp2-journey-security-integration-57-59/);
   assert.match(admin, /stagingUrl\.hostname !== "xanavauqzsrgvdfhcrsm\.supabase\.co"/);
 });
+
+test("session-bound official exercises reject omitted or mismatched session", () => {
+  const route = source("src/app/api/journeys/feedback/route.ts");
+  assert.match(route, /assigned\.session_id !== null && assigned\.session_id !== sessionId/);
+  assert.match(route, /typeof sessionId === "string" && assigned\.session_id !== sessionId/);
+  assert.match(route, /\.eq\("journey_id", journeyId\)\.eq\("mission_id", missionId\)/);
+});
