@@ -17,7 +17,7 @@ CREATE POLICY owner_missions_select ON myra_two_user.missions FOR SELECT USING(E
 CREATE POLICY owner_missions_update ON myra_two_user.missions FOR UPDATE USING(EXISTS(SELECT 1 FROM myra_two_user.journeys j WHERE j.id=journey_id AND j.owner_name=current_user)) WITH CHECK(EXISTS(SELECT 1 FROM myra_two_user.journeys j WHERE j.id=journey_id AND j.owner_name=current_user));
 CREATE POLICY owner_ledger ON myra_two_user.ledger FOR SELECT USING(owner_name=current_user);
 GRANT SELECT ON myra_two_user.journeys,myra_two_user.missions,myra_two_user.ledger TO myra_test_a,myra_test_b;
-GRANT UPDATE(status) ON myra_two_user.missions TO myra_test_a,myra_test_b;
+GRANT UPDATE(status,journey_id) ON myra_two_user.missions TO myra_test_a,myra_test_b;
 CREATE FUNCTION myra_two_user.enforce_assessment() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
  IF NEW.status='completed' AND OLD.status IS DISTINCT FROM 'completed' AND NEW.requires_assessment AND NOT NEW.assessment_passed
@@ -44,6 +44,14 @@ BEGIN
  UPDATE myra_two_user.missions SET status='completed' WHERE id=22;
  GET DIAGNOSTICS changed=ROW_COUNT;
  IF changed<>0 THEN RAISE EXCEPTION 'cross-owner update succeeded'; END IF;
+ -- An owner must not be able to move their mission under another owner's journey.
+ BEGIN
+  UPDATE myra_two_user.missions SET journey_id=2 WHERE id=11;
+  RAISE EXCEPTION 'cross-owner journey reassignment succeeded';
+ EXCEPTION WHEN insufficient_privilege THEN NULL;
+ END;
+ IF (SELECT count(*) FROM myra_two_user.missions WHERE id=11 AND journey_id=1)<>1 THEN
+  RAISE EXCEPTION 'mission ownership changed'; END IF;
  BEGIN
   UPDATE myra_two_user.missions SET status='completed' WHERE id=11;
   RAISE EXCEPTION 'assessment bypass succeeded';
