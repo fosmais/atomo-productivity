@@ -1,0 +1,39 @@
+name: Journey Auth isolation (staging only)
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  auth-isolation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: staging
+    env:
+      MIKA_STAGING_ANON_KEY: ${{ secrets.MIKA_STAGING_ANON_KEY }}
+      MIKA_TEST_EMAIL: ${{ secrets.MIKA_TEST_EMAIL }}
+      MIKA_TEST_PASSWORD: ${{ secrets.MIKA_TEST_PASSWORD }}
+      MIKA_TEST_OTHER_EMAIL: ${{ secrets.MIKA_TEST_OTHER_EMAIL }}
+      MIKA_TEST_OTHER_PASSWORD: ${{ secrets.MIKA_TEST_OTHER_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Pin the reviewed staging test commit; never run mutable production branch code.
+          ref: 2dcbc44a5f8e1cb6b3124c656f3301b78f6b7c6d
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Require staging credentials
+        shell: bash
+        run: |
+          for key in MIKA_STAGING_ANON_KEY MIKA_TEST_EMAIL MIKA_TEST_PASSWORD MIKA_TEST_OTHER_EMAIL MIKA_TEST_OTHER_PASSWORD; do
+            if [[ -z "${!key}" ]]; then
+              echo "::error::Missing staging secret: $key"
+              exit 1
+            fi
+          done
+      - run: npm ci --ignore-scripts
+      - name: Verify two real staging Auth sessions and Journey isolation
+        run: node scripts/journey-auth-isolation-staging.cjs
