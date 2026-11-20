@@ -227,10 +227,15 @@ export default function MikaInsightsPage() {
       const client = createClient();
       const { data: { user }, error: authError } = await client.auth.getUser();
       if (authError || !user) throw new Error("Sessão expirada.");
-      const { error: updateError } = await client.from("mika_ideas")
-        .update({ content, proposed_plan: null, status: "captured", updated_at: new Date().toISOString() })
-        .eq("id", id).eq("user_id", user.id);
+      const currentIdea = ideas.find((item) => item.id === id);
+      if (!currentIdea) throw new Error("Ideia não encontrada. Atualize a página.");
+      const nextStatus = currentIdea.status === "archived" ? "archived" : "captured";
+      const { data: updated, error: updateError } = await client.from("mika_ideas")
+        .update({ content, proposed_plan: null, status: nextStatus, updated_at: new Date().toISOString() })
+        .eq("id", id).eq("user_id", user.id)
+        .select("id");
       if (updateError) throw updateError;
+      if (!updated?.length) throw new Error("A ideia não está mais disponível. Atualize a página.");
       setSuggestions((previous) => { const next = { ...previous }; delete next[id]; return next; });
       setEditingId(null); await load(); setNotice("Ideia atualizada. Gere novamente o plano se necessário.");
     } catch (e: unknown) { setError(e instanceof Error ? e.message : "Falha ao editar."); }
