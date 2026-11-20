@@ -28,6 +28,18 @@ export default function MikaInsightsPage() {
   const [transcribing, setTranscribing] = useState(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [voiceDraft, setVoiceDraft] = useState(false);
+
+  useEffect(() => () => {
+    if (recordingTimerRef.current) clearTimeout(recordingTimerRef.current);
+    const recorder = recorderRef.current;
+    if (recorder) {
+      recorder.onstop = null;
+      if (recorder.state === "recording") recorder.stop();
+      recorder.stream.getTracks().forEach((track) => track.stop());
+    }
+  }, []);
 
   const load = useCallback(async () => {
     const client = createClient();
@@ -64,6 +76,8 @@ export default function MikaInsightsPage() {
       chunksRef.current = [];
       recorder.ondataavailable = (event) => { if (event.data.size) chunksRef.current.push(event.data); };
       recorder.onstop = async () => {
+        if (recordingTimerRef.current) clearTimeout(recordingTimerRef.current);
+        setRecording(false);
         stream.getTracks().forEach((track) => track.stop());
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
         if (!blob.size) { setError("Nenhum áudio foi capturado."); return; }
@@ -86,16 +100,23 @@ export default function MikaInsightsPage() {
             }
             return combined;
           });
+          setVoiceDraft(true);
           setNotice("Áudio transcrito. Revise o texto antes de salvar.");
         } catch (e: unknown) { setError(e instanceof Error ? e.message : "Falha na transcrição."); }
         finally { setTranscribing(false); }
       };
       recorderRef.current = recorder; recorder.start(); setRecording(true);
+      recordingTimerRef.current = setTimeout(() => {
+        if (recorder.state === "recording") recorder.stop();
+      }, 60000);
     } catch { setError("Não foi possível acessar o microfone. Verifique a permissão ou digite sua ideia."); }
   }
 
   function stopRecording() {
-    if (recorderRef.current?.state === "recording") { recorderRef.current.stop(); setRecording(false); }
+    if (recorderRef.current?.state === "recording") {
+      if (recordingTimerRef.current) clearTimeout(recordingTimerRef.current);
+      recorderRef.current.stop(); setRecording(false);
+    }
   }
 
   async function save() {
@@ -107,9 +128,9 @@ export default function MikaInsightsPage() {
       const { data: { user }, error: authError } = await client.auth.getUser();
       if (authError || !user) throw new Error("Sessão expirada. Faça login novamente.");
       const { error: insertError } = await client.from("mika_ideas")
-        .insert({ user_id: user.id, content, source: "text" });
+        .insert({ user_id: user.id, content, source: voiceDraft ? "voice" : "text" });
       if (insertError) throw insertError;
-      setDraft("");
+      setDraft(""); setVoiceDraft(false);
       await load();
       setNotice("Ideia registrada com sucesso.");
     } catch (e: unknown) {
