@@ -42,6 +42,7 @@ jobs:
         run: node scripts/journey-auth-isolation-staging.cjs
 
   mika-staging:
+    needs: auth-isolation
     if: inputs.run_mika_concurrency == true
     runs-on: ubuntu-latest
     timeout-minutes: 15
