@@ -36,7 +36,7 @@ async function main() {
   if (missionError) throw missionError;
   assert.equal(missions.length,1,"Each fixture should have one mission");
   assert.equal(missions[0].status,"pending","Fixture mission must remain pending");
-  const {data:ledger,error:ledgerError}=await owner.db.from("myryra_journey_myra_ledger").select("id").eq("journey_id",other.id);
+  const {data:ledger,error:ledgerError}=await owner.db.from("myryra_journey_myra_ledger").select("id").eq("owner_id",other.id);
   if (ledgerError) throw ledgerError;
   assert.equal(ledger.length,0,"Cross-user ledger disclosure");
  }
