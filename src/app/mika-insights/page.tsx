@@ -125,7 +125,8 @@ export default function MikaInsightsPage() {
         .update({ content, updated_at: new Date().toISOString() })
         .eq("id", id).eq("user_id", user.id);
       if (updateError) throw updateError;
-      setEditingId(null); await load(); setNotice("Ideia atualizada.");
+      setSuggestions((previous) => { const next = { ...previous }; delete next[id]; return next; });
+      setEditingId(null); await load(); setNotice("Ideia atualizada. Gere novamente o plano se necessário.");
     } catch (e: unknown) { setError(e instanceof Error ? e.message : "Falha ao editar."); }
     finally { setBusy(false); }
   }
@@ -140,6 +141,7 @@ export default function MikaInsightsPage() {
       const { error: deleteError } = await client.from("mika_ideas")
         .delete().eq("id", id).eq("user_id", user.id);
       if (deleteError) throw deleteError;
+      setSuggestions((previous) => { const next = { ...previous }; delete next[id]; return next; });
       await load(); setNotice("Ideia excluída.");
     } catch (e: unknown) { setError(e instanceof Error ? e.message : "Falha ao excluir."); }
     finally { setBusy(false); }
