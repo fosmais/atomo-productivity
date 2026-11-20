@@ -43,6 +43,9 @@ jobs:
             fi
           done
       - run: npm ci --ignore-scripts
+      - name: Bootstrap dedicated synthetic identities when requested
+        if: inputs.bootstrap_synthetic_accounts == true
+        run: node scripts/mika-two-users-staging.cjs
       - name: Verify two real staging Auth sessions and Journey isolation
         run: node scripts/journey-auth-isolation-staging.cjs
 
@@ -114,24 +117,3 @@ jobs:
         run: node scripts/mika-cross-user-staging.cjs
       - name: Verify 20 concurrent executions create exactly one task
         run: node scripts/mika-concurrency-staging.cjs
-
-  bootstrap-synthetic-auth:
-    if: inputs.bootstrap_synthetic_accounts == true
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    environment: staging
-    env:
-      MIKA_STAGING_ANON_KEY: ${{ secrets.MIKA_STAGING_ANON_KEY }}
-      MIKA_TEST_EMAIL: ${{ secrets.MIKA_TEST_EMAIL }}
-      MIKA_TEST_PASSWORD: ${{ secrets.MIKA_TEST_PASSWORD }}
-      MIKA_TEST_OTHER_EMAIL: ${{ secrets.MIKA_TEST_OTHER_EMAIL }}
-      MIKA_TEST_OTHER_PASSWORD: ${{ secrets.MIKA_TEST_OTHER_PASSWORD }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-      - run: npm ci --ignore-scripts
-      - name: Bootstrap dedicated synthetic identities
-        run: node scripts/mika-two-users-staging.cjs
