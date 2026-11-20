@@ -91,9 +91,9 @@ export default function MikaInsightsPage() {
       const client = createClient();
       const { data: { user }, error: authError } = await client.auth.getUser();
       if (authError || !user) throw new Error("Faça login para pedir um plano.");
-      const response = await fetch("/api/tasks", {
+      const response = await fetch("/api/mika-insights/suggest", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: idea.content }),
+        body: JSON.stringify({ ideaId: idea.id }),
       });
       const result: unknown = await response.json();
       if (!response.ok) throw new Error("Não foi possível gerar a sugestão.");
