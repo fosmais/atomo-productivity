@@ -8,8 +8,9 @@ export async function POST(request: Request) {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) return NextResponse.json({ error: "Faça login para transcrever o áudio." }, { status: 401 });
 
-    const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
-    if (!contentType.startsWith("multipart/form-data;"))
+    // Preserve the original boundary: multipart boundaries are case-sensitive.
+    const contentType = request.headers.get("content-type") ?? "";
+    if (!contentType.toLowerCase().startsWith("multipart/form-data;"))
       return NextResponse.json({ error: "Envie áudio como formulário multipart." }, { status: 415 });
     const length = Number(request.headers.get("content-length"));
     if (Number.isFinite(length) && length > 11 * 1024 * 1024)
