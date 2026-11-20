@@ -67,6 +67,7 @@ export default function MikaInsightsPage() {
         stream.getTracks().forEach((track) => track.stop());
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
         if (!blob.size) { setError("Nenhum áudio foi capturado."); return; }
+        if (blob.size > 10 * 1024 * 1024) { setError("Áudio acima de 10 MB. Grave uma ideia mais curta."); return; }
         const form = new FormData();
         const extension = blob.type.includes("mp4") ? "m4a" : blob.type.includes("ogg") ? "ogg" : "webm";
         form.append("audio", blob, `idea.${extension}`);
@@ -77,7 +78,14 @@ export default function MikaInsightsPage() {
           if (!response.ok) throw new Error(result && typeof result === "object" && "error" in result && typeof result.error === "string" ? result.error : "Não foi possível transcrever.");
           if (!result || typeof result !== "object" || !("text" in result) || typeof result.text !== "string") throw new Error("Resposta de transcrição inválida.");
           const transcript = result.text;
-          setDraft((previous) => [previous.trim(), transcript].filter(Boolean).join(previous.trim() ? "\n" : ""));
+          setDraft((previous) => {
+            const combined = [previous.trim(), transcript].filter(Boolean).join(previous.trim() ? "\n" : "");
+            if (combined.length > 10000) {
+              setError("Transcrição muito longa. Reduza o texto para até 10.000 caracteres.");
+              return previous;
+            }
+            return combined;
+          });
           setNotice("Áudio transcrito. Revise o texto antes de salvar.");
         } catch (e: unknown) { setError(e instanceof Error ? e.message : "Falha na transcrição."); }
         finally { setTranscribing(false); }
@@ -214,7 +222,7 @@ export default function MikaInsightsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <button type="button" disabled={busy || transcribing} onClick={recording ? stopRecording : startRecording} className="rounded-xl border px-3 py-2 text-sm disabled:opacity-50">{recording ? "Parar gravação" : transcribing ? "Transcrevendo..." : "Gravar ideia por voz"}</button>
           <span className="text-xs opacity-60">Data e hora serão registradas ao salvar.</span>
-          <button type="button" disabled={busy || transcribing || !draft.trim()} onClick={save}
+          <button type="button" disabled={busy || recording || transcribing || !draft.trim()} onClick={save}
             className="rounded-xl bg-violet-700 px-4 py-2 text-white disabled:opacity-50">
             {busy ? "Salvando..." : "Guardar ideia"}
           </button>
