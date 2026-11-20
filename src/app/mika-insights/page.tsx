@@ -77,6 +77,7 @@ export default function MikaInsightsPage() {
         .update({ status: archived ? "archived" : "captured", updated_at: new Date().toISOString() })
         .eq("id", id).eq("user_id", user.id);
       if (updateError) throw updateError;
+      setSuggestions((previous) => { const next = { ...previous }; delete next[id]; return next; });
       await load();
       setNotice(archived ? "Ideia arquivada." : "Ideia restaurada.");
     } catch (e: unknown) {
@@ -96,7 +97,11 @@ export default function MikaInsightsPage() {
         body: JSON.stringify({ ideaId: idea.id }),
       });
       const result: unknown = await response.json();
-      if (!response.ok) throw new Error("Não foi possível gerar a sugestão.");
+      if (!response.ok) {
+        const message = result && typeof result === "object" && "error" in result && typeof result.error === "string"
+          ? result.error : "Não foi possível gerar a sugestão.";
+        throw new Error(message);
+      }
       if (!result || typeof result !== "object" || !("tasks" in result) || !Array.isArray(result.tasks))
         throw new Error("Resposta inesperada da MIKA.");
       const tasks = result.tasks.filter((task: unknown): task is SuggestedTask => {
@@ -105,7 +110,7 @@ export default function MikaInsightsPage() {
         return typeof t.title === "string" && t.title.trim().length > 0 &&
           (t.priority === "Alta" || t.priority === "Média" || t.priority === "Normal") &&
           (t.dueDate === null || typeof t.dueDate === "string");
-      }).slice(0, 10);
+      }).slice(0, 8);
       if (!tasks.length) throw new Error("Nenhuma ação foi sugerida.");
       setSuggestions((previous) => ({ ...previous, [idea.id]: tasks }));
       setNotice("Sugestão gerada. Nenhuma tarefa foi criada.");
