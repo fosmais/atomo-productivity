@@ -5,8 +5,15 @@ import { createClient } from "@/lib/supabase/server";
 export async function POST(request: Request) {
   if (request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !== "application/json")
     return NextResponse.json({ error: "Envie JSON." }, { status: 415 });
+  const declaredLength = request.headers.get("content-length");
+  if (declaredLength && Number(declaredLength) > 4096)
+    return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
   let body: unknown;
-  try { body = await request.json(); } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
+  try {
+    const raw = await request.text();
+    if (raw.length > 4096) return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+    body = JSON.parse(raw);
+  } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
   const ideaId = body && typeof body === "object" && "ideaId" in body ? (body as {ideaId: unknown}).ideaId : null;
   if (typeof ideaId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(ideaId))
     return NextResponse.json({ error: "Ideia inválida." }, { status: 400 });
