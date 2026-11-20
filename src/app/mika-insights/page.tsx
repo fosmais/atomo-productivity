@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type SuggestedTask = { title: string; priority: "Alta" | "Média" | "Normal"; dueDate: string | null };
@@ -24,6 +24,10 @@ export default function MikaInsightsPage() {
   const [suggestions, setSuggestions] = useState<Record<string, SuggestedTask[]>>({});
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   const load = useCallback(async () => {
     const client = createClient();
@@ -47,6 +51,43 @@ export default function MikaInsightsPage() {
     });
     return () => { active = false; };
   }, [load]);
+
+  async function startRecording() {
+    setError(""); setNotice("");
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      setError("Gravação não disponível neste navegador. Você pode digitar sua ideia."); return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const preferred = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"].find((type) => MediaRecorder.isTypeSupported(type));
+      const recorder = preferred ? new MediaRecorder(stream, { mimeType: preferred }) : new MediaRecorder(stream);
+      chunksRef.current = [];
+      recorder.ondataavailable = (event) => { if (event.data.size) chunksRef.current.push(event.data); };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((track) => track.stop());
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
+        if (!blob.size) { setError("Nenhum áudio foi capturado."); return; }
+        const form = new FormData();
+        const extension = blob.type.includes("mp4") ? "m4a" : blob.type.includes("ogg") ? "ogg" : "webm";
+        form.append("audio", blob, `idea.${extension}`);
+        setTranscribing(true); setError("");
+        try {
+          const response = await fetch("/api/mika-insights/transcribe", { method: "POST", body: form });
+          const result: unknown = await response.json();
+          if (!response.ok) throw new Error(result && typeof result === "object" && "error" in result && typeof result.error === "string" ? result.error : "Não foi possível transcrever.");
+          if (!result || typeof result !== "object" || !("text" in result) || typeof result.text !== "string") throw new Error("Resposta de transcrição inválida.");
+          setDraft((previous) => [previous.trim(), result.text].filter(Boolean).join(previous.trim() ? "\\n" : ""));
+          setNotice("Áudio transcrito. Revise o texto antes de salvar.");
+        } catch (e: unknown) { setError(e instanceof Error ? e.message : "Falha na transcrição."); }
+        finally { setTranscribing(false); }
+      };
+      recorderRef.current = recorder; recorder.start(); setRecording(true);
+    } catch { setError("Não foi possível acessar o microfone. Verifique a permissão ou digite sua ideia."); }
+  }
+
+  function stopRecording() {
+    if (recorderRef.current?.state === "recording") { recorderRef.current.stop(); setRecording(false); }
+  }
 
   async function save() {
     const content = draft.trim();
@@ -169,9 +210,9 @@ export default function MikaInsightsPage() {
           onChange={(event) => setDraft(event.target.value)}
           className="w-full rounded-xl border bg-transparent p-3"
           placeholder="Escreva sua ideia..." />
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">\n          <button type="button" disabled={busy || transcribing} onClick={recording ? stopRecording : startRecording} className="rounded-xl border px-3 py-2 text-sm disabled:opacity-50">{recording ? "Parar gravação" : transcribing ? "Transcrevendo..." : "Gravar ideia por voz"}</button>
           <span className="text-xs opacity-60">Data e hora serão registradas ao salvar.</span>
-          <button type="button" disabled={busy || !draft.trim()} onClick={save}
+          <button type="button" disabled={busy || transcribing || !draft.trim()} onClick={save}
             className="rounded-xl bg-violet-700 px-4 py-2 text-white disabled:opacity-50">
             {busy ? "Salvando..." : "Guardar ideia"}
           </button>
