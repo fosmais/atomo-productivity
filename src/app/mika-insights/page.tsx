@@ -11,6 +11,7 @@ type Idea = {
   title: string | null;
   status: "captured" | "analyzing" | "planned" | "archived";
   created_at: string;
+  proposed_plan: { tasks: SuggestedTask[] } | null;
 };
 
 export default function MikaInsightsPage() {
@@ -47,7 +48,7 @@ export default function MikaInsightsPage() {
     if (authError || !user) throw new Error("Faça login para acessar suas ideias.");
     const { data, error: queryError } = await client
       .from("mika_ideas")
-      .select("id,content,title,status,created_at")
+      .select("id,content,title,status,created_at,proposed_plan")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(100);
@@ -192,6 +193,25 @@ export default function MikaInsightsPage() {
     finally { setBusy(false); }
   }
 
+  async function saveSuggestedPlan(idea: Idea) {
+    const tasks = suggestions[idea.id];
+    if (!tasks?.length || busy) return;
+    setBusy(true); setError(""); setNotice("");
+    try {
+      const client = createClient();
+      const { data: { user }, error: authError } = await client.auth.getUser();
+      if (authError || !user) throw new Error("Sessão expirada.");
+      const { error: updateError } = await client.from("mika_ideas")
+        .update({ proposed_plan: { tasks }, status: "planned", updated_at: new Date().toISOString() })
+        .eq("id", idea.id).eq("user_id", user.id).neq("status", "archived");
+      if (updateError) throw updateError;
+      setSuggestions((previous) => { const next = { ...previous }; delete next[idea.id]; return next; });
+      await load();
+      setNotice("Plano salvo na ideia. Nenhuma tarefa foi criada automaticamente.");
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Não foi possível salvar o plano."); }
+    finally { setBusy(false); }
+  }
+
   async function updateIdea(id: string) {
     const content = editContent.trim();
     if (!content || content.length > 10000 || busy) return;
@@ -201,7 +221,7 @@ export default function MikaInsightsPage() {
       const { data: { user }, error: authError } = await client.auth.getUser();
       if (authError || !user) throw new Error("Sessão expirada.");
       const { error: updateError } = await client.from("mika_ideas")
-        .update({ content, updated_at: new Date().toISOString() })
+        .update({ content, proposed_plan: null, status: "captured", updated_at: new Date().toISOString() })
         .eq("id", id).eq("user_id", user.id);
       if (updateError) throw updateError;
       setSuggestions((previous) => { const next = { ...previous }; delete next[id]; return next; });
@@ -275,7 +295,14 @@ export default function MikaInsightsPage() {
               {showArchived && <button type="button" disabled={busy} onClick={() => setArchived(idea.id, false)} className="rounded-lg border px-3 py-1 text-sm disabled:opacity-50">Restaurar</button>}
               <button type="button" disabled={busy} onClick={() => removeIdea(idea.id)} className="rounded-lg border px-3 py-1 text-sm text-red-600 disabled:opacity-50">Excluir</button>
             </div>
-            {editingId !== idea.id && idea.status !== "archived" && suggestions[idea.id] && <section aria-label="Plano sugerido pela MIKA" className="space-y-2 rounded-xl border p-3"><h3 className="font-medium">Plano sugerido — apenas para revisão</h3><p className="text-xs opacity-70">Nenhuma tarefa foi criada ou agendada. Revise antes de executar.</p><ol className="list-decimal space-y-1 pl-5">{suggestions[idea.id].map((task, index) => <li key={index} className="text-sm">{task.title} — {task.priority}{task.dueDate ? ` · ${task.dueDate}` : ""}</li>)}</ol><button type="button" onClick={() => setSuggestions((previous) => { const next = { ...previous }; delete next[idea.id]; return next; })} className="rounded-lg border px-3 py-1 text-sm">Descartar sugestão</button></section>}
+            {editingId !== idea.id && idea.proposed_plan?.tasks && !suggestions[idea.id] && (
+              <section aria-label="Plano salvo" className="space-y-2 rounded-xl border p-3">
+                <h3 className="font-medium">Plano salvo</h3>
+                <p className="text-xs opacity-70">Salvo apenas nesta ideia. Nenhuma tarefa foi criada ou agendada.</p>
+                <ol className="list-decimal space-y-1 pl-5">{idea.proposed_plan.tasks.map((task, index) => <li key={index} className="text-sm">{task.title} — {task.priority}{task.dueDate ? ` · ${task.dueDate}` : ""}</li>)}</ol>
+              </section>
+            )}
+            {editingId !== idea.id && idea.status !== "archived" && suggestions[idea.id] && <section aria-label="Plano sugerido pela MIKA" className="space-y-2 rounded-xl border p-3"><h3 className="font-medium">Plano sugerido — apenas para revisão</h3><p className="text-xs opacity-70">Nenhuma tarefa foi criada ou agendada. Revise antes de executar.</p><ol className="list-decimal space-y-1 pl-5">{suggestions[idea.id].map((task, index) => <li key={index} className="text-sm">{task.title} — {task.priority}{task.dueDate ? ` · ${task.dueDate}` : ""}</li>)}</ol><div className="flex flex-wrap gap-2"><button type="button" disabled={busy} onClick={() => saveSuggestedPlan(idea)} className="rounded-lg bg-violet-700 px-3 py-1 text-sm text-white disabled:opacity-50">Salvar plano na ideia</button><button type="button" disabled={busy} onClick={() => setSuggestions((previous) => { const next = { ...previous }; delete next[idea.id]; return next; })} className="rounded-lg border px-3 py-1 text-sm">Descartar sugestão</button></div></section>}
           </article>
         ))}
       </section>
