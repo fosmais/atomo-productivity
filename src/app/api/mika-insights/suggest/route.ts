@@ -26,6 +26,9 @@ export async function POST(request: Request) {
     if (dbError || !idea) return NextResponse.json({ error: "Ideia não encontrada." }, { status: 404 });
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) return NextResponse.json({ error: "IA indisponível." }, { status: 503 });
+    const { data: quotaAllowed, error: quotaError } = await supabase.rpc("mika_consume_ai_quota", { p_action: "suggest" });
+    if (quotaError) return NextResponse.json({ error: "Controle de uso indisponível." }, { status: 503 });
+    if (!quotaAllowed) return NextResponse.json({ error: "Limite de uso da IA atingido. Tente novamente mais tarde." }, { status: 429, headers: { "Retry-After": "3600" } });
     const openai = new OpenAI({ apiKey, timeout: 20000, maxRetries: 0 });
     const completion = await openai.responses.create({
       model: "gpt-4.1-mini", store: false, max_output_tokens: 1500,
