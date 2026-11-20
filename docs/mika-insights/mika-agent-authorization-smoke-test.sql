@@ -10,6 +10,8 @@ declare
   v_proposal_id uuid;
   first_task_id uuid;
   replay_task_id uuid;
+  rejected_proposal_id uuid;
+  expired_proposal_id uuid;
   decision text;
   execution text;
   affected integer;
@@ -79,5 +81,38 @@ begin
   select count(*) into affected from public.mika_action_audit
   where mika_action_audit.proposal_id=v_proposal_id and event_type in ('approved','succeeded');
   if affected <> 2 then raise exception 'Approval/execution audit missing'; end if;
-end $$;
+
+  -- Rejected proposals must never execute.
+  execute 'reset role';
+  insert into public.mika_action_proposals(user_id,action_type,payload,status)
+  values(owner_id,'create_task',
+    jsonb_build_object('type','create_task','title','Rejected smoke test task',
+      'reason','Authorization regression','due_at',null,'plan_id',v_plan_id::text),
+    'rejected')
+  returning id into rejected_proposal_id;
+  execute 'set local role authenticated';
+  rejected := false;
+  begin
+    perform * from public.mika_execute_approved_task(rejected_proposal_id,v_plan_id);
+  exception when sqlstate 'P0001' then rejected := true;
+  end;
+  if not rejected then raise exception 'Rejected proposal executed'; end if;
+
+  -- Expired approvals must not create tasks.
+  execute 'reset role';
+  insert into public.mika_action_proposals(user_id,action_type,payload,status,created_at,expires_at)
+  values(owner_id,'create_task',
+    jsonb_build_object('type','create_task','title','Expired smoke test task',
+      'reason','Authorization regression','due_at',null,'plan_id',v_plan_id::text),
+    'approved',now()-interval '2 hours',now()-interval '1 hour')
+  returning id into expired_proposal_id;
+  execute 'set local role authenticated';
+  select execution_status into execution
+  from public.mika_execute_approved_task(expired_proposal_id,v_plan_id);
+  if execution <> 'expired' then raise exception 'Expired proposal executed'; end if;
+
+  select count(*) into affected from public.tasks
+  where tasks.plan_id=v_plan_id and user_id=owner_id;
+  if affected <> 1 then raise exception 'Unexpected extra task created'; end if;
+end $;
 rollback;
