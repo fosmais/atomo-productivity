@@ -47,7 +47,11 @@ async function main() {
   assert.equal(otherMissions.length,1,"Other owner fixture must have exactly one mission");
   assert.equal(otherMissions[0].status,"pending","Foreign fixture must remain pending");
   const attempted=await owner.db.from("myryra_journey_missions").update({status:"pending"}).eq("id",otherMissions[0].id).select("id");
-  if (!attempted.error) assert.equal(attempted.data.length,0,"Cross-user mission update was permitted");
+  if (attempted.error) {
+    assert.match(attempted.error.code || "",/^(42501|PGRST301)$/,"Unexpected cross-user update failure; check test setup");
+  } else {
+    assert.equal(attempted.data.length,0,"Cross-user mission update was permitted");
+  }
   const {data:unchanged,error:unchangedError}=await other.db.from("myryra_journey_missions").select("status").eq("id",otherMissions[0].id).single();
   if (unchangedError) throw unchangedError;
   assert.equal(unchanged.status,"pending","Cross-user update changed mission status");
