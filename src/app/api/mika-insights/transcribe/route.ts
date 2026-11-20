@@ -8,6 +8,12 @@ export async function POST(request: Request) {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) return NextResponse.json({ error: "Faça login para transcrever o áudio." }, { status: 401 });
 
+    const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
+    if (!contentType.startsWith("multipart/form-data;"))
+      return NextResponse.json({ error: "Envie áudio como formulário multipart." }, { status: 415 });
+    const length = Number(request.headers.get("content-length"));
+    if (Number.isFinite(length) && length > 11 * 1024 * 1024)
+      return NextResponse.json({ error: "Envio acima do limite permitido." }, { status: 413 });
     const form = await request.formData();
     const audio = form.get("audio");
     if (!(audio instanceof File)) return NextResponse.json({ error: "Arquivo de áudio não enviado." }, { status: 400 });
