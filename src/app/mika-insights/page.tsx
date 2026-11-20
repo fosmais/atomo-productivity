@@ -71,7 +71,8 @@ export default function MikaInsightsPage() {
     }
     let stream: MediaStream | null = null;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const acquiredStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = acquiredStream;
       const preferred = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"].find((type) => MediaRecorder.isTypeSupported(type));
       const recorder = preferred ? new MediaRecorder(stream, { mimeType: preferred }) : new MediaRecorder(stream);
       chunksRef.current = [];
@@ -79,7 +80,7 @@ export default function MikaInsightsPage() {
       recorder.onstop = async () => {
         if (recordingTimerRef.current) clearTimeout(recordingTimerRef.current);
         setRecording(false);
-        stream.getTracks().forEach((track) => track.stop());
+        acquiredStream.getTracks().forEach((track) => track.stop());
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
         if (!blob.size) { setError("Nenhum áudio foi capturado."); return; }
         if (blob.size > 10 * 1024 * 1024) { setError("Áudio acima de 10 MB. Grave uma ideia mais curta."); return; }
