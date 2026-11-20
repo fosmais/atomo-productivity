@@ -64,15 +64,18 @@ export default function MikaInsightsPage() {
     } finally { setBusy(false); }
   }
 
-  async function archive(id: string) {
+  async function setArchived(id: string, archived: boolean) {
     setBusy(true); setError(""); setNotice("");
     try {
       const client = createClient();
+      const { data: { user }, error: authError } = await client.auth.getUser();
+      if (authError || !user) throw new Error("Sessão expirada.");
       const { error: updateError } = await client.from("mika_ideas")
-        .update({ status: "archived" }).eq("id", id);
+        .update({ status: archived ? "archived" : "captured", updated_at: new Date().toISOString() })
+        .eq("id", id).eq("user_id", user.id);
       if (updateError) throw updateError;
       await load();
-      setNotice("Ideia arquivada.");
+      setNotice(archived ? "Ideia arquivada." : "Ideia restaurada.");
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Não foi possível arquivar.");
     } finally { setBusy(false); }
@@ -152,7 +155,8 @@ export default function MikaInsightsPage() {
             ) : <p className="whitespace-pre-wrap break-words">{idea.content}</p>}
             <div className="flex flex-wrap gap-2">
               <button type="button" disabled={busy} onClick={() => { setEditingId(idea.id); setEditContent(idea.content); }} className="rounded-lg border px-3 py-1 text-sm disabled:opacity-50">Editar</button>
-              {!showArchived && <button type="button" disabled={busy} onClick={() => archive(idea.id)} className="rounded-lg border px-3 py-1 text-sm disabled:opacity-50">Arquivar</button>}
+              {!showArchived && <button type="button" disabled={busy} onClick={() => setArchived(idea.id, true)} className="rounded-lg border px-3 py-1 text-sm disabled:opacity-50">Arquivar</button>}
+              {showArchived && <button type="button" disabled={busy} onClick={() => setArchived(idea.id, false)} className="rounded-lg border px-3 py-1 text-sm disabled:opacity-50">Restaurar</button>}
               <button type="button" disabled={busy} onClick={() => removeIdea(idea.id)} className="rounded-lg border px-3 py-1 text-sm text-red-600 disabled:opacity-50">Excluir</button>
             </div>
           </article>
