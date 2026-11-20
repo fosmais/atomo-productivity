@@ -16,7 +16,8 @@ export async function POST(request: Request) {
     if (audio.size < 1 || audio.size > 10 * 1024 * 1024)
       return NextResponse.json({ error: "O áudio deve ter até 10 MB." }, { status: 413 });
     const allowed = ["audio/webm", "audio/mp4", "audio/mpeg", "audio/wav", "audio/ogg", "audio/x-m4a"];
-    if (!allowed.includes(audio.type)) return NextResponse.json({ error: "Formato de áudio não suportado neste navegador." }, { status: 415 });
+    const mime = audio.type.split(";")[0].trim().toLowerCase();
+    if (!allowed.includes(mime)) return NextResponse.json({ error: "Formato de áudio não suportado neste navegador." }, { status: 415 });
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) return NextResponse.json({ error: "Transcrição indisponível no momento." }, { status: 503 });
 
