@@ -1,0 +1,42 @@
+name: MVP2 MYRA synthetic PostgreSQL rehearsal
+
+on:
+  pull_request:
+    paths:
+      - 'database/tests/journey_myra_*_synthetic_61.sql'
+      - '.github/workflows/mvp2-myra-postgres-synthetic.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: rehearsal
+          POSTGRES_PASSWORD: rehearsal_only
+          POSTGRES_DB: rehearsal
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U rehearsal -d rehearsal"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: rehearsal
+      PGPASSWORD: rehearsal_only
+      PGDATABASE: rehearsal
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify isolated synthetic credit idempotence
+        run: psql -X -v ON_ERROR_STOP=1 -f database/tests/journey_myra_credit_idempotence_synthetic_61.sql
+      - name: Verify isolated synthetic FK transition
+        run: psql -X -v ON_ERROR_STOP=1 -f database/tests/journey_myra_fk_transition_synthetic_61.sql
