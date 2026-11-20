@@ -76,7 +76,8 @@ export default function MikaInsightsPage() {
           const result: unknown = await response.json();
           if (!response.ok) throw new Error(result && typeof result === "object" && "error" in result && typeof result.error === "string" ? result.error : "Não foi possível transcrever.");
           if (!result || typeof result !== "object" || !("text" in result) || typeof result.text !== "string") throw new Error("Resposta de transcrição inválida.");
-          setDraft((previous) => [previous.trim(), result.text].filter(Boolean).join(previous.trim() ? "\\n" : ""));
+          const transcript = result.text;
+          setDraft((previous) => [previous.trim(), transcript].filter(Boolean).join(previous.trim() ? "\n" : ""));
           setNotice("Áudio transcrito. Revise o texto antes de salvar.");
         } catch (e: unknown) { setError(e instanceof Error ? e.message : "Falha na transcrição."); }
         finally { setTranscribing(false); }
@@ -91,7 +92,7 @@ export default function MikaInsightsPage() {
 
   async function save() {
     const content = draft.trim();
-    if (!content || content.length > 10000 || busy) return;
+    if (!content || content.length > 10000 || busy || recording || transcribing) return;
     setBusy(true); setError(""); setNotice("");
     try {
       const client = createClient();
@@ -210,7 +211,8 @@ export default function MikaInsightsPage() {
           onChange={(event) => setDraft(event.target.value)}
           className="w-full rounded-xl border bg-transparent p-3"
           placeholder="Escreva sua ideia..." />
-        <div className="flex flex-wrap items-center justify-between gap-3">\n          <button type="button" disabled={busy || transcribing} onClick={recording ? stopRecording : startRecording} className="rounded-xl border px-3 py-2 text-sm disabled:opacity-50">{recording ? "Parar gravação" : transcribing ? "Transcrevendo..." : "Gravar ideia por voz"}</button>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <button type="button" disabled={busy || transcribing} onClick={recording ? stopRecording : startRecording} className="rounded-xl border px-3 py-2 text-sm disabled:opacity-50">{recording ? "Parar gravação" : transcribing ? "Transcrevendo..." : "Gravar ideia por voz"}</button>
           <span className="text-xs opacity-60">Data e hora serão registradas ao salvar.</span>
           <button type="button" disabled={busy || transcribing || !draft.trim()} onClick={save}
             className="rounded-xl bg-violet-700 px-4 py-2 text-white disabled:opacity-50">
