@@ -5,6 +5,8 @@ on:
     paths:
       - 'database/tests/journey_myra_*_synthetic_61.sql'
       - '.github/workflows/mvp2-myra-postgres-synthetic.yml'
+      - 'database/tests/myra_actual_migration_*_63.sql'
+      - 'supabase/migrations/20261115000200_preserve_myra_history.sql'
   workflow_dispatch:
 
 permissions:
@@ -40,3 +42,8 @@ jobs:
         run: psql -X -v ON_ERROR_STOP=1 -f database/tests/journey_myra_credit_idempotence_synthetic_61.sql
       - name: Verify isolated synthetic FK transition
         run: psql -X -v ON_ERROR_STOP=1 -f database/tests/journey_myra_fk_transition_synthetic_61.sql
+      - name: Rehearse actual migration on synthetic production-like schema
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f database/tests/myra_actual_migration_setup_63.sql
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261115000200_preserve_myra_history.sql
+          psql -X -v ON_ERROR_STOP=1 -f database/tests/myra_actual_migration_verify_63.sql
