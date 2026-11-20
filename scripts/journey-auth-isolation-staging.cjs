@@ -59,7 +59,17 @@ async function main() {
   if (ledgerError) throw ledgerError;
   assert.equal(ledger.length,0,"Cross-user ledger disclosure");
  }
+  // Anonymous requests must not disclose any Journey or MYRA records.
+  const anonymous=client();
+  for (const table of ["myryra_journeys","myryra_journey_missions","myryra_journey_myra_ledger"]) {
+    const {data,error}=await anonymous.from(table).select("id").limit(1);
+    if (error) {
+      assert.match(error.code || "",/^(42501|PGRST301)$/,"Unexpected anonymous read failure on "+table);
+    } else {
+      assert.equal(data.length,0,"Anonymous data disclosure on "+table);
+    }
+  }
  await Promise.all(owners.map(x=>x.db.auth.signOut()));
- console.log("PASS: two real staging Auth sessions, owner-only journeys, cross-user mission read/write isolation and ledger (safe no-op write attempt)");
+ console.log("PASS: two real staging Auth sessions, owner-only journeys, cross-user mission read/write isolation, ledger and anonymous access denial (safe no-op write attempt)");
 }
 main().catch(e=>{console.error("Staging Auth isolation test failed:",e.message);process.exitCode=1;});
