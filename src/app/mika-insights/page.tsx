@@ -254,6 +254,7 @@ export default function MikaInsightsPage() {
             {busy ? "Salvando..." : "Guardar ideia"}
           </button>
         </div>
+        <p className="text-xs opacity-70">Ao gravar, seu áudio será enviado ao serviço de IA para transcrição. Revise o texto antes de salvar. O áudio não é armazenado no histórico de ideias.</p>
       </section>
       {error && <p role="alert" className="text-red-600">{error}</p>}
       {notice && <p role="status">{notice}</p>}
