@@ -114,5 +114,5 @@ begin
   select count(*) into affected from public.tasks
   where tasks.plan_id=v_plan_id and user_id=owner_id;
   if affected <> 1 then raise exception 'Unexpected extra task created'; end if;
-end $;
+end $$;
 rollback;
