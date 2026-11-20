@@ -22,6 +22,18 @@ Ambiente: Preview da branch `feat/mika-insights-mvp2` conectado exclusivamente a
 - [ ] Verificar comportamento no Android e em tela estreita.
 - [ ] Conferir logs de Preview após os testes, sem dados sensíveis.
 
+## Voz — cenários adicionais
+- [ ] Gravar uma ideia curta em português; confirmar que a transcrição aparece antes de salvar.
+- [ ] Editar a transcrição, salvar e confirmar `source = voice` e persistência após recarregar.
+- [ ] Negar permissão de microfone; confirmar erro compreensível e possibilidade de digitar.
+- [ ] Parar a gravação manualmente e confirmar liberação do microfone.
+- [ ] Deixar a gravação atingir 60 segundos; confirmar parada automática.
+- [ ] Enviar áudio acima de 10 MB; confirmar bloqueio sem chamada de transcrição.
+- [ ] Testar áudio vazio e formato não suportado; confirmar mensagens adequadas.
+- [ ] Testar transcrição com texto total acima de 10.000 caracteres; confirmar bloqueio.
+- [ ] Abrir a página em Android e validar permissões, formato do áudio e transcrição.
+- [ ] Confirmar que áudio não é salvo na tabela de ideias; apenas texto revisado é persistido.
+
 ## Comportamento esperado
 A geração é apenas uma proposta efêmera, não grava `proposed_plan`, não cria tarefas, não agenda compromissos e não altera a Journey. A aprovação/execução de um plano exige uma futura implementação específica e autorização explícita do usuário.
 
