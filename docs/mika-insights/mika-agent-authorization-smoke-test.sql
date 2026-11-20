@@ -62,6 +62,14 @@ begin
   from public.mika_decide_proposal(v_proposal_id,true);
   if decision <> 'approved' then raise exception 'Approval failed'; end if;
 
+  -- A different plan ID cannot be substituted after approval.
+  rejected := false;
+  begin
+    perform * from public.mika_execute_approved_task(v_proposal_id,gen_random_uuid());
+  exception when sqlstate '22023' then rejected := true;
+  end;
+  if not rejected then raise exception 'Plan substitution was allowed'; end if;
+
   select execution_status,task_id into execution,first_task_id
   from public.mika_execute_approved_task(v_proposal_id,v_plan_id);
   if execution <> 'executed' or first_task_id is null then
@@ -73,6 +81,14 @@ begin
   if execution <> 'already_executed' or replay_task_id is distinct from first_task_id then
     raise exception 'Replay/idempotency failed';
   end if;
+
+  -- Replay cannot change the plan associated with the already executed task.
+  rejected := false;
+  begin
+    perform * from public.mika_execute_approved_task(v_proposal_id,gen_random_uuid());
+  exception when sqlstate '22023' then rejected := true;
+  end;
+  if not rejected then raise exception 'Replay accepted a different plan'; end if;
 
   select count(*) into affected from public.tasks
   where tasks.plan_id=v_plan_id and user_id=owner_id and id=first_task_id;
