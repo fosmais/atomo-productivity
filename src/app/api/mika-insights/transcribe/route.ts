@@ -14,7 +14,34 @@ export async function POST(request: Request) {
     const length = Number(request.headers.get("content-length"));
     if (Number.isFinite(length) && length > 11 * 1024 * 1024)
       return NextResponse.json({ error: "Envio acima do limite permitido." }, { status: 413 });
-    const form = await request.formData();
+    // Content-Length is optional and may be forged: cap the actual multipart bytes.
+    if (!request.body) return NextResponse.json({ error: "Áudio não enviado." }, { status: 400 });
+    const reader = request.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let receivedBytes = 0;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        receivedBytes += value.byteLength;
+        if (receivedBytes > 11 * 1024 * 1024) {
+          await reader.cancel();
+          return NextResponse.json({ error: "Envio acima do limite permitido." }, { status: 413 });
+        }
+        chunks.push(value);
+      }
+    } finally {
+      reader.releaseLock();
+    }
+    const payload = new Uint8Array(receivedBytes);
+    let offset = 0;
+    for (const chunk of chunks) { payload.set(chunk, offset); offset += chunk.byteLength; }
+    const boundedRequest = new Request(request.url, {
+      method: "POST",
+      headers: { "Content-Type": contentType },
+      body: payload,
+    });
+    const form = await boundedRequest.formData();
     const audio = form.get("audio");
     if (!(audio instanceof File)) return NextResponse.json({ error: "Arquivo de áudio não enviado." }, { status: 400 });
     if (audio.size < 1 || audio.size > 10 * 1024 * 1024)
