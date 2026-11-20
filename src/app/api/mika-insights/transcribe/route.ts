@@ -28,6 +28,7 @@ export async function POST(request: Request) {
     });
     const text = transcription.text?.trim();
     if (!text) return NextResponse.json({ error: "Não foi possível identificar fala no áudio." }, { status: 422 });
+    if (text.length > 10000) return NextResponse.json({ error: "Transcrição excedeu o limite de 10.000 caracteres." }, { status: 413 });
     return NextResponse.json({ text }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("MIKA Insights transcription failed:", error instanceof Error ? error.name : "UnknownError");
