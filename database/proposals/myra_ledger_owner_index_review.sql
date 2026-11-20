@@ -1,0 +1,24 @@
+-- MYRYRA MVP2 | Candidate performance index (NOT an applied migration)
+-- Target: public.myryra_journey_myra_ledger
+-- Motivation: GET /api/journeys/myra filters by owner_id and sorts by
+-- created_at DESC, id DESC. No index currently supports that access path.
+-- Review in staging with representative data and EXPLAIN (ANALYZE, BUFFERS)
+-- before converting this proposal into a Supabase CLI-generated migration.
+-- Do NOT apply to production automatically.
+--
+-- CREATE INDEX CONCURRENTLY IF NOT EXISTS
+--   idx_myryra_ledger_owner_created_id_desc
+-- ON public.myryra_journey_myra_ledger
+--   (owner_id, created_at DESC, id DESC);
+--
+-- Note: CREATE INDEX CONCURRENTLY must execute outside a transaction block.
+-- On empty/tiny tables PostgreSQL may still choose a sequential scan.
+-- The balance endpoint also sums all ledger rows, so indexing alone will
+-- not remove the full-history aggregation cost.
+--
+-- Verification query:
+-- EXPLAIN (ANALYZE, BUFFERS)
+-- SELECT amount, created_at, source_mission_id, mission_id, journey_id
+-- FROM public.myryra_journey_myra_ledger
+-- WHERE owner_id = '<staging-test-user-uuid>'::uuid
+-- ORDER BY created_at DESC, id DESC LIMIT 1000;
