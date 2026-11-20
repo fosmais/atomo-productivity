@@ -38,6 +38,18 @@ begin
   if observed_status <> 'planned' or observed_plan is distinct from sample_plan then
     raise exception 'Restoring did not preserve the saved plan';
   end if;
+  -- Editing an archived idea must not silently restore it; the old plan is invalidated.
+  update public.mika_ideas set status = 'archived' where id = idea_id and user_id = owner_id;
+  update public.mika_ideas
+  set content = 'Ideia editada em arquivo', proposed_plan = null, status = 'archived'
+  where id = idea_id and user_id = owner_id;
+  get diagnostics affected = row_count;
+  if affected <> 1 then raise exception 'Archived idea edit did not update one row'; end if;
+  select status, proposed_plan into observed_status, observed_plan
+  from public.mika_ideas where id = idea_id;
+  if observed_status <> 'archived' or observed_plan is not null then
+    raise exception 'Editing an archived idea restored it or retained an obsolete plan';
+  end if;
   perform set_config('request.jwt.claim.sub', other_id::text, true);
   select count(*) into affected from public.mika_ideas where id = idea_id;
   if affected <> 0 then raise exception 'RLS read isolation failed'; end if;
