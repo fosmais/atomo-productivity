@@ -201,10 +201,12 @@ export default function MikaInsightsPage() {
       const client = createClient();
       const { data: { user }, error: authError } = await client.auth.getUser();
       if (authError || !user) throw new Error("Sessão expirada.");
-      const { error: updateError } = await client.from("mika_ideas")
+      const { data: updated, error: updateError } = await client.from("mika_ideas")
         .update({ proposed_plan: { tasks }, status: "planned", updated_at: new Date().toISOString() })
-        .eq("id", idea.id).eq("user_id", user.id).neq("status", "archived");
+        .eq("id", idea.id).eq("user_id", user.id).neq("status", "archived")
+        .select("id");
       if (updateError) throw updateError;
+      if (!updated?.length) throw new Error("A ideia foi arquivada ou não está mais disponível. Atualize a página.");
       setSuggestions((previous) => { const next = { ...previous }; delete next[idea.id]; return next; });
       await load();
       setNotice("Plano salvo na ideia. Nenhuma tarefa foi criada automaticamente.");
