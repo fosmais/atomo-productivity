@@ -25,6 +25,9 @@ export async function POST(request: Request) {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) return NextResponse.json({ error: "Transcrição indisponível no momento." }, { status: 503 });
 
+    const { data: quotaAllowed, error: quotaError } = await supabase.rpc("mika_consume_ai_quota", { p_action: "transcribe" });
+    if (quotaError) return NextResponse.json({ error: "Controle de uso indisponível." }, { status: 503 });
+    if (!quotaAllowed) return NextResponse.json({ error: "Limite de uso da IA atingido. Tente novamente mais tarde." }, { status: 429, headers: { "Retry-After": "3600" } });
     const openai = new OpenAI({ apiKey, timeout: 30000, maxRetries: 0 });
     const transcription = await openai.audio.transcriptions.create({
       file: audio,
