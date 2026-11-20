@@ -55,6 +55,15 @@ async function main() {
   const {data:unchanged,error:unchangedError}=await other.db.from("myryra_journey_missions").select("status").eq("id",otherMissions[0].id).single();
   if (unchangedError) throw unchangedError;
   assert.equal(unchanged.status,"pending","Cross-user update changed mission status");
+  // Direct ledger writes must fail even for the authenticated owner.
+  // Use an impossible UUID in a filtered UPDATE: this is safe even if a privilege regresses.
+  const ledgerWrite=await owner.db.from("myryra_journey_myra_ledger")
+    .update({amount:10}).eq("id","00000000-0000-4000-8000-000000000000").select("id");
+  if (ledgerWrite.error) {
+    assert.match(ledgerWrite.error.code || "",/^(42501|PGRST301)$/,"Unexpected ledger write failure");
+  } else {
+    assert.equal(ledgerWrite.data.length,0,"Unexpected ledger write visibility");
+  }
   const {data:ledger,error:ledgerError}=await owner.db.from("myryra_journey_myra_ledger").select("id").eq("owner_id",other.id);
   if (ledgerError) throw ledgerError;
   assert.equal(ledger.length,0,"Cross-user ledger disclosure");
@@ -70,6 +79,6 @@ async function main() {
     }
   }
  await Promise.all(owners.map(x=>x.db.auth.signOut()));
- console.log("PASS: two real staging Auth sessions, owner-only journeys, cross-user mission read/write isolation, ledger and anonymous access denial (safe no-op write attempt)");
+ console.log("PASS: two real staging Auth sessions, owner-only journeys, cross-user mission read/write isolation, ledger direct-write and anonymous access denial (safe no-op write attempts)");
 }
 main().catch(e=>{console.error("Staging Auth isolation test failed:",e.message);process.exitCode=1;});
