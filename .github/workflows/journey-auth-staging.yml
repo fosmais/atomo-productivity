@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           # Pin the reviewed staging test commit; never run mutable production branch code.
-          ref: 2dcbc44a5f8e1cb6b3124c656f3301b78f6b7c6d
+          ref: 92ae3dab0021d9b231d4791e839a12666c458544
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
