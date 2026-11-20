@@ -69,8 +69,9 @@ export default function MikaInsightsPage() {
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
       setError("Gravação não disponível neste navegador. Você pode digitar sua ideia."); return;
     }
+    let stream: MediaStream | null = null;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const preferred = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"].find((type) => MediaRecorder.isTypeSupported(type));
       const recorder = preferred ? new MediaRecorder(stream, { mimeType: preferred }) : new MediaRecorder(stream);
       chunksRef.current = [];
@@ -109,7 +110,11 @@ export default function MikaInsightsPage() {
       recordingTimerRef.current = setTimeout(() => {
         if (recorder.state === "recording") recorder.stop();
       }, 60000);
-    } catch { setError("Não foi possível acessar o microfone. Verifique a permissão ou digite sua ideia."); }
+    } catch {
+      stream?.getTracks().forEach((track) => track.stop());
+      setRecording(false);
+      setError("Não foi possível acessar o microfone. Verifique a permissão ou digite sua ideia.");
+    }
   }
 
   function stopRecording() {
