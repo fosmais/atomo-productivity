@@ -13,9 +13,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
   let body: unknown;
   try {
-    const raw = await request.text();
-    if (raw.length > 4096) return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
-    body = JSON.parse(raw);
+    // Limit bytes while reading: Content-Length can be missing or forged.
+    if (!request.body) return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
+    const reader = request.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let totalBytes = 0;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        totalBytes += value.byteLength;
+        if (totalBytes > 4096) {
+          await reader.cancel();
+          return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+        }
+        chunks.push(value);
+      }
+    } finally {
+      reader.releaseLock();
+    }
+    const bytes = new Uint8Array(totalBytes);
+    let offset = 0;
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+    body = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
   } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
   const ideaId = body && typeof body === "object" && "ideaId" in body ? (body as {ideaId: unknown}).ideaId : null;
   if (typeof ideaId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(ideaId))
