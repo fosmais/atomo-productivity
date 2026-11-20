@@ -21,9 +21,10 @@ export async function POST(request: Request) {
   if (typeof ideaId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(ideaId))
     return NextResponse.json({ error: "Ideia inválida." }, { status: 400 });
   try {
-    const { data: idea, error: dbError } = await supabase.from("mika_ideas").select("content")
+    const { data: idea, error: dbError } = await supabase.from("mika_ideas").select("content,status")
       .eq("id", ideaId).eq("user_id", user.id).single();
     if (dbError || !idea) return NextResponse.json({ error: "Ideia não encontrada." }, { status: 404 });
+    if (idea.status === "archived") return NextResponse.json({ error: "Restaure a ideia antes de solicitar um plano." }, { status: 409 });
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) return NextResponse.json({ error: "IA indisponível." }, { status: 503 });
     const { data: quotaAllowed, error: quotaError } = await supabase.rpc("mika_consume_ai_quota", { p_action: "suggest" });
