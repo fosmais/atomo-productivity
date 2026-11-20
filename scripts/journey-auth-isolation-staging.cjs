@@ -36,11 +36,17 @@ async function main() {
   if (missionError) throw missionError;
   assert.equal(missions.length,1,"Each fixture should have one mission");
   assert.equal(missions[0].status,"pending","Fixture mission must remain pending");
+  const {data:otherOwn,error:otherOwnError}=await other.db.from("myryra_journeys").select("id").eq("owner_id",other.id).eq("title",fixtureTitle);
+  if (otherOwnError) throw otherOwnError;
+  assert.equal(otherOwn.length,1,"Other user must own one fixture journey");
+  const {data:foreignMissions,error:foreignMissionError}=await owner.db.from("myryra_journey_missions").select("id").eq("journey_id",otherOwn[0].id);
+  if (foreignMissionError) throw foreignMissionError;
+  assert.equal(foreignMissions.length,0,"Cross-user mission disclosure");
   const {data:ledger,error:ledgerError}=await owner.db.from("myryra_journey_myra_ledger").select("id").eq("owner_id",other.id);
   if (ledgerError) throw ledgerError;
   assert.equal(ledger.length,0,"Cross-user ledger disclosure");
  }
  await Promise.all(owners.map(x=>x.db.auth.signOut()));
- console.log("PASS: two real staging Auth sessions, owner-only journeys, isolated missions and ledger (read-only)");
+ console.log("PASS: two real staging Auth sessions, owner-only journeys, cross-user mission isolation and ledger (read-only)");
 }
 main().catch(e=>{console.error("Staging Auth isolation test failed:",e.message);process.exitCode=1;});
