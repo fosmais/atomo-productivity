@@ -3,6 +3,7 @@
 -- Substituir os UUIDs abaixo por IDs sintéticos confirmados pelo Supabase Auth.
 -- NÃO executar em produção. NÃO usar usuários ou planos reais.
 -- O script cria uma proposta PENDING. Aprovar somente via RPC autenticada.
+-- Payload alinhado à constraint mika_action_proposals_check no staging.
 BEGIN;
 DO $fixture$
 DECLARE
@@ -39,8 +40,11 @@ BEGIN
   END IF;
   INSERT INTO public.mika_action_proposals(user_id,action_type,payload,status,expires_at)
   VALUES (v_owner,'create_task',jsonb_build_object(
+    'type','create_task',
     'plan_id',v_plan::text,
-    'title','[MIKA-STAGING-TEST] Execução concorrente'
+    'title','[MIKA-STAGING-TEST] Execução concorrente',
+    'reason','Teste controlado de concorrência em homologação',
+    'due_at',null
   ),'pending',now()+interval '30 minutes')
   RETURNING id INTO v_proposal_id;
   RAISE NOTICE 'MIKA_STAGING_PROPOSAL_ID=%',v_proposal_id;
