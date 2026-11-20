@@ -248,7 +248,7 @@ export default function MikaInsightsPage() {
           placeholder="Escreva sua ideia..." />
         <div className="flex flex-wrap items-center justify-between gap-3">
           <button type="button" disabled={busy || transcribing} onClick={recording ? stopRecording : startRecording} className="rounded-xl border px-3 py-2 text-sm disabled:opacity-50">{recording ? "Parar gravação" : transcribing ? "Transcrevendo..." : "Gravar ideia por voz"}</button>
-          <span className="text-xs opacity-60">Data e hora serão registradas ao salvar.</span>
+          <span role="status" aria-live="polite" className="text-xs opacity-70">{recording ? "Microfone ativo. A gravação termina automaticamente após 60 segundos." : transcribing ? "Processando áudio. Aguarde a transcrição." : "Data e hora serão registradas ao salvar."}</span>
           <button type="button" disabled={busy || recording || transcribing || !draft.trim()} onClick={save}
             className="rounded-xl bg-violet-700 px-4 py-2 text-white disabled:opacity-50">
             {busy ? "Salvando..." : "Guardar ideia"}
