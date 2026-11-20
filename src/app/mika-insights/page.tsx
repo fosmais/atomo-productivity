@@ -243,7 +243,7 @@ export default function MikaInsightsPage() {
       <section className="space-y-3 rounded-2xl border p-4" aria-label="Nova ideia">
         <label htmlFor="idea-content" className="block font-medium">O que veio à sua mente?</label>
         <textarea id="idea-content" value={draft} maxLength={10000} rows={4}
-          onChange={(event) => setDraft(event.target.value)}
+          onChange={(event) => { const value = event.target.value; setDraft(value); if (!value.trim()) setVoiceDraft(false); }}
           className="w-full rounded-xl border bg-transparent p-3"
           placeholder="Escreva sua ideia..." />
         <div className="flex flex-wrap items-center justify-between gap-3">
