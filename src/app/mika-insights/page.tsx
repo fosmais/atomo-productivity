@@ -16,6 +16,9 @@ export default function MikaInsightsPage() {
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -75,8 +78,40 @@ export default function MikaInsightsPage() {
     } finally { setBusy(false); }
   }
 
+  async function updateIdea(id: string) {
+    const content = editContent.trim();
+    if (!content || content.length > 10000 || busy) return;
+    setBusy(true); setError(""); setNotice("");
+    try {
+      const client = createClient();
+      const { data: { user }, error: authError } = await client.auth.getUser();
+      if (authError || !user) throw new Error("Sessão expirada.");
+      const { error: updateError } = await client.from("mika_ideas")
+        .update({ content, updated_at: new Date().toISOString() })
+        .eq("id", id).eq("user_id", user.id);
+      if (updateError) throw updateError;
+      setEditingId(null); await load(); setNotice("Ideia atualizada.");
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Falha ao editar."); }
+    finally { setBusy(false); }
+  }
+
+  async function removeIdea(id: string) {
+    if (!window.confirm("Excluir esta ideia permanentemente?")) return;
+    setBusy(true); setError(""); setNotice("");
+    try {
+      const client = createClient();
+      const { data: { user }, error: authError } = await client.auth.getUser();
+      if (authError || !user) throw new Error("Sessão expirada.");
+      const { error: deleteError } = await client.from("mika_ideas")
+        .delete().eq("id", id).eq("user_id", user.id);
+      if (deleteError) throw deleteError;
+      await load(); setNotice("Ideia excluída.");
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Falha ao excluir."); }
+    finally { setBusy(false); }
+  }
+
   const visible = ideas.filter((idea) =>
-    idea.status !== "archived" &&
+    (showArchived ? idea.status === "archived" : idea.status !== "archived") &&
     (idea.content + " " + (idea.title ?? "")).toLocaleLowerCase().includes(search.toLocaleLowerCase())
   );
 
@@ -103,7 +138,7 @@ export default function MikaInsightsPage() {
       {error && <p role="alert" className="text-red-600">{error}</p>}
       {notice && <p role="status">{notice}</p>}
       <section className="space-y-3" aria-label="Minhas ideias">
-        <h2 className="text-lg font-semibold">Minhas ideias</h2>
+        <div className="flex items-center justify-between gap-2"><h2 className="text-lg font-semibold">Minhas ideias</h2><button type="button" onClick={() => setShowArchived(!showArchived)} className="rounded-lg border px-3 py-1 text-sm">{showArchived ? "Ver ativas" : "Ver arquivadas"}</button></div>
         <input aria-label="Pesquisar ideias" value={search} onChange={(e) => setSearch(e.target.value)}
           placeholder="Pesquisar..." className="w-full rounded-xl border bg-transparent p-3" />
         {visible.length === 0 && <p className="text-sm opacity-70">Nenhuma ideia encontrada.</p>}
@@ -112,9 +147,14 @@ export default function MikaInsightsPage() {
             <time className="text-xs opacity-60" dateTime={idea.created_at}>
               {new Date(idea.created_at).toLocaleString("pt-BR")}
             </time>
-            <p className="whitespace-pre-wrap break-words">{idea.content}</p>
-            <button type="button" disabled={busy} onClick={() => archive(idea.id)}
-              className="rounded-lg border px-3 py-1 text-sm disabled:opacity-50">Arquivar</button>
+            {editingId === idea.id ? (
+              <div className="space-y-2"><textarea aria-label="Editar ideia" maxLength={10000} rows={4} value={editContent} onChange={(e) => setEditContent(e.target.value)} className="w-full rounded-xl border bg-transparent p-3" /><div className="flex gap-2"><button type="button" disabled={busy || !editContent.trim()} onClick={() => updateIdea(idea.id)} className="rounded-lg border px-3 py-1 text-sm">Salvar</button><button type="button" disabled={busy} onClick={() => setEditingId(null)} className="rounded-lg border px-3 py-1 text-sm">Cancelar</button></div></div>
+            ) : <p className="whitespace-pre-wrap break-words">{idea.content}</p>}
+            <div className="flex flex-wrap gap-2">
+              <button type="button" disabled={busy} onClick={() => { setEditingId(idea.id); setEditContent(idea.content); }} className="rounded-lg border px-3 py-1 text-sm disabled:opacity-50">Editar</button>
+              {!showArchived && <button type="button" disabled={busy} onClick={() => archive(idea.id)} className="rounded-lg border px-3 py-1 text-sm disabled:opacity-50">Arquivar</button>}
+              <button type="button" disabled={busy} onClick={() => removeIdea(idea.id)} className="rounded-lg border px-3 py-1 text-sm text-red-600 disabled:opacity-50">Excluir</button>
+            </div>
           </article>
         ))}
       </section>
