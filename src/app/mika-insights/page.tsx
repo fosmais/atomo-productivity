@@ -11,6 +11,7 @@ type Idea = {
   title: string | null;
   status: "captured" | "analyzing" | "planned" | "archived";
   created_at: string;
+  updated_at: string;
   proposed_plan: { tasks: SuggestedTask[] } | null;
 };
 
@@ -48,7 +49,7 @@ export default function MikaInsightsPage() {
     if (authError || !user) throw new Error("Faça login para acessar suas ideias.");
     const { data, error: queryError } = await client
       .from("mika_ideas")
-      .select("id,content,title,status,created_at,proposed_plan")
+      .select("id,content,title,status,created_at,updated_at,proposed_plan")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(100);
@@ -208,10 +209,10 @@ export default function MikaInsightsPage() {
       if (authError || !user) throw new Error("Sessão expirada.");
       const { data: updated, error: updateError } = await client.from("mika_ideas")
         .update({ proposed_plan: { tasks }, status: "planned", updated_at: new Date().toISOString() })
-        .eq("id", idea.id).eq("user_id", user.id).neq("status", "archived")
+        .eq("id", idea.id).eq("user_id", user.id).eq("updated_at", idea.updated_at).neq("status", "archived")
         .select("id");
       if (updateError) throw updateError;
-      if (!updated?.length) throw new Error("A ideia foi arquivada ou não está mais disponível. Atualize a página.");
+      if (!updated?.length) throw new Error("A ideia foi modificada, arquivada ou removida em outra sessão. Atualize a página e gere uma nova sugestão.");
       setSuggestions((previous) => { const next = { ...previous }; delete next[idea.id]; return next; });
       await load();
       setNotice("Plano salvo na ideia. Nenhuma tarefa foi criada automaticamente.");
