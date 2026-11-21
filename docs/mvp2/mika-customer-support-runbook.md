@@ -136,3 +136,16 @@ The six missing core tables participate in **19 foreign keys** (inbound and outb
 - `mika_teacher_sessions`: depends on `auth.users` and `myryra_journeys`; referenced by `mika_teacher_messages` using composite `(session_id, owner_id)` FK.
 
 Preserve the original composite FK and cascade/set-null actions during schema-only baseline reconstruction. Validate all constraints, RLS policies and migration provenance before a branch rebase; do not synthesize placeholder tables.
+
+## Missing baseline column catalog — read-only production inspection
+
+Catalog inspection confirmed the six missing application tables comprise 55 columns and their original data types, nullability and defaults:
+
+- `events` (12): `id uuid`, `user_id uuid`, `title text`, `starts_at timestamptz`, `ends_at timestamptz`, `location text?`, `notes text?`, `created_at timestamptz default now()`, `event_type text default 'appointment'`, `blocks_time boolean default false`, `deleted_at timestamptz?`, `category text default 'personal'`.
+- `plans` (5): `id uuid`, `user_id uuid`, `title text`, `source_text text?`, `created_at timestamptz default now()`.
+- `tasks` (13): `id uuid`, `plan_id uuid`, `user_id uuid`, `title text`, `priority text default 'Normal'`, `due_date date?`, `completed boolean default false`, `created_at timestamptz default now()`, `status text default 'todo'`, `duration_minutes integer?`, `completed_at timestamptz?`, `deleted_at timestamptz?`, `category text default 'personal'`.
+- `myryra_finance_entries` (6): `id uuid`, `user_id uuid`, `description text`, `amount_cents bigint`, `kind text`, `created_at timestamptz default now()`.
+- `myryra_journeys` (10): `id uuid`, `owner_id uuid`, `title text`, `description text?`, `status text default 'active'`, `visibility text default 'private'`, `target_date date?`, `created_at timestamptz default now()`, `updated_at timestamptz default now()`, `confirmation_key uuid?`.
+- `mika_teacher_sessions` (9): `id uuid`, `owner_id uuid`, `journey_id uuid`, `topic text`, `level text default 'iniciante'`, `scheduled_at timestamptz?`, `status text default 'active'`, `created_at timestamptz default now()`, `updated_at timestamptz default now()`.
+
+All six `id` columns default to `gen_random_uuid()`. All columns without `?` are NOT NULL. This is a diagnostic inventory, **not** a deployable baseline: constraints, indexes, triggers, grants, RLS policies, dependent functions and migration provenance still require a verified schema-only export.
