@@ -32,8 +32,9 @@ export async function GET(request: Request) {
         continue;
       }
       // Compare-and-set claim prevents two concurrent workers from sending the same row.
+      const leaseStartedAt = new Date().toISOString();
       let claim = admin.from("support_email_outbox")
-        .update({ status: "processing", attempts: nextAttempt, processing_started_at: new Date().toISOString(), last_error: null })
+        .update({ status: "processing", attempts: nextAttempt, processing_started_at: leaseStartedAt, last_error: null })
         .eq("id", item.id);
       if (item.status === "pending") claim = claim.eq("status", "pending");
       else if (item.status === "processing" && item.processing_started_at)
@@ -71,7 +72,7 @@ export async function GET(request: Request) {
       if (result.sent) {
         const { error: updateError } = await admin.from("support_email_outbox")
           .update({ status: "sent", sent_at: new Date().toISOString(), processing_started_at: null, last_error: null })
-          .eq("id", item.id).eq("status", "processing");
+          .eq("id", item.id).eq("status", "processing").eq("processing_started_at", leaseStartedAt);
         if (updateError) failed++; else sent++;
       } else {
         const terminal = nextAttempt >= 5;
