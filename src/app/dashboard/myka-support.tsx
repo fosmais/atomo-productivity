@@ -92,7 +92,7 @@ export default function MykaSupport() {
         return next;
       });
       if (!data?.length) setTicketsNotice("Você ainda não possui tickets neste ambiente.");
-    } catch (err) { if (requestId === ticketsRequestId.current) setTicketsNotice(err instanceof Error ? err.message : "Não foi possível consultar os tickets."); }
+    } catch (err) { if (requestId === ticketsRequestId.current) { setTickets([]); setSelectedTicket(null); setReplies([]); ++repliesRequestId.current; setTicketsNotice(err instanceof Error ? err.message : "Não foi possível consultar os tickets."); } }
     finally { if (requestId === ticketsRequestId.current) setLoadingTickets(false); }
   }
 
