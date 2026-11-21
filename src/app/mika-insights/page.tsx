@@ -60,7 +60,10 @@ export default function MikaInsightsPage() {
 
   useEffect(() => {
     let active = true;
-    load().catch((e: unknown) => {
+    // Defer the initial async fetch so the effect does not synchronously trigger state updates.
+    void Promise.resolve().then(() => {
+      if (active) return load();
+    }).catch((e: unknown) => {
       if (active) setError(e instanceof Error ? e.message : "Erro ao carregar ideias.");
     });
     return () => { active = false; };
