@@ -33,7 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Pin the reviewed staging test commit; never run mutable production branch code.
+          # Push runs test the exact homologation branch; manual runs stay pinned to the reviewed test commit.
           ref: ${{ github.event_name == 'push' && github.ref || '92ae3dab0021d9b231d4791e839a12666c458544' }}
       - uses: actions/setup-node@v4
         with:
