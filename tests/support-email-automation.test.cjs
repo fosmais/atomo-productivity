@@ -139,7 +139,7 @@ test("homologation preflight verifies full application baseline without mutating
 
 test("email worker counts only persisted lease transitions", () => {
   assert.match(worker, /data: completed, error: updateError/);
-  assert.equal((worker.match(/\.select\("id"\)\.maybeSingle\(\)/g) || []).length, 3);
+  assert.equal((worker.match(/\.select\("id"\)\.maybeSingle\(\)/g) || []).length, 4);
   assert.equal((worker.match(/else if \(!completed\) skipped\+\+/g) || []).length, 2);
   assert.doesNotMatch(worker, /if \(updateError\) failed\+\+; else sent\+\+/);
 });
@@ -154,4 +154,9 @@ test("support release preflight checks RPC, authenticated insert, and email leas
   assert.match(preflight, /direct_insert_policy_absent/);
   assert.match(preflight, /outbox_lease_column/);
   assert.match(preflight, /acknowledgement_supported/);
+});
+
+test("exhausted support email retries count only a persisted terminal update", () => {
+  assert.match(worker, /data: exhaustedRow, error: exhaustedError/);
+  assert.match(worker, /if \(exhaustedError\) failed\+\+; else if \(exhaustedRow\) failed\+\+; else skipped\+\+/);
 });
