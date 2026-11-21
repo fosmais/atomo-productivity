@@ -99,3 +99,31 @@ FROM checks;
 SELECT to_regclass('public.events') IS NOT NULL AS events_baseline_present,
        EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname='public'
                AND indexname='events_autopilot_task_once_per_user_idx') AS autopilot_guard_present;
+
+-- Calendar concurrency safety gate: requires the real overlap trigger/function.
+-- A table-only baseline is not sufficient for scheduling homologation.
+SELECT EXISTS (
+  SELECT 1 FROM pg_trigger t
+  JOIN pg_class c ON c.oid = t.tgrelid
+  JOIN pg_namespace n ON n.oid = c.relnamespace
+  WHERE n.nspname = 'public' AND c.relname = 'events'
+    AND t.tgname = 'myryra_guard_blocking_event_overlap'
+    AND NOT t.tgisinternal AND t.tgenabled IN ('O','A')
+    AND pg_get_triggerdef(t.oid) LIKE '%BEFORE INSERT OR UPDATE%'
+) AS overlap_trigger_active,
+to_regprocedure('public.myryra_guard_blocking_event_overlap()') IS NOT NULL AS overlap_function_exists,
+EXISTS (
+  SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = 'myryra_guard_blocking_event_overlap'
+    AND pg_get_functiondef(p.oid) LIKE '%pg_advisory_xact_lock%'
+    AND pg_get_functiondef(p.oid) LIKE '%23P01%'
+) AS overlap_concurrency_guard_present;
+
+-- Detect permissive RLS UPDATE policies that overlap on soft-deleted events.
+-- This is a review flag, not proof of cross-user access or an instruction to
+-- remove legitimate restoration support.
+SELECT count(*) FILTER (WHERE cmd = 'UPDATE') AS event_update_policies,
+       bool_or(cmd = 'UPDATE' AND policyname = 'Users can update own events') AS broad_owner_update_exists,
+       bool_or(cmd = 'UPDATE' AND policyname = 'events_owner_update_category') AS category_update_exists
+FROM pg_policies
+WHERE schemaname = 'public' AND tablename = 'events';
