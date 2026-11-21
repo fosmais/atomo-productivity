@@ -67,6 +67,8 @@ test("support outbox worker claims atomically, recovers stale claims and retries
   assert.match(worker, /processing_started_at/);
   assert.match(worker, /10 \* 60 \* 1000/);
   assert.match(worker, /nextAttempt >= 5/);
+  assert.match(worker, /nextAttempt > 5/);
+  assert.match(worker, /Limite de tentativas excedido/);
   assert.match(worker, /status: terminal \? "failed" : "pending"/);
   assert.match(migration, /ADD COLUMN IF NOT EXISTS processing_started_at timestamptz/);
   assert.match(migration, /WHERE status = .processing./);
