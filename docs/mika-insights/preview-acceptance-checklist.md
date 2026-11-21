@@ -32,3 +32,20 @@
 - Confirmar CI/lint independentemente do build Vercel.
 - Só considerar PR pronto para revisão final após todos os cenários P0 passarem.
 - Merge e qualquer mudança em produção exigem autorização explícita.
+
+## Evidências técnicas registradas — 20/11/2026
+- **CI GitHub Actions:** PASS — run `44853190849`, commit `10cb12feaea0e38ffb5cfa0e59a73a21d7ef37e8`; `npm ci`, ESLint, `next typegen` e `tsc --noEmit` concluídos com sucesso.
+- **Vercel Preview:** READY — deployment do commit `10cb12f`; isso não equivale a um teste funcional autenticado.
+- **Supabase Preview (`xanavauqzsrgvdfhcrsm`):** RLS habilitado nas tabelas `mika_ideas`, `mika_action_proposals` e `mika_action_audit`. Políticas restringem leitura ao proprietário; ideias permitem CRUD do proprietário; propostas/auditoria não concedem escrita direta ao papel `authenticated`.
+- **Funções privilegiadas:** `mika_consume_ai_quota`, `mika_decide_proposal` e `mika_execute_approved_task` negam EXECUTE a `anon` e `PUBLIC`, concedem a `authenticated`; revisão de código confirma verificações de identidade e controles de acesso. **Alertas do Security Advisor continuam abertos** para as três funções `SECURITY DEFINER` expostas.
+- **Segurança Auth:** aviso de proteção contra senhas vazadas desativada no Preview permanece aberto; não houve alteração da configuração.
+- **SQL transacional:** testes anteriores de propriedade, concorrência, autorização e persistência passaram com rollback, sem substituir testes de interface/API.
+
+### Pendências obrigatórias antes de solicitar revisão final
+- [ ] Executar cenários funcionais 1–10 com sessão autenticada e registrar PASS/FAIL, horário, dispositivo e evidência.
+- [ ] Executar casos HTTP reais (401/400/404/409/413/415/429/200), inclusive limites de payload e concorrência.
+- [ ] Revisar e deliberar sobre os avisos de funções `SECURITY DEFINER` e proteção de senhas vazadas.
+- [ ] Verificar a experiência Android e a captura real de áudio com consentimento.
+- [ ] Revalidar CI e deployment no commit final após eventuais ajustes.
+
+**Estado:** homologação funcional P0 ainda não concluída; PR deve permanecer draft. Nenhum merge, deploy em PROD ou cobrança real autorizado por este documento.
