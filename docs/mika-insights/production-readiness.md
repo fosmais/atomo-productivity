@@ -30,3 +30,9 @@
 - PR #66 revisado e aprovado antes do merge/deploy.
 
 **Estado atual: NÃO APTO para publicação.** Este documento não autoriza nem executa alterações no Supabase de produção.
+
+## Supabase Security Advisor — 2026-11-21
+- INFO `rls_enabled_no_policy` na tabela privada `mika_internal.ai_quota`: esperado como **deny-all** para acesso direto. Sem grants de SELECT para anon/authenticated. Acesso via função autenticada exige teste funcional.
+- WARN `authenticated_security_definer_function_executable` em três RPCs públicas. A exposição a authenticated é intencional para o fluxo atual, mas exige revisão de código, `auth.uid()`, ownership, limites, search_path e auditoria antes de PROD. Não remover grants sem avaliar chamadas da aplicação.
+- WARN `auth_leaked_password_protection`: proteção de senhas vazadas desativada no Supabase Preview. Configuração de Auth deve ser revisada no painel.
+- Remediações: https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy ; https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable ; https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
