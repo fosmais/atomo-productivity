@@ -45,3 +45,46 @@ SELECT bool_and(table_exists AND rls_enabled) AS schema_rls_ready,
        string_agg(name, ', ' ORDER BY name)
          FILTER (WHERE NOT (table_exists AND rls_enabled)) AS missing_or_unprotected
 FROM checks;
+
+-- Support automation release gate (read-only).
+-- Safe to run against production and homologation independently.
+WITH checks AS (
+  SELECT
+    to_regprocedure('public.create_support_ticket_limited(uuid,text,text,text,boolean)') AS ticket_rpc,
+    to_regclass('public.support_tickets') AS tickets,
+    EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'support_email_outbox'
+        AND column_name = 'processing_started_at'
+    ) AS outbox_lease_column,
+    EXISTS (
+      SELECT 1 FROM pg_constraint
+      WHERE conrelid = to_regclass('public.support_email_outbox')
+        AND conname = 'support_email_outbox_event_type_check'
+        AND pg_get_constraintdef(oid) LIKE '%ticket_acknowledgement%'
+    ) AS acknowledgement_supported,
+    NOT EXISTS (
+      SELECT 1 FROM pg_policies
+      WHERE schemaname = 'public' AND tablename = 'support_tickets'
+        AND cmd = 'INSERT' AND 'authenticated' = ANY(roles)
+    ) AS direct_insert_policy_absent
+)
+SELECT ticket_rpc IS NOT NULL AS ticket_rpc_exists,
+       COALESCE(has_function_privilege('authenticated', ticket_rpc, 'EXECUTE'), false) = false
+         AS authenticated_rpc_blocked,
+       COALESCE(has_function_privilege('service_role', ticket_rpc, 'EXECUTE'), false)
+         AS service_role_rpc_allowed,
+       COALESCE(has_table_privilege('authenticated', tickets, 'INSERT'), false) = false
+         AS direct_insert_grant_blocked,
+       direct_insert_policy_absent,
+       outbox_lease_column,
+       acknowledgement_supported,
+       ticket_rpc IS NOT NULL
+         AND COALESCE(has_function_privilege('authenticated', ticket_rpc, 'EXECUTE'), false) = false
+         AND COALESCE(has_function_privilege('service_role', ticket_rpc, 'EXECUTE'), false)
+         AND COALESCE(has_table_privilege('authenticated', tickets, 'INSERT'), false) = false
+         AND direct_insert_policy_absent
+         AND outbox_lease_column
+         AND acknowledgement_supported AS support_release_ready
+FROM checks;
