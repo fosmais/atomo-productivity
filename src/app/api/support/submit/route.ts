@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     if (ticketError || !ticket) throw new Error("SUPPORT_TICKET_CREATE_FAILED");
 
     const supportRecipient = process.env.SUPPORT_INBOX_EMAIL || "support@myryra.com";
-    const notifications = [{
+    const notifications: Array<{ event_type: "ticket_created" | "ticket_acknowledgement"; source_id: string; recipient: string; subject: string; payload: Record<string, string>; status: "pending"; attempts: 0 }> = [{
       event_type: "ticket_created",
       source_id: ticket.id,
       recipient: supportRecipient,
