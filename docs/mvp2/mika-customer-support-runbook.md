@@ -123,3 +123,16 @@ The current ticket RLS policy includes a historical authenticated INSERT policy,
 The six required application tables absent from the isolated support branch have these production column counts (metadata only, no customer data): `events` 12, `tasks` 13, `plans` 5, `myryra_finance_entries` 6, `myryra_journeys` 10, `mika_teacher_sessions` 9. Total: 55 columns. All six tables have RLS enabled in production.
 
 This inventory is **not** a reconstructible database schema: it does not include types, constraints, defaults, foreign keys, indexes, policies, grants, triggers, functions, or migration history. Do not replace the missing baseline with placeholder tables; obtain a reviewed schema-only baseline and reconcile migration order before retrying isolated branch rebase.
+
+## Baseline dependency graph — production catalog, read-only
+
+The six missing core tables participate in **19 foreign keys** (inbound and outbound), so recreating them in isolation cannot faithfully reproduce the app schema:
+
+- `events`: depends on `auth.users`; referenced by `event_concierge`, `event_reminders`, `favorites`.
+- `plans`: depends on `auth.users`; referenced by `tasks`.
+- `tasks`: depends on `auth.users` and `plans`; referenced by `favorites`, `myka_task_confirmations`, `myryra_journey_task_links`.
+- `myryra_finance_entries`: depends on `auth.users`.
+- `myryra_journeys`: depends on `auth.users`; referenced by `mika_teacher_sessions`, `myryra_journey_achievements`, `myryra_journey_missions`, `myryra_journey_myra_ledger`, `myryra_journey_snapshot_confirmations`.
+- `mika_teacher_sessions`: depends on `auth.users` and `myryra_journeys`; referenced by `mika_teacher_messages` using composite `(session_id, owner_id)` FK.
+
+Preserve the original composite FK and cascade/set-null actions during schema-only baseline reconstruction. Validate all constraints, RLS policies and migration provenance before a branch rebase; do not synthesize placeholder tables.
