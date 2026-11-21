@@ -175,3 +175,9 @@ test("support launcher stays visible on mobile home", () => {
   assert.match(client, /className="fixed bottom-\[calc\(6\.5rem\+env\(safe-area-inset-bottom\)\)\]/);
   assert.doesNotMatch(client, /activeModule === "home" && !open \? "hidden lg:block/);
 });
+
+test("rapid ticket switching cannot show stale replies from another ticket", () => {
+  assert.match(client, /const requestId = \+\+repliesRequestId\.current/);
+  assert.match(client, /if \(requestId === repliesRequestId\.current\) setReplies\(/);
+  assert.match(client, /if \(requestId === repliesRequestId\.current\) setRepliesError\(/);
+});
