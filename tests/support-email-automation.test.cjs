@@ -170,3 +170,8 @@ test("transactional support email always links to the canonical customer site", 
   assert.match(email, /const url = "https:\/\/myryra\.com"/);
   assert.doesNotMatch(email, /NEXT_PUBLIC_SITE_URL/);
 });
+
+test("support launcher stays visible on mobile home", () => {
+  assert.match(client, /className="fixed bottom-\[calc\(6\.5rem\+env\(safe-area-inset-bottom\)\)\]/);
+  assert.doesNotMatch(client, /activeModule === "home" && !open \? "hidden lg:block/);
+});
