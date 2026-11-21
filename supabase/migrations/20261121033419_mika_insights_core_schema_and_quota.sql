@@ -14,6 +14,7 @@ alter table public.mika_ideas enable row level security;
 drop policy if exists "Users manage their own MIKA ideas" on public.mika_ideas;
 create policy "Users manage their own MIKA ideas" on public.mika_ideas
   for all to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+revoke all privileges on table public.mika_ideas from public, anon;
 grant select, insert, update, delete on public.mika_ideas to authenticated;
 
 create schema if not exists mika_internal;
