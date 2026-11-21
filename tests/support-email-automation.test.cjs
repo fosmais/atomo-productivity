@@ -165,3 +165,8 @@ test("email outbox sends to the stored recipient instead of a later config overr
   assert.match(worker, /const recipient = String\(item\.recipient \?\? ""\)/);
   assert.doesNotMatch(worker, /customerAcknowledgement \? String\(item\.recipient\) :/);
 });
+
+test("transactional support email always links to the canonical customer site", () => {
+  assert.match(email, /const url = "https:\/\/myryra\.com"/);
+  assert.doesNotMatch(email, /NEXT_PUBLIC_SITE_URL/);
+});
