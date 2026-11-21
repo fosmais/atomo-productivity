@@ -64,3 +64,13 @@ The current ticket RLS policy includes a historical authenticated INSERT policy,
 - All three existing Supabase homologation branches (`dzxyflpihdoizdiurnud`, `vzgahbceixjrdlqdtwoy`, `xanavauqzsrgvdfhcrsm`) report `MIGRATIONS_FAILED`. Read-only SQL confirmed that none contains `public.support_tickets`, `public.support_email_outbox`, or `public.create_support_ticket_limited`.
 - Do not repurpose these branches or point Preview at production. Create a dedicated isolated support branch only after the required cost confirmation; apply support migrations in ascending order and test with synthetic users.
 - The branch's automated tests currently verify source-level invariants, not real concurrent database transactions or Resend delivery. Those remain release blockers.
+
+## Isolated SQL homologation checkpoint — 2026-11-21
+
+- New paid isolated branch `myryra-mvp2-support-security-homolog` (`woqpzvqfaeqteiqpsaqi`), confirmed rate US$0.01344/hour. Four support migrations applied successfully; follow-up SQL hardening applied only to this branch.
+- Privileges checked: authenticated cannot execute support creation RPC, INSERT, TRUNCATE, TRIGGER or REFERENCES; service_role can execute the RPC; authenticated SELECT is constrained by RLS.
+- SQL transaction using `SET LOCAL ROLE service_role` created a ticket successfully; sixth sequential ticket was blocked after five. Eight parallel SQL requests yielded five committed tickets and three tool-level errors; this verifies the database cap in the observed run, but the error classifications and HTTP concurrency behavior remain unverified.
+- Synthetic user and tickets were deleted; confirmed zero remaining. Isolated RLS owner read succeeded and cross-user read returned zero.
+- RPC migrated to SECURITY INVOKER; direct SELECT on auth.users removed because service_role cannot read that table. FK still enforces user existence. Inherited authenticated TRUNCATE/TRIGGER/REFERENCES grants were revoked.
+- Latest Preview deployment `dpl_2d8aznNVjfM7Amp6CpS1KxT3FQUd` on commit `316fdece7187c8603a4df7c3d121e1dfed4cd7c0` reached READY. Production unchanged.
+- Outstanding: authenticated HTTP E2E, concurrent API requests, Resend sandbox, MIKA AI safety, Android regression, final release approval. Decommission the hourly-billed branch when homologation is complete.
