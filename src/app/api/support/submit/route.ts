@@ -6,6 +6,31 @@ import { hasCurrentLegalAcceptance } from "@/lib/privacy/legal-acceptance";
 
 const headers = { "Cache-Control": "private, no-store" };
 const categories = new Set(["general", "billing"]);
+async function readBoundedJson(request: Request): Promise<unknown> {
+  const declared = request.headers.get("content-length");
+  if (declared && /^\\d+$/.test(declared) && Number(declared) > 4096) throw new Error("PAYLOAD_TOO_LARGE");
+  const reader = request.body?.getReader();
+  if (!reader) throw new Error("INVALID_JSON");
+  const decoder = new TextDecoder("utf-8", { fatal: true });
+  let raw = "", bytes = 0;
+  try {
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      bytes += chunk.value.byteLength;
+      if (bytes > 4096) {
+        await reader.cancel();
+        throw new Error("PAYLOAD_TOO_LARGE");
+      }
+      raw += decoder.decode(chunk.value, { stream: true });
+    }
+    raw += decoder.decode();
+    return JSON.parse(raw);
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 
 export async function POST(request: Request) {
   try {
@@ -13,10 +38,14 @@ export async function POST(request: Request) {
     const { data: { user }, error: authError } = await client.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: "Faça login para abrir um chamado." }, { status: 401, headers });
 
-    const declared = request.headers.get("content-length");
-    if (declared && /^\d+$/.test(declared) && Number(declared) > 4096)
-      return NextResponse.json({ error: "Solicitação muito grande." }, { status: 413, headers });
-    const body: unknown = await request.json();
+    let body: unknown;
+    try {
+      body = await readBoundedJson(request);
+    } catch (error) {
+      if (error instanceof Error && error.message === "PAYLOAD_TOO_LARGE")
+        return NextResponse.json({ error: "Solicitação muito grande." }, { status: 413, headers });
+      return NextResponse.json({ error: "JSON inválido." }, { status: 400, headers });
+    }
     if (!body || typeof body !== "object" || Array.isArray(body))
       return NextResponse.json({ error: "Dados inválidos." }, { status: 400, headers });
     const input = body as Record<string, unknown>;
