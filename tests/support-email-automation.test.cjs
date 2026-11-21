@@ -132,7 +132,7 @@ test("homologation preflight verifies full application baseline without mutating
   ]) {
     assert.match(preflight, new RegExp("\\b" + table + "\\b"));
   }
-  assert.match(preflight, /supabase_migrations\\.schema_migrations/);
+  assert.match(preflight, /supabase_migrations\.schema_migrations/);
   assert.match(preflight, /relrowsecurity/);
-  assert.doesNotMatch(preflight, /\\b(?:INSERT|UPDATE|DELETE|TRUNCATE|DROP|ALTER|CREATE)\\s+(?:TABLE|FROM|INTO|public\\.)/i);
+  assert.doesNotMatch(preflight, /\b(?:INSERT|UPDATE|DELETE|TRUNCATE|DROP|ALTER|CREATE)\s+(?:TABLE|FROM|INTO|public\.)/i);
 });
