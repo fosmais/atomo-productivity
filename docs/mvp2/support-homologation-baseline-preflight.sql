@@ -23,3 +23,25 @@ FROM pg_class c
 JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE n.nspname = 'public' AND c.relkind = 'r'
 ORDER BY c.relname;
+
+-- Explicit release gate: all eight required tables must exist and have RLS enabled.
+-- This returns readiness=false in a partial support-only database.
+WITH required(name) AS (
+  VALUES ('events'), ('tasks'), ('plans'), ('myryra_finance_entries'),
+         ('myryra_journeys'), ('mika_teacher_sessions'),
+         ('support_tickets'), ('support_email_outbox')
+), checks AS (
+  SELECT required.name,
+         c.oid IS NOT NULL AS table_exists,
+         COALESCE(c.relrowsecurity, false) AS rls_enabled
+  FROM required
+  LEFT JOIN pg_namespace n ON n.nspname = 'public'
+  LEFT JOIN pg_class c ON c.relnamespace = n.oid
+                      AND c.relname = required.name AND c.relkind = 'r'
+)
+SELECT bool_and(table_exists AND rls_enabled) AS schema_rls_ready,
+       count(*) FILTER (WHERE table_exists AND rls_enabled) AS passed,
+       count(*) AS required,
+       string_agg(name, ', ' ORDER BY name)
+         FILTER (WHERE NOT (table_exists AND rls_enabled)) AS missing_or_unprotected
+FROM checks;
