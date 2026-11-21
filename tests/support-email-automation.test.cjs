@@ -36,7 +36,7 @@ test("support email worker requires cron secret and explicit email enablement", 
   assert.match(worker, /authorization.*Bearer/);
   assert.match(worker, /CRON_SECRET/);
   assert.match(worker, /MIKA_EMAIL_ENABLED !== "true"/);
-  assert.match(worker, /RESEND_API_KEY/);
+  assert.match(worker, /RESEND_API_KEY/);\n  assert.match(worker, /support-outbox\/\$\{item\.id\}/);
 });
 
 test("support outbox worker claims atomically, recovers stale claims and retries at most five times", () => {
