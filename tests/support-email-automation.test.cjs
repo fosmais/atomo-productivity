@@ -6,6 +6,7 @@ const path = require("node:path");
 const submit = fs.readFileSync(path.join(__dirname, "../src/app/api/support/submit/route.ts"), "utf8");
 const worker = fs.readFileSync(path.join(__dirname, "../src/app/api/cron/support-email-outbox/route.ts"), "utf8");
 const email = fs.readFileSync(path.join(__dirname, "../src/lib/support/email.ts"), "utf8");
+const migration = fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261121040000_support_outbox_recovery.sql"), "utf8");
 const client = fs.readFileSync(path.join(__dirname, "../src/app/dashboard/myka-support.tsx"), "utf8");
 
 test("support submission authenticates, validates, bounds payload and uses its own throttle", () => {
