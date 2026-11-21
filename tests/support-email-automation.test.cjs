@@ -181,3 +181,9 @@ test("rapid ticket switching cannot show stale replies from another ticket", () 
   assert.match(client, /if \(requestId === repliesRequestId\.current\) setReplies\(/);
   assert.match(client, /if \(requestId === repliesRequestId\.current\) setRepliesError\(/);
 });
+
+test("out-of-order ticket list refresh cannot overwrite newer data", () => {
+  assert.match(client, /const requestId = \+\+ticketsRequestId\.current/);
+  assert.match(client, /if \(requestId !== ticketsRequestId\.current\) return/);
+  assert.match(client, /if \(requestId === ticketsRequestId\.current\) setLoadingTickets\(false\)/);
+});
