@@ -61,20 +61,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Informe assunto e mensagem válidos." }, { status: 400, headers });
 
     const admin = createSupabaseAdmin();
-    const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const [hourly, daily] = await Promise.all([
-      admin.from("support_tickets").select("id", { count: "exact", head: true }).eq("user_id", user.id).gte("created_at", hourAgo),
-      admin.from("support_tickets").select("id", { count: "exact", head: true }).eq("user_id", user.id).gte("created_at", dayAgo),
-    ]);
-    if (hourly.error || daily.error) throw new Error("SUPPORT_RATE_LIMIT_UNAVAILABLE");
-    if ((hourly.count ?? 0) >= 5 || (daily.count ?? 0) >= 10)
+    const { data: ticket, error: ticketError } = await admin.rpc("create_support_ticket_limited", {
+      p_user_id: user.id, p_subject: subject, p_message: message, p_category: category,
+      p_authorize_mika: authorizeMika
+    }).single();
+    if (ticketError?.message?.includes("SUPPORT_RATE_LIMIT_EXCEEDED"))
       return NextResponse.json({ error: "Você atingiu o limite de chamados. Tente novamente mais tarde." }, {
         status: 429, headers: { ...headers, "Retry-After": "3600" }
       });
-    const { data: ticket, error: ticketError } = await admin.from("support_tickets").insert({
-      user_id: user.id, subject, message, category, status: "open", priority: "normal", myka_authorized: authorizeMika
-    }).select("id,subject,status,priority,created_at").single();
     if (ticketError || !ticket) throw new Error("SUPPORT_TICKET_CREATE_FAILED");
 
     const supportRecipient = process.env.SUPPORT_INBOX_EMAIL || "support@myryra.com";
