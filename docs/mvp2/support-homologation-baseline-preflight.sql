@@ -88,3 +88,14 @@ SELECT ticket_rpc IS NOT NULL AS ticket_rpc_exists,
          AND outbox_lease_column
          AND acknowledgement_supported AS support_release_ready
 FROM checks;
+
+-- Diagnóstico confirmado em 2026-11-21: branch de suporte falhou ao aplicar
+-- autopilot_unique_task_reservation_guard porque public.events não existia.
+-- Log PostgreSQL: relation "public.events" does not exist, durante CREATE UNIQUE INDEX
+-- events_autopilot_task_once_per_user_idx ON public.events (user_id, notes).
+-- A correção exige uma migração de baseline que crie events e suas dependências
+-- ANTES de 20261030195840. Não marcar migrações como aplicadas sem executar DDL.
+-- Não executar reset nem copiar dados de produção para homologação.
+SELECT to_regclass('public.events') IS NOT NULL AS events_baseline_present,
+       EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname='public'
+               AND indexname='events_autopilot_task_once_per_user_idx') AS autopilot_guard_present;
