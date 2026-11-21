@@ -147,6 +147,8 @@ export default function LoginPage() {
       const normalized = rawMessage.toLowerCase();
       if (normalized.includes("email rate limit exceeded") || normalized.includes("over_email_send_rate_limit")) {
         setMessage("Você solicitou vários e-mails em pouco tempo. Por segurança, o envio está temporariamente limitado. Aguarde um pouco antes de tentar novamente e confira sua caixa de entrada e spam.");
+      } else if (normalized.includes("sitekey-secret-mismatch") || normalized.includes("captcha protection: request disallowed")) {
+        setMessage("A verificação de segurança está temporariamente indisponível por uma configuração do serviço. Não é um problema com sua senha. Tente o acesso com Google, se disponível, ou contate o suporte MYRYRA.");
       } else if (normalized.includes("already-seen-response")) {
         setMessage("Esta verificação de segurança já foi utilizada. Marque novamente a opção 'I am human' e tente outra vez.");
       } else {
