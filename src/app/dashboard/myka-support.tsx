@@ -32,6 +32,7 @@ export default function MykaSupport() {
   const [replies, setReplies] = useState<Array<{ id:string;body:string;created_at:string;author_type:string }>>([]);
   const [repliesError, setRepliesError] = useState("");
   const repliesRequestId = useRef(0);
+  const ticketsRequestId = useRef(0);
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [error, setError] = useState("");
   const [seenUpdates, setSeenUpdates] = useState<Record<string, string>>({});
@@ -75,6 +76,7 @@ export default function MykaSupport() {
   }, [open]);
 
   async function loadTickets() {
+    const requestId = ++ticketsRequestId.current;
     setLoadingTickets(true); setTicketsNotice("");
     try {
       const supabase = createClient();
@@ -82,6 +84,7 @@ export default function MykaSupport() {
       if (!user) throw new Error("Faça login para consultar seus chamados.");
       const { data, error: queryError } = await supabase.from("support_tickets").select("id,subject,status,priority,updated_at,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
       if (queryError) throw new Error("A consulta de tickets ainda não está habilitada neste ambiente.");
+      if (requestId !== ticketsRequestId.current) return;
       setTickets(data ?? []);
       setSeenUpdates(previous => {
         const next = { ...previous };
@@ -89,8 +92,8 @@ export default function MykaSupport() {
         return next;
       });
       if (!data?.length) setTicketsNotice("Você ainda não possui tickets neste ambiente.");
-    } catch (err) { setTicketsNotice(err instanceof Error ? err.message : "Não foi possível consultar os tickets."); }
-    finally { setLoadingTickets(false); }
+    } catch (err) { if (requestId === ticketsRequestId.current) setTicketsNotice(err instanceof Error ? err.message : "Não foi possível consultar os tickets."); }
+    finally { if (requestId === ticketsRequestId.current) setLoadingTickets(false); }
   }
 
   async function viewReplies(ticketId:string) {
