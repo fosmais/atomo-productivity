@@ -8,7 +8,7 @@ const worker = fs.readFileSync(path.join(__dirname, "../src/app/api/cron/support
 const email = fs.readFileSync(path.join(__dirname, "../src/lib/support/email.ts"), "utf8");
 const client = fs.readFileSync(path.join(__dirname, "../src/app/dashboard/myka-support.tsx"), "utf8");
 
-test("support submission authenticates, validates, rate limits and stores owner-scoped tickets", () => {
+test("support submission authenticates, validates, bounds payload and uses its own throttle", () => {
   assert.match(submit, /auth\.getUser\(\)/);
   assert.match(submit, /hourAgo/);
   assert.match(submit, /dayAgo/);
@@ -22,7 +22,7 @@ test("support submission authenticates, validates, rate limits and stores owner-
   assert.match(submit, /event_type: "ticket_created"/);
 });
 
-test("MIKA support AI is disabled by default and requires current legal acceptance", () => {
+test("MIKA support AI requires explicit enablement and current legal acceptance", () => {
   assert.match(submit, /MIKA_SUPPORT_AI_ENABLED === "true"/);
   assert.match(submit, /hasCurrentLegalAcceptance\(user\.id\)/);
   assert.match(submit, /OPENAI_API_KEY/);
@@ -38,12 +38,13 @@ test("support email worker requires cron secret and explicit email enablement", 
   assert.match(worker, /RESEND_API_KEY/);
 });
 
-test("support outbox worker claims atomically and retries with a bounded limit", () => {
-  assert.match(worker, /\.eq\("status", "pending"\)\.select\("id"\)\.maybeSingle\(\)/);
+test("support outbox worker claims atomically, recovers stale claims and retries at most five times", () => {
+  assert.match(worker, /claim\.select\("id"\)\.maybeSingle\(\)/);
+  assert.match(worker, /status\.eq\.pending/);
   assert.match(worker, /status: "processing"/);
-  assert.match(worker, /nextAttempt >= 5/);
   assert.match(worker, /processing_started_at/);
-  assert.match(worker, /10 \\* 60 \\* 1000/);
+  assert.match(worker, /10 \* 60 \* 1000/);
+  assert.match(worker, /nextAttempt >= 5/);
   assert.match(worker, /status: terminal \? "failed" : "pending"/);
 });
 
