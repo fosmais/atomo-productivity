@@ -1,0 +1,49 @@
+name: MYRYRA Finance two-user RLS (staging only)
+
+on:
+  push:
+    branches:
+      - test/mvp2-finance-wallet-regression
+  workflow_dispatch:
+    inputs:
+      test_ref:
+        description: 'Homologation branch to test'
+        required: true
+        type: string
+        default: test/mvp2-finance-wallet-regression
+
+permissions:
+  contents: read
+
+jobs:
+  finance-rls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: staging
+    env:
+      MYRYRA_FINANCE_STAGING_URL: https://xanavauqzsrgvdfhcrsm.supabase.co
+      MYRYRA_FINANCE_STAGING_ANON_KEY: ${{ secrets.MYRYRA_FINANCE_STAGING_ANON_KEY }}
+      FINANCE_TEST_EMAIL: ${{ secrets.FINANCE_TEST_EMAIL }}
+      FINANCE_TEST_PASSWORD: ${{ secrets.FINANCE_TEST_PASSWORD }}
+      FINANCE_TEST_OTHER_EMAIL: ${{ secrets.FINANCE_TEST_OTHER_EMAIL }}
+      FINANCE_TEST_OTHER_PASSWORD: ${{ secrets.FINANCE_TEST_OTHER_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'push' && github.ref || inputs.test_ref || 'test/mvp2-finance-wallet-regression' }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Require dedicated synthetic staging identities
+        shell: bash
+        run: |
+          for key in MYRYRA_FINANCE_STAGING_ANON_KEY FINANCE_TEST_EMAIL FINANCE_TEST_PASSWORD FINANCE_TEST_OTHER_EMAIL FINANCE_TEST_OTHER_PASSWORD; do
+            if [[ -z "${!key}" ]]; then
+              echo "::error::Missing staging secret: $key"
+              exit 1
+            fi
+          done
+      - run: npm ci --ignore-scripts
+      - name: Verify two-user Finance RLS, balance, editing, trash and restore
+        run: node scripts/finance-two-users-staging.cjs
