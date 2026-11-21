@@ -18,7 +18,7 @@ Este documento controla os sete gates finais acordados. Percentual histórico de
 **Status: PARCIAL / TESTES REAIS AINDA NÃO EXECUTADOS**
 
 - Implementado: harness de duas sessões Auth para Journey e harness MIKA de 20 chamadas concorrentes.
-- Evidência: CI do PR #63 com rehearsal PostgreSQL sintético aprovado; catálogo staging confirma ausência de UPDATE direto de missões, DELETE direto de jornadas e escrita direta no ledger para authenticated.
+- Evidência: CI do PR #63 com rehearsal PostgreSQL sintético aprovado; em 21/11 foram aplicadas somente no staging duas migrações novas: grants mínimos de UPDATE/INSERT para service_role e revogação de UPDATE/DELETE/INSERT direto de authenticated nas tabelas de jornada/missão/avaliação. Catálogo confirmou authenticated sem UPDATE/DELETE de jornadas e missões, sem INSERT/UPDATE/DELETE de avaliação; service_role com UPDATE em jornadas/missões e INSERT/UPDATE em learning_progress. Ledger continua sem escrita direta.
 - Pendente: workflow de duas contas Supabase Auth reais; 20 execuções HTTP concorrentes com fixture sintética aprovada; confirmar uma única tarefa/crédito e nenhum acesso cruzado.
 
 ## 3. MIKA Agente
@@ -61,8 +61,8 @@ Consulta read-only de catálogo em 21/11/2026:
 | authenticated DELETE físico de jornadas | Não | Sim |
 | authenticated INSERT/UPDATE no ledger | Não | Não |
 
-- O branch Supabase de homologação consta MIGRATIONS_FAILED, embora as tabelas/triggers principais estejam presentes. Investigar sem resetar ou sobrescrever dados.
-- Produção mantém grants diretos de alteração de missões e exclusão física de jornadas; as FKs em cascata podem afetar histórico MYRA. Tratar como risco de integridade/bypass a ser validado, não como exploração confirmada.
+- O branch Supabase de homologação ainda consta MIGRATIONS_FAILED, embora as tabelas/triggers principais estejam presentes e as duas migrações de grants tenham sido aplicadas com sucesso. Investigar a causa do status sem resetar ou sobrescrever dados.
+- Produção mantém grants diretos de UPDATE/DELETE em jornadas e missões e INSERT/UPDATE em learning_progress, inclusive nas colunas de nota/aprovação. As FKs do ledger para jornada/missão continuam ON DELETE CASCADE. Tratar como risco de integridade/bypass a ser validado, não como exploração confirmada. As novas migrações ainda não foram aplicadas em PROD.
 - Pendente: reconciliação de schema/migrations, revisão de grants/RLS/triggers, ensaio em clone descartável, revisão LGPD/consentimento e rollback.
 - Nenhuma migração ou alteração foi aplicada em PROD.
 
