@@ -117,3 +117,9 @@ The current ticket RLS policy includes a historical authenticated INSERT policy,
 - Production **does not yet have** this function. The new `/api/support/submit` endpoint calls it directly, so deploying the endpoint without the corresponding versioned migration would fail ticket creation.
 - `public.admin_update_support_ticket(uuid,uuid,text,text)` exists in both databases as `SECURITY INVOKER`, with execution restricted to `service_role` and `postgres`.
 - Release gate: migrate and verify the RPC exists and has the expected grants, ensure authenticated direct INSERT is revoked, ensure `processing_started_at` exists, and execute authenticated E2E creation/rate-limit tests before enabling customer support and email cron in production.
+
+## Full application baseline inventory — read-only production metadata
+
+The six required application tables absent from the isolated support branch have these production column counts (metadata only, no customer data): `events` 12, `tasks` 13, `plans` 5, `myryra_finance_entries` 6, `myryra_journeys` 10, `mika_teacher_sessions` 9. Total: 55 columns. All six tables have RLS enabled in production.
+
+This inventory is **not** a reconstructible database schema: it does not include types, constraints, defaults, foreign keys, indexes, policies, grants, triggers, functions, or migration history. Do not replace the missing baseline with placeholder tables; obtain a reviewed schema-only baseline and reconcile migration order before retrying isolated branch rebase.
