@@ -1,0 +1,1021 @@
+"use client";
+
+import { useRef, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import type { FormEvent } from "react";
+import TaskConfirmation from "./task-confirmation";
+import { useVyraActiveModule } from "./vyra-module-context";
+import EventConfirmation from "./event-confirmation";
+import type { SavedTask } from "@/lib/plan-storage";
+import type { NewCalendarEvent } from "@/lib/event-cloud";
+
+type ChatMessage = {
+  id?: string;
+  taskStatus?: "legacy" | "pending" | "saved" | "cancelled";
+  eventStatus?: "legacy" | "pending" | "saved" | "cancelled";
+  role: "user" | "assistant";
+  content: string;
+  proposedTask?: SavedTask | null;
+  proposedTasks?: SavedTask[];
+  taskDecisions?: Array<{
+    taskIndex: number;
+    decision: "saved" | "cancelled";
+  }>;
+  proposedEvent?: NewCalendarEvent | null;
+
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isTaskProposal(
+  value: unknown
+): value is Omit<SavedTask, "completed"> {
+  return (
+    isRecord(value) &&
+    typeof value.title === "string" &&
+    value.title.trim().length > 0 &&
+    value.title.length <= 200 &&
+    (value.priority === "Alta" ||
+      value.priority === "Média" ||
+      value.priority === "Normal") &&
+    (typeof value.dueDate === "string" || value.dueDate === null)
+  );
+}
+
+export default function CopilotChat() {
+function isEventProposal(
+  value: unknown
+): value is NewCalendarEvent {
+  if (!isRecord(value)) return false;
+
+  if (
+    typeof value.title !== "string" ||
+    !value.title.trim() ||
+    value.title.length > 200
+  ) {
+    return false;
+  }
+
+  if (
+    typeof value.startsAt !== "string" ||
+    typeof value.endsAt !== "string"
+  ) {
+    return false;
+  }
+
+  const start = new Date(value.startsAt);
+  const end = new Date(value.endsAt);
+
+  if (
+    !Number.isFinite(start.getTime()) ||
+    !Number.isFinite(end.getTime()) ||
+    end <= start
+  ) {
+    return false;
+  }
+
+  return (
+    (value.location === null ||
+      typeof value.location === "string") &&
+    (value.eventType === "appointment" ||
+      value.eventType === "unavailable") &&
+    typeof value.blocksTime === "boolean"
+  );
+}
+  const router = useRouter();
+  const activeModule = useVyraActiveModule();
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const historyContainerRef = useRef<HTMLDivElement>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  useEffect(() => {
+    if (historyLoading) return;
+    const container = historyContainerRef.current;
+    if (container) container.scrollTop = container.scrollHeight;
+  }, [messages, historyLoading]);
+  const [input, setInput] = useState("");
+  const [pendingConciergePrompt, setPendingConciergePrompt] = useState<string | null>(null);
+  useEffect(() => {
+    if (activeModule !== "vyra-ai") return;
+    const conciergePrompt = sessionStorage.getItem("myryra:myka:concierge-handoff");
+    const investmentPrompt = sessionStorage.getItem("myryra:myka:investment-handoff");
+    const healthPrompt = sessionStorage.getItem("myryra:myka:health-handoff");
+    const prompt = conciergePrompt || investmentPrompt || healthPrompt;
+    if (!prompt) return;
+    if (conciergePrompt) sessionStorage.removeItem("myryra:myka:concierge-handoff");
+    else if (investmentPrompt) sessionStorage.removeItem("myryra:myka:investment-handoff");
+    else sessionStorage.removeItem("myryra:myka:health-handoff");
+    queueMicrotask(() => {
+      if (conciergePrompt) setPendingConciergePrompt(prompt.slice(0, 1500));
+      else setInput(prompt.slice(0, 1500));
+    });
+  }, [activeModule]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [dailyLimitReached, setDailyLimitReached] = useState(false);
+  const [dailyResetAt, setDailyResetAt] = useState<number | null>(null);
+  const [hideOffers, setHideOffers] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState<"free" | "pro" | "premium">("free");
+  const [pendingTask, setPendingTask] = useState<SavedTask | null>(null);
+
+const [listening, setListening] = useState(false);
+
+const [attachment, setAttachment] = useState<File | null>(null);
+const attachmentInputRef = useRef<HTMLInputElement>(null);
+
+function handleAttachment(file?: File) {
+  if (!file) return;
+
+  const allowedTypes = [
+    "application/pdf",
+    "image/png",
+    "image/jpeg",
+    "text/plain",
+  ];
+
+  if (!allowedTypes.includes(file.type)) {
+    setError("Formato de arquivo não suportado.");
+    return;
+  }
+
+  if (file.size === 0) {
+    setError("O arquivo está vazio. Selecione um documento com conteúdo.");
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    setError("O arquivo deve ter no máximo 5 MB.");
+    return;
+  }
+
+  setError("");
+  setAttachment(file);
+}
+
+async function startVoice() {
+  type Recognition = {
+    lang: string;
+    onresult: ((event: {
+      results: ArrayLike<ArrayLike<{ transcript: string }>>;
+    }) => void) | null;
+    onend: (() => void) | null;
+    onerror: (() => void) | null;
+    start: () => void;
+  };
+
+  const browser = window as Window & {
+    SpeechRecognition?: new () => Recognition;
+    webkitSpeechRecognition?: new () => Recognition;
+  };
+
+  const SpeechAPI =
+    browser.SpeechRecognition ??
+    browser.webkitSpeechRecognition;
+
+  if (!SpeechAPI) {
+    setError("Seu navegador não suporta reconhecimento de voz.");
+    return;
+  }
+
+  const recognition = new SpeechAPI();
+  recognition.lang = "pt-BR";
+
+  recognition.onresult = (event) => {
+    const text = Array.from(event.results)
+      .map((result) => result[0]?.transcript ?? "")
+      .join(" ");
+
+    setInput((previous) =>
+      [previous, text].filter(Boolean).join(" ").slice(0, 1500)
+    );
+  };
+
+  recognition.onend = () => setListening(false);
+
+  recognition.onerror = () => {
+    setListening(false);
+    setError("Não foi possível reconhecer sua voz.");
+  };
+
+  try {
+    setError("");
+    recognition.start();
+    setListening(true);
+  } catch {
+    setListening(false);
+    setError("Não foi possível iniciar o microfone.");
+  }
+}
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadHistory() {
+      try {
+        const response = await fetch("/api/myka/history", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error("Nao foi possivel carregar o historico da Myka.");
+        }
+
+        const data: unknown = await response.json();
+
+        if (
+          !isRecord(data) ||
+          !Array.isArray(data.messages) ||
+          (
+            data.conversationId !== null &&
+            typeof data.conversationId !== "string"
+          )
+        ) {
+          throw new Error("Historico da Myka invalido.");
+        }
+
+        const restored: ChatMessage[] = data.messages
+          .filter(
+            (item): item is Record<string, unknown> =>
+              isRecord(item) &&
+              (item.role === "user" || item.role === "assistant") &&
+              typeof item.content === "string"
+          )
+          .map((item) => ({
+            id: typeof item.id === "string" ? item.id : undefined,
+            role: item.role as "user" | "assistant",
+            content: item.content as string,
+            taskStatus: item.taskStatus === "saved" || item.taskStatus === "cancelled" || item.taskStatus === "pending" ? item.taskStatus : "legacy",
+            eventStatus: item.eventStatus === "saved" || item.eventStatus === "cancelled" || item.eventStatus === "pending" ? item.eventStatus : "legacy",
+            taskDecisions: Array.isArray(item.taskDecisions)
+              ? item.taskDecisions
+                  .filter(
+                    (decision): decision is Record<string, unknown> =>
+                      isRecord(decision) &&
+                      Number.isInteger(decision.taskIndex) &&
+                      typeof decision.taskIndex === "number" &&
+                      decision.taskIndex >= 0 &&
+                      decision.taskIndex < 10 &&
+                      (decision.decision === "saved" ||
+                        decision.decision === "cancelled")
+                  )
+                  .map((decision) => ({
+                    taskIndex: decision.taskIndex as number,
+                    decision: decision.decision as "saved" | "cancelled",
+                  }))
+              : [],
+            proposedTasks: Array.isArray(item.proposedTasks)
+              ? item.proposedTasks
+                  .filter(isTaskProposal)
+                  .slice(0, 10)
+                  .map((task) => ({
+                    ...task,
+                    completed: false,
+                  }))
+              : [],
+            proposedTask: isTaskProposal(item.proposedTask)
+              ? { ...item.proposedTask, completed: false }
+              : null,
+            proposedEvent: isEventProposal(item.proposedEvent)
+              ? item.proposedEvent
+              : null,
+          }));
+
+        if (active) {
+          setConversationId(data.conversationId);
+          setMessages(restored);
+        }
+      } catch (err) {
+        if (active) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Falha ao recuperar conversas."
+          );
+        }
+      } finally {
+        if (active) {
+          setHistoryLoading(false);
+        }
+      }
+    }
+
+    void loadHistory();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+  useEffect(() => {
+    let active = true;
+    async function loadQuota() {
+      try {
+        const response = await fetch("/api/myka/quota", { cache: "no-store" });
+        if (!response.ok) return;
+        const data: unknown = await response.json();
+        if (!active || !isRecord(data) || data.available !== true) return;
+        if (data.reached === true && typeof data.dailyLimit === "number") {
+          setDailyLimitReached(true);
+          setDailyResetAt(typeof data.resetAt === "number" ? data.resetAt : null);
+          setError(`Você atingiu as ${data.dailyLimit} mensagens disponíveis hoje no seu plano.`);
+        } else if (data.reached === false) {
+          setDailyLimitReached(false);
+          setDailyResetAt(null);
+        }
+      } catch {
+        // Quota display is informational; never block chat when unavailable.
+      }
+    }
+    void loadQuota();
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void fetch("/api/billing/subscription", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) return;
+        const payload: unknown = await response.json();
+        if (!active || !isRecord(payload) || !isRecord(payload.subscription)) return;
+        const subscription = payload.subscription;
+        if ((subscription.status === "active" || subscription.status === "trialing") &&
+            (subscription.planId === "pro" || subscription.planId === "premium") &&
+            typeof subscription.currentPeriodEnd === "string" &&
+            Date.parse(subscription.currentPeriodEnd) > Date.now()) {
+          setCurrentPlan(subscription.planId);
+        }
+      }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  // Never scroll the whole dashboard when chat history loads in a hidden module.
+  // The user controls page navigation; opening MYKA must not jump Home to the bottom.
+
+  async function prepareTask() {
+    const content = input.trim();
+
+    if (!content || loading) return;
+
+    setLoading(true);
+    setError("");
+    setPendingTask(null);
+
+    try {
+      const response = await fetch("/api/tasks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text: content }),
+      });
+
+      const data: unknown = await response.json();
+
+      if (!response.ok) {
+        if (isRecord(data) && data.code === "DAILY_PLAN_LIMIT") {
+          setDailyLimitReached(true);
+          setDailyResetAt(typeof data.resetAt === "number" && Number.isFinite(data.resetAt) ? (data.resetAt < 100000000000 ? data.resetAt * 1000 : data.resetAt) : null);
+        }
+        throw new Error(
+          isRecord(data) && typeof data.error === "string"
+            ? data.error
+            : "Não foi possível preparar a tarefa."
+        );
+      }
+
+      if (
+        !isRecord(data) ||
+        !Array.isArray(data.tasks) ||
+        data.tasks.length !== 1
+      ) {
+        throw new Error(
+          "A solicitação precisa gerar exatamente uma tarefa."
+        );
+      }
+
+      const candidate: unknown = data.tasks[0];
+
+      if (
+        !isRecord(candidate) ||
+        typeof candidate.title !== "string" ||
+        !candidate.title.trim() ||
+        !["Alta", "Média", "Normal"].includes(
+          String(candidate.priority)
+        ) ||
+        !(
+          candidate.dueDate === null ||
+          typeof candidate.dueDate === "string"
+        )
+      ) {
+        throw new Error("A IA retornou uma tarefa inválida.");
+      }
+
+      setPendingTask({
+        title: candidate.title,
+        priority: candidate.priority as SavedTask["priority"],
+        dueDate: candidate.dueDate as string | null,
+        completed: false,
+      });
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Erro ao preparar a tarefa."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const content = input.trim();
+
+    if ((!content && !attachment) || loading || historyLoading) return;
+    // An earlier recoverable error must not permanently block new messages.
+    setError("");
+
+    if (attachment) {
+      setLoading(true);
+      setError("");
+      const selectedFile = attachment;
+      try {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        if (conversationId) formData.append("conversationId", conversationId);
+        formData.append("question", content || "Analise este arquivo e apresente um resumo objetivo.");
+        const response = await fetch("/api/myka/analyze-file", {
+          method: "POST",
+          body: formData,
+        });
+        const result: unknown = await response.json();
+        if (!response.ok) {
+          throw new Error(isRecord(result) && typeof result.error === "string"
+            ? result.error : "NÃ£o foi possÃ­vel analisar o arquivo.");
+        }
+        if (!isRecord(result) || typeof result.analysis !== "string" || typeof result.conversationId !== "string") {
+          throw new Error("Resposta invÃ¡lida da anÃ¡lise de arquivo.");
+        }
+        setConversationId(result.conversationId as string);
+        setMessages((previous) => [...previous,
+          { role: "user", content: content ? `${content} (anexo: ${selectedFile.name})` : `Analise o anexo: ${selectedFile.name}` },
+          { role: "assistant", content: result.analysis as string },
+        ]);
+        setAttachment(null);
+        setInput("");
+        if (attachmentInputRef.current) attachmentInputRef.current.value = "";
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Erro ao analisar arquivo.");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    await sendTextMessage(content);
+  }
+
+  async function sendTextMessage(content: string) {
+    const nextMessages: ChatMessage[] = [
+      ...messages,
+      { role: "user" as const, content },
+    ];
+
+    setMessages(nextMessages);
+    setInput("");
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/concierge", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          // The API caps each message at 1,500 characters. Assistant replies can
+          // exceed that limit, so bound transmitted context without altering
+          // the full conversation displayed to the user.
+          messages: nextMessages.slice(-12).map((message) => ({
+            role: message.role,
+            content: message.content.slice(0, 1500),
+          })),
+          conversationId: conversationId ?? undefined,
+        }),
+      });
+
+      let data: unknown;
+      const contentType = response.headers.get("content-type") ?? "";
+      const requestId = response.headers.get("x-vercel-id") ?? "unavailable";
+
+      // The platform may return HTML or an empty body on upstream failures.
+      // Never log response bodies or user messages.
+      if (!contentType.toLowerCase().includes("application/json")) {
+        console.error("[MYKA] Non-JSON API response", {
+          status: response.status,
+          contentType: contentType.slice(0, 100),
+          requestId,
+        });
+        throw new Error("A MIKA está temporariamente indisponível. Sua mensagem foi preservada; tente novamente em instantes.");
+      }
+
+      try {
+        data = await response.json();
+      } catch {
+        console.error("[MYKA] Invalid JSON API response", {
+          status: response.status,
+          requestId,
+        });
+        throw new Error("A MIKA recebeu uma resposta incompleta. Sua mensagem foi preservada; tente novamente em instantes.");
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          isRecord(data) && typeof data.error === "string"
+            ? data.error
+            : "Não foi possível enviar a mensagem."
+        );
+      }
+
+      setDailyLimitReached(false);
+      setDailyResetAt(null);
+      if (!isRecord(data) || typeof data.reply !== "string") {
+        throw new Error("Resposta inválida da Myka.");
+      }
+
+      if (
+        !("proposedTask" in data) ||
+        (data.proposedTask !== null && !isTaskProposal(data.proposedTask))
+      ) {
+        throw new Error("A tarefa sugerida pelo Concierge é inválida.");
+      }
+
+    const proposedTasks =
+      Array.isArray(data.proposedTasks) &&
+      data.proposedTasks.length <= 10 &&
+      data.proposedTasks.every(isTaskProposal)
+        ? data.proposedTasks.map((task) => ({
+            ...task,
+            completed: false,
+          }))
+        : [];
+
+    const proposedTask =
+  data.proposedTask === null
+    ? undefined
+    : { ...data.proposedTask, completed: false };
+
+if (
+  !("proposedEvent" in data) ||
+  (data.proposedEvent !== null &&
+    !isEventProposal(data.proposedEvent))
+) {
+  throw new Error("O evento sugerido pela MYRYRA e invalido.");
+}
+
+const proposedEvent =
+  data.proposedEvent === null
+    ? undefined
+    : data.proposedEvent;
+
+const reply = data.reply;
+
+if (typeof data.messageId !== "string") {
+  throw new Error("O servidor nao retornou o ID da mensagem.");
+}
+const assistantMessageId: string = data.messageId;
+
+if (typeof data.conversationId !== "string") {
+  throw new Error("O servidor nao retornou o identificador da conversa.");
+}
+
+setConversationId(data.conversationId);
+
+      setMessages((previous): ChatMessage[] =>
+  [
+    ...previous,
+    {
+      role: "assistant" as const,
+      id: assistantMessageId,
+      taskStatus: (proposedTask || proposedTasks.length > 0) ? "pending" as const : "legacy" as const,
+      eventStatus: proposedEvent ? "pending" as const : "legacy" as const,
+      content: reply,
+      ...(proposedTask ? { proposedTask } : {}), ...(proposedTasks.length ? { proposedTasks } : {}),
+      ...(proposedEvent ? { proposedEvent } : {}),
+    },
+  ]);
+    } catch (err) {
+      // Keep the unsent draft and remove the optimistic user bubble on failure.
+      // Retrying must not duplicate a failed message in the conversation.
+      setMessages(previous => previous.slice(0, -1));
+      setInput(content);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Erro ao conversar com a Myka."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!pendingConciergePrompt || historyLoading || loading || error || dailyLimitReached || activeModule !== "vyra-ai") return;
+    const prompt = pendingConciergePrompt;
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      setPendingConciergePrompt(null);
+      void sendTextMessage(prompt);
+    });
+    // Only dispatch a saved Concierge handoff once when the chat becomes ready.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => { active = false; };
+  }, [pendingConciergePrompt, historyLoading, loading, error, dailyLimitReached, activeModule]);
+
+  return (
+    <section className="min-w-0 rounded-2xl border border-violet-400/20 bg-gradient-to-b from-slate-900 to-slate-950 p-3 text-white shadow-xl shadow-violet-950/20 sm:p-7">
+      <div className="mb-5">
+        <p className="text-xs font-semibold uppercase tracking-[.2em] text-cyan-300">
+          Myka AI
+        </p>
+
+        <h2 className="text-2xl font-bold">
+          Converse com seu assistente
+        </h2>
+
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-300">
+          Organize tarefas, defina prioridades e planeje seu dia conversando
+          com a inteligência artificial.
+        </p>
+      </div>
+
+      <div
+        ref={historyContainerRef}
+        className="mb-4 min-h-[320px] max-h-[min(66dvh,700px)] space-y-4 overflow-x-hidden overflow-y-auto rounded-2xl border border-violet-400/15 bg-slate-950/65 p-3 shadow-inner shadow-black/20 sm:min-h-[420px] sm:p-5"
+        aria-live="polite"
+      >
+        {historyLoading && (
+          <p className="text-sm text-cyan-300">Carregando historico...</p>
+        )}
+        {!historyLoading && messages.length === 0 && (
+          <div className="space-y-3 text-sm text-slate-300">
+            <p>Olá! Sou a MYKA. Como posso ajudar?</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {[
+                { label: "Planejar meu dia", prompt: "Ajude-me a organizar minhas prioridades e tarefas de hoje." },
+                { label: "Organizar compromissos", prompt: "Ajude-me a revisar meus compromissos e encontrar horários livres." },
+                { label: "Planejamento financeiro", prompt: "Quero organizar minhas receitas, despesas e metas financeiras. Por onde começar?" },
+                { label: "Objetivo de investimento", prompt: "Quero planejar investimentos para alcançar meu objetivo financeiro." },
+              ].map(suggestion => <button key={suggestion.label} type="button" onClick={() => setInput(suggestion.prompt)} className="rounded-xl border border-violet-400/25 bg-violet-500/10 px-3 py-3 text-left text-sm text-cyan-100 transition hover:border-cyan-300/70 focus-visible:outline-2 focus-visible:outline-violet-400">{suggestion.label} <span aria-hidden="true">↗</span></button>)}
+            </div>
+            <p className="text-xs text-slate-400">A MYKA sugere ações; confirme antes de salvar tarefas ou compromissos. Para decisões financeiras, confira os riscos e suas necessidades.</p>
+          </div>
+        )}
+
+        {messages.map((message, index) => (
+          <div key={index} className="space-y-3">
+            <div className={message.role === "assistant" ? "flex min-w-0 items-start gap-2 sm:gap-3" : ""}>
+              {message.role === "assistant" && (
+                <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-violet-400/40 bg-violet-950/70 sm:h-10 sm:w-10"><img src="/myka-transparente.png" alt="MIKA original" className="h-8 w-8 object-contain sm:h-10 sm:w-10" /></span>
+              )}
+              <div
+                className={
+                  message.role === "user"
+                  ? "ml-auto min-w-0 max-w-[94%] rounded-2xl rounded-br-md border border-cyan-300/20 bg-gradient-to-br from-cyan-700 to-indigo-800 p-3 shadow-md sm:max-w-[78%] sm:p-4"
+                  : "mr-auto min-w-0 max-w-[calc(100%-2.5rem)] rounded-2xl rounded-bl-md border border-white/10 bg-slate-800/85 p-3 shadow-md sm:max-w-[78%] sm:p-4"
+              }
+            >
+              <p className="mb-1 text-xs font-semibold">
+                {message.role === "user" ? "Você" : "Myka"}
+              </p>
+
+              <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-sm leading-relaxed">
+                {message.content}
+              </p>
+            </div>
+            </div>
+                        {message.role === "assistant" &&
+  Array.isArray(message.proposedTasks) &&
+  message.proposedTasks.length > 0 && (
+    <div className="mt-3 space-y-3">
+      <p className="text-sm font-semibold text-cyan-300">
+        {message.proposedTasks.length} tarefa(s) identificada(s) pela Myka
+      </p>
+
+      {message.proposedTasks.map((task, taskIndex) => (
+        <div key={`${message.id ?? "myka"}-${taskIndex}`}>
+          {message.taskDecisions?.some(
+            (item) =>
+              item.taskIndex === taskIndex &&
+              item.decision === "saved"
+          ) ? (
+            <div role="status" className="rounded-xl border border-green-500/30 bg-slate-800 p-4">
+              <p className="font-semibold text-white">{task.title}</p>
+              <p className="mt-2 text-sm text-green-400">
+                Tarefa salva com sucesso!
+              </p>
+            </div>
+          ) : message.taskDecisions?.some(
+            (item) =>
+              item.taskIndex === taskIndex &&
+              item.decision === "cancelled"
+          ) ? (
+            <div className="rounded-xl border border-slate-600 bg-slate-800 p-4">
+              <p className="font-semibold text-white">{task.title}</p>
+              <p className="mt-2 text-sm text-slate-400">
+                Sugestão descartada.
+              </p>
+            </div>
+          ) : message.taskStatus === "pending" && message.id ? (
+            <TaskConfirmation
+              task={task}
+              messageId={message.id}
+              taskIndex={taskIndex}
+              onSaved={() => {
+                setMessages((previous) =>
+                  previous.map((item) =>
+                    item.id === message.id
+                      ? {
+                          ...item,
+                          taskDecisions: [
+                            ...(item.taskDecisions ?? []).filter(
+                              (decision) => decision.taskIndex !== taskIndex
+                            ),
+                            { taskIndex, decision: "saved" as const },
+                          ],
+                        }
+                      : item
+                  )
+                );
+                router.refresh();
+              }}
+              onCancel={() => {
+                setMessages((previous) =>
+                  previous.map((item) =>
+                    item.id === message.id
+                      ? {
+                          ...item,
+                          taskDecisions: [
+                            ...(item.taskDecisions ?? []).filter(
+                              (decision) => decision.taskIndex !== taskIndex
+                            ),
+                            { taskIndex, decision: "cancelled" as const },
+                          ],
+                        }
+                      : item
+                  )
+                );
+              }}
+            />
+          ) : (
+            <div className="rounded-xl border border-violet-500/30 bg-slate-800 p-4">
+              <p className="text-xs font-semibold text-violet-400">
+                Tarefa {taskIndex + 1}
+              </p>
+              <h3 className="mt-1 font-semibold text-white">
+                {task.title}
+              </h3>
+              <p className="mt-2 text-sm text-slate-300">
+                Prioridade: {task.priority}
+              </p>
+              <p className="text-sm text-slate-300">
+                Prazo: {task.dueDate ?? "Não definido"}
+              </p>
+              <p className="mt-2 text-xs text-slate-400">
+                {message.taskStatus === "legacy"
+                  ? "Sugestão anterior à atualização. Confirmação indisponível."
+                  : "Confirmação indisponível para esta sugestão."}
+              </p>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )}
+{message.role === "assistant" && (!message.proposedTasks || message.proposedTasks.length === 0) && message.proposedTask && message.taskStatus === "saved" && (
+  <p role="status" className="mt-3 text-sm text-green-400">
+    Tarefa salva com sucesso!
+  </p>
+)}
+{message.role === "assistant" && (!message.proposedTasks || message.proposedTasks.length === 0) && message.proposedTask && message.taskStatus === "cancelled" && (
+  <p className="mt-3 text-sm text-slate-400">
+    Sugestão cancelada.
+  </p>
+)}
+{message.role === "assistant" && (!message.proposedTasks || message.proposedTasks.length === 0) && message.proposedTask && message.taskStatus === "legacy" && (
+  <p className="mt-3 text-sm text-slate-400">
+    Sugestão anterior à atualização. Confirmação indisponível para evitar duplicidade.
+  </p>
+)}
+{message.role === "assistant" && (!message.proposedTasks || message.proposedTasks.length === 0) && message.proposedTask && message.taskStatus === "pending" && (
+              <TaskConfirmation
+                task={message.proposedTask}
+                messageId={message.id}
+                onSaved={() => {
+                  setMessages((previous) =>
+                    previous.map((item) =>
+                      item.id === message.id
+                        ? { ...item, taskStatus: "saved" as const }
+                        : item
+                    )
+                  );
+                  router.refresh();
+                }}
+                onCancel={async () => {
+                  if (!message.id) {
+                    setError("Identificador da mensagem indisponível.");
+                    return;
+                  }
+
+                  try {
+                    const response = await fetch("/api/myka/proposal", {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        messageId: message.id,
+                        kind: "task",
+                      }),
+                    });
+
+                    if (!response.ok) {
+                      throw new Error(
+                        "Não foi possível cancelar a sugestão no servidor."
+                      );
+                    }
+
+                    setMessages((previous) =>
+                      previous.map((item) =>
+                        item.id === message.id
+                          ? { ...item, taskStatus: "cancelled" as const }
+                          : item
+                      )
+                    );
+                  } catch (err) {
+                    setError(
+                      err instanceof Error
+                        ? err.message
+                        : "Falha ao cancelar sugestão."
+                    );
+                  }
+                }}
+              />
+            )}
+            {message.role === "assistant" && message.proposedEvent && message.eventStatus === "saved" && (
+              <p role="status" className="mt-2 text-sm text-emerald-300">Compromisso salvo.</p>
+            )}
+            {message.role === "assistant" && message.proposedEvent && message.eventStatus === "cancelled" && (
+              <p role="status" className="mt-2 text-sm text-slate-400">Sugestão descartada.</p>
+            )}
+            {message.role === "assistant" && message.proposedEvent && message.eventStatus !== "saved" && message.eventStatus !== "cancelled" && (
+              <EventConfirmation
+                event={message.proposedEvent}
+                messageId={message.id}
+                onSaved={() => {
+                  setMessages((previous) => previous.map((item, itemIndex) =>
+                    itemIndex === index ? { ...item, eventStatus: "saved" as const } : item
+                  ));
+                  window.dispatchEvent(new Event("myryra:events-updated"));
+                  router.refresh();
+                }}
+                onCancel={async () => {
+                  if (message.id && message.eventStatus === "pending") {
+                    const response = await fetch("/api/myka/proposal", {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ messageId: message.id, kind: "event" }),
+                    });
+                    if (!response.ok) {
+                      throw new Error("Não foi possível descartar no servidor. Tente novamente.");
+                    }
+                  }
+                  setMessages((previous) => previous.map((item, itemIndex) =>
+                    itemIndex === index ? { ...item, eventStatus: "cancelled" as const } : item
+                  ));
+                }}
+              />
+            )}
+          </div>
+        ))}
+
+        {(!hideOffers && dailyLimitReached && currentPlan !== "premium") && (
+          <section aria-label="Planos MYRYRA" className="rounded-2xl border border-violet-400/40 bg-violet-950/30 p-4">
+            <button type="button" onClick={() => setHideOffers(true)} className="mb-2 text-xs text-violet-200 underline">Ocultar ofertas</button>
+            <div className="flex items-start gap-3"><span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-violet-400/40"><img src="/myka-transparente.png" alt="MIKA original" className="h-9 w-9 object-contain" /></span><div><p className="font-semibold text-white">{dailyLimitReached ? "Você atingiu o limite diário de mensagens do seu plano." : "Conheça as opções de upgrade da MYRYRA."}</p><p className="mt-1 text-sm text-slate-300">{dailyLimitReached ? `Seu limite será renovado${dailyResetAt && dailyResetAt > Date.now() ? ` em ${new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(dailyResetAt))} (horário de Brasília)` : " automaticamente"}. Gostaria de conhecer outros planos?` : "Compare as opções disponíveis."} Assinaturas pagas em breve.</p></div></div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              {currentPlan === "free" && <a href="/planos?plano=pro" className="rounded-xl border border-violet-400/60 bg-violet-500/15 p-3 text-sm text-white hover:bg-violet-500/25"><strong className="block">Pro</strong>R$ 29,90/mês · 100 mensagens/dia</a>}
+              <a href="/planos?plano=premium" className="rounded-xl border border-white/20 p-3 text-sm text-white hover:bg-white/10"><strong className="block">Premium</strong>R$ 49,90/mês · 250 mensagens/dia</a>
+            </div>
+            <p className="mt-3 text-xs text-slate-400">Compare os benefícios do Pro e Premium e escolha o ideal para você.</p>
+          </section>
+        )}
+
+        {loading && (
+          <p className="animate-pulse text-sm font-medium text-cyan-300 motion-reduce:animate-none">
+            Myka está analisando suas tarefas...
+          </p>
+        )}
+
+      </div>
+
+      {error && (
+        <div role="alert" className="mb-3 space-y-2 text-sm text-red-400">
+          <p>{/você atingiu as \d+ mensagens disponíveis hoje/i.test(error) ? `Você atingiu o limite diário de ${currentPlan === "free" ? "mensagens gratuitas" : `mensagens do plano ${currentPlan}`}. ${dailyResetAt && dailyResetAt > Date.now() ? `Seu limite será renovado automaticamente às ${new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }).format(new Date(dailyResetAt))} (horário de Brasília).` : "Seu limite será renovado automaticamente no próximo ciclo diário."} Quer continuar conversando? Conheça nossos planos Pro e Premium.` : error}</p>
+          <p className="text-slate-300">Precisa de suporte financeiro? Abra um chamado diretamente na Ajuda MYKA, mesmo quando a conversa com IA estiver indisponível.</p>
+          <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("myryra:open-support", { detail: { topic: "billing-payments" } }))} className="rounded-lg border border-violet-400 px-3 py-2 font-semibold text-violet-200">Abrir suporte financeiro</button>
+          {/você atingiu as \d+ mensagens disponíveis hoje/i.test(error) ? (
+            <a href="/planos" className="ml-2 inline-flex rounded-lg bg-violet-600 px-3 py-2 font-semibold text-white hover:bg-violet-500">Conhecer planos e fazer upgrade</a>
+          ) : (
+            <button type="button" onClick={() => setError("")} className="ml-2 rounded-lg border border-slate-600 px-3 py-2 text-slate-200">Tentar novamente</button>
+          )}
+        </div>
+      )}
+
+      {attachment && (
+        <div className="mb-3 flex items-center gap-2 text-sm text-violet-200">
+          <span className="truncate">ðŸ“Ž {attachment.name}</span>
+          <button type="button" onClick={() => {
+            setAttachment(null);
+            if (attachmentInputRef.current) attachmentInputRef.current.value = "";
+          }} aria-label="Remover anexo" className="rounded border border-white/20 px-2 py-1">
+            Remover
+          </button>
+        </div>
+      )}
+      <form onSubmit={handleSubmit} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_auto_auto] items-stretch gap-1.5 sm:flex sm:gap-2">
+        <input
+          type="text"
+          value={input}
+          onChange={(event) => setInput(event.target.value)}
+          maxLength={1500}
+          placeholder="Pergunte algo à Myka..."
+          aria-label="Mensagem para a Myka"
+          className="min-w-0 w-full flex-1 rounded-xl border border-white/10 bg-slate-800/80 px-3 py-3 text-base text-white outline-none transition focus:border-violet-400/60 focus:ring-2 focus:ring-violet-500/20 sm:px-4"
+        />
+
+<input
+  ref={attachmentInputRef}
+  type="file"
+  accept=".pdf,.png,.jpg,.jpeg,.txt"
+  className="hidden"
+  onChange={(event) =>
+    handleAttachment(event.target.files?.[0])
+  }
+/>
+
+<button
+  type="button"
+  onClick={() => attachmentInputRef.current?.click()}
+  className="min-w-11 rounded-xl border border-violet-500 px-2 py-3 text-violet-200 sm:px-4"
+  aria-label="Anexar arquivo"
+>
+  📎
+</button>
+
+        <button
+  type="button"
+  onClick={startVoice}
+  disabled={listening || loading}
+  className="min-w-11 rounded-xl border border-violet-500 px-2 py-3 text-violet-200 disabled:opacity-50 sm:px-4"
+>
+  <span className="sm:hidden" aria-label={listening ? "Ouvindo" : "Voz"}>🎙</span><span className="hidden sm:inline">{listening ? "🎙 Ouvindo..." : "🎙 Voz"}</span>
+</button>
+        <button
+          type="submit"
+          disabled={loading || historyLoading || !!error || (!input.trim() && !attachment)}
+          className="min-w-11 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-2 py-3 font-semibold text-white shadow-lg shadow-cyan-900/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:px-5"
+        >
+          <span className="sm:hidden" aria-label={loading ? "Enviando" : "Enviar"}>➤</span><span className="hidden sm:inline">{loading ? "Enviando..." : "Enviar"}</span>
+        </button>
+      </form>
+
+      <div className="mt-3">
+        <button
+          type="button"
+          onClick={prepareTask}
+          disabled={loading || historyLoading || !!error || !input.trim()}
+          className="rounded-lg border border-violet-500 px-4 py-2 text-sm font-semibold text-cyan-300 disabled:opacity-50"
+        >
+          Preparar tarefa com IA
+        </button>
+      </div>
+
+
+      {pendingTask && (
+        <div className="mt-4">
+          <TaskConfirmation
+            task={pendingTask}
+            onSaved={() => {
+              setPendingTask(null);
+              setInput("");
+              router.refresh();
+            }}
+            onCancel={() => setPendingTask(null)}
+          />
+        </div>
+      )}
+    </section>
+  );
+}

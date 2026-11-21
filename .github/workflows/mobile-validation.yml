@@ -1,0 +1,48 @@
+name: MYRYRA Android validation
+
+on:
+  push:
+    branches:
+      - feat/myryra-mvp1-billing-foundation
+    paths:
+      - "apps/mobile/**"
+      - ".github/workflows/mobile-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  expo-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install mobile dependencies
+        run: npm install --no-audit --no-fund
+      - name: Check Expo dependency compatibility
+        run: npx expo install --check
+      - name: Typecheck native application
+        run: npm run typecheck
+      - name: Validate Android JavaScript bundle
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+          EXPO_PUBLIC_MYRYRA_API_URL: https://preview.example.com
+        run: npx expo export --platform android --output-dir dist-android
+      - name: Preserve Android bundle for inspection
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: myryra-android-js-bundle
+          path: apps/mobile/dist-android/
+          if-no-files-found: error
+          retention-days: 7

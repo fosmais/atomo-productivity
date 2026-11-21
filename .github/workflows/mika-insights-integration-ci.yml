@@ -1,0 +1,34 @@
+name: MIKA Insights integration checks
+
+on:
+  pull_request:
+    paths:
+      - 'src/app/mika-insights/**'
+      - 'src/app/api/mika-insights/**'
+      - 'src/app/dashboard/vyra-navigation.tsx'
+      - 'src/app/login/page.tsx'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/mika-insights-integration-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-types:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: ESLint (MIKA Insights and MYRYRA integration)
+        run: npx eslint src/app/mika-insights src/app/api/mika-insights src/app/dashboard/vyra-navigation.tsx src/app/login/page.tsx
+      - name: Generate Next.js route and layout types
+        run: npx next typegen
+      - name: TypeScript
+        run: npx tsc --noEmit
