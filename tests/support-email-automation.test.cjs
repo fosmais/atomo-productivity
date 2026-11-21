@@ -55,6 +55,7 @@ test("MIKA support AI requires explicit enablement and current legal acceptance"
   assert.match(client, /checked=\{authorizeMika\}/);
   assert.doesNotMatch(submit, /myka_authorized: true/);
   assert.match(submit, /author_type: "myka"/);
+  assert.doesNotMatch(submit, /\.update\(\{ status: "in_progress" \}\)/);
   assert.match(submit, /category !== "billing"/);
   assert.match(submit, /if \(!legalReady\) throw new Error/);
 });
