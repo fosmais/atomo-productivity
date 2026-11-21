@@ -7,6 +7,7 @@ create table if not exists mika_internal.ai_quota (
  requests integer not null check (requests >= 0),
  primary key (user_id, action)
 );
+alter table mika_internal.ai_quota enable row level security;
 revoke all on schema mika_internal from public, anon, authenticated;
 revoke all on all tables in schema mika_internal from public, anon, authenticated;
 create or replace function public.mika_consume_ai_quota(p_action text)
