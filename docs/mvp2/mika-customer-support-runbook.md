@@ -175,3 +175,11 @@ The six missing tables have **16 indexes** in production:
 - `mika_teacher_sessions` (3): `mika_teacher_sessions_pkey`, unique `mika_teacher_sessions_id_owner_id_key`, `mika_teacher_sessions_owner_created_idx`.
 
 The `events_autopilot_task_once_per_user_idx` is the exact index whose migration failed in isolated homologation because `public.events` did not exist. Preserve migration ordering and the original partial predicates. This inventory is diagnostic, not an authorization to alter production or fabricate the missing schema.
+
+## Core RLS policy audit — production metadata, read-only
+
+The six missing baseline tables contain **24 policies**: `events` 5, `tasks` 4, `plans` 4, `myryra_finance_entries` 3, `myryra_journeys` 4, and `mika_teacher_sessions` 4. All policies target `authenticated` and use ownership predicates; `tasks` additionally verifies the parent plan belongs to the caller, and teacher-session INSERT checks that the journey belongs to the caller and is active.
+
+**Security/behavior review finding:** `events` has two permissive UPDATE policies. `Users can update own events` checks only `auth.uid() = user_id`, while `events_owner_update_category` additionally requires `deleted_at IS NULL`. PostgreSQL combines permissive policies with OR, so the latter restriction does **not** prevent updates of soft-deleted events when the former allows them. Determine intended soft-delete and restore behavior before proposing a policy change; preserve legitimate restore functionality. No production RLS changes were applied.
+
+The policies inventory is insufficient to declare tenant isolation tested: execute authenticated two-user E2E probes against an isolated complete baseline before release.
