@@ -61,7 +61,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Informe assunto e mensagem válidos." }, { status: 400, headers });
 
     const admin = createSupabaseAdmin();
-    const { data: ticket, error: ticketError } = await admin.rpc("create_support_ticket_limited", {
+    // The RPC is introduced by the MVP2 migration and is not yet in generated DB types.
+    const { data: ticketData, error: ticketError } = await admin.rpc("create_support_ticket_limited", {
       p_user_id: user.id, p_subject: subject, p_message: message, p_category: category,
       p_authorize_mika: authorizeMika
     }).single();
@@ -69,7 +70,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Você atingiu o limite de chamados. Tente novamente mais tarde." }, {
         status: 429, headers: { ...headers, "Retry-After": "3600" }
       });
-    if (ticketError || !ticket) throw new Error("SUPPORT_TICKET_CREATE_FAILED");
+    if (ticketError || !ticketData) throw new Error("SUPPORT_TICKET_CREATE_FAILED");
+    const ticket = ticketData as { id: string; subject: string; status: string; priority: string; created_at: string };
 
     const supportRecipient = process.env.SUPPORT_INBOX_EMAIL || "support@myryra.com";
     const notifications: Array<{ event_type: "ticket_created" | "ticket_acknowledgement"; source_id: string; recipient: string; subject: string; payload: Record<string, string>; status: "pending"; attempts: 0 }> = [{
