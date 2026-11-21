@@ -48,6 +48,9 @@ async function identity(email,password) {
 (async()=>{
  const owner=await identity(env.MIKA_TEST_EMAIL,env.MIKA_TEST_PASSWORD);
  const other=await identity(env.MIKA_TEST_OTHER_EMAIL,env.MIKA_TEST_OTHER_PASSWORD);
- if (owner.user_id && other.user_id) assert.notEqual(owner.user_id,other.user_id);
+ if (owner.status !== 'VERIFIED' || other.status !== 'VERIFIED') {
+  throw new Error('Staging Auth email confirmation is required for one or both synthetic accounts; confirm both addresses before rerunning');
+ }
+ assert.notEqual(owner.user_id,other.user_id);
  console.log(JSON.stringify({project:'xanavauqzsrgvdfhcrsm',owner,other,next:'Run the existing single-user fixture for the owner after both identities are verified'},null,2));
 })().catch(e=>{console.error('MIKA staging identity bootstrap failed:',e.message);process.exitCode=1;});
