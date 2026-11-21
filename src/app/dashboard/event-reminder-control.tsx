@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { scheduleEventReminder, type ReminderLeadMinutes } from "@/lib/event-reminders";
 
 export default function EventReminderControl({ eventId, startsAt }: { eventId: string; startsAt: string }) {
@@ -9,7 +9,14 @@ export default function EventReminderControl({ eventId, startsAt }: { eventId: s
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  if (new Date(startsAt).getTime() <= Date.now()) return null;
+  const [isUpcoming, setIsUpcoming] = useState(false);
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      if (active) setIsUpcoming(new Date(startsAt).getTime() > Date.now());
+    });
+    return () => { active = false; };
+  }, [startsAt]);
 
   async function handleSave() {
     if (saving) return;
@@ -25,6 +32,8 @@ export default function EventReminderControl({ eventId, startsAt }: { eventId: s
       setSaving(false);
     }
   }
+
+  if (!isUpcoming) return null;
 
   return (
     <div className="w-full min-w-0 rounded-lg border border-violet-400/20 p-3 text-sm xl:w-auto">

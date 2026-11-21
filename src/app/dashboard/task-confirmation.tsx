@@ -44,6 +44,18 @@ export default function TaskConfirmation({
     setError("");
 
     try {
+      if (process.env.NEXT_PUBLIC_MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true") {
+        const readinessResponse = await fetch("/api/privacy/readiness", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+        if (!readinessResponse.ok) throw new Error("Não foi possível verificar o aceite legal. Tente novamente.");
+        const readiness: unknown = await readinessResponse.json();
+        if (!readiness || typeof readiness !== "object" ||
+            !("ready" in readiness) || readiness.ready !== true)
+          throw new Error("Aceite os Termos e o Aviso de Privacidade vigentes antes de salvar a tarefa.");
+      }
       if (messageId) {
         const { error: confirmationError } = await getSupabase().rpc(
           "myka_confirm_task_item",

@@ -9,21 +9,24 @@ const integrations = [
   {
     name: "Todoist",
     subtitle: "Tarefas e projetos",
-    description: "Importar tarefas e projetos existentes para organizar seu dia com a MYKA.",
+    description: "Importar tarefas e projetos sob demanda para organizar seu dia com a MIKA.",
+    status: "Importação manual disponível",
     url: "https://developer.todoist.com/",
     label: "Documentação da API",
   },
   {
     name: "Google Tasks",
     subtitle: "Listas e tarefas",
-    description: "Aproveitar tarefas do Google sem misturá-las automaticamente com eventos do calendário.",
+    description: "Consultar e importar tarefas do Google mediante autorização, sem criar eventos automaticamente.",
+    status: "Importação sob demanda disponível",
     url: "https://developers.google.com/workspace/tasks",
     label: "Documentação da API",
   },
   {
     name: "Microsoft Outlook",
     subtitle: "Calendário profissional",
-    description: "Consultar compromissos do Outlook para planejar disponibilidade e prioridades.",
+    description: "Integração de calendário ainda não disponível para uso.",
+    status: "Em desenvolvimento",
     url: "https://learn.microsoft.com/graph/api/resources/calendar",
     label: "Documentação da API",
   },
@@ -44,7 +47,7 @@ export default function ExternalIntegrations() {
               <p className="mt-1 text-xs font-medium text-violet-300">{integration.subtitle}</p>
             </div>
             <p className="flex-1 text-sm leading-6 text-slate-300">{integration.description}</p>
-            <span className="w-fit rounded-full border border-amber-400/25 bg-amber-400/10 px-2.5 py-1 text-xs text-amber-200">Integração em desenvolvimento</span>
+            <span className="w-fit rounded-full border border-amber-400/25 bg-amber-400/10 px-2.5 py-1 text-xs text-amber-200">{integration.status}</span>
             <a href={integration.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-violet-300 underline underline-offset-4 hover:text-violet-100">{integration.label}</a>
           </article>
         ))}

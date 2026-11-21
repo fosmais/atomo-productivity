@@ -16,7 +16,11 @@ export default function SettingsCards({ appearance, security, integrations, data
   const [active, setActive] = useState<Section | null>(null);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.has("google_calendar")) setActive("integrations");
+    if (params.has("google_calendar")) {
+      let active = true;
+      queueMicrotask(() => { if (active) setActive("integrations"); });
+      return () => { active = false; };
+    }
   }, []);
   const panels = { appearance, security, integrations, data };
   return <div className="w-full min-w-0 space-y-4">

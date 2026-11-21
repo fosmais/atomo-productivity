@@ -19,15 +19,18 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
   focus: ReactNode;
 }) {
   const [active, setActive] = useState<View>("tasks");
-  const { activeModule, quickAction } = useVyraNavigation();
+  const [filteredNavigation, setFilteredNavigation] = useState(0);
+  const { activeModule, quickAction, focusedTaskId } = useVyraNavigation();
   useEffect(() => {
     if (activeModule !== "vyra-tasks" || !quickAction) return;
-    setActive("tasks");
+    let active = true;
+    queueMicrotask(() => { if (active) setActive("tasks"); });
     const timer = window.setTimeout(() => {
       const details = document.querySelector<HTMLDetailsElement>(`[data-feature-id="${quickAction}"]`);
       if (details) {
         details.open = true;
-        details.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (quickAction === "kanban") details.style.scrollMarginTop = "5rem";
+        details.scrollIntoView({ behavior: "smooth", block: quickAction === "kanban" ? "start" : "center" });
         if (quickAction === "capture") {
           window.setTimeout(() => window.dispatchEvent(new Event("myryra:focus-quick-capture")), 100);
         } else if (quickAction === "goals") {
@@ -35,12 +38,50 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
         }
       }
     }, 80);
-    return () => window.clearTimeout(timer);
+    return () => { active = false; window.clearTimeout(timer); };
   }, [activeModule, quickAction]);
+  useEffect(() => {
+    if (activeModule !== "vyra-tasks" || !focusedTaskId) return;
+    // Ensure a task handoff is visible even if the user previously selected another tab.
+    queueMicrotask(() => setActive("tasks"));
+  }, [activeModule, focusedTaskId]);
+  useEffect(() => {
+    const openFilteredTasks = (event: Event) => {
+      const filter = (event as CustomEvent<{ filter?: string }>).detail?.filter;
+      if (filter !== "pending" && filter !== "overdue") return;
+      setActive("tasks");
+      // Trigger a post-render effect even when the Tasks tab was already active.
+      setFilteredNavigation(value => value + 1);
+    };
+    window.addEventListener("myryra:task-filter", openFilteredTasks);
+    return () => window.removeEventListener("myryra:task-filter", openFilteredTasks);
+  }, []);
+  useEffect(() => {
+    if (!filteredNavigation || active !== "tasks") return;
+    // React has committed the visible Tasks panel before this effect runs.
+    const frame = window.requestAnimationFrame(() => {
+      const kanban = document.querySelector<HTMLDetailsElement>('[data-feature-id="kanban"]');
+      if (!kanban) return;
+      kanban.open = true;
+      kanban.style.scrollMarginTop = "5rem";
+      kanban.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [active, filteredNavigation]);
   const panels: Record<View, ReactNode> = { tasks, today, intelligence, focus };
 
   function selectSection(id: View) {
     setActive(id);
+    if (id === "tasks") {
+      window.requestAnimationFrame(() => {
+        const kanban = document.querySelector<HTMLDetailsElement>('[data-feature-id="kanban"]');
+        if (kanban) {
+          kanban.open = true;
+          kanban.style.scrollMarginTop = "5rem";
+      kanban.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    }
     if (id === "focus") {
       window.requestAnimationFrame(() => {
         const focusPanel = document.querySelector<HTMLDetailsElement>('[data-feature-id="planning-focus"]');
@@ -61,7 +102,7 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
 
   return (
     <div className="min-w-0 space-y-5">
-      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2" role="tablist" aria-label="Áreas de tarefas e planejamento">
+      <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3" role="tablist" aria-label="Áreas de tarefas e planejamento">
         {sections.map((section, index) => (
           <button
             key={section.id}
@@ -73,15 +114,15 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
             onKeyDown={event => onTabKeyDown(event, index)}
             aria-controls={`planning-panel-${section.id}`}
             onClick={() => selectSection(section.id)}
-            className={`flex min-h-[116px] min-w-0 flex-col justify-center rounded-2xl border p-5 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 ${
+            className={`flex min-h-[88px] min-w-0 flex-col justify-center rounded-2xl border p-3 text-left transition sm:min-h-[116px] sm:p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 ${
               active === section.id
                 ? "border-violet-400/70 bg-violet-600/15 shadow-lg shadow-violet-950/20"
                 : "border-white/15 bg-slate-900/75 hover:border-violet-400/50 hover:bg-slate-800/80"
             }`}
           >
-            <span aria-hidden="true" className="mb-3 block text-2xl text-violet-300">{section.icon}</span>
-            <span className="block text-base font-semibold text-white">{section.title}</span>
-            <span className="mt-1 block text-xs text-slate-300">{section.description}</span>
+            <span aria-hidden="true" className="mb-2 block text-xl text-violet-300 sm:mb-3 sm:text-2xl">{section.icon}</span>
+            <span className="block text-sm font-semibold leading-snug text-white sm:text-base">{section.title}</span>
+            <span className="mt-1 hidden text-xs text-slate-300 sm:block">{section.description}</span>
           </button>
         ))}
       </div>

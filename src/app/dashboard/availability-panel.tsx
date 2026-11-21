@@ -98,7 +98,8 @@ export default function AvailabilityPanel() {
   }, []);
 
   useEffect(() => {
-    void loadAvailability();
+    let active = true;
+    queueMicrotask(() => { if (active) void loadAvailability(); });
     const refresh = () => { void loadAvailability(); };
     const refreshWhenVisible = () => {
       if (document.visibilityState === "visible") refresh();
@@ -107,6 +108,7 @@ export default function AvailabilityPanel() {
     window.addEventListener("myryra:tasks-updated", refresh);
     document.addEventListener("visibilitychange", refreshWhenVisible);
     return () => {
+      active = false;
       window.removeEventListener("myryra:events-updated", refresh);
       window.removeEventListener("myryra:tasks-updated", refresh);
       document.removeEventListener("visibilitychange", refreshWhenVisible);

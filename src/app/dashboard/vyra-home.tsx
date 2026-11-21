@@ -1,38 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useVyraActiveModule, useVyraNavigation } from "./vyra-module-context";
 import { loadVyraMetrics } from "./vyra-metrics-service";
 import { getCompletionRate, type VyraMetrics } from "./vyra-metrics";
 import { getCloudEvents } from "@/lib/event-cloud";
-import WhatNowCard from "./what-now-card";
-
-const portals = [
-  { label: "MIKA", subtitle: "Sua inteligência pessoal", icon: "✦", module: "vyra-ai" },
-  { label: "Seu dia e futuro", subtitle: "Agenda, planos e compromissos", icon: "▦", module: "vyra-calendar" },
-  { label: "Corpo e mente", subtitle: "Saúde, treino e bem-estar", icon: "♡", module: "vyra-health" },
-  { label: "Organização", subtitle: "Tarefas, foco e metas", icon: "✓", module: "vyra-tasks" },
-  { label: "Finanças e investimentos", subtitle: "Seu dinheiro e seus objetivos", icon: "◇", module: "vyra-finance" },
-  { label: "Sua evolução", subtitle: "Score, progresso e conquistas", icon: "◎", module: "vyra-performance" },
-];
-const dailyMessages = [
-  "Um pequeno passo hoje pode transformar o seu amanhã.",
-  "Seu tempo é valioso. Escolha o que realmente importa.",
-  "Grandes conquistas começam com decisões simples.",
-  "Progresso não exige perfeição, exige constância.",
-  "Hoje é uma nova oportunidade de cuidar de você.",
-  "Organize suas prioridades e abra espaço para viver.",
-  "Você não precisa fazer tudo. Comece pelo essencial.",
-  "O futuro que você deseja começa nas escolhas de hoje.",
-  "Cada avanço merece ser reconhecido.",
-  "Faça do seu dia uma experiência com propósito.",
-  "Equilíbrio também é uma forma de progresso.",
-  "O melhor planejamento é aquele que cabe na sua vida.",
-];
-function dayOfYear(date: Date) {
-  const today = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
-  return Math.floor((today - Date.UTC(date.getFullYear(), 0, 1)) / 86400000);
-}
 
 export default function VyraHome() {
   const activeModule = useVyraActiveModule();
@@ -42,7 +15,11 @@ export default function VyraHome() {
   const [agendaError, setAgendaError] = useState(false);
   const [today, setToday] = useState<Date | null>(null);
 
-  useEffect(() => { setToday(new Date()); }, []);
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => { if (active) setToday(new Date()); });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     if (activeModule !== "home") return;
@@ -87,83 +64,71 @@ export default function VyraHome() {
   const smartSuggestion = !metrics
     ? { message: "Confira suas prioridades e encontre a próxima ação.", action: "Ver prioridades", module: "vyra-tasks" }
     : metrics.overdue > 0
-      ? { message: `Você tem ${metrics.overdue} tarefa(s) atrasada(s). Que tal reorganizar os prazos?`, action: "Revisar atrasos", module: "vyra-tasks" }
+      ? { message: `${metrics.overdue} tarefas precisam da sua atenção.`, action: "Revisar atrasos", module: "vyra-tasks" }
       : metrics.openHighPriority > 0
-        ? { message: `Há ${metrics.openHighPriority} prioridade(s) alta(s) em aberto. Escolha por onde começar.`, action: "Ver prioridades", module: "vyra-tasks" }
+        ? { message: `${metrics.openHighPriority} prioridades importantes aguardam você.`, action: "Ver prioridades", module: "vyra-tasks" }
         : metrics.pending > 0
-          ? { message: `Você tem ${metrics.pending} tarefa(s) pendente(s). Vamos escolher o próximo passo?`, action: "Planejar meu dia", module: "vyra-tasks" }
+          ? { message: `Você tem ${metrics.pending} tarefas para avançar hoje.`, action: "Planejar meu dia", module: "vyra-tasks" }
           : { message: "Suas tarefas estão em dia. Que tal planejar um novo objetivo?", action: "Criar objetivo", module: "vyra-tasks" };
 
   return (
-    <main className="flex min-w-0 flex-col gap-3 " aria-label="Início MYRYRA">
-      <section className="rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-950/65 via-slate-900/80 to-slate-950 p-4 sm:p-6" aria-label="Boas-vindas MYRYRA">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-300">{today ? new Intl.DateTimeFormat("pt-BR",{weekday:"long",day:"numeric",month:"long"}).format(today) : "MYRYRA · SEU ESPAÇO"}</p>
-        <h1 className="mt-2 max-w-xl text-2xl font-semibold leading-tight text-white sm:text-3xl">Como podemos tornar seu dia extraordinário?</h1>
-        <p className="mt-3 text-sm leading-relaxed text-violet-200" aria-label="Inspiração do dia">{today ? dailyMessages[dayOfYear(today)%dailyMessages.length] : "Um dia de cada vez. Grandes mudanças começam com pequenos passos."}</p>
-        <button type="button" onClick={() => navigateTo("vyra-ai")} className="mt-4 flex w-full items-center gap-3 rounded-xl border border-violet-400/30 bg-violet-500/15 p-3 text-left transition hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-700/60 text-xl text-violet-100" aria-hidden="true">✦</span>
-          <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-white">Sua MIKA está aqui</span><span className="block text-xs text-violet-200">Planeje, converse ou descubra seu próximo passo.</span></span>
-          <span className="text-violet-200" aria-hidden="true">↗</span>
-        </button>
-      </section>
-
-      <section className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2" aria-label="Resumo rápido">
-        <button type="button" onClick={() => navigateTo("vyra-calendar")} className="min-w-0 rounded-xl border border-white/10 bg-slate-900/50 p-3 text-left hover:border-violet-400/50">
-          <span className="block text-slate-400">Próximo compromisso</span>
-          <span className="mt-1 block truncate font-semibold text-white">{nextEvent ? nextEvent.title : agendaError ? "Agenda indisponível" : "Nenhum compromisso"}</span>
-          {nextEvent && <span className="mt-1 block text-violet-300">{new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(nextEvent.start))}</span>}
-        </button>
-        <button type="button" onClick={() => navigateTo("vyra-performance")} className="rounded-xl border border-white/10 bg-slate-900/50 p-3 text-left hover:border-violet-400/50">
-          <span className="block text-slate-400">Seu progresso</span>
-          <span className="mt-1 block text-lg font-semibold text-white">{progress === null ? "—" : `${progress}%`}</span>
-          <span className="block text-slate-400">{metrics?.pending ?? "—"} pendentes</span>
-        </button>
-      </section>
-
-      <details className="group rounded-2xl border border-violet-400/35 bg-gradient-to-br from-violet-950/70 via-slate-900/85 to-slate-950 p-4 shadow-sm sm:p-5">
-        <summary className="flex cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden">
-          <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-700/45 text-2xl text-violet-200">✦</span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold text-white">Sugestão inteligente da MIKA</span>
-            <span className="mt-1 block text-xs leading-relaxed text-violet-200">{smartSuggestion.message}</span>
-          </span>
-          <span aria-hidden="true" className="text-lg text-violet-200 transition-transform group-open:rotate-90">›</span>
-        </summary>
-        <div className="mt-4 border-t border-violet-400/15 pt-3">
-          <button type="button" onClick={() => navigateTo(smartSuggestion.module)} className="mb-3 rounded-xl border border-violet-400/30 bg-violet-500/15 px-4 py-2 text-xs font-semibold text-violet-100 hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">{smartSuggestion.action} →</button>
-          <WhatNowCard />
+    <main className="mx-auto grid w-full max-w-7xl min-w-0 grid-cols-1 items-start gap-4 pb-24 lg:grid-cols-[minmax(0,1.55fr)_minmax(300px,0.85fr)] lg:gap-5 lg:pb-8" aria-label="MIKA Universe — MYRYRA Flow+">
+      <section className="relative isolate min-w-0 overflow-hidden rounded-[28px] border border-violet-400/30 bg-[#0d1029] p-5 shadow-[0_20px_80px_rgba(77,18,130,.18)] sm:p-7" aria-label="MIKA Universe">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full bg-violet-600/25 blur-3xl" />
+        <div aria-hidden="true" className="pointer-events-none absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-fuchsia-600/15 blur-3xl" />
+        <div className="relative flex items-center justify-between gap-3">
+          <span className="text-[11px] font-bold uppercase tracking-[.22em] text-violet-200">MYRYRA FLOW+ <span className="ml-2 rounded-full bg-violet-500/20 px-2 py-1 text-[10px] tracking-normal text-violet-100">MIKA Universe · Preview</span></span>
+          <span className="shrink-0 text-xs text-slate-400">{today ? new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"short"}).format(today) : "Seu momento"}</span>
         </div>
-      </details>
-
-      <section aria-label="Explore seu universo">
-        <h2 className="mb-3 text-base font-semibold text-white">Explore seu universo</h2>
-        <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:grid-cols-3">
-          {portals.map(item => <button key={item.label} type="button" onClick={() => navigateTo(item.module)} className="flex min-h-24 min-w-0 flex-col items-start justify-center gap-2 rounded-xl border border-violet-400/15 bg-slate-900/65 p-3 text-left transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
-            <span className="text-2xl text-violet-300" aria-hidden="true">{item.icon}</span>
-            <span className="break-words text-sm font-semibold leading-snug text-white">{item.label}</span>
-            <span className="break-words text-xs leading-snug text-slate-400">{item.subtitle}</span>
-          </button>)}
+        <div className="relative mt-5 flex flex-col items-center gap-5 sm:flex-row sm:items-center lg:flex-col xl:flex-row">
+          <div className="relative flex h-36 w-36 shrink-0 items-center justify-center rounded-full border border-violet-400/40 bg-gradient-to-br from-violet-950 via-indigo-950 to-fuchsia-950 shadow-[0_0_45px_rgba(147,51,234,.35)] sm:h-44 sm:w-44 lg:h-40 lg:w-40">
+            <div aria-hidden="true" className="absolute inset-2 rounded-full border border-fuchsia-400/30" />
+            <img src="/myka-transparente.png" alt="MIKA original da MYRYRA" className="relative h-full w-full object-contain p-2" />
+          </div>
+          <div className="min-w-0 flex-1 text-center sm:text-left lg:text-center xl:text-left">
+            <p className="text-xs font-medium uppercase tracking-[.2em] text-violet-300">Sua IA parceira de evolução</p>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">MIKA Universe</h1>
+            <p className="mt-2 text-sm text-slate-300">Sonhe, planeje e conquiste. Seu universo pessoal começa aqui.</p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start lg:justify-center xl:justify-start">
+              {["✦ Planejamento inteligente","◇ Jornadas pessoais","♡ Equilíbrio e bem-estar"].map((label) => <span key={label} className="rounded-full border border-violet-400/25 bg-violet-500/10 px-3 py-2 text-[11px] text-violet-100">{label}</span>)}
+            </div>
+          </div>
+        </div>
+        <div className="relative mt-6 rounded-2xl border border-violet-400/30 bg-[#171936]/90 p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <img src="/myka-transparente.png" alt="" className="h-10 w-10 shrink-0 object-contain" />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-violet-200">MIKA está com você</p>
+              <p className="mt-2 text-lg font-semibold text-white">Qual será sua próxima conquista?</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-300">Posso ajudar a organizar sua agenda, definir prioridades e transformar objetivos em pequenas ações.</p>
+            </div>
+          </div>
+          <button type="button" onClick={() => navigateTo("vyra-ai")} className="mt-5 flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border border-violet-400/40 bg-violet-500/10 px-4 text-left text-sm text-violet-100 transition hover:bg-violet-500/20 focus-visible:outline-2 focus-visible:outline-violet-300">
+            <span>✧ &nbsp; Converse com a MIKA...</span><span className="rounded-lg bg-violet-500 px-3 py-2 font-bold text-white">↗</span>
+          </button>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => navigateTo("vyra-calendar")} className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-slate-100 hover:bg-violet-500/20">▦ &nbsp; Minha agenda</button>
+            <button type="button" onClick={() => navigateToQuickAction?.("capture")} className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-slate-100 hover:bg-violet-500/20">＋ &nbsp; Criar tarefa</button>
+            <Link href="/journey" className="rounded-xl border border-white/10 bg-white/5 p-3 text-center text-xs text-slate-100 hover:bg-violet-500/20">◇ &nbsp; Minhas jornadas</Link>
+            <button type="button" onClick={() => navigateTo("vyra-performance")} className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-slate-100 hover:bg-violet-500/20">✧ &nbsp; Meu progresso</button>
+          </div>
         </div>
       </section>
-      <details className="group rounded-2xl border border-violet-400/20 bg-slate-900/65 p-4 sm:p-5">
-        <summary className="flex cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden"><span aria-hidden="true" className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-700/25 text-xl text-violet-200">▦</span><span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-white">Todas as ferramentas</span><span className="mt-1 block text-xs text-slate-400">Explore os recursos adicionais da MYRYRA</span></span><span aria-hidden="true" className="text-lg text-violet-200 transition-transform group-open:rotate-90">›</span></summary>
-        <div className="mt-3 grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:grid-cols-3">
-          {[
-            {label:"Nova tarefa",module:"vyra-tasks",action:"capture"},
-            {label:"Agenda",module:"vyra-calendar"},
-            {label:"Lembretes",module:"vyra-tasks",action:"capture"},
-            {label:"Metas",module:"vyra-tasks",action:"goals"},
-            {label:"Planejamento",module:"vyra-tasks",action:"kanban"},
-            {label:"Configurações",module:"vyra-settings"},
-            {label:"Ajuda e suporte",module:"support"},
-            {label:"Saúde",module:"vyra-health"},
-            {label:"Finanças",module:"vyra-finance"},
-            {label:"Sua evolução",module:"vyra-performance"}
-          ].map(item=><button key={item.label} type="button" onClick={()=>item.module==="support"?window.dispatchEvent(new CustomEvent("myryra:open-support")):"action" in item && item.action ? navigateToQuickAction?.(item.action) : navigateTo(item.module)} className="min-w-0 break-words rounded-lg border border-white/10 bg-slate-950/70 px-3 py-3 text-left text-xs font-medium text-white transition hover:border-violet-400/50 focus-visible:outline-2 focus-visible:outline-violet-400">{item.label}</button>)}
-        </div>
-      </details>
-
-
+      <div className="grid min-w-0 content-start gap-4">
+        <section className="rounded-2xl border border-violet-400/20 bg-[#111629] p-5" aria-label="Sua próxima ação">
+          <div className="flex items-center justify-between"><p className="text-[11px] font-bold uppercase tracking-[.18em] text-violet-300">Seu foco agora</p><span className="rounded-full bg-violet-500/15 px-2 py-1 text-[10px] text-violet-200">Próxima ação</span></div>
+          <p className="mt-4 text-lg font-semibold text-white">{smartSuggestion.message}</p>
+          <button type="button" onClick={() => navigateTo(smartSuggestion.module)} className="mt-4 rounded-xl bg-violet-500 px-4 py-3 text-sm font-semibold text-white hover:bg-violet-400">{smartSuggestion.action} ↗</button>
+        </section>
+        <section className="rounded-2xl border border-violet-400/20 bg-[#111629] p-5" aria-label="Seu universo hoje">
+          <p className="text-[11px] font-bold uppercase tracking-[.18em] text-violet-300">Seu universo hoje</p>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <button type="button" onClick={() => navigateTo("vyra-calendar")} className="min-w-0 rounded-xl bg-white/5 p-3 text-left hover:bg-violet-500/15"><span className="block text-xs text-slate-400">Próximo evento</span><span className="mt-2 block truncate text-sm font-semibold text-white">{nextEvent ? nextEvent.title : agendaError ? "Indisponível" : "Agenda livre"}</span>{nextEvent && <span className="mt-1 block text-[11px] text-violet-200">{new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}).format(new Date(nextEvent.start))}</span>}</button>
+            <button type="button" onClick={() => navigateTo("vyra-tasks")} className="min-w-0 rounded-xl bg-white/5 p-3 text-left hover:bg-violet-500/15"><span className="block text-xs text-slate-400">Sua evolução</span><span className="mt-2 block text-sm font-semibold text-white">{progress === null ? "—" : `${progress}% concluído`}</span><span className="mt-1 block text-[11px] text-violet-200">{metrics?.pending ?? "—"} tarefas pendentes</span></button>
+          </div>
+          <Link href="/journey" className="mt-3 block rounded-xl border border-violet-400/25 bg-violet-500/10 p-3 text-center text-xs font-semibold text-violet-100 hover:bg-violet-500/20">Explorar minhas jornadas ↗</Link>
+        </section>
+      </div>
     </main>
   );
 }

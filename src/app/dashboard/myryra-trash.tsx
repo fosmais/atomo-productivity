@@ -31,7 +31,11 @@ export default function MyryraTrash() {
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { void reload(); }, [reload]);
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => { if (active) void reload(); });
+    return () => { active = false; };
+  }, [reload]);
 
   async function restore(item: TrashedItem) {
     setBusy(item.id);

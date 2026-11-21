@@ -20,7 +20,7 @@ export default function GoogleTasksImport() {
   const selected = visible.filter(task => selectedIds.includes(task.listId + ":" + task.id));
 
   async function load() {
-    setBusy(true); setMessage(""); setReconnect(false);
+    setBusy(true); setMessage(""); setReconnect(false); setLoaded(false); setTasks([]); setLists([]); setSelectedIds([]);
     try {
       const response = await fetch("/api/google/tasks", { cache: "no-store" });
       const data = await response.json();

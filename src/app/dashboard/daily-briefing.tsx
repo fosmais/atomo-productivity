@@ -67,7 +67,11 @@ export default function DailyBriefing() {
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => { if (active) void load(); });
+    return () => { active = false; };
+  }, [load]);
 
   return (
     <section className="rounded-2xl border border-violet-500/30 bg-slate-900 p-5 text-white" aria-label="Resumo do dia">

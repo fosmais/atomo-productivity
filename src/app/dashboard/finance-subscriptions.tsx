@@ -63,7 +63,8 @@ export default function FinanceSubscriptions() {
   useEffect(() => {
     let active = true;
     const now = new Date();
-    setAsOf([now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-"));
+    const initialDate = [now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");
+    queueMicrotask(() => { if (active) setAsOf(initialDate); });
     (async () => {
       try {
         const db = createClient();
@@ -189,7 +190,11 @@ export default function FinanceSubscriptions() {
     const key = JSON.stringify({ user: alertUserId, date: asOf, days: alertDays, subscriptions: alertSubscriptions, expenses: alertExpenses, alerts: upcomingAlerts.map(item => item.id + ":" + item.due) });
     if (lastAutoSyncKey.current === key) return;
     lastAutoSyncKey.current = key;
-    if (upcomingAlerts.length > 0) void syncNotifications();
+    let active = true;
+    if (upcomingAlerts.length > 0) {
+      queueMicrotask(() => { if (active) void syncNotifications(); });
+    }
+    return () => { active = false; };
   }, [loading, error, alertUserId, asOf, alertDays, alertSubscriptions, alertExpenses, upcomingAlerts]);
   const markNotificationRead = async (id: string) => {
     if (!alertUserId) return;

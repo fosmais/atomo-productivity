@@ -27,6 +27,10 @@ function formatTime(date: Date, timeZone: string) {
   }).format(date);
 }
 
+function isExpiredReservation(start: number, end: number): boolean {
+  return start <= Date.now() || end <= start;
+}
+
 export default function AutoPilot() {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);
@@ -128,7 +132,7 @@ export default function AutoPilot() {
         : [];
       const start = item.start.getTime();
       const end = item.end.getTime();
-      if (start <= Date.now() || end <= start) throw new Error("Horário expirado. Gere uma nova prévia.");
+      if (isExpiredReservation(start, end)) throw new Error("Horário expirado. Gere uma nova prévia.");
       if (existing.some((event) =>
         event.title === `AutoPilot · ${item.title}` &&
         new Date(event.startsAt).getTime() === start
@@ -154,7 +158,7 @@ export default function AutoPilot() {
       });
       if (reservationError) {
         if (reservationError.code === "PGRST202" || reservationError.code === "42883") {
-          throw new Error("A confirmação segura ainda não está disponível. É necessário aplicar a migração 28.9 no Supabase.");
+          throw new Error("A reserva segura não está disponível neste ambiente. Verifique se as migrações do AutoPilot foram aplicadas.");
         }
         throw new Error(reservationError.message);
       }

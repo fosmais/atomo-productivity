@@ -16,9 +16,14 @@ function applyTheme(value: Theme) {
 export default function ThemePreferences() {
   const [theme, setTheme] = useState<Theme>("violet");
   useEffect(() => {
-    let saved: Theme = "violet";
-    try { const value = localStorage.getItem(key); if (value && value in colors) saved = value as Theme; } catch { /* optional */ }
-    setTheme(saved); applyTheme(saved);
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      let saved: Theme = "violet";
+      try { const value = localStorage.getItem(key); if (value && value in colors) saved = value as Theme; } catch { /* optional */ }
+      setTheme(saved); applyTheme(saved);
+    });
+    return () => { active = false; };
   }, []);
   return <div className="space-y-3 rounded-xl border border-white/15 bg-slate-900/75 p-4">
     <h3 className="font-semibold text-white">Aparência da tela</h3>

@@ -21,7 +21,36 @@ export async function proxy(request: NextRequest) {
     destination.port = "";
     return NextResponse.redirect(destination, 308);
   }
-  return updateSession(request);
+  try {
+    return await updateSession(request);
+  } catch (cause) {
+    // A session refresh failure happens before the route handler runs.
+    // API clients must receive JSON rather than a Next.js HTML error page.
+    console.error("[auth-proxy] session_refresh_failed", {
+      path: pathname.startsWith("/api/") ? "api" : "page",
+      category: cause instanceof Error ? cause.name : "unknown",
+    });
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json(
+        { error: "Não foi possível verificar sua sessão. Tente novamente em instantes." },
+        { status: 503, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+    // An expired/revoked refresh token should not crash a protected page.
+    // Redirect only protected dashboard navigations; never redirect login or
+    // API requests, which would create loops or break JSON clients.
+    const authCode = cause && typeof cause === "object" && "code" in cause
+      ? (cause as { code?: unknown }).code : undefined;
+    if (authCode === "refresh_token_not_found" &&
+        (pathname === "/dashboard" || pathname.startsWith("/dashboard/"))) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = "/login";
+      loginUrl.search = "";
+      loginUrl.searchParams.set("session", "expired");
+      return NextResponse.redirect(loginUrl, 307);
+    }
+    throw cause;
+  }
 }
 
 export const config = {

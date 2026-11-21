@@ -164,7 +164,9 @@ export default function SmartSchedulingPanel() {
   }
 
   useEffect(() => {
-    void loadSuggestions();
+    let active = true;
+    queueMicrotask(() => { if (active) void loadSuggestions(); });
+    return () => { active = false; };
   }, [loadSuggestions]);
 
   return (

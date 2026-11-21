@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    const apiKey = process.env.GOOGLE_MAPS_ROUTES_API_KEY ?? process.env.GOOGLE_MAPS_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json(

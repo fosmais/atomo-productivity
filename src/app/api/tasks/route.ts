@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { hasCurrentLegalAcceptance } from "@/lib/privacy/legal-acceptance";
 import { checkConciergeRateLimit } from "@/lib/rate-limit";
 import { validateTaskInput } from "@/lib/task-validation";
 
@@ -45,6 +46,15 @@ export async function POST(request: Request) {
   if (assurance.error) return NextResponse.json({ error: "Verificação de sessão indisponível." }, { status: 503 });
   if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
     return NextResponse.json({ error: "Segundo fator obrigatório.", code: "MFA_REQUIRED" }, { status: 403 });
+  }
+
+  // Require current legal acceptance before processing user text with an AI provider.
+  if (process.env.MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true" &&
+      !(await hasCurrentLegalAcceptance(user.id))) {
+    return NextResponse.json(
+      { error: "Aceite dos documentos legais vigentes necessário.", code: "LEGAL_ACCEPTANCE_REQUIRED" },
+      { status: 403, headers: { "Cache-Control": "private, no-store" } },
+    );
   }
 
   let rateLimit;

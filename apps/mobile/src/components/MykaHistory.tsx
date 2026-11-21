@@ -34,7 +34,11 @@ export function MykaHistory({ userId }: { userId: string }) {
       setError("Histórico indisponível. Confira as permissões e tente novamente.");
     } finally { setLoading(false); }
   }, [userId]);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => { if (active) void load(); });
+    return () => { active = false; };
+  }, [load]);
   async function chooseAttachment() {
     try {
       const selection = await DocumentPicker.getDocumentAsync({
