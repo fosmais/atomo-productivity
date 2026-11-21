@@ -49,7 +49,10 @@ test("MIKA support AI requires explicit enablement and current legal acceptance"
   assert.match(submit, /hasCurrentLegalAcceptance\(user\.id\)/);
   assert.match(submit, /OPENAI_API_KEY/);
   assert.match(submit, /\[\[ESCALATE\]\]/);
-  assert.match(submit, /myka_authorized: false/);
+  assert.match(submit, /myka_authorized: authorizeMika/);
+  assert.match(submit, /input\.authorizeMika === true && category !== "billing"/);
+  assert.match(submit, /&& authorizeMika && category !== "billing"/);
+  assert.match(client, /checked=\{authorizeMika\}/);
   assert.doesNotMatch(submit, /myka_authorized: true/);
   assert.match(submit, /author_type: "myka"/);
   assert.match(submit, /category !== "billing"/);
