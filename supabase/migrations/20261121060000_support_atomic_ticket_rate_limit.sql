@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION public.create_support_ticket_limited(
   p_user_id uuid, p_subject text, p_message text, p_category text, p_authorize_mika boolean DEFAULT false
 )
 RETURNS TABLE(id uuid, subject text, status text, priority text, created_at timestamptz)
-LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
+LANGUAGE plpgsql SECURITY INVOKER SET search_path TO ''
 AS $function$
 DECLARE
   v_hour_count integer;
