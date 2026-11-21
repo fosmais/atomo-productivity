@@ -13,7 +13,8 @@ test("Journey server-write migration grants only the minimum operations to servi
   assert.match(migration, /GRANT UPDATE ON TABLE public\.myryra_journey_missions TO service_role/);
   assert.match(migration, /GRANT INSERT, UPDATE ON TABLE public\.myryra_journey_learning_progress TO service_role/);
   assert.doesNotMatch(migration, /GRANT .* TO (PUBLIC|anon|authenticated)/i);
-  assert.doesNotMatch(migration, /GRANT DELETE|GRANT ALL|GRANT TRUNCATE/i);
+  const executable = migration.split("\n").filter(line => !/^\s*--/.test(line)).join("\n");
+  assert.doesNotMatch(executable, /GRANT DELETE|GRANT ALL|GRANT TRUNCATE/i);
 });
 
 test("Journey server-write migration fails closed when a required table or role is missing", () => {
