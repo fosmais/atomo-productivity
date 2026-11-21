@@ -43,6 +43,7 @@ export default function StagingBootstrapPage() {
       </header>
       <section className="space-y-4 rounded-2xl border border-violet-400/20 bg-slate-900 p-5">
         <h2 className="font-semibold">Contas sintéticas</h2>
+        <button type="button" onClick={() => void refresh()} className="text-sm text-violet-300 underline">Verificar configuração</button>
         <p className="text-sm text-slate-300">A execução exige os segredos do ambiente staging configurados no GitHub Actions. O painel não solicita nem exibe senhas ou tokens.</p>
         <button type="button" disabled={busy || configured !== true} onClick={bootstrap} className="rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">
           {busy ? "Solicitando..." : "Preparar duas contas de teste"}
