@@ -49,11 +49,14 @@ export async function POST(request: Request) {
     if (!body || typeof body !== "object" || Array.isArray(body))
       return NextResponse.json({ error: "Dados inválidos." }, { status: 400, headers });
     const input = body as Record<string, unknown>;
-    if (Object.keys(input).some(key => !["subject", "message", "category"].includes(key)))
+    if (Object.keys(input).some(key => !["subject", "message", "category", "authorizeMika"].includes(key)))
       return NextResponse.json({ error: "Campos não permitidos." }, { status: 400, headers });
     const subject = typeof input.subject === "string" ? input.subject.trim() : "";
     const message = typeof input.message === "string" ? input.message.trim() : "";
     const category = typeof input.category === "string" ? input.category : "general";
+    if (input.authorizeMika !== undefined && typeof input.authorizeMika !== "boolean")
+      return NextResponse.json({ error: "Autorização inválida." }, { status: 400, headers });
+    const authorizeMika = input.authorizeMika === true && category !== "billing";
     if (subject.length < 3 || subject.length > 160 || message.length < 10 || message.length > 1500 || !categories.has(category))
       return NextResponse.json({ error: "Informe assunto e mensagem válidos." }, { status: 400, headers });
 
@@ -70,7 +73,7 @@ export async function POST(request: Request) {
         status: 429, headers: { ...headers, "Retry-After": "3600" }
       });
     const { data: ticket, error: ticketError } = await admin.from("support_tickets").insert({
-      user_id: user.id, subject, message, category, status: "open", priority: "normal", myka_authorized: false
+      user_id: user.id, subject, message, category, status: "open", priority: "normal", myka_authorized: authorizeMika
     }).select("id,subject,status,priority,created_at").single();
     if (ticketError || !ticket) throw new Error("SUPPORT_TICKET_CREATE_FAILED");
 
@@ -100,7 +103,7 @@ export async function POST(request: Request) {
     const emailQueued = !queueError;
 
     let mika = { answered: false, escalated: false };
-    if (process.env.MIKA_SUPPORT_AI_ENABLED === "true" && process.env.OPENAI_API_KEY && category !== "billing") {
+    if (process.env.MIKA_SUPPORT_AI_ENABLED === "true" && process.env.OPENAI_API_KEY && authorizeMika && category !== "billing") {
       try {
         const legalReady = await hasCurrentLegalAcceptance(user.id);
         if (!legalReady) throw new Error("SUPPORT_LEGAL_ACCEPTANCE_REQUIRED");
