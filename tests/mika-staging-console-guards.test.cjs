@@ -29,4 +29,5 @@ test("staging console does not request secrets in the browser", () => {
   assert.doesNotMatch(page, /NEXT_PUBLIC_.*TOKEN/);
   assert.doesNotMatch(page, /type="password"/);
   assert.match(dashboard, /MYRYRA_STAGING_TEST_ADMIN_IDS/);
+  assert.match(dashboard, /NEXT_PUBLIC_SUPABASE_URL === "https:\/\/xanavauqzsrgvdfhcrsm\.supabase\.co"/);
 });
