@@ -136,3 +136,22 @@ test("homologation preflight verifies full application baseline without mutating
   assert.match(preflight, /relrowsecurity/);
   assert.doesNotMatch(preflight, /\b(?:INSERT|UPDATE|DELETE|TRUNCATE|DROP|ALTER|CREATE)\s+(?:TABLE|FROM|INTO|public\.)/i);
 });
+
+test("email worker counts only persisted lease transitions", () => {
+  assert.match(worker, /data: completed, error: updateError/);
+  assert.equal((worker.match(/\.select\("id"\)\.maybeSingle\(\)/g) || []).length, 3);
+  assert.equal((worker.match(/else if \(!completed\) skipped\+\+/g) || []).length, 2);
+  assert.doesNotMatch(worker, /if \(updateError\) failed\+\+; else sent\+\+/);
+});
+
+test("support release preflight checks RPC, authenticated insert, and email lease", () => {
+  const preflight = fs.readFileSync(
+    path.join(__dirname, "../docs/mvp2/support-homologation-baseline-preflight.sql"), "utf8"
+  );
+  assert.match(preflight, /support_release_ready/);
+  assert.match(preflight, /create_support_ticket_limited/);
+  assert.match(preflight, /direct_insert_grant_blocked/);
+  assert.match(preflight, /direct_insert_policy_absent/);
+  assert.match(preflight, /outbox_lease_column/);
+  assert.match(preflight, /acknowledgement_supported/);
+});
