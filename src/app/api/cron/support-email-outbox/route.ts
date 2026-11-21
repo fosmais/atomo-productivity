@@ -22,9 +22,12 @@ export async function GET(request: Request) {
     for (const item of pending ?? []) {
       const nextAttempt = Number(item.attempts ?? 0) + 1;
       if (nextAttempt > 5) {
-        const { error: exhaustedError } = await admin.from("support_email_outbox")
+        let exhausted = admin.from("support_email_outbox")
           .update({ status: "failed", processing_started_at: null, last_error: "Limite de tentativas excedido" })
           .eq("id", item.id).eq("status", item.status).eq("attempts", item.attempts);
+        if (item.status === "processing" && item.processing_started_at)
+          exhausted = exhausted.eq("processing_started_at", item.processing_started_at);
+        const { error: exhaustedError } = await exhausted;
         if (exhaustedError) failed++; else skipped++;
         continue;
       }
