@@ -110,3 +110,10 @@ The current ticket RLS policy includes a historical authenticated INSERT policy,
 - `public.support_email_outbox.processing_started_at` exists in the isolated support homologation database but **does not exist in production**. The worker uses this lease timestamp to atomically claim, recover and complete queued notifications.
 - Production must not enable `MIKA_EMAIL_ENABLED` or the support outbox cron until the reviewed `20261121040000_support_outbox_recovery.sql` migration and subsequent security migrations are applied through the controlled release process, with column presence verified.
 - This is distinct from the missing full-app schema baseline in the isolated branch. Fix both before calling MVP2 integrated validation complete.
+
+## Support RPC availability drift — read-only verification
+
+- The isolated homologation database has `public.create_support_ticket_limited(uuid,text,text,text,boolean)` as `SECURITY INVOKER`, with EXECUTE granted to `service_role` and `postgres` only.
+- Production **does not yet have** this function. The new `/api/support/submit` endpoint calls it directly, so deploying the endpoint without the corresponding versioned migration would fail ticket creation.
+- `public.admin_update_support_ticket(uuid,uuid,text,text)` exists in both databases as `SECURITY INVOKER`, with execution restricted to `service_role` and `postgres`.
+- Release gate: migrate and verify the RPC exists and has the expected grants, ensure authenticated direct INSERT is revoked, ensure `processing_started_at` exists, and execute authenticated E2E creation/rate-limit tests before enabling customer support and email cron in production.
