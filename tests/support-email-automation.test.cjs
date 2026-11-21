@@ -119,3 +119,20 @@ test('support ticket rate limit is transaction-atomic and server-only', () => {
   assert.match(atomicMigration, /GRANT EXECUTE ON FUNCTION public\.create_support_ticket_limited.*TO service_role/);
   assert.doesNotMatch(submit, /from\("support_tickets"\)\.insert/);
 });
+
+test("homologation preflight verifies full application baseline without mutating data", () => {
+  const preflight = fs.readFileSync(
+    path.join(__dirname, "../docs/mvp2/support-homologation-baseline-preflight.sql"),
+    "utf8"
+  );
+  for (const table of [
+    "events", "tasks", "plans", "myryra_finance_entries",
+    "myryra_journeys", "mika_teacher_sessions",
+    "support_tickets", "support_email_outbox",
+  ]) {
+    assert.match(preflight, new RegExp("\\b" + table + "\\b"));
+  }
+  assert.match(preflight, /supabase_migrations\\.schema_migrations/);
+  assert.match(preflight, /relrowsecurity/);
+  assert.doesNotMatch(preflight, /\\b(?:INSERT|UPDATE|DELETE|TRUNCATE|DROP|ALTER|CREATE)\\s+(?:TABLE|FROM|INTO|public\\.)/i);
+});
