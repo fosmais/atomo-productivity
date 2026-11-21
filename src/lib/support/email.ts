@@ -4,7 +4,8 @@ type SupportNotice = { to: string; subject: string; ticketId: string; message: s
 export async function sendSupportEmail(notice: SupportNotice): Promise<{ sent: boolean; reason?: string }> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return { sent: false, reason: "RESEND_API_KEY não configurada" };
-  const url = process.env.NEXT_PUBLIC_SITE_URL || "https://myryra.com";
+  // Transactional emails must never link customers to a Preview deployment.
+  const url = "https://myryra.com";
   try {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
