@@ -11,6 +11,7 @@ test("staging bootstrap API fails closed outside Preview", () => {
   assert.match(api, /process\.env\.VERCEL_ENV !== "preview"/);
   assert.match(api, /MYRYRA_STAGING_TEST_CONSOLE_ENABLED/);
   assert.match(api, /MYRYRA_STAGING_TEST_ADMIN_IDS/);
+  assert.match(api, /NEXT_PUBLIC_SUPABASE_URL !== "https:\/\/xanavauqzsrgvdfhcrsm\.supabase\.co"/);
   assert.match(api, /app_metadata\?\.role === "admin"/);
   assert.match(api, /db\.auth\.getUser\(\)/);
 });
