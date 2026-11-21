@@ -152,7 +152,7 @@ All six `id` columns default to `gen_random_uuid()`. All columns without `?` are
 
 ## Baseline constraints — read-only production catalog
 
-The six missing core tables have **32 local constraints** (including primary keys, foreign keys, uniqueness and checks), verified against the production PostgreSQL catalog without reading customer records.
+The six missing core tables have **30 local constraints** (including primary keys, foreign keys, uniqueness and checks), verified against the production PostgreSQL catalog without reading customer records.
 
 - `events`: 5 constraints; event category one of `work/family/leisure/health/personal/study`, title 1–200 characters, `ends_at > starts_at`, user FK, PK.
 - `tasks`: 6 constraints; same categories, duration null or 5–1440 minutes, status one of `todo/in_progress/waiting/done`, user and plan FKs, PK.
