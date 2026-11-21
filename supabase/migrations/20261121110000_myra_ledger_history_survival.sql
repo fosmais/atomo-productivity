@@ -2,11 +2,13 @@
 -- Backfills immutable source_mission_id before making FK columns nullable.
 -- Staging first. Never apply to PROD without release approval and rollback plan.
 
+ALTER TABLE public.myryra_journey_myra_ledger
+  ADD COLUMN IF NOT EXISTS source_mission_id uuid;
+
 DO $preflight$
 DECLARE
-  v_rows bigint;
-  v_nulls bigint;
   v_duplicates bigint;
+  v_unrecoverable bigint;
 BEGIN
   IF to_regclass('public.myryra_journey_myra_ledger') IS NULL
      OR to_regclass('public.myryra_journeys') IS NULL
@@ -14,37 +16,11 @@ BEGIN
     RAISE EXCEPTION 'MYRA history migration preflight failed: required tables are missing';
   END IF;
 
-  SELECT count(*) INTO v_rows FROM public.myryra_journey_myra_ledger;
-  IF v_rows > 0 AND NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema='public' AND table_name='myryra_journey_myra_ledger'
-      AND column_name='mission_id'
-  ) THEN
-    RAISE EXCEPTION 'MYRA history migration preflight failed: mission_id is missing';
-  END IF;
-
-  IF EXISTS (
-    SELECT 1 FROM public.myryra_journey_myra_ledger
-    WHERE mission_id IS NULL
-  ) AND NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema='public' AND table_name='myryra_journey_myra_ledger'
-      AND column_name='source_mission_id'
-  ) THEN
-    RAISE EXCEPTION 'MYRA history migration cannot infer source_mission_id for an orphaned ledger row';
-  END IF;
-
-  IF EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema='public' AND table_name='myryra_journey_myra_ledger'
-      AND column_name='source_mission_id'
-  ) THEN
-    SELECT count(*) INTO v_nulls
-    FROM public.myryra_journey_myra_ledger
-    WHERE source_mission_id IS NULL AND mission_id IS NULL;
-    IF v_nulls > 0 THEN
-      RAISE EXCEPTION 'MYRA history migration found rows without an immutable mission source';
-    END IF;
+  SELECT count(*) INTO v_unrecoverable
+  FROM public.myryra_journey_myra_ledger
+  WHERE source_mission_id IS NULL AND mission_id IS NULL;
+  IF v_unrecoverable > 0 THEN
+    RAISE EXCEPTION 'MYRA history migration found ledger rows without a recoverable mission source';
   END IF;
 
   SELECT count(*) INTO v_duplicates
@@ -59,9 +35,6 @@ BEGIN
   END IF;
 END;
 $preflight$;
-
-ALTER TABLE public.myryra_journey_myra_ledger
-  ADD COLUMN IF NOT EXISTS source_mission_id uuid;
 
 UPDATE public.myryra_journey_myra_ledger
 SET source_mission_id = mission_id
