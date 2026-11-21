@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       bootstrap_synthetic_accounts:
-        description: 'Create or verify two dedicated synthetic staging Auth accounts before isolation tests'
+        description: 'Bootstrap two synthetic accounts only (Journey fixtures are provisioned separately)'
         required: false
         type: boolean
         default: false
@@ -47,11 +47,12 @@ jobs:
         if: inputs.bootstrap_synthetic_accounts == true
         run: node scripts/mika-two-users-staging.cjs
       - name: Verify two real staging Auth sessions and Journey isolation
+        if: inputs.bootstrap_synthetic_accounts != true
         run: node scripts/journey-auth-isolation-staging.cjs
 
   mika-staging:
     needs: auth-isolation
-    if: inputs.run_mika_concurrency == true
+    if: inputs.run_mika_concurrency == true && inputs.bootstrap_synthetic_accounts != true
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: staging
