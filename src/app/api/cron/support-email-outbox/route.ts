@@ -21,6 +21,13 @@ export async function GET(request: Request) {
     let sent = 0, failed = 0, skipped = 0;
     for (const item of pending ?? []) {
       const nextAttempt = Number(item.attempts ?? 0) + 1;
+      if (nextAttempt > 5) {
+        const { error: exhaustedError } = await admin.from("support_email_outbox")
+          .update({ status: "failed", processing_started_at: null, last_error: "Limite de tentativas excedido" })
+          .eq("id", item.id).eq("status", item.status).eq("attempts", item.attempts);
+        if (exhaustedError) failed++; else skipped++;
+        continue;
+      }
       // Compare-and-set claim prevents two concurrent workers from sending the same row.
       let claim = admin.from("support_email_outbox")
         .update({ status: "processing", attempts: nextAttempt, processing_started_at: new Date().toISOString(), last_error: null })
