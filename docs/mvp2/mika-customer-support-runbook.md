@@ -89,3 +89,10 @@ The current ticket RLS policy includes a historical authenticated INSERT policy,
 - Production has both `public.events` and the index. Isolated branch has neither; `public.tasks` and `public.profiles` are also missing there. The branch is therefore support-schema-only, not full-app homologation.
 - The referenced migration file is not available at that exact path on the working branch or `main`. Before a reset, reconcile Supabase's 45 production migration records with the versioned migration files and restore the schema-creation dependency that must precede the AutoPilot index.
 - Do not bypass the error with `CREATE TABLE events` placeholders or by silently skipping the index; do not merge this branch to production. Once migration provenance and order are fixed, recreate or reset a disposable isolated branch, verify all expected application tables, and repeat RLS, API, outbox, and Android tests.
+
+## Baseline schema gap — verified 2026-11-21
+
+- Read-only count of `public` base tables: production **63**, isolated branch **5**.
+- Production migration history starts at `20261030174834_autopilot_transactional_reservation`, followed by `20261030195840_autopilot_unique_task_reservation_guard`; the latter references `public.events` absent on the branch. No earlier baseline-schema migration is present in the 45-record production migration history.
+- Do not assume replaying those 45 migrations against an empty database can recreate the 63-table production schema. First obtain a sanitized schema-only baseline from the production project through an authorized schema export/CLI process, with no user data, secrets, or production credentials copied into Git. Compare schema dependencies, extensions, RLS, functions and grants before applying to a disposable test environment.
+- Keep the support-only branch out of full-app Preview; its current 5 tables cannot support complete MYRYRA flows. Avoid additional rebases/resets until the missing baseline is recovered and reviewed.
