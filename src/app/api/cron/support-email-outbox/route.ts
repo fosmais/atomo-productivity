@@ -70,17 +70,20 @@ export async function GET(request: Request) {
           })
         : { sent: false, reason: "Destinatário inválido" };
       if (result.sent) {
-        const { error: updateError } = await admin.from("support_email_outbox")
+        const { data: completed, error: updateError } = await admin.from("support_email_outbox")
           .update({ status: "sent", sent_at: new Date().toISOString(), processing_started_at: null, last_error: null })
-          .eq("id", item.id).eq("status", "processing").eq("processing_started_at", leaseStartedAt);
-        if (updateError) failed++; else sent++;
+          .eq("id", item.id).eq("status", "processing").eq("processing_started_at", leaseStartedAt)
+          .select("id").maybeSingle();
+        // A stale worker must not report success after another worker took the lease.
+        if (updateError) failed++; else if (!completed) skipped++; else sent++;
       } else {
         const terminal = nextAttempt >= 5;
         const reason = (result.reason ?? "Falha no envio").slice(0, 300);
-        const { error: updateError } = await admin.from("support_email_outbox")
+        const { data: completed, error: updateError } = await admin.from("support_email_outbox")
           .update({ status: terminal ? "failed" : "pending", processing_started_at: null, last_error: reason })
-          .eq("id", item.id).eq("status", "processing").eq("processing_started_at", leaseStartedAt);
-        if (updateError) failed++; else failed++;
+          .eq("id", item.id).eq("status", "processing").eq("processing_started_at", leaseStartedAt)
+          .select("id").maybeSingle();
+        if (updateError) failed++; else if (!completed) skipped++; else failed++;
       }
     }
     return NextResponse.json({ processed: sent + failed + skipped, sent, failed, skipped }, { headers: { "Cache-Control": "no-store" } });
