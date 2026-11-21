@@ -34,7 +34,8 @@ test("support core migration reproduces the existing ticket schema with owner RL
     assert.match(coreMigration, new RegExp("ALTER TABLE public\\." + table + " ENABLE ROW LEVEL SECURITY"));
   }
   assert.match(coreMigration, /Users read own support tickets/);
-  assert.match(coreMigration, /Users create own support tickets/);
+  assert.match(coreMigration, /REVOKE INSERT, UPDATE, DELETE ON public\.support_tickets FROM authenticated/);
+  assert.doesNotMatch(coreMigration, /CREATE POLICY "Users create own support tickets"/);
   assert.match(coreMigration, /admin_update_support_ticket/);
   assert.match(coreMigration, /support_ticket_audit/);
   assert.match(coreMigration, /GRANT ALL ON public\.support_tickets/);
