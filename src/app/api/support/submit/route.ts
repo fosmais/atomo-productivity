@@ -8,7 +8,7 @@ const headers = { "Cache-Control": "private, no-store" };
 const categories = new Set(["general", "billing"]);
 async function readBoundedJson(request: Request): Promise<unknown> {
   const declared = request.headers.get("content-length");
-  if (declared && /^\\d+$/.test(declared) && Number(declared) > 4096) throw new Error("PAYLOAD_TOO_LARGE");
+  if (declared && /^\d+$/.test(declared) && Number(declared) > 4096) throw new Error("PAYLOAD_TOO_LARGE");
   const reader = request.body?.getReader();
   if (!reader) throw new Error("INVALID_JSON");
   const decoder = new TextDecoder("utf-8", { fatal: true });
