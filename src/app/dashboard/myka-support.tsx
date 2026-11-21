@@ -133,7 +133,7 @@ export default function MykaSupport() {
         : " A solicitação foi encaminhada para continuidade do suporte.";
       const emailMessage = result.emailQueued ? " A equipe também foi notificada por e-mail." : " O chamado foi salvo; a notificação por e-mail está pendente.";
       setStatus("Chamado aberto · protocolo " + protocol + "." + mikaMessage + emailMessage);
-      setSelectedTicket(result.ticket.id);
+      setSelectedTicket(null);
       void loadTickets();
       void viewReplies(result.ticket.id);
       setMessage("");
@@ -174,7 +174,7 @@ export default function MykaSupport() {
               {selectedTicket===ticket.id && <div className="mt-2 space-y-2">{repliesError && <p role="alert">{repliesError}</p>}{!repliesError && replies.length===0 && <p>Ainda não há respostas neste chamado.</p>}{replies.map(reply=><div key={reply.id} className="rounded-lg bg-slate-900 p-2"><p className="text-violet-200">Equipe MYRYRA · {new Date(reply.created_at).toLocaleString("pt-BR")}</p><p className="mt-1 whitespace-pre-wrap break-words">{reply.body}</p></div>)}</div>}
             </div>)}
           </div>
-          <p className="text-xs text-slate-400">Ajuda guiada inicial, sem chat com IA nesta versão. Não envie senhas, dados bancários ou chaves.</p>
+          <p className="text-xs text-slate-400">A MIKA pode orientar dúvidas simples quando habilitada. Casos sensíveis são encaminhados à equipe humana. Não envie senhas, dados bancários ou chaves.</p>
         </div>
       </div>
     </section>}
