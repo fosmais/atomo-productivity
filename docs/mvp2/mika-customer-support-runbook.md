@@ -20,7 +20,10 @@ Keep the AI flag disabled until the isolated Preview passes the acceptance suite
 Vercel Cron calls `/api/cron/support-email-outbox` every five minutes. The endpoint:
 - requires `Authorization: Bearer <CRON_SECRET>`;
 - is disabled unless `MIKA_EMAIL_ENABLED=true` and `RESEND_API_KEY` are present;
-- claims pending rows with a compare-and-set status update;\n- sends customer acknowledgements only to verified account email addresses;\n- uses Resend idempotency keys so retries of the same outbox row do not send duplicates;\n- recovers claims abandoned for more than ten minutes using a processing timestamp;
+- claims pending rows with a compare-and-set status update;
+- sends customer acknowledgements only to verified account email addresses;
+- uses Resend idempotency keys so retries of the same outbox row do not send duplicates;
+- recovers claims abandoned for more than ten minutes using a processing timestamp;
 - retries provider failures up to five attempts;
 - records sent/failed status without logging message contents or credentials.
 
@@ -35,7 +38,7 @@ Vercel Cron calls `/api/cron/support-email-outbox` every five minutes. The endpo
 ## Operational validation
 
 1. Submit a synthetic ticket in Preview.
-2. Confirm one `support_tickets` row and one `ticket_created` outbox row.
+2. Confirm one `support_tickets` row, one `ticket_created` outbox row and, when the account email is verified, one `ticket_acknowledgement` row.
 3. Call the cron endpoint with a synthetic secret and verify unauthorized requests return 401.
 4. With email disabled, verify the worker reports disabled and does not mutate the queue.
 5. With a valid Resend test key, verify one email, one sent row, and no duplicate on the next run.
