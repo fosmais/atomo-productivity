@@ -49,7 +49,7 @@ export async function GET(request: Request) {
             "",
             message.slice(0, 1500)
           ].join("\n");
-      const result = /^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(recipient)
+      const result = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)
         ? await sendSupportEmail({
             to: recipient,
             subject: typeof item.subject === "string" ? item.subject.slice(0, 180) : "[MYRYRA] Novo atendimento",
