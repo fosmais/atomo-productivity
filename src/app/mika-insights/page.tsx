@@ -276,14 +276,14 @@ export default function MikaInsightsPage() {
         <h1 className="text-2xl font-semibold">MIKA Insights</h1>
         <p className="text-sm opacity-70">Capture uma ideia agora. Decida o próximo passo depois.</p>
       </header>
-      <section className="space-y-3 rounded-2xl border p-4" aria-label="Nova ideia">
+      <section className="space-y-3 rounded-2xl border border-violet-400/20 bg-[#101b30]/90 p-4 shadow-xl shadow-violet-950/10" aria-label="Nova ideia">
         <label htmlFor="idea-content" className="block font-medium">O que veio à sua mente?</label>
         <textarea id="idea-content" value={draft} maxLength={10000} rows={4} disabled={recording || transcribing}
           onChange={(event) => { const value = event.target.value; setDraft(value); if (!value.trim()) setVoiceDraft(false); }}
-          className="w-full rounded-xl border bg-transparent p-3"
+          className="w-full rounded-xl border border-violet-400/25 bg-[#081321] p-3 text-slate-100 placeholder:text-slate-500 focus:border-violet-400 focus:outline-none"
           placeholder="Escreva sua ideia..." />
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <button type="button" disabled={busy || transcribing} onClick={recording ? stopRecording : startRecording} className="rounded-xl border px-3 py-2 text-sm disabled:opacity-50">{recording ? "Parar gravação" : transcribing ? "Transcrevendo..." : "Gravar ideia por voz"}</button>
+          <button type="button" disabled={busy || transcribing} onClick={recording ? stopRecording : startRecording} className="rounded-xl border border-violet-400/30 bg-violet-400/10 px-3 py-2 text-sm text-violet-100 hover:bg-violet-400/20 disabled:opacity-50">{recording ? "Parar gravação" : transcribing ? "Transcrevendo..." : "Gravar ideia por voz"}</button>
           <span role="status" aria-live="polite" className="text-xs opacity-70">{recording ? "Microfone ativo. A gravação termina automaticamente após 60 segundos." : transcribing ? "Processando áudio. Aguarde a transcrição." : "Data e hora serão registradas ao salvar."}</span>
           <button type="button" disabled={busy || recording || transcribing || !draft.trim()} onClick={save}
             className="rounded-xl bg-violet-700 px-4 py-2 text-white disabled:opacity-50">
@@ -292,36 +292,36 @@ export default function MikaInsightsPage() {
         </div>
         <p className="text-xs opacity-70">Ao gravar, seu áudio será enviado ao serviço de IA para transcrição. Revise o texto antes de salvar. O áudio não é armazenado no histórico de ideias.</p>
       </section>
-      {error && <p role="alert" className="text-red-600">{error}</p>}
+      {error && <p role="alert" className="text-red-300">{error}</p>}
       {notice && <p role="status">{notice}</p>}
       <section className="space-y-3" aria-label="Minhas ideias">
-        <div className="flex items-center justify-between gap-2"><h2 className="text-lg font-semibold">Minhas ideias</h2><button type="button" onClick={() => setShowArchived(!showArchived)} className="rounded-lg border px-3 py-1 text-sm">{showArchived ? "Ver ativas" : "Ver arquivadas"}</button></div>
+        <div className="flex items-center justify-between gap-2"><h2 className="text-lg font-semibold">Minhas ideias</h2><button type="button" onClick={() => setShowArchived(!showArchived)} className="rounded-lg border border-violet-400/25 bg-white/5 px-3 py-1 text-sm text-slate-100 hover:bg-violet-400/10">{showArchived ? "Ver ativas" : "Ver arquivadas"}</button></div>
         <input aria-label="Pesquisar ideias" value={search} onChange={(e) => setSearch(e.target.value)}
-          placeholder="Pesquisar..." className="w-full rounded-xl border bg-transparent p-3" />
+          placeholder="Pesquisar..." className="w-full rounded-xl border border-violet-400/25 bg-[#081321] p-3 text-slate-100 placeholder:text-slate-500 focus:border-violet-400 focus:outline-none" />
         {visible.length === 0 && <p className="text-sm opacity-70">Nenhuma ideia encontrada.</p>}
         {visible.map((idea) => (
-          <article key={idea.id} className="space-y-2 rounded-2xl border p-4">
+          <article key={idea.id} className="space-y-2 rounded-2xl border border-violet-400/20 bg-[#101b30]/90 p-4">
             <time className="text-xs opacity-60" dateTime={idea.created_at}>
               {new Date(idea.created_at).toLocaleString("pt-BR")}
             </time>
             {editingId === idea.id ? (
-              <div className="space-y-2"><textarea aria-label="Editar ideia" maxLength={10000} rows={4} value={editContent} onChange={(e) => setEditContent(e.target.value)} className="w-full rounded-xl border bg-transparent p-3" /><div className="flex gap-2"><button type="button" disabled={busy || !editContent.trim()} onClick={() => updateIdea(idea.id)} className="rounded-lg border px-3 py-1 text-sm">Salvar</button><button type="button" disabled={busy} onClick={() => setEditingId(null)} className="rounded-lg border px-3 py-1 text-sm">Cancelar</button></div></div>
+              <div className="space-y-2"><textarea aria-label="Editar ideia" maxLength={10000} rows={4} value={editContent} onChange={(e) => setEditContent(e.target.value)} className="w-full rounded-xl border border-violet-400/25 bg-[#081321] p-3 text-slate-100 placeholder:text-slate-500 focus:border-violet-400 focus:outline-none" /><div className="flex gap-2"><button type="button" disabled={busy || !editContent.trim()} onClick={() => updateIdea(idea.id)} className="rounded-lg border border-violet-400/25 bg-white/5 px-3 py-1 text-sm text-slate-100 hover:bg-violet-400/10">Salvar</button><button type="button" disabled={busy} onClick={() => setEditingId(null)} className="rounded-lg border border-violet-400/25 bg-white/5 px-3 py-1 text-sm text-slate-100 hover:bg-violet-400/10">Cancelar</button></div></div>
             ) : <p className="whitespace-pre-wrap break-words">{idea.content}</p>}
             <div className="flex flex-wrap gap-2">
               <button type="button" disabled={busy || editingId === idea.id || idea.status === "archived"} onClick={() => suggestPlan(idea)} className="rounded-lg border border-violet-500 px-3 py-1 text-sm disabled:opacity-50">MIKA: sugerir plano</button>
-              <button type="button" disabled={busy} onClick={() => { setSuggestions((previous) => { const next = { ...previous }; delete next[idea.id]; return next; }); setEditingId(idea.id); setEditContent(idea.content); }} className="rounded-lg border px-3 py-1 text-sm disabled:opacity-50">Editar</button>
-              {!showArchived && <button type="button" disabled={busy} onClick={() => setArchived(idea.id, true)} className="rounded-lg border px-3 py-1 text-sm disabled:opacity-50">Arquivar</button>}
-              {showArchived && <button type="button" disabled={busy} onClick={() => setArchived(idea.id, false)} className="rounded-lg border px-3 py-1 text-sm disabled:opacity-50">Restaurar</button>}
-              <button type="button" disabled={busy} onClick={() => removeIdea(idea.id)} className="rounded-lg border px-3 py-1 text-sm text-red-600 disabled:opacity-50">Excluir</button>
+              <button type="button" disabled={busy} onClick={() => { setSuggestions((previous) => { const next = { ...previous }; delete next[idea.id]; return next; }); setEditingId(idea.id); setEditContent(idea.content); }} className="rounded-lg border border-violet-400/25 bg-white/5 px-3 py-1 text-sm text-slate-100 hover:bg-violet-400/10 disabled:opacity-50">Editar</button>
+              {!showArchived && <button type="button" disabled={busy} onClick={() => setArchived(idea.id, true)} className="rounded-lg border border-violet-400/25 bg-white/5 px-3 py-1 text-sm text-slate-100 hover:bg-violet-400/10 disabled:opacity-50">Arquivar</button>}
+              {showArchived && <button type="button" disabled={busy} onClick={() => setArchived(idea.id, false)} className="rounded-lg border border-violet-400/25 bg-white/5 px-3 py-1 text-sm text-slate-100 hover:bg-violet-400/10 disabled:opacity-50">Restaurar</button>}
+              <button type="button" disabled={busy} onClick={() => removeIdea(idea.id)} className="rounded-lg border border-red-400/30 px-3 py-1 text-sm text-red-300 hover:bg-red-400/10 disabled:opacity-50">Excluir</button>
             </div>
             {editingId !== idea.id && idea.proposed_plan?.tasks && !suggestions[idea.id] && (
-              <section aria-label="Plano salvo" className="space-y-2 rounded-xl border p-3">
+              <section aria-label="Plano salvo" className="space-y-2 rounded-xl border border-violet-400/20 bg-[#081321]/60 p-3">
                 <h3 className="font-medium">Plano salvo</h3>
                 <p className="text-xs opacity-70">Salvo apenas nesta ideia. Nenhuma tarefa foi criada ou agendada.</p>
                 <ol className="list-decimal space-y-1 pl-5">{idea.proposed_plan.tasks.map((task, index) => <li key={index} className="text-sm">{task.title} — {task.priority}{task.dueDate ? ` · ${task.dueDate}` : ""}</li>)}</ol>
               </section>
             )}
-            {editingId !== idea.id && idea.status !== "archived" && suggestions[idea.id] && <section aria-label="Plano sugerido pela MIKA" className="space-y-2 rounded-xl border p-3"><h3 className="font-medium">Plano sugerido — apenas para revisão</h3><p className="text-xs opacity-70">Nenhuma tarefa foi criada ou agendada. Revise antes de executar.</p><ol className="list-decimal space-y-1 pl-5">{suggestions[idea.id].map((task, index) => <li key={index} className="text-sm">{task.title} — {task.priority}{task.dueDate ? ` · ${task.dueDate}` : ""}</li>)}</ol><div className="flex flex-wrap gap-2"><button type="button" disabled={busy} onClick={() => saveSuggestedPlan(idea)} className="rounded-lg bg-violet-700 px-3 py-1 text-sm text-white disabled:opacity-50">Salvar plano na ideia</button><button type="button" disabled={busy} onClick={() => setSuggestions((previous) => { const next = { ...previous }; delete next[idea.id]; return next; })} className="rounded-lg border px-3 py-1 text-sm">Descartar sugestão</button></div></section>}
+            {editingId !== idea.id && idea.status !== "archived" && suggestions[idea.id] && <section aria-label="Plano sugerido pela MIKA" className="space-y-2 rounded-xl border border-violet-400/20 bg-[#081321]/60 p-3"><h3 className="font-medium">Plano sugerido — apenas para revisão</h3><p className="text-xs opacity-70">Nenhuma tarefa foi criada ou agendada. Revise antes de executar.</p><ol className="list-decimal space-y-1 pl-5">{suggestions[idea.id].map((task, index) => <li key={index} className="text-sm">{task.title} — {task.priority}{task.dueDate ? ` · ${task.dueDate}` : ""}</li>)}</ol><div className="flex flex-wrap gap-2"><button type="button" disabled={busy} onClick={() => saveSuggestedPlan(idea)} className="rounded-lg bg-violet-700 px-3 py-1 text-sm text-white disabled:opacity-50">Salvar plano na ideia</button><button type="button" disabled={busy} onClick={() => setSuggestions((previous) => { const next = { ...previous }; delete next[idea.id]; return next; })} className="rounded-lg border border-violet-400/25 bg-white/5 px-3 py-1 text-sm text-slate-100 hover:bg-violet-400/10">Descartar sugestão</button></div></section>}
           </article>
         ))}
       </section>
