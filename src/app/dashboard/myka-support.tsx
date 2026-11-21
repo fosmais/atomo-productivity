@@ -28,7 +28,7 @@ export default function MykaSupport() {
   const [tickets, setTickets] = useState<Array<{ id: string; subject: string; status: string; priority: string; updated_at: string; created_at: string }>>([]);
   const [ticketsNotice, setTicketsNotice] = useState("");
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
-  const [replies, setReplies] = useState<Array<{ id:string;body:string;created_at:string }>>([]);
+  const [replies, setReplies] = useState<Array<{ id:string;body:string;created_at:string;author_type:string }>>([]);
   const [repliesError, setRepliesError] = useState("");
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [error, setError] = useState("");
@@ -96,7 +96,7 @@ export default function MykaSupport() {
     setSelectedTicket(ticketId);setReplies([]);setRepliesError("");
     try {
       const response=await fetch("/api/support/replies?ticket="+encodeURIComponent(ticketId),{cache:"no-store"});
-      const result=await response.json() as {replies?:Array<{id:string;body:string;created_at:string}>;error?:string};
+      const result=await response.json() as {replies?:Array<{id:string;body:string;created_at:string;author_type:string}>;error?:string};
       if(!response.ok) throw new Error(result.error||"Não foi possível carregar as respostas.");
       setReplies(result.replies??[]);
     }catch(err){setRepliesError(err instanceof Error?err.message:"Consulta indisponível.");}
@@ -131,7 +131,7 @@ export default function MykaSupport() {
       const mikaMessage = result.mika?.answered
         ? " A MIKA já preparou uma orientação; consulte as respostas do chamado."
         : " A solicitação foi encaminhada para continuidade do suporte.";
-      const emailMessage = result.emailQueued ? " A equipe também foi notificada por e-mail." : " O chamado foi salvo; a notificação por e-mail está pendente.";
+      const emailMessage = result.emailQueued ? " A notificação para a equipe foi colocada na fila de e-mails." : " O chamado foi salvo; a notificação por e-mail está pendente.";
       setStatus("Chamado aberto · protocolo " + protocol + "." + mikaMessage + emailMessage);
       setSelectedTicket(null);
       void loadTickets();
@@ -171,7 +171,7 @@ export default function MykaSupport() {
               <p className="font-medium text-white">{ticket.subject} · {ticket.id.slice(0, 8).toUpperCase()}</p>
               <p>Status: {({ open: "Aberto", in_progress: "Em análise", resolved: "Resolvido", closed: "Encerrado" } as Record<string,string>)[ticket.status] ?? "Em verificação"} · Prioridade: {({ low: "Baixa", normal: "Normal", high: "Alta", urgent: "Urgente" } as Record<string,string>)[ticket.priority] ?? "Normal"} · {new Date(ticket.created_at).toLocaleDateString("pt-BR")}</p>
               <button type="button" className="mt-2 text-violet-200 underline" onClick={()=>void viewReplies(ticket.id)}>{selectedTicket===ticket.id?"Ocultar respostas":"Ver respostas do suporte"}</button>
-              {selectedTicket===ticket.id && <div className="mt-2 space-y-2">{repliesError && <p role="alert">{repliesError}</p>}{!repliesError && replies.length===0 && <p>Ainda não há respostas neste chamado.</p>}{replies.map(reply=><div key={reply.id} className="rounded-lg bg-slate-900 p-2"><p className="text-violet-200">Equipe MYRYRA · {new Date(reply.created_at).toLocaleString("pt-BR")}</p><p className="mt-1 whitespace-pre-wrap break-words">{reply.body}</p></div>)}</div>}
+              {selectedTicket===ticket.id && <div className="mt-2 space-y-2">{repliesError && <p role="alert">{repliesError}</p>}{!repliesError && replies.length===0 && <p>Ainda não há respostas neste chamado.</p>}{replies.map(reply=><div key={reply.id} className="rounded-lg bg-slate-900 p-2"><p className="text-violet-200">{reply.author_type === "myka" ? "MIKA · resposta automática" : "Equipe MYRYRA · atendimento humano"} · {new Date(reply.created_at).toLocaleString("pt-BR")}</p><p className="mt-1 whitespace-pre-wrap break-words">{reply.body}</p></div>)}</div>}
             </div>)}
           </div>
           <p className="text-xs text-slate-400">A MIKA pode orientar dúvidas simples quando habilitada. Casos sensíveis são encaminhados à equipe humana. Não envie senhas, dados bancários ou chaves.</p>
