@@ -99,3 +99,10 @@ test("support widget sends through the authenticated server route", () => {
   assert.doesNotMatch(client, /from\("support_tickets"\)\.insert/);
   assert.match(client, /setSelectedTicket\(null\);\s*void loadTickets\(\);\s*void viewReplies\(result\.ticket\.id\)/);
 });
+
+test('email outbox completion is scoped to the active worker lease', () => {
+  const worker = fs.readFileSync(path.join(__dirname, '../src/app/api/cron/support-email-outbox/route.ts'), 'utf8');
+  assert.match(worker, /const leaseStartedAt = new Date\(\)\.toISOString\(\)/);
+  assert.match(worker, /processing_started_at: leaseStartedAt/);
+  assert.equal((worker.match(/\.eq\("processing_started_at", leaseStartedAt\)/g) || []).length, 2);
+});
