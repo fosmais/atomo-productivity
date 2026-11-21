@@ -100,9 +100,10 @@ export async function POST(request: Request) {
     const emailQueued = !queueError;
 
     let mika = { answered: false, escalated: false };
-    const legalReady = await hasCurrentLegalAcceptance(user.id);
-    if (process.env.MIKA_SUPPORT_AI_ENABLED === "true" && process.env.OPENAI_API_KEY && legalReady) {
+    if (process.env.MIKA_SUPPORT_AI_ENABLED === "true" && process.env.OPENAI_API_KEY && category !== "billing") {
       try {
+        const legalReady = await hasCurrentLegalAcceptance(user.id);
+        if (!legalReady) throw new Error("SUPPORT_LEGAL_ACCEPTANCE_REQUIRED");
         const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 12000, maxRetries: 1 });
         const response = await openai.responses.create({
           model: process.env.MIKA_SUPPORT_MODEL || "gpt-4.1-mini",
