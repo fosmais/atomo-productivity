@@ -53,12 +53,28 @@ function assertNoRowsOrDenied(result, label) {
 (async () => {
   let a, b;
   const cleanup = { entries: [], subscriptions: [] };
+  let originalBalance = null;
+  let balanceRead = false;
   try {
     [a, b] = await Promise.all([
       signIn(env.FINANCE_TEST_EMAIL, env.FINANCE_TEST_PASSWORD),
       signIn(env.FINANCE_TEST_OTHER_EMAIL, env.FINANCE_TEST_OTHER_PASSWORD),
     ]);
     assert.notEqual(a.user.id, b.user.id, "Two distinct Auth identities are required");
+
+    const { data: priorBalance, error: priorBalanceError } = await a.client.from("myryra_finance_balances")
+      .select("opening_balance_cents").eq("user_id", a.user.id).maybeSingle();
+    if (priorBalanceError) throw priorBalanceError;
+    originalBalance = priorBalance?.opening_balance_cents ?? null;
+    balanceRead = true;
+    const { data: savedBalance, error: balanceSaveError } = await a.client.from("myryra_finance_balances")
+      .upsert({ user_id: a.user.id, opening_balance_cents: 54321 }, { onConflict: "user_id" })
+      .select("user_id,opening_balance_cents").single();
+    if (balanceSaveError) throw balanceSaveError;
+    assert.equal(savedBalance.opening_balance_cents, 54321, "owner opening balance must persist");
+    const foreignBalance = await b.client.from("myryra_finance_balances")
+      .select("user_id").eq("user_id", a.user.id);
+    assertNoRowsOrDenied(foreignBalance, "cross-user opening balance SELECT");
 
     const tag = "[MYRYRA-FINANCE-STAGING-TEST] " + crypto.randomUUID();
     const { data: entry, error: entryError } = await a.client.from("myryra_finance_entries")
@@ -143,6 +159,7 @@ function assertNoRowsOrDenied(result, label) {
       result: "PASS",
       checks: [
         "two distinct Supabase Auth users",
+        "owner opening-balance save and cross-user balance isolation",
         "cross-user entry/subscription reads denied",
         "cross-user entry/subscription updates denied",
         "owner entry edit persisted in integer cents",
@@ -153,6 +170,11 @@ function assertNoRowsOrDenied(result, label) {
     }, null, 2));
   } finally {
     if (a) {
+      if (balanceRead) {
+        const { error } = await a.client.from("myryra_finance_balances")
+          .upsert({ user_id: a.user.id, opening_balance_cents: originalBalance ?? 0 }, { onConflict: "user_id" });
+        if (error) throw new Error("Could not restore synthetic opening balance");
+      }
       for (const id of cleanup.entries) await a.client.from("myryra_finance_entries").delete().eq("id", id).eq("user_id", a.user.id);
       for (const id of cleanup.subscriptions) await a.client.from("myryra_finance_subscriptions").delete().eq("id", id).eq("user_id", a.user.id);
       await a.client.auth.signOut();
