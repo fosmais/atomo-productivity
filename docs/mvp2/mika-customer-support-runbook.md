@@ -31,7 +31,7 @@ Vercel Cron calls `/api/cron/support-email-outbox` every five minutes. The endpo
 
 - Customer tickets are created server-side from the authenticated session; client-supplied user IDs are rejected.
 - The follow-up migration `20261121050000_support_server_only_ticket_creation.sql` removes direct INSERT/UPDATE/DELETE grants for authenticated users and drops the former INSERT policy, including on databases where the core migration was already applied. Verify this behavior in an isolated branch before production migration.
-- The support throttle is independent from MIKA/Concierge AI quotas (5 tickets/hour and 10/day).
+- The support throttle is independent from MIKA/Concierge AI quotas (5 tickets/hour and 10/day). Migration `20261121060000_support_atomic_ticket_rate_limit.sql` installs the server-only `create_support_ticket_limited` RPC with a transaction-scoped per-user advisory lock, preventing concurrent requests from bypassing limits. The route requires this migration; without it, ticket creation fails closed with HTTP 503.
 - The AI is restricted to basic product guidance. Account, security, billing, refunds, personal-data and out-of-scope cases are escalated.
 - The AI receives ticket text only after checking current legal acceptance.
 - No production environment flags should be enabled until Preview verification is complete.
@@ -57,3 +57,10 @@ The customer-support Preview branch currently uses deliberately invalid Supabase
 A read-only inspection of the existing MYRYRA Supabase production database confirmed the presence of `support_tickets`, `support_ticket_replies` and `support_email_outbox`. The current outbox event-type constraint allows `feedback_created` and `ticket_created` only; migration `20261121040000_support_outbox_recovery.sql` is therefore necessary before queuing `ticket_acknowledgement` messages. The existing outbox does not yet contain `processing_started_at`.
 
 The current ticket RLS policy includes a historical authenticated INSERT policy, but a query of role-table grants did not return a corresponding authenticated INSERT grant. The server-only migration removes both permission paths defensively. This audit did not execute migrations or change production data. Validate the migration sequence on an isolated branch before promotion.
+
+## Verification checkpoint — 2026-11-21
+
+- Preview deployment `dpl_5a4DMsJuHJviJX3mXKv2PtQTiZBt` is READY after a successful build; the preceding deployment had 226/226 Node tests pass but failed TypeScript checking, which was corrected.
+- All three existing Supabase homologation branches (`dzxyflpihdoizdiurnud`, `vzgahbceixjrdlqdtwoy`, `xanavauqzsrgvdfhcrsm`) report `MIGRATIONS_FAILED`. Read-only SQL confirmed that none contains `public.support_tickets`, `public.support_email_outbox`, or `public.create_support_ticket_limited`.
+- Do not repurpose these branches or point Preview at production. Create a dedicated isolated support branch only after the required cost confirmation; apply support migrations in ascending order and test with synthetic users.
+- The branch's automated tests currently verify source-level invariants, not real concurrent database transactions or Resend delivery. Those remain release blockers.
