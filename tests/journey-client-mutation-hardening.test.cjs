@@ -24,7 +24,8 @@ test("Journey physical-delete policies are removed while archive remains server-
   assert.match(migration, /DROP POLICY IF EXISTS missions_delete_owner ON public\.myryra_journey_missions/);
   const route = fs.readFileSync(path.join(__dirname, "../src/app/api/journeys/[journeyId]/route.ts"), "utf8");
   assert.match(route, /updates\.status = "archived"/);
-  assert.match(route, /const admin = createSupabaseAdmin\(\)/);\n  assert.match(route, /admin\.from\("myryra_journeys"\)\.update\(updates\)/);
+  assert.match(route, /const admin = createSupabaseAdmin\(\)/);
+  assert.match(route, /admin\.from\("myryra_journeys"\)\.update\(updates\)/);
   assert.doesNotMatch(route, /\.delete\s*\(/);
 });
 
