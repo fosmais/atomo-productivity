@@ -1,5 +1,5 @@
 const FROM = "MYRYRA Support <support@myryra.com>";
-type SupportNotice = { to: string; subject: string; ticketId: string; message: string };
+type SupportNotice = { to: string; subject: string; ticketId: string; message: string; idempotencyKey?: string };
 
 export async function sendSupportEmail(notice: SupportNotice): Promise<{ sent: boolean; reason?: string }> {
   const apiKey = process.env.RESEND_API_KEY;
@@ -8,7 +8,7 @@ export async function sendSupportEmail(notice: SupportNotice): Promise<{ sent: b
   try {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", ...(notice.idempotencyKey ? { "Idempotency-Key": notice.idempotencyKey } : {}) },
       body: JSON.stringify({
         from: FROM,
         to: [notice.to],
