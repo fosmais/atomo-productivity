@@ -41,3 +41,8 @@ Vercel Cron calls `/api/cron/support-email-outbox` every five minutes. The endpo
 5. With a valid Resend test key, verify one email, one sent row, and no duplicate on the next run.
 6. Enable MIKA AI only in isolated Preview and test a known FAQ, an out-of-scope billing request, missing consent, and provider timeout.
 7. Verify cross-user reads are denied and production flags remain unchanged.
+
+
+## Isolated Preview guard
+
+The customer-support Preview branch currently uses deliberately invalid Supabase URL, publishable-key and admin-key placeholders. This prevents the Preview from inheriting the shared production Supabase environment. Replace these three values only after a dedicated Supabase homologation branch exists and its support schema is verified. Keep email and MIKA AI feature flags set to `false` until synthetic end-to-end checks pass.
