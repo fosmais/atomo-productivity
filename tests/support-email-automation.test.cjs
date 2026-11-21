@@ -191,3 +191,9 @@ test("out-of-order ticket list refresh cannot overwrite newer data", () => {
 test("failed ticket access clears cached support data", () => {
   assert.match(client, /setTickets\(\[\]\); setSelectedTicket\(null\); setReplies\(\[\]\); \+\+repliesRequestId\.current/);
 });
+
+test("reply loading state does not incorrectly announce an empty history", () => {
+  assert.match(client, /setLoadingReplies\(true\)/);
+  assert.match(client, /requestId === repliesRequestId\.current\) setLoadingReplies\(false\)/);
+  assert.match(client, /!loadingReplies && !repliesError && replies\.length===0/);
+});
