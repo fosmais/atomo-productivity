@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export const dynamic = "force-dynamic";
 const owner = "fosmais";
 const repo = "atomo-productivity";
 const branch = "feat/mvp2-professora-journey-myra-26";
