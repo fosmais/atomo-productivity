@@ -21,6 +21,10 @@ test("Finance staging integration verifies two distinct authenticated synthetic 
   assert.match(script, /cross-user subscription SELECT/);
   assert.match(script, /cross-user entry UPDATE/);
   assert.match(script, /cross-user subscription UPDATE/);
+  assert.match(script, /myryra_finance_balances/);
+  assert.match(script, /opening_balance_cents: 54321/);
+  assert.match(script, /cross-user opening balance SELECT/);
+  assert.match(script, /originalBalance \?\? 0/);
 });
 
 test("Finance staging integration exercises owner edits, soft delete and restore", () => {
