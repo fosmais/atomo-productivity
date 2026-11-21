@@ -108,6 +108,11 @@ test('email outbox completion is scoped to the active worker lease', () => {
 
 test('support ticket rate limit is transaction-atomic and server-only', () => {
   assert.match(atomicMigration, /pg_advisory_xact_lock/);
+  assert.match(atomicMigration, /SECURITY INVOKER/);
+  assert.doesNotMatch(atomicMigration, /SECURITY DEFINER/);
+  assert.doesNotMatch(atomicMigration, /FROM auth\.users/);
+  assert.match(atomicMigration, /REVOKE ALL ON public\.support_tickets FROM anon, authenticated/);
+  assert.match(atomicMigration, /GRANT SELECT ON public\.support_tickets TO authenticated/);
   assert.match(atomicMigration, /v_hour_count >= 5 OR v_day_count >= 10/);
   assert.match(atomicMigration, /SUPPORT_RATE_LIMIT_EXCEEDED/);
   assert.match(atomicMigration, /REVOKE ALL ON FUNCTION public\.create_support_ticket_limited.*FROM PUBLIC, anon, authenticated/);
