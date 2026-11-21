@@ -36,7 +36,8 @@ test("support email worker requires cron secret and explicit email enablement", 
   assert.match(worker, /authorization.*Bearer/);
   assert.match(worker, /CRON_SECRET/);
   assert.match(worker, /MIKA_EMAIL_ENABLED !== "true"/);
-  assert.match(worker, /RESEND_API_KEY/);\n  assert.match(worker, /support-outbox\/\$\{item\.id\}/);
+  assert.match(worker, /RESEND_API_KEY/);
+  assert.match(worker, /support-outbox\/\$\{item\.id\}/);
 });
 
 test("support outbox worker claims atomically, recovers stale claims and retries at most five times", () => {
@@ -47,10 +48,13 @@ test("support outbox worker claims atomically, recovers stale claims and retries
   assert.match(worker, /10 \* 60 \* 1000/);
   assert.match(worker, /nextAttempt >= 5/);
   assert.match(worker, /status: terminal \? "failed" : "pending"/);
+  assert.match(migration, /ADD COLUMN IF NOT EXISTS processing_started_at timestamptz/);
+  assert.match(migration, /WHERE status = .processing./);
 });
 
-test("support email sender has a timeout and never exposes provider credentials", () => {
+test("support email sender uses Resend idempotency, timeout and safe error handling", () => {
   assert.match(email, /AbortSignal\.timeout\(10000\)/);
+  assert.match(email, /Idempotency-Key/);
   assert.match(email, /Falha de comunicação com o provedor de e-mail/);
   assert.doesNotMatch(email, /console\.log\(.*apiKey/);
 });
