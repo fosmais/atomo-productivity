@@ -32,5 +32,5 @@ test("Trusted server has only the write operations required by Journey routes", 
   assert.match(grants, /GRANT UPDATE ON TABLE public\.myryra_journeys TO service_role/);
   assert.match(grants, /GRANT UPDATE ON TABLE public\.myryra_journey_missions TO service_role/);
   assert.match(grants, /GRANT INSERT, UPDATE ON TABLE public\.myryra_journey_learning_progress TO service_role/);
-  assert.doesNotMatch(grants, /GRANT DELETE|GRANT ALL|GRANT TRUNCATE/i);
+  const executableGrants = grants.split("\\n").filter(line => !/^\\s*--/.test(line)).join("\\n");\n  assert.doesNotMatch(executableGrants, /GRANT DELETE|GRANT ALL|GRANT TRUNCATE/i);
 });
