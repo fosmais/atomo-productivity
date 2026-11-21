@@ -7,6 +7,7 @@ const submit = fs.readFileSync(path.join(__dirname, "../src/app/api/support/subm
 const worker = fs.readFileSync(path.join(__dirname, "../src/app/api/cron/support-email-outbox/route.ts"), "utf8");
 const email = fs.readFileSync(path.join(__dirname, "../src/lib/support/email.ts"), "utf8");
 const migration = fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261121040000_support_outbox_recovery.sql"), "utf8");
+const coreMigration = fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261121030000_support_core_schema.sql"), "utf8");
 const client = fs.readFileSync(path.join(__dirname, "../src/app/dashboard/myka-support.tsx"), "utf8");
 
 test("support submission authenticates, validates, bounds payload and uses its own throttle", () => {
@@ -23,6 +24,19 @@ test("support submission authenticates, validates, bounds payload and uses its o
   assert.match(submit, /event_type: "ticket_created"/);
   assert.match(submit, /ticket_acknowledgement/);
   assert.match(submit, /user.email_confirmed_at/);
+});
+
+
+test("support core migration reproduces the existing ticket schema with owner RLS and admin audit", () => {
+  for (const table of ["support_tickets", "support_admins", "support_ticket_replies", "support_ticket_events", "support_email_outbox"]) {
+    assert.match(coreMigration, new RegExp("CREATE TABLE IF NOT EXISTS public\\." + table));
+    assert.match(coreMigration, new RegExp("ALTER TABLE public\\." + table + " ENABLE ROW LEVEL SECURITY"));
+  }
+  assert.match(coreMigration, /Users read own support tickets/);
+  assert.match(coreMigration, /Users create own support tickets/);
+  assert.match(coreMigration, /admin_update_support_ticket/);
+  assert.match(coreMigration, /support_ticket_audit/);
+  assert.match(coreMigration, /GRANT ALL ON public\.support_tickets/);
 });
 
 test("MIKA support AI requires explicit enablement and current legal acceptance", () => {
