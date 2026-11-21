@@ -42,7 +42,12 @@ export async function POST(request: Request) {
       headers: { "Content-Type": contentType },
       body: payload,
     });
-    const form = await boundedRequest.formData();
+    let form: FormData;
+    try {
+      form = await boundedRequest.formData();
+    } catch {
+      return NextResponse.json({ error: "Formulário de áudio inválido." }, { status: 400 });
+    }
     const audio = form.get("audio");
     if (!(audio instanceof File)) return NextResponse.json({ error: "Arquivo de áudio não enviado." }, { status: 400 });
     if (audio.size < 1 || audio.size > 10 * 1024 * 1024)
