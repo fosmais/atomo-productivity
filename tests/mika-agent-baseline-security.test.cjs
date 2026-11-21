@@ -177,6 +177,8 @@ test('MIKA approved-task execution fails closed outside the dedicated staging Pr
  assert.match(route, /VERCEL_GIT_COMMIT_REF !== "feat\\/myryra-mvp2-mika-agent-engine"/);
  assert.match(route, /NEXT_PUBLIC_SUPABASE_URL !== "https:\\/\\/xanavauqzsrgvdfhcrsm\\.supabase\\.co"/);
  assert.match(route, /MYRYRA_MIKA_INTERNAL_EXECUTION_ENABLED !== "true"/);
- const guard = route.slice(0, route.indexOf('const supabase = await createClient()'));
- assert.ok(guard.indexOf('VERCEL_ENV !== "preview"') < guard.indexOf('createClient'));
+ const previewGuardPosition = route.indexOf('VERCEL_ENV !== "preview"');
+ const clientInitializationPosition = route.indexOf('const supabase = await createClient()');
+ assert.ok(previewGuardPosition >= 0 && clientInitializationPosition > previewGuardPosition,
+   'environment guard must run before creating an authenticated Supabase client');
 });
