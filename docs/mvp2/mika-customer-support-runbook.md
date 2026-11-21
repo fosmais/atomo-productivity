@@ -81,3 +81,11 @@ The current ticket RLS policy includes a historical authenticated INSERT policy,
 - Rebase request returned success, but follow-up status remained `MIGRATIONS_FAILED` and the migration count remained 7. Do not claim synchronization succeeded.
 - Supabase health advisors returned no lints. Security advisor reports four INFO `rls_enabled_no_policy` notices on service-only support tables; intentional unless access model changes.
 - Next step: inspect Supabase Dashboard > Manage Branches > branch > View logs for the exact migration failure before reset/recreation. Do not merge branch into production. Do not point full-app Preview to this incomplete schema.
+
+## Confirmed migration failure and recovery gate — 2026-11-21
+
+- Retrieved `workflow_run_logs` from isolated Supabase project, run `6d7d0b99119f498eb39de241cca0cd9a`.
+- Exact error: `2026/11/21 19:51:32 ERROR ERROR: relation "public.events" does not exist (SQLSTATE 42P01)` while applying `20261030195840_autopilot_unique_task_reservation_guard.sql` and creating `events_autopilot_task_once_per_user_idx`.
+- Production has both `public.events` and the index. Isolated branch has neither; `public.tasks` and `public.profiles` are also missing there. The branch is therefore support-schema-only, not full-app homologation.
+- The referenced migration file is not available at that exact path on the working branch or `main`. Before a reset, reconcile Supabase's 45 production migration records with the versioned migration files and restore the schema-creation dependency that must precede the AutoPilot index.
+- Do not bypass the error with `CREATE TABLE events` placeholders or by silently skipping the index; do not merge this branch to production. Once migration provenance and order are fixed, recreate or reset a disposable isolated branch, verify all expected application tables, and repeat RLS, API, outbox, and Android tests.
