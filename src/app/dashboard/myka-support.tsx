@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useVyraNavigation } from "./vyra-module-context";
 
@@ -31,6 +31,7 @@ export default function MykaSupport() {
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
   const [replies, setReplies] = useState<Array<{ id:string;body:string;created_at:string;author_type:string }>>([]);
   const [repliesError, setRepliesError] = useState("");
+  const repliesRequestId = useRef(0);
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [error, setError] = useState("");
   const [seenUpdates, setSeenUpdates] = useState<Record<string, string>>({});
@@ -93,14 +94,15 @@ export default function MykaSupport() {
   }
 
   async function viewReplies(ticketId:string) {
-    if(selectedTicket===ticketId) {setSelectedTicket(null);return;}
+    const requestId = ++repliesRequestId.current;
+    if(selectedTicket===ticketId) {setSelectedTicket(null);setReplies([]);return;}
     setSelectedTicket(ticketId);setReplies([]);setRepliesError("");
     try {
       const response=await fetch("/api/support/replies?ticket="+encodeURIComponent(ticketId),{cache:"no-store"});
       const result=await response.json() as {replies?:Array<{id:string;body:string;created_at:string;author_type:string}>;error?:string};
       if(!response.ok) throw new Error(result.error||"Não foi possível carregar as respostas.");
-      setReplies(result.replies??[]);
-    }catch(err){setRepliesError(err instanceof Error?err.message:"Consulta indisponível.");}
+      if (requestId === repliesRequestId.current) setReplies(result.replies??[]);
+    }catch(err){if (requestId === repliesRequestId.current) setRepliesError(err instanceof Error?err.message:"Consulta indisponível.");}
   }
   const changedTickets = tickets.filter(ticket => seenUpdates[ticket.id] && seenUpdates[ticket.id] !== ticket.updated_at);
   function markUpdatesRead() {
