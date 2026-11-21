@@ -111,15 +111,31 @@ export default function MykaSupport() {
     if (sending || trimmed.length < 10 || trimmed.length > 1500) return;
     setSending(true); setStatus(""); setError("");
     try {
-      const supabase = createClient();
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) throw new Error("Faça login novamente para enviar sua solicitação.");
-      const { data: created, error: insertError } = await supabase.from("support_tickets").insert({
-        user_id: user.id, category: topic.startsWith("billing-") ? "billing" : "general", subject: selected.title, message: trimmed,
-      }).select("id").single();
-      if (insertError) throw insertError;
-      setStatus("Chamado aberto · protocolo " + created.id.slice(0, 8).toUpperCase() + ". Acompanhe o status abaixo. O prazo de atendimento ainda não está definido.");
+      const response = await fetch("/api/support/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: topic.startsWith("billing-") ? "billing" : "general",
+          subject: selected.title,
+          message: trimmed,
+        }),
+      });
+      const result = await response.json() as {
+        ticket?: { id: string };
+        error?: string;
+        emailQueued?: boolean;
+        mika?: { answered: boolean; escalated: boolean };
+      };
+      if (!response.ok || !result.ticket?.id) throw new Error(result.error || "Não foi possível registrar a solicitação.");
+      const protocol = result.ticket.id.slice(0, 8).toUpperCase();
+      const mikaMessage = result.mika?.answered
+        ? " A MIKA já preparou uma orientação; consulte as respostas do chamado."
+        : " A solicitação foi encaminhada para continuidade do suporte.";
+      const emailMessage = result.emailQueued ? " A equipe também foi notificada por e-mail." : " O chamado foi salvo; a notificação por e-mail está pendente.";
+      setStatus("Chamado aberto · protocolo " + protocol + "." + mikaMessage + emailMessage);
+      setSelectedTicket(result.ticket.id);
       void loadTickets();
+      void viewReplies(result.ticket.id);
       setMessage("");
     } catch (err) { setError(err instanceof Error ? err.message : "Não foi possível registrar a solicitação."); }
     finally { setSending(false); }
