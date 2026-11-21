@@ -2,9 +2,9 @@
 
 Escopo: **somente** Preview da branch `feat/mvp2-professora-journey-myra-26`. Não promover para produção.
 
-## Bloqueio de workflow_dispatch (confirmado em 21/11/2026)
+## Compatibilidade do workflow_dispatch (correção enviada)
 
-O arquivo `.github/workflows/journey-auth-staging.yml` em `main` possui `workflow_dispatch` **sem** os inputs `bootstrap_synthetic_accounts` e `run_mika_concurrency`, enquanto o console envia ambos. O workflow da branch de homologação possui os inputs, mas isso não garante que a API GitHub aceite o dispatch: a definição registrada na branch padrão também deve ser compatível. **Não habilitar o console nem tentar o bootstrap até harmonizar a definição do workflow na branch padrão**, com revisão de segurança. A definição em `main` também usa checkout de commit fixo, distinto do fluxo da branch. Corrigir com alteração mínima no YAML de `main`, sem modificar aplicação, banco ou pagamentos de produção, e validar despacho com inputs após revisão.
+Em 21/11/2026, o workflow em `main` foi atualizado no commit `1ddf759` para declarar os dois inputs esperados pelo console. O bootstrap executa apenas quando `bootstrap_synthetic_accounts=true` e `run_mika_concurrency` não está ativo; a combinação dos dois é rejeitada. O workflow continua fazendo checkout do commit de teste revisado `92ae3dab0021d9b231d4791e839a12666c458544`. A alteração aguarda validação automática e um dispatch de staging controlado; não considerar a integração funcional até ambos serem confirmados.
 
 ## Pré-requisitos
 
