@@ -149,3 +149,16 @@ Catalog inspection confirmed the six missing application tables comprise 55 colu
 - `mika_teacher_sessions` (9): `id uuid`, `owner_id uuid`, `journey_id uuid`, `topic text`, `level text default 'iniciante'`, `scheduled_at timestamptz?`, `status text default 'active'`, `created_at timestamptz default now()`, `updated_at timestamptz default now()`.
 
 All six `id` columns default to `gen_random_uuid()`. All columns without `?` are NOT NULL. This is a diagnostic inventory, **not** a deployable baseline: constraints, indexes, triggers, grants, RLS policies, dependent functions and migration provenance still require a verified schema-only export.
+
+## Baseline constraints — read-only production catalog
+
+The six missing core tables have **32 local constraints** (including primary keys, foreign keys, uniqueness and checks), verified against the production PostgreSQL catalog without reading customer records.
+
+- `events`: 5 constraints; event category one of `work/family/leisure/health/personal/study`, title 1–200 characters, `ends_at > starts_at`, user FK, PK.
+- `tasks`: 6 constraints; same categories, duration null or 5–1440 minutes, status one of `todo/in_progress/waiting/done`, user and plan FKs, PK.
+- `plans`: 2 constraints; user FK and PK.
+- `myryra_finance_entries`: 5 constraints; amount 1–100000000000 cents, trimmed description 1–100 characters, kind `income/expense`, user FK and PK.
+- `myryra_journeys`: 5 constraints; status `active/paused/completed/archived`, title 1–120 trimmed characters, visibility `private/shared`, owner FK and PK.
+- `mika_teacher_sessions`: 7 constraints; unique `(id,owner_id)` for downstream composite FK, topic 1–120 characters, level 1–40 characters, status `active/completed/cancelled`, owner and journey FKs, PK.
+
+This catalog inspection does not authorize deployment of a reconstructed schema. Indexes, triggers, policies, grants, functions, migration provenance and cross-table dependencies remain mandatory for a faithful schema-only baseline.
