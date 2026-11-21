@@ -65,13 +65,14 @@ ALTER TABLE public.support_ticket_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.support_email_outbox ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON public.support_tickets FROM anon;
-GRANT SELECT, INSERT ON public.support_tickets TO authenticated;
+GRANT SELECT ON public.support_tickets TO authenticated;
+REVOKE INSERT, UPDATE, DELETE ON public.support_tickets FROM authenticated;
 DROP POLICY IF EXISTS "Users read own support tickets" ON public.support_tickets;
 CREATE POLICY "Users read own support tickets" ON public.support_tickets
   FOR SELECT TO authenticated USING ((SELECT auth.uid()) = user_id);
 DROP POLICY IF EXISTS "Users create own support tickets" ON public.support_tickets;
-CREATE POLICY "Users create own support tickets" ON public.support_tickets
-  FOR INSERT TO authenticated WITH CHECK ((SELECT auth.uid()) = user_id AND status = 'open');
+-- Ticket creation is exclusively through the authenticated /api/support/submit route,
+-- which enforces input limits and per-user throttling before using service_role.
 
 REVOKE ALL ON public.support_admins FROM anon, authenticated;
 REVOKE ALL ON public.support_ticket_replies FROM anon, authenticated;
