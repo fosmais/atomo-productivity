@@ -169,3 +169,14 @@ test('MIKA task approval RPC is owner-scoped, atomic, idempotent and does not ex
  assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.mika_approve_task_proposal\(uuid\) TO authenticated/);
  assert.doesNotMatch(sql, /INSERT INTO public\.tasks|mika_execute_approved_task\(/i);
 });
+
+
+test('MIKA approved-task execution fails closed outside the dedicated staging Preview', () => {
+ const route = fs.readFileSync(path.join(__dirname, '../src/app/api/mika/execute-approved-task/route.ts'), 'utf8');
+ assert.match(route, /VERCEL_ENV !== "preview"/);
+ assert.match(route, /VERCEL_GIT_COMMIT_REF !== "feat\\/myryra-mvp2-mika-agent-engine"/);
+ assert.match(route, /NEXT_PUBLIC_SUPABASE_URL !== "https:\\/\\/xanavauqzsrgvdfhcrsm\\.supabase\\.co"/);
+ assert.match(route, /MYRYRA_MIKA_INTERNAL_EXECUTION_ENABLED !== "true"/);
+ const guard = route.slice(0, route.indexOf('const supabase = await createClient()'));
+ assert.ok(guard.indexOf('VERCEL_ENV !== "preview"') < guard.indexOf('createClient'));
+});
