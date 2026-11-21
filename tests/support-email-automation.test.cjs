@@ -21,6 +21,8 @@ test("support submission authenticates, validates, bounds payload and uses its o
   assert.match(submit, /readBoundedJson/);
   assert.match(submit, /bytes > 4096/);
   assert.match(submit, /event_type: "ticket_created"/);
+  assert.match(submit, /ticket_acknowledgement/);
+  assert.match(submit, /user.email_confirmed_at/);
 });
 
 test("MIKA support AI requires explicit enablement and current legal acceptance", () => {
@@ -37,6 +39,7 @@ test("support email worker requires cron secret and explicit email enablement", 
   assert.match(worker, /CRON_SECRET/);
   assert.match(worker, /MIKA_EMAIL_ENABLED !== "true"/);
   assert.match(worker, /RESEND_API_KEY/);
+  assert.match(worker, /ticket_acknowledgement/);
   assert.match(worker, /support-outbox\/\$\{item\.id\}/);
 });
 
@@ -50,6 +53,7 @@ test("support outbox worker claims atomically, recovers stale claims and retries
   assert.match(worker, /status: terminal \? "failed" : "pending"/);
   assert.match(migration, /ADD COLUMN IF NOT EXISTS processing_started_at timestamptz/);
   assert.match(migration, /WHERE status = .processing./);
+  assert.match(migration, /ticket_acknowledgement/);
 });
 
 test("support email sender uses Resend idempotency, timeout and safe error handling", () => {
