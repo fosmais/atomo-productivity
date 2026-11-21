@@ -187,3 +187,7 @@ test("out-of-order ticket list refresh cannot overwrite newer data", () => {
   assert.match(client, /if \(requestId !== ticketsRequestId\.current\) return/);
   assert.match(client, /if \(requestId === ticketsRequestId\.current\) setLoadingTickets\(false\)/);
 });
+
+test("failed ticket access clears cached support data", () => {
+  assert.match(client, /setTickets\(\[\]\); setSelectedTicket\(null\); setReplies\(\[\]\); \+\+repliesRequestId\.current/);
+});
