@@ -41,6 +41,7 @@ export async function GET(request: Request) {
         to: recipient,
         subject: typeof item.subject === "string" ? item.subject.slice(0, 180) : "[MYRYRA] Novo atendimento",
         ticketId,
+        idempotencyKey: `support-outbox/${item.id}`,
         message: [
           "Tipo: " + String(item.event_type),
           "Protocolo: " + ticketId,
