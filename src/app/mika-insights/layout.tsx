@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -9,9 +10,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function MikaInsightsLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+async function AuthenticatedInsights({ children }: Readonly<{ children: React.ReactNode }>) {
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) redirect("/login?next=%2Fmika-insights");
@@ -29,5 +28,13 @@ export default async function MikaInsightsLayout({
       </header>
       {children}
     </div>
+  );
+}
+
+export default function MikaInsightsLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-slate-950 p-8 text-center text-slate-200">Carregando MYRYRA Insights...</main>}>
+      <AuthenticatedInsights>{children}</AuthenticatedInsights>
+    </Suspense>
   );
 }
