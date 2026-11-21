@@ -48,7 +48,8 @@ export async function GET(request: Request) {
       const message = typeof payload.message === "string" ? payload.message : "Novo registro de suporte na MYRYRA.";
       const ticketId = String(item.source_id);
       const customerAcknowledgement = item.event_type === "ticket_acknowledgement";
-      const recipient = customerAcknowledgement ? String(item.recipient) : (process.env.SUPPORT_INBOX_EMAIL || "support@myryra.com");
+      // Deliver to the recipient captured when the event was queued; changing config must not reroute existing notices.
+      const recipient = String(item.recipient ?? "");
       const emailMessage = customerAcknowledgement
         ? message.slice(0, 1500)
         : [
