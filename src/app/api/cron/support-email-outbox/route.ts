@@ -27,8 +27,8 @@ export async function GET(request: Request) {
           .eq("id", item.id).eq("status", item.status).eq("attempts", item.attempts);
         if (item.status === "processing" && item.processing_started_at)
           exhausted = exhausted.eq("processing_started_at", item.processing_started_at);
-        const { error: exhaustedError } = await exhausted;
-        if (exhaustedError) failed++; else skipped++;
+        const { data: exhaustedRow, error: exhaustedError } = await exhausted.select("id").maybeSingle();
+        if (exhaustedError) failed++; else if (exhaustedRow) failed++; else skipped++;
         continue;
       }
       // Compare-and-set claim prevents two concurrent workers from sending the same row.
