@@ -250,10 +250,12 @@ export default function MikaInsightsPage() {
       const client = createClient();
       const { data: { user }, error: authError } = await client.auth.getUser();
       if (authError || !user) throw new Error("Sessão expirada.");
+      const currentIdea = ideas.find((item) => item.id === id);
+      if (!currentIdea) throw new Error("Ideia não encontrada. Atualize a página.");
       const { data: deleted, error: deleteError } = await client.from("mika_ideas")
-        .delete().eq("id", id).eq("user_id", user.id).select("id");
+        .delete().eq("id", id).eq("user_id", user.id).eq("updated_at", currentIdea.updated_at).select("id");
       if (deleteError) throw deleteError;
-      if (!deleted?.length) throw new Error("A ideia não foi excluída. Atualize a página e tente novamente.");
+      if (!deleted?.length) throw new Error("A ideia foi alterada ou removida em outra sessão. Atualize a página antes de excluir.");
       setSuggestions((previous) => { const next = { ...previous }; delete next[id]; return next; });
       await load(); setNotice("Ideia excluída.");
     } catch (e: unknown) { setError(e instanceof Error ? e.message : "Falha ao excluir."); }
