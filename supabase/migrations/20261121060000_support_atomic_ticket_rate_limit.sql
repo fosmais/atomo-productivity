@@ -37,5 +37,8 @@ BEGIN
 END;
 $function$;
 
+REVOKE ALL ON public.support_tickets FROM anon, authenticated;
+GRANT SELECT ON public.support_tickets TO authenticated;
+
 REVOKE ALL ON FUNCTION public.create_support_ticket_limited(uuid,text,text,text,boolean) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.create_support_ticket_limited(uuid,text,text,text,boolean) TO service_role;
