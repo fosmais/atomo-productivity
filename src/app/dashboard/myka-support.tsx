@@ -31,6 +31,7 @@ export default function MykaSupport() {
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
   const [replies, setReplies] = useState<Array<{ id:string;body:string;created_at:string;author_type:string }>>([]);
   const [repliesError, setRepliesError] = useState("");
+  const [loadingReplies, setLoadingReplies] = useState(false);
   const repliesRequestId = useRef(0);
   const ticketsRequestId = useRef(0);
   const [loadingTickets, setLoadingTickets] = useState(false);
@@ -92,20 +93,21 @@ export default function MykaSupport() {
         return next;
       });
       if (!data?.length) setTicketsNotice("Você ainda não possui tickets neste ambiente.");
-    } catch (err) { if (requestId === ticketsRequestId.current) { setTickets([]); setSelectedTicket(null); setReplies([]); ++repliesRequestId.current; setTicketsNotice(err instanceof Error ? err.message : "Não foi possível consultar os tickets."); } }
+    } catch (err) { if (requestId === ticketsRequestId.current) { setTickets([]); setSelectedTicket(null); setReplies([]); setLoadingReplies(false); ++repliesRequestId.current; setTicketsNotice(err instanceof Error ? err.message : "Não foi possível consultar os tickets."); } }
     finally { if (requestId === ticketsRequestId.current) setLoadingTickets(false); }
   }
 
   async function viewReplies(ticketId:string) {
     const requestId = ++repliesRequestId.current;
-    if(selectedTicket===ticketId) {setSelectedTicket(null);setReplies([]);return;}
-    setSelectedTicket(ticketId);setReplies([]);setRepliesError("");
+    if(selectedTicket===ticketId) {setSelectedTicket(null);setReplies([]);setLoadingReplies(false);return;}
+    setSelectedTicket(ticketId);setReplies([]);setRepliesError("");setLoadingReplies(true);
     try {
       const response=await fetch("/api/support/replies?ticket="+encodeURIComponent(ticketId),{cache:"no-store"});
       const result=await response.json() as {replies?:Array<{id:string;body:string;created_at:string;author_type:string}>;error?:string};
       if(!response.ok) throw new Error(result.error||"Não foi possível carregar as respostas.");
       if (requestId === repliesRequestId.current) setReplies(result.replies??[]);
     }catch(err){if (requestId === repliesRequestId.current) setRepliesError(err instanceof Error?err.message:"Consulta indisponível.");}
+    finally { if (requestId === repliesRequestId.current) setLoadingReplies(false); }
   }
   const changedTickets = tickets.filter(ticket => seenUpdates[ticket.id] && seenUpdates[ticket.id] !== ticket.updated_at);
   function markUpdatesRead() {
@@ -180,7 +182,7 @@ export default function MykaSupport() {
               <p className="font-medium text-white">{ticket.subject} · {ticket.id.slice(0, 8).toUpperCase()}</p>
               <p>Status: {({ open: "Aberto", in_progress: "Em análise", resolved: "Resolvido", closed: "Encerrado" } as Record<string,string>)[ticket.status] ?? "Em verificação"} · Prioridade: {({ low: "Baixa", normal: "Normal", high: "Alta", urgent: "Urgente" } as Record<string,string>)[ticket.priority] ?? "Normal"} · {new Date(ticket.created_at).toLocaleDateString("pt-BR")}</p>
               <button type="button" className="mt-2 text-violet-200 underline" onClick={()=>void viewReplies(ticket.id)}>{selectedTicket===ticket.id?"Ocultar respostas":"Ver respostas do suporte"}</button>
-              {selectedTicket===ticket.id && <div className="mt-2 space-y-2">{repliesError && <p role="alert">{repliesError}</p>}{!repliesError && replies.length===0 && <p>Ainda não há respostas neste chamado.</p>}{replies.map(reply=><div key={reply.id} className="rounded-lg bg-slate-900 p-2"><p className="text-violet-200">{reply.author_type === "myka" ? "MIKA · resposta automática" : "Equipe MYRYRA · atendimento humano"} · {new Date(reply.created_at).toLocaleString("pt-BR")}</p><p className="mt-1 whitespace-pre-wrap break-words">{reply.body}</p></div>)}</div>}
+              {selectedTicket===ticket.id && <div className="mt-2 space-y-2">{repliesError && <p role="alert">{repliesError}</p>}{loadingReplies && <p role="status">Consultando respostas...</p>}{!loadingReplies && !repliesError && replies.length===0 && <p>Ainda não há respostas neste chamado.</p>}{replies.map(reply=><div key={reply.id} className="rounded-lg bg-slate-900 p-2"><p className="text-violet-200">{reply.author_type === "myka" ? "MIKA · resposta automática" : "Equipe MYRYRA · atendimento humano"} · {new Date(reply.created_at).toLocaleString("pt-BR")}</p><p className="mt-1 whitespace-pre-wrap break-words">{reply.body}</p></div>)}</div>}
             </div>)}
           </div>
           <p className="text-xs text-slate-400">A MIKA pode orientar dúvidas simples quando habilitada. Casos sensíveis são encaminhados à equipe humana. Não envie senhas, dados bancários ou chaves.</p>
