@@ -85,4 +85,5 @@ test("support email sender uses Resend idempotency, timeout and safe error handl
 test("support widget sends through the authenticated server route", () => {
   assert.match(client, /fetch\("\/api\/support\/submit"/);
   assert.doesNotMatch(client, /from\("support_tickets"\)\.insert/);
+  assert.match(client, /setSelectedTicket\(null\);\s*void loadTickets\(\);\s*void viewReplies\(result\.ticket\.id\)/);
 });
