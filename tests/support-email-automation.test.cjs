@@ -8,6 +8,7 @@ const worker = fs.readFileSync(path.join(__dirname, "../src/app/api/cron/support
 const email = fs.readFileSync(path.join(__dirname, "../src/lib/support/email.ts"), "utf8");
 const migration = fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261121040000_support_outbox_recovery.sql"), "utf8");
 const coreMigration = fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261121030000_support_core_schema.sql"), "utf8");
+const serverOnlyMigration = fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261121050000_support_server_only_ticket_creation.sql"), "utf8");
 const client = fs.readFileSync(path.join(__dirname, "../src/app/dashboard/myka-support.tsx"), "utf8");
 
 test("support submission authenticates, validates, bounds payload and uses its own throttle", () => {
@@ -36,6 +37,8 @@ test("support core migration reproduces the existing ticket schema with owner RL
   assert.match(coreMigration, /Users read own support tickets/);
   assert.match(coreMigration, /REVOKE INSERT, UPDATE, DELETE ON public\.support_tickets FROM authenticated/);
   assert.doesNotMatch(coreMigration, /CREATE POLICY "Users create own support tickets"/);
+  assert.match(serverOnlyMigration, /REVOKE INSERT, UPDATE, DELETE ON TABLE public\.support_tickets FROM authenticated/);
+  assert.match(serverOnlyMigration, /DROP POLICY IF EXISTS "Users create own support tickets"/);
   assert.match(coreMigration, /admin_update_support_ticket/);
   assert.match(coreMigration, /support_ticket_audit/);
   assert.match(coreMigration, /GRANT ALL ON public\.support_tickets/);
