@@ -9,7 +9,10 @@ export function createSupabaseAdmin() {
   // Reject production, other projects and malformed URLs before admin access.
   if (
     process.env.VERCEL_ENV === "preview" &&
-    process.env.VERCEL_GIT_COMMIT_REF === "feat/mvp2-professora-journey-myra-26"
+    (process.env.VERCEL_GIT_COMMIT_REF === "feat/mvp2-professora-journey-myra-26" ||
+      process.env.VERCEL_GIT_COMMIT_REF === "fix/mvp2-journey-owner-update-56" ||
+      process.env.VERCEL_GIT_COMMIT_REF === "test/mvp2-journey-security-integration-57-59" ||
+      process.env.VERCEL_GIT_COMMIT_REF === "test/mvp2-pr60-reconciliation-20261119")
   ) {
     let stagingUrl: URL;
     try {
