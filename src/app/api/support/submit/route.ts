@@ -121,7 +121,7 @@ export async function POST(request: Request) {
           });
           if (replyError) throw replyError;
           const { error: updateError } = await admin.from("support_tickets")
-            .update({ myka_authorized: true, status: "in_progress" }).eq("id", ticket.id).eq("user_id", user.id);
+            .update({ status: "in_progress" }).eq("id", ticket.id).eq("user_id", user.id);
           if (updateError) throw updateError;
           mika = { answered: true, escalated: false };
         }
