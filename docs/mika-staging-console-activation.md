@@ -2,6 +2,10 @@
 
 Escopo: **somente** Preview da branch `feat/mvp2-professora-journey-myra-26`. Não promover para produção.
 
+## Bloqueio de workflow_dispatch (confirmado em 21/11/2026)
+
+O arquivo `.github/workflows/journey-auth-staging.yml` em `main` possui `workflow_dispatch` **sem** os inputs `bootstrap_synthetic_accounts` e `run_mika_concurrency`, enquanto o console envia ambos. O workflow da branch de homologação possui os inputs, mas isso não garante que a API GitHub aceite o dispatch: a definição registrada na branch padrão também deve ser compatível. **Não habilitar o console nem tentar o bootstrap até harmonizar a definição do workflow na branch padrão**, com revisão de segurança. A definição em `main` também usa checkout de commit fixo, distinto do fluxo da branch. Corrigir com alteração mínima no YAML de `main`, sem modificar aplicação, banco ou pagamentos de produção, e validar despacho com inputs após revisão.
+
 ## Pré-requisitos
 
 1. Confirmar que o Preview usa o projeto Supabase dedicado `xanavauqzsrgvdfhcrsm`. Configurar **juntos** `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` correspondentes a esse projeto. Nunca trocar apenas uma das variáveis.
