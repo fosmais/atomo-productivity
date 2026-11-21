@@ -104,6 +104,9 @@ async function DashboardContent() {
     >
       <VyraWorkspace>
       <VyraHome />
+      {process.env.VERCEL_ENV === "preview" && process.env.MYRYRA_STAGING_TEST_CONSOLE_ENABLED === "true" && process.env.NEXT_PUBLIC_SUPABASE_URL === "https://xanavauqzsrgvdfhcrsm.supabase.co" && user.app_metadata?.role === "admin" && (process.env.MYRYRA_STAGING_TEST_ADMIN_IDS ?? "").split(",").map(id => id.trim()).includes(user.id) && (
+        <a href="/internal/staging-bootstrap" className="block rounded-xl border border-violet-400/30 bg-violet-950/30 px-4 py-3 text-sm font-medium text-violet-200 hover:bg-violet-900/40">Operação interna · Homologação MIKA</a>
+      )}
       <VyraModule id="home">
         <details className="mt-2 rounded-2xl border border-white/10 bg-slate-900/50 p-3">
           <summary className="cursor-pointer text-sm font-medium text-violet-200">Planejamento avançado com a MIKA</summary>

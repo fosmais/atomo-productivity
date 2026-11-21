@@ -1,0 +1,120 @@
+name: Journey Auth isolation (staging only)
+on:
+  workflow_dispatch:
+    inputs:
+      bootstrap_synthetic_accounts:
+        description: 'Bootstrap two synthetic accounts only (Journey fixtures are provisioned separately)'
+        required: false
+        type: boolean
+        default: false
+      run_mika_concurrency:
+        description: 'Also run MIKA cross-user and 20-call concurrency tests (requires approved synthetic fixture)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  auth-isolation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: staging
+    env:
+      MIKA_STAGING_ANON_KEY: ${{ secrets.MIKA_STAGING_ANON_KEY }}
+      MIKA_TEST_EMAIL: ${{ secrets.MIKA_TEST_EMAIL }}
+      MIKA_TEST_PASSWORD: ${{ secrets.MIKA_TEST_PASSWORD }}
+      MIKA_TEST_OTHER_EMAIL: ${{ secrets.MIKA_TEST_OTHER_EMAIL }}
+      MIKA_TEST_OTHER_PASSWORD: ${{ secrets.MIKA_TEST_OTHER_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Require staging credentials
+        shell: bash
+        run: |
+          for key in MIKA_STAGING_ANON_KEY MIKA_TEST_EMAIL MIKA_TEST_PASSWORD MIKA_TEST_OTHER_EMAIL MIKA_TEST_OTHER_PASSWORD; do
+            if [[ -z "${!key}" ]]; then
+              echo "::error::Missing staging secret: $key"
+              exit 1
+            fi
+          done
+      - run: npm ci --ignore-scripts
+      - name: Bootstrap dedicated synthetic identities when requested
+        if: inputs.bootstrap_synthetic_accounts == true
+        run: node scripts/mika-two-users-staging.cjs
+      - name: Verify two real staging Auth sessions and Journey isolation
+        if: inputs.bootstrap_synthetic_accounts != true
+        run: node scripts/journey-auth-isolation-staging.cjs
+
+  mika-staging:
+    needs: auth-isolation
+    if: inputs.run_mika_concurrency == true && inputs.bootstrap_synthetic_accounts != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: staging
+    env:
+      MIKA_STAGING_URL: https://xanavauqzsrgvdfhcrsm.supabase.co
+      MIKA_STAGING_ANON_KEY: ${{ secrets.MIKA_STAGING_ANON_KEY }}
+      MIKA_TEST_EMAIL: ${{ secrets.MIKA_TEST_EMAIL }}
+      MIKA_TEST_PASSWORD: ${{ secrets.MIKA_TEST_PASSWORD }}
+      MIKA_TEST_OTHER_EMAIL: ${{ secrets.MIKA_TEST_OTHER_EMAIL }}
+      MIKA_TEST_OTHER_PASSWORD: ${{ secrets.MIKA_TEST_OTHER_PASSWORD }}
+      MIKA_TEST_PROPOSAL_ID: ${{ vars.MIKA_TEST_PROPOSAL_ID }}
+      MIKA_TEST_PLAN_ID: ${{ vars.MIKA_TEST_PLAN_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Require isolated staging test settings
+        shell: bash
+        run: |
+          for key in MIKA_STAGING_ANON_KEY MIKA_TEST_EMAIL MIKA_TEST_PASSWORD MIKA_TEST_OTHER_EMAIL MIKA_TEST_OTHER_PASSWORD MIKA_TEST_PROPOSAL_ID MIKA_TEST_PLAN_ID; do
+            if [[ -z "${!key}" ]]; then
+              echo "::error::Missing staging setting: $key"
+              exit 1
+            fi
+          done
+      - run: npm ci --ignore-scripts
+      - name: Authenticate synthetic users and mask short-lived tokens
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const { createClient } = require('@supabase/supabase-js');
+          const e = process.env;
+          if (e.MIKA_STAGING_URL !== 'https://xanavauqzsrgvdfhcrsm.supabase.co') throw Error('Staging only');
+          if (e.MIKA_STAGING_ANON_KEY.startsWith('sb_secret_')) throw Error('Secret API key forbidden');
+          const logins = [
+            ['MIKA_TEST_EMAIL','MIKA_TEST_PASSWORD','MIKA_TEST_ACCESS_TOKEN'],
+            ['MIKA_TEST_OTHER_EMAIL','MIKA_TEST_OTHER_PASSWORD','MIKA_TEST_OTHER_ACCESS_TOKEN'],
+          ];
+          (async () => {
+            const ids = [];
+            for (const [emailKey,passwordKey,outputKey] of logins) {
+              if (!/^mika-staging-test[+._a-z0-9-]*@[^@]+\.[^@]+$/i.test(e[emailKey])) throw Error('Only synthetic accounts allowed');
+              const client = createClient(e.MIKA_STAGING_URL,e.MIKA_STAGING_ANON_KEY,{
+                auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
+              });
+              const {data,error} = await client.auth.signInWithPassword({email:e[emailKey],password:e[passwordKey]});
+              if (error || !data?.session?.access_token) throw Error('Staging Auth login failed');
+              const token = data.session.access_token;
+              const {data:identity,error:identityError} = await client.auth.getUser(token);
+              if (identityError || identity?.user?.email?.toLowerCase() !== e[emailKey].toLowerCase()) throw Error('Identity mismatch');
+              ids.push(identity.user.id);
+              process.stdout.write('::add-mask::'+token+'\n');
+              fs.appendFileSync(e.GITHUB_ENV,outputKey+'='+token+'\n',{mode:0o600});
+            }
+            if (ids[0]===ids[1]) throw Error('Two distinct users required');
+            console.log('Two staging Auth sessions verified; tokens masked');
+          })().catch(err => { console.error(err.message); process.exitCode=1; });
+          NODE
+      - name: Deny cross-user and anonymous MIKA operations
+        run: node scripts/mika-cross-user-staging.cjs
+      - name: Verify 20 concurrent executions create exactly one task
+        run: node scripts/mika-concurrency-staging.cjs

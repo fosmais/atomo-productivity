@@ -1,6 +1,7 @@
 "use client";
+import { educationalLessonFor } from "@/lib/journey/lesson-topics";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import JourneyAchievementCard from "./journey-achievement-card";
 import TaskConfirmation from "../dashboard/task-confirmation";
 import MikaReviewCalendar from "./mika-review-calendar";
@@ -25,6 +26,40 @@ export default function JourneyTrail() {
   const [goalDate, setGoalDate] = useState("");
   const [showAllMissions, setShowAllMissions] = useState(false);
   const [openLesson, setOpenLesson] = useState<string | null>(null);
+  const [officialExercises, setOfficialExercises] = useState<Record<string, string>>({});
+  const [exerciseLoading, setExerciseLoading] = useState<string | null>(null);
+  const officialExerciseRequest = useRef(0);
+  const [exerciseLoadError, setExerciseLoadError] = useState<Record<string, string>>({});
+  async function openOfficialLesson(mission: Mission) {
+    if (openLesson === mission.id) {
+      ++officialExerciseRequest.current;
+      setExerciseLoading(null);
+      setOpenLesson(null);
+      return;
+    }
+    setOpenLesson(mission.id);
+    if (!selected) return;
+    const requestId = ++officialExerciseRequest.current;
+    setExerciseLoading(mission.id);
+    setExerciseLoadError(old => ({ ...old, [mission.id]: "" }));
+    setOfficialExercises(old => { const next = { ...old }; delete next[mission.id]; return next; });
+    try {
+      const response = await fetch("/api/journeys/exercise", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ journeyId: selected, missionId: mission.id }), cache: "no-store" });
+      const data = await response.json();
+      if (requestId !== officialExerciseRequest.current) return;
+      if (!response.ok) throw new Error(data.error || "Não foi possível consultar o exercício oficial.");
+      const exercise = data.assignment?.exercise;
+      if (!exercise) throw new Error("Esta missão ainda não possui exercício oficial.");
+      // A newly loaded official exercise must never inherit an older local grade.
+      setAssessmentResults(previous => { const next = { ...previous }; delete next[mission.id]; return next; });
+      setAiFeedback(previous => ({ ...previous, [mission.id]: "" }));
+      setOfficialExercises(old => ({ ...old, [mission.id]: exercise }));
+    } catch (error) {
+      if (requestId === officialExerciseRequest.current)
+        setExerciseLoadError(old => ({ ...old, [mission.id]: error instanceof Error ? error.message : "Exercício indisponível." }));
+    } finally { if (requestId === officialExerciseRequest.current) setExerciseLoading(null); }
+  }
+
   const [exerciseAnswers, setExerciseAnswers] = useState<Record<string, string>>({});
   const [showReview, setShowReview] = useState<string | null>(null);
   const [aiFeedback, setAiFeedback] = useState<Record<string, string>>({});
@@ -38,6 +73,15 @@ export default function JourneyTrail() {
   const [reviewStatus, setReviewStatus] = useState<Record<string, string>>({});
   const [savingExercise, setSavingExercise] = useState<string | null>(null);
   const [exerciseMessage, setExerciseMessage] = useState<Record<string, string>>({});
+  // Never reuse an exercise or open lesson from another selected journey.
+  useEffect(() => {
+    ++officialExerciseRequest.current;
+    setOpenLesson(null);
+    setOfficialExercises({});
+    setExerciseLoadError({});
+    setExerciseLoading(null);
+  }, [selected]);
+
   const [replan, setReplan] = useState<{ previewOnly: boolean; revision: string; preserved: { completed: { id: string; title: string }[]; existingMissionCount: number }; proposed: { title: string; week: number }[]; planning?: { targetDate: string | null; originalTargetDate: string | null; deadlineNeedsReview: boolean; remainingMissions: number } } | null>(null);
   async function readJourneyJson(response: Response, context: string) {
     const type = response.headers.get("content-type") ?? "";
@@ -262,7 +306,7 @@ export default function JourneyTrail() {
   async function evaluateExercise(mission: Mission) {
     const answer = (exerciseAnswers[mission.id] ?? "").trim();
     if (!selected || answer.length < 30 || feedbackBusy) return;
-    const exercise = lessonFor(mission.title)?.exercise;
+    const exercise = officialExercises[mission.id];
     if (!exercise) return;
     setFeedbackBusy(mission.id);
     setAiFeedback(old => ({ ...old, [mission.id]: "" }));
@@ -280,6 +324,15 @@ export default function JourneyTrail() {
       }
       const response = await fetch("/api/journeys/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ journeyId: selected, missionId: mission.id, answer, exercise }) });
       const payload = await response.json();
+      if (response.status === 409) {
+        // An exercise may have been reassigned while the learner was answering.
+        // Clear the obsolete prompt and require a fresh official assignment.
+        ++officialExerciseRequest.current;
+        setOfficialExercises(old => { const next = { ...old }; delete next[mission.id]; return next; });
+        setAssessmentResults(old => { const next = { ...old }; delete next[mission.id]; return next; });
+        setAiFeedback(old => ({ ...old, [mission.id]: "" }));
+        throw new Error("A avaliação não pôde ser concluída. Feche e reabra a aula para carregar o exercício oficial atualizado. Sua resposta permanece salva.");
+      }
       if (!response.ok) throw new Error(payload.error || "Não foi possível avaliar.");
       const feedback = typeof payload.feedback === "string" ? payload.feedback.trim() : "";
       if (!feedback) throw new Error("A avaliação veio vazia. Tente novamente.");
@@ -294,8 +347,8 @@ export default function JourneyTrail() {
   }
   async function complete(mission: Mission) {
     if (busy) return;
-    if (mission.status !== "completed" && lessonFor(mission.title) && (!aiFeedback[mission.id]?.trim() || assessmentResults[mission.id]?.passed !== true)) {
-      setOpenLesson(mission.id);
+    if (mission.status !== "completed" && educationalLessonFor(mission.title) && (!aiFeedback[mission.id]?.trim() || assessmentResults[mission.id]?.passed !== true)) {
+      if (openLesson !== mission.id) void openOfficialLesson(mission);
       setError("Para concluir esta aula, abra o treinamento, responda ao exercício e peça a avaliação da MIKA. A avaliação deve ser salva e alcançar pelo menos 70 pontos.");
       return;
     }
@@ -349,17 +402,6 @@ export default function JourneyTrail() {
     } catch (e) { setError(e instanceof Error ? e.message : "Falha ao atualizar."); }
     finally { setBusy(""); }
   }
-  const lessonTopics = [
-    { match: /IA, machine learning e IA generativa|diferença entre IA, ML e modelos generativos/i, heading: "Aula MIKA · Fundamentos de IA", explanation: "Inteligência artificial é o campo amplo de sistemas que realizam tarefas associadas à inteligência. Machine learning aprende padrões a partir de dados; IA generativa produz novos conteúdos, como textos e imagens.", example: "Exemplo: um modelo que prevê inadimplência é preditivo; um assistente que redige uma explicação é generativo.", exercise: "Escreva um exemplo de IA preditiva e outro de IA generativa aplicados ao seu trabalho." },
-    { match: /treino, validação, teste|vazamento|vieses/i, heading: "Aula MIKA · Qualidade dos dados", explanation: "Dados de treino ajustam o modelo, validação ajuda a escolher parâmetros e teste estima o desempenho em dados não vistos. Vazamento acontece quando informação indisponível no momento real da previsão entra no treinamento.", example: "Exemplo: usar o resultado final de uma contratação para prever se ela será aprovada gera vazamento.", exercise: "Liste três campos que poderiam causar vazamento em um projeto de previsão." },
-    { match: /classificação, regressão|métricas de avaliação|métricas adequadas/i, heading: "Aula MIKA · Modelos e métricas", explanation: "Classificação prevê categorias, como fraude ou não fraude. Regressão prevê números, como valor de uma venda. Precisão, recall e F1 ajudam a avaliar classificadores; MAE e RMSE avaliam erros numéricos.", example: "Exemplo: detectar fraude é classificação; estimar o valor de uma transação é regressão.", exercise: "Escolha uma métrica para um sistema de detecção de fraude e justifique." },
-    { match: /prompts estruturados|respostas de IA/i, heading: "Aula MIKA · Engenharia de prompts", explanation: "Um bom prompt define papel, contexto, tarefa, restrições e formato de saída. Compare resultados e verifique fatos: modelos podem produzir respostas incorretas com confiança.", example: "Exemplo: 'Resuma este incidente em até 100 palavras, com impacto, causa conhecida e próximos passos; não invente dados'.", exercise: "Reescreva um pedido vago como um prompt com critérios claros e teste duas versões." },
-    { match: /embeddings|RAG|busca semântica|fontes verificáveis/i, heading: "Aula MIKA · RAG", explanation: "Embeddings representam significado em vetores. RAG busca trechos relevantes em uma base de conhecimento e os fornece ao modelo para apoiar a resposta. As fontes recuperadas também precisam ser verificadas.", example: "Exemplo: responder perguntas sobre procedimentos internos usando documentos autorizados e citados.", exercise: "Desenhe quatro etapas: pergunta, busca, recuperação de fontes e resposta com referências." },
-    { match: /LGPD|uso responsável|privacidade, segurança|riscos e controles/i, heading: "Aula MIKA · IA responsável", explanation: "Projetos de IA devem limitar dados pessoais, definir finalidade, controlar acessos, testar vieses e permitir supervisão humana. Dados sensíveis não devem ser enviados a serviços sem autorização.", example: "Exemplo: anonimizar exemplos de incidentes antes de usá-los em treinamento.", exercise: "Liste três riscos de privacidade e um controle para cada risco." },
-    { match: /pequeno projeto aplicado|problema, dados, indicadores|protótipo viável/i, heading: "Aula MIKA · Projeto aplicado", explanation: "Comece com um problema mensurável. Defina indicador de sucesso, dados disponíveis, baseline, avaliação e limites do protótipo antes de escolher um modelo.", example: "Exemplo: priorizar alertas operacionais e medir a redução do tempo de triagem.", exercise: "Escreva problema, métrica, fontes de dados e hipótese de valor em quatro linhas." },
-    { match: /apresentar o projeto|demonstração curta/i, heading: "Aula MIKA · Demonstração", explanation: "Uma apresentação convincente mostra o problema, a solução, a evidência, as limitações e os próximos passos. Separe resultados observados de expectativas.", example: "Exemplo: demonstrar três casos de teste e explicar quando o sistema falha.", exercise: "Prepare uma apresentação de três minutos com um resultado verificável e uma limitação." },
-  ];
-  function lessonFor(title: string) { return lessonTopics.find(topic => topic.match.test(title)); }
   const done = missions.filter(m => m.status === "completed").length;
   const percent = missions.length ? Math.round(done / missions.length * 100) : 0;
   const current = journeys.find(j => j.id === selected);
@@ -521,13 +563,13 @@ export default function JourneyTrail() {
                     <span className={"mt-3 inline-flex rounded-full px-3 py-1 text-[11px] font-bold " + (completed ? "bg-emerald-400/20 text-emerald-200" : next ? "bg-amber-300/20 text-amber-200" : "bg-white/10 text-violet-200")}>{completed ? "✓ Conquista realizada" : next ? "✦ Sua próxima missão" : "◇ Aguardando sua vez"}</span>
                   </button>
                   </div>
-                  {lessonFor(m.title) && <div className="mx-auto w-[92%] rounded-xl border border-violet-300/25 bg-slate-900/80 p-3 sm:w-[85%]">
-                    <button type="button" onClick={() => setOpenLesson(value => value === m.id ? null : m.id)} aria-expanded={openLesson === m.id} className="w-full text-left text-xs font-semibold text-amber-200">{openLesson === m.id ? "▾ Fechar treinamento" : "▸ Estudar com a MIKA · Aula e exercício"}</button>
-                    {openLesson === m.id && (() => { const lesson = lessonFor(m.title)!; return <div className="mt-3 space-y-3 text-sm leading-relaxed text-slate-200"><p className="font-bold text-white">{lesson.heading}</p><p>{lesson.explanation}</p><p className="rounded-lg bg-violet-800/25 p-3">{lesson.example}</p><p className="font-semibold text-amber-100">Sua prática: {lesson.exercise}</p>
-                    <label className="block space-y-2"><span className="block text-xs font-semibold text-violet-100">Sua resposta (salve para continuar depois)</span><textarea value={exerciseAnswers[m.id] ?? ""} disabled={feedbackBusy === m.id || savingExercise === m.id} onChange={event => { setExerciseAnswers(old => ({ ...old, [m.id]: event.target.value.slice(0, 2000) })); setShowReview(null); setAiFeedback(oldFeedback => ({ ...oldFeedback, [m.id]: "" })); setExerciseMessage(old => ({ ...old, [m.id]: "Resposta alterada. Salve novamente para manter seu histórico atualizado." })); }} rows={4} maxLength={2000} placeholder="Registre seu raciocínio e os exemplos aqui..." className="w-full rounded-lg border border-violet-300/30 bg-slate-950 p-3 text-sm text-white placeholder:text-slate-400" /></label>
+                  {educationalLessonFor(m.title) && <div className="mx-auto w-[92%] rounded-xl border border-violet-300/25 bg-slate-900/80 p-3 sm:w-[85%]">
+                    <button type="button" onClick={() => void openOfficialLesson(m) } aria-expanded={openLesson === m.id} className="w-full text-left text-xs font-semibold text-amber-200">{openLesson === m.id ? "▾ Fechar treinamento" : "▸ Estudar com a MIKA · Aula e exercício"}</button>
+                    {openLesson === m.id && (() => { const lesson = educationalLessonFor(m.title)!; return <div className="mt-3 space-y-3 text-sm leading-relaxed text-slate-200"><p className="font-bold text-white">{lesson.heading}</p><p>{lesson.explanation}</p><p className="rounded-lg bg-violet-800/25 p-3">{lesson.example}</p><p className="font-semibold text-amber-100">Sua prática: {officialExercises[m.id] ?? (exerciseLoading === m.id ? "Carregando exercício oficial..." : exerciseLoadError[m.id] || "Abra a aula para consultar o exercício.")}</p>
+                    <label className="block space-y-2"><span className="block text-xs font-semibold text-violet-100">Sua resposta (salve para continuar depois)</span><textarea value={exerciseAnswers[m.id] ?? ""} disabled={feedbackBusy === m.id || savingExercise === m.id} onChange={event => { setExerciseAnswers(old => ({ ...old, [m.id]: event.target.value.slice(0, 2000) })); setShowReview(null); setAiFeedback(oldFeedback => ({ ...oldFeedback, [m.id]: "" })); setAssessmentResults(previous => { const next = { ...previous }; delete next[m.id]; return next; }); setExerciseMessage(old => ({ ...old, [m.id]: "Resposta alterada. Salve novamente para manter seu histórico atualizado." })); }} rows={4} maxLength={2000} placeholder="Registre seu raciocínio e os exemplos aqui..." className="w-full rounded-lg border border-violet-300/30 bg-slate-950 p-3 text-sm text-white placeholder:text-slate-400" /></label>
                     <button type="button" disabled={savingExercise === m.id || feedbackBusy === m.id} onClick={() => void saveExercise(m)} className="rounded-lg border border-violet-300/40 px-3 py-2 text-xs font-semibold text-violet-100 disabled:opacity-40">{savingExercise === m.id ? "Salvando..." : "Salvar resposta"}</button>
                     {exerciseMessage[m.id] && <p role="status" className="text-xs text-violet-100">{exerciseMessage[m.id]}</p>}
-                    <button type="button" disabled={(exerciseAnswers[m.id] ?? "").trim().length < 30 || !!feedbackBusy} onClick={() => void evaluateExercise(m)} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">{feedbackBusy === m.id ? "MIKA está avaliando..." : "Avaliar com a MIKA"}</button>
+                    <button type="button" disabled={(exerciseAnswers[m.id] ?? "").trim().length < 30 || !!feedbackBusy || !officialExercises[m.id] || exerciseLoading === m.id} onClick={() => void evaluateExercise(m)} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">{feedbackBusy === m.id ? "MIKA está avaliando..." : "Avaliar com a MIKA"}</button>
                     {aiFeedback[m.id] && <div role="status" className="space-y-3 rounded-lg border border-violet-300/30 bg-violet-800/20 p-3 text-xs leading-relaxed text-white">
                       <p className="whitespace-pre-wrap">{aiFeedback[m.id]}</p>
                       <div className="rounded-lg border border-amber-300/30 bg-amber-300/10 p-3">

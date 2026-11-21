@@ -20,12 +20,14 @@ test("Editing an answer invalidates old feedback before reevaluation", () => {
   const ui = read("src/app/journey/journey-trail.tsx");
   assert.match(ui, /setAiFeedback\(oldFeedback => \(\{ \.\.\.oldFeedback, \[m\.id\]: "" \}\)\)/);
   const route = read("src/app/api/journeys/learning/route.ts");
-  assert.match(route, /previous\?\.answer === answer \? previous\.feedback : null/);
+  assert.match(route, /if \(previous\.answer === answer\)/);
+  assert.match(route, /feedback: null, assessed_exercise_id: null, assessment_score: null, assessment_passed: null/);
+  assert.match(route, /\.eq\("answer", previous\.answer\)\.eq\("updated_at", previous\.updated_at\)\.select\("mission_id"\)/);
 });
 
 test("Adaptive MIKA feedback reads only the learner's own previous attempt", () => {
   const route = read("src/app/api/journeys/feedback/route.ts");
-  assert.match(route, /\.select\("answer,feedback(?:,assessment_attempts)?"\)\.eq\("mission_id", missionId\)\.eq\("owner_id", user\.id\)/);
+  assert.match(route, /\.select\("answer,feedback,assessment_attempts,updated_at"\)\.eq\("mission_id", missionId\)\.eq\("owner_id", user\.id\)/);
   assert.match(route, /previousAttempt: priorProgress\?\.feedback/);
   assert.match(route, /compare com a nova resposta/);
   assert.match(route, /não presuma melhora se não houver evidência/);
