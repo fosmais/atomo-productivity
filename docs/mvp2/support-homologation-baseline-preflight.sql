@@ -127,3 +127,32 @@ SELECT count(*) FILTER (WHERE cmd = 'UPDATE') AS event_update_policies,
        bool_or(cmd = 'UPDATE' AND policyname = 'events_owner_update_category') AS category_update_exists
 FROM pg_policies
 WHERE schemaname = 'public' AND tablename = 'events';
+
+-- Baseline parity: compare the following aggregates between production and
+-- the isolated branch. This queries metadata only (never customer records).
+-- Do not mark a branch ready based solely on matching counts: compare DDL,
+-- constraints, indexes, functions, triggers, grants and migration provenance.
+WITH inventory AS (
+  SELECT
+    (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+     WHERE n.nspname='public' AND c.relkind='r') AS tables,
+    (SELECT count(*) FROM information_schema.columns WHERE table_schema='public') AS columns,
+    (SELECT count(*) FROM pg_policies WHERE schemaname='public') AS policies,
+    (SELECT count(*) FROM pg_constraint c JOIN pg_namespace n ON n.oid=c.connamespace
+     WHERE n.nspname='public') AS constraints,
+    (SELECT count(*) FROM pg_indexes WHERE schemaname='public') AS indexes,
+    (SELECT count(*) FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid
+       JOIN pg_namespace n ON n.oid=c.relnamespace
+     WHERE n.nspname='public' AND NOT t.tgisinternal) AS user_triggers,
+    (SELECT count(*) FROM supabase_migrations.schema_migrations) AS migration_versions
+)
+SELECT * FROM inventory;
+
+-- Exact missing-table list, to be compared against the production inventory.
+SELECT c.relname AS table_name, c.relrowsecurity AS rls_enabled
+FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+WHERE n.nspname='public' AND c.relkind='r'
+ORDER BY c.relname;
+
+-- Migration provenance must be reconciled rather than falsely marked applied.
+SELECT version, name FROM supabase_migrations.schema_migrations ORDER BY version;
