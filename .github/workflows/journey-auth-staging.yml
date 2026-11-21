@@ -1,5 +1,8 @@
 name: Journey Auth isolation (staging only)
 on:
+  push:
+    branches:
+      - feat/mvp2-professora-journey-myra-26
   workflow_dispatch:
     inputs:
       bootstrap_synthetic_accounts:
@@ -31,7 +34,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           # Pin the reviewed staging test commit; never run mutable production branch code.
-          ref: 92ae3dab0021d9b231d4791e839a12666c458544
+          ref: ${{ github.event_name == 'push' && github.ref || '92ae3dab0021d9b231d4791e839a12666c458544' }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -47,13 +50,13 @@ jobs:
           done
       - run: npm ci --ignore-scripts
       - name: Bootstrap two synthetic staging identities only
-        if: inputs.bootstrap_synthetic_accounts == true && inputs.run_mika_concurrency != true
+        if: github.event_name == 'push' || (inputs.bootstrap_synthetic_accounts == true && inputs.run_mika_concurrency != true)
         run: node scripts/mika-two-users-staging.cjs
       - name: Verify two real staging Auth sessions and Journey isolation
-        if: inputs.bootstrap_synthetic_accounts != true
+        if: github.event_name == 'push' || inputs.bootstrap_synthetic_accounts != true
         run: node scripts/journey-auth-isolation-staging.cjs
       - name: Reject unsupported combined bootstrap and concurrency request
-        if: inputs.bootstrap_synthetic_accounts == true && inputs.run_mika_concurrency == true
+        if: github.event_name != 'push' && inputs.bootstrap_synthetic_accounts == true && inputs.run_mika_concurrency == true
         run: |
           echo '::error::Bootstrap and concurrency must run as separate reviewed operations.'
           exit 1
