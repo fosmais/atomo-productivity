@@ -60,12 +60,18 @@ export async function POST(request: Request) {
     const result: unknown = JSON.parse(completion.output_text);
     if (!result || typeof result !== "object" || !("tasks" in result) || !Array.isArray(result.tasks))
       return NextResponse.json({ error: "Resposta inválida da IA." }, { status: 502 });
+    const isValidDate = (value: unknown): value is string => {
+      if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+      const [year, month, day] = value.split("-").map(Number);
+      const date = new Date(Date.UTC(year, month - 1, day));
+      return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+    };
     const tasks = result.tasks.filter((task: unknown) => {
       if (!task || typeof task !== "object") return false;
       const t = task as Record<string, unknown>;
       return typeof t.title === "string" && t.title.trim().length > 0 && t.title.length <= 250 &&
         ["Alta", "Média", "Normal"].includes(String(t.priority)) &&
-        (t.dueDate === null || (typeof t.dueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(t.dueDate)));
+        (t.dueDate === null || isValidDate(t.dueDate));
     }).slice(0, 8);
     if (!tasks.length) return NextResponse.json({ error: "Nenhuma ação válida." }, { status: 502 });
     return NextResponse.json({ tasks }, { headers: { "Cache-Control": "no-store" } });
