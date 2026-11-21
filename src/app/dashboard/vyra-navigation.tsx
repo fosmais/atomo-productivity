@@ -100,7 +100,7 @@ export default function VyraNavigation({
                 : "hidden"
             }
           >
-            <div className="space-y-1">{secondaryItems.map(navigationButton)}            </div>
+            <div className="space-y-1">{secondaryItems.map(navigationButton)}<Link href="/mika-insights" className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-violet-200 hover:bg-violet-400/10 focus-visible:outline-2 focus-visible:outline-violet-400"><span aria-hidden="true">✧</span> Insights e ideias</Link></div>
           </div>
         </div>
       </nav>
@@ -109,7 +109,7 @@ export default function VyraNavigation({
         <div className="mb-3 flex items-center justify-between"><span className="text-sm font-semibold text-white">Seus espaços</span><button type="button" onClick={() => setMoreOpen(false)} aria-label="Fechar espaços" className="rounded-lg px-3 py-1 text-slate-200">Fechar</button></div>
         <div className="grid grid-cols-2 gap-2">{secondaryItems.map(item => (
           <button key={item.id} type="button" onClick={() => navigateTo(item.id)} aria-current={current === item.id ? "page" : undefined} className={`flex min-h-12 items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm ${current === item.id ? "border-violet-400 bg-violet-400/15 text-white" : "border-white/10 bg-slate-800 text-slate-200"}`}><span aria-hidden="true">{item.icon}</span>{item.label}</button>
-        ))}</div>
+        ))}<Link href="/mika-insights" className="flex min-h-12 items-center gap-2 rounded-xl border border-violet-400/30 bg-violet-400/10 px-3 py-2 text-left text-sm text-violet-100"><span aria-hidden="true">✧</span>Insights e ideias</Link></div>
       </div>}
     </>
   );
