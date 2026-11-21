@@ -51,3 +51,9 @@ Vercel Cron calls `/api/cron/support-email-outbox` every five minutes. The endpo
 ## Isolated Preview guard
 
 The customer-support Preview branch currently uses deliberately invalid Supabase URL, publishable-key and admin-key placeholders. This prevents the Preview from inheriting the shared production Supabase environment. Replace these three values only after a dedicated Supabase homologation branch exists and its support schema is verified. Keep email and MIKA AI feature flags set to `false` until synthetic end-to-end checks pass.
+
+## Read-only compatibility audit — 2026-11-21
+
+A read-only inspection of the existing MYRYRA Supabase production database confirmed the presence of `support_tickets`, `support_ticket_replies` and `support_email_outbox`. The current outbox event-type constraint allows `feedback_created` and `ticket_created` only; migration `20261121040000_support_outbox_recovery.sql` is therefore necessary before queuing `ticket_acknowledgement` messages. The existing outbox does not yet contain `processing_started_at`.
+
+The current ticket RLS policy includes a historical authenticated INSERT policy, but a query of role-table grants did not return a corresponding authenticated INSERT grant. The server-only migration removes both permission paths defensively. This audit did not execute migrations or change production data. Validate the migration sequence on an isolated branch before promotion.
