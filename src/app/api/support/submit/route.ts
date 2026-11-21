@@ -74,16 +74,28 @@ export async function POST(request: Request) {
     }).select("id,subject,status,priority,created_at").single();
     if (ticketError || !ticket) throw new Error("SUPPORT_TICKET_CREATE_FAILED");
 
-    const recipient = process.env.SUPPORT_INBOX_EMAIL || "support@myryra.com";
-    const { error: queueError } = await admin.from("support_email_outbox").insert({
+    const supportRecipient = process.env.SUPPORT_INBOX_EMAIL || "support@myryra.com";
+    const notifications = [{
       event_type: "ticket_created",
       source_id: ticket.id,
-      recipient,
+      recipient: supportRecipient,
       subject: "[MYRYRA] Novo chamado: " + subject.slice(0, 120),
       payload: { ticket_id: ticket.id, user_id: user.id, category, subject, message, created_at: ticket.created_at },
       status: "pending",
       attempts: 0
-    });
+    }];
+    if (user.email && user.email_confirmed_at) {
+      notifications.push({
+        event_type: "ticket_acknowledgement",
+        source_id: ticket.id,
+        recipient: user.email,
+        subject: "MYRYRA · Recebemos seu chamado",
+        payload: { ticket_id: ticket.id, category, subject, message: "Recebemos sua solicitação. Nossa equipe acompanhará o caso e você poderá consultar as atualizações na sua conta MYRYRA." },
+        status: "pending",
+        attempts: 0
+      });
+    }
+    const { error: queueError } = await admin.from("support_email_outbox").insert(notifications);
     // Keep the ticket even if notification queuing fails; return a visible warning for operations.
     const emailQueued = !queueError;
 
