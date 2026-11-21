@@ -3,7 +3,6 @@ import OpenAI from "openai";
 import { createClient } from "@/lib/supabase/server";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { hasCurrentLegalAcceptance } from "@/lib/privacy/legal-acceptance";
-import { checkConciergeRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 const headers = { "Cache-Control": "private, no-store" };
@@ -30,12 +29,18 @@ export async function POST(request: Request) {
     if (subject.length < 3 || subject.length > 160 || message.length < 10 || message.length > 1500 || !categories.has(category))
       return NextResponse.json({ error: "Informe assunto e mensagem válidos." }, { status: 400, headers });
 
-    const limit = await checkConciergeRateLimit(user.id);
-    if (!limit.allowed) return NextResponse.json({ error: "Limite de solicitações atingido. Tente novamente mais tarde." }, {
-      status: 429, headers: { ...headers, "Retry-After": String(Math.max(1, Math.ceil((limit.reset - Date.now()) / 1000))) }
-    });
-
     const admin = createSupabaseAdmin();
+    const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const [hourly, daily] = await Promise.all([
+      admin.from("support_tickets").select("id", { count: "exact", head: true }).eq("user_id", user.id).gte("created_at", hourAgo),
+      admin.from("support_tickets").select("id", { count: "exact", head: true }).eq("user_id", user.id).gte("created_at", dayAgo),
+    ]);
+    if (hourly.error || daily.error) throw new Error("SUPPORT_RATE_LIMIT_UNAVAILABLE");
+    if ((hourly.count ?? 0) >= 5 || (daily.count ?? 0) >= 10)
+      return NextResponse.json({ error: "Você atingiu o limite de chamados. Tente novamente mais tarde." }, {
+        status: 429, headers: { ...headers, "Retry-After": "3600" }
+      });
     const { data: ticket, error: ticketError } = await admin.from("support_tickets").insert({
       user_id: user.id, subject, message, category, status: "open", priority: "normal", myka_authorized: false
     }).select("id,subject,status,priority,created_at").single();
@@ -55,9 +60,7 @@ export async function POST(request: Request) {
     const emailQueued = !queueError;
 
     let mika = { answered: false, escalated: false };
-    const legalReady = process.env.MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true"
-      ? await hasCurrentLegalAcceptance(user.id)
-      : false;
+    const legalReady = await hasCurrentLegalAcceptance(user.id);
     if (process.env.MIKA_SUPPORT_AI_ENABLED === "true" && process.env.OPENAI_API_KEY && legalReady) {
       try {
         const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 12000, maxRetries: 1 });
