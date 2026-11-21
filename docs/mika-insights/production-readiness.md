@@ -18,7 +18,7 @@
 ## Auditoria de permissões no Supabase Preview (2026-11-21)
 - `mika_ideas`: RLS ativo, quatro políticas.
 - `mika_action_proposals` e `mika_action_audit`: RLS ativo, uma política cada.
-- `mika_internal.ai_quota`: RLS desativado, schema privado com grants revogados; revisar habilitação de RLS como defesa em profundidade antes da migração para produção.
+- `mika_internal.ai_quota`: RLS **ativado em Preview** em 2026-11-21; schema privado, `anon` e `authenticated` sem SELECT e zero políticas (acesso direto negado). Migração registrada no SQL de quotas. Falta teste funcional autenticado da RPC após a alteração.
 - As funções `mika_consume_ai_quota`, `mika_decide_proposal` e `mika_execute_approved_task` não concedem EXECUTE a `anon`; `authenticated` tem EXECUTE. Revisão de SECURITY DEFINER e ownership ainda necessária.
 
 ## Critérios de aceite
