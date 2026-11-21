@@ -10,7 +10,10 @@ const client = fs.readFileSync(path.join(__dirname, "../src/app/dashboard/myka-s
 
 test("support submission authenticates, validates, rate limits and stores owner-scoped tickets", () => {
   assert.match(submit, /auth\.getUser\(\)/);
-  assert.match(submit, /checkConciergeRateLimit\(user\.id\)/);
+  assert.match(submit, /hourAgo/);
+  assert.match(submit, /dayAgo/);
+  assert.match(submit, /hourly.count/);
+  assert.match(submit, /daily.count/);
   assert.match(submit, /user_id: user\.id/);
   assert.match(submit, /Campos não permitidos/);
   assert.match(submit, /support_email_outbox/);
