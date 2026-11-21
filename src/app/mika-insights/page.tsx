@@ -233,10 +233,10 @@ export default function MikaInsightsPage() {
       const nextStatus = currentIdea.status === "archived" ? "archived" : "captured";
       const { data: updated, error: updateError } = await client.from("mika_ideas")
         .update({ content, proposed_plan: null, status: nextStatus, updated_at: new Date().toISOString() })
-        .eq("id", id).eq("user_id", user.id)
+        .eq("id", id).eq("user_id", user.id).eq("updated_at", currentIdea.updated_at)
         .select("id");
       if (updateError) throw updateError;
-      if (!updated?.length) throw new Error("A ideia não está mais disponível. Atualize a página.");
+      if (!updated?.length) throw new Error("A ideia foi modificada ou removida em outra sessão. Atualize a página antes de editar.");
       setSuggestions((previous) => { const next = { ...previous }; delete next[id]; return next; });
       setEditingId(null); await load(); setNotice("Ideia atualizada. Gere novamente o plano se necessário.");
     } catch (e: unknown) { setError(e instanceof Error ? e.message : "Falha ao editar."); }
