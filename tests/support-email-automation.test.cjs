@@ -160,3 +160,8 @@ test("exhausted support email retries count only a persisted terminal update", (
   assert.match(worker, /data: exhaustedRow, error: exhaustedError/);
   assert.match(worker, /if \(exhaustedError\) failed\+\+; else if \(exhaustedRow\) failed\+\+; else skipped\+\+/);
 });
+
+test("email outbox sends to the stored recipient instead of a later config override", () => {
+  assert.match(worker, /const recipient = String\(item\.recipient \?\? ""\)/);
+  assert.doesNotMatch(worker, /customerAcknowledgement \? String\(item\.recipient\) :/);
+});
