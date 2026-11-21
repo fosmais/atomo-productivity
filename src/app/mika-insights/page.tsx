@@ -154,10 +154,10 @@ export default function MikaInsightsPage() {
       const restoredStatus = idea.proposed_plan?.tasks?.length ? "planned" : "captured";
       const { data: updated, error: updateError } = await client.from("mika_ideas")
         .update({ status: archived ? "archived" : restoredStatus, updated_at: new Date().toISOString() })
-        .eq("id", id).eq("user_id", user.id)
+        .eq("id", id).eq("user_id", user.id).eq("updated_at", idea.updated_at)
         .select("id");
       if (updateError) throw updateError;
-      if (!updated?.length) throw new Error("Não foi possível atualizar a ideia.");
+      if (!updated?.length) throw new Error("A ideia mudou em outra sessão. Atualize a página antes de arquivar ou restaurar.");
       setSuggestions((previous) => { const next = { ...previous }; delete next[id]; return next; });
       await load();
       setNotice(archived ? "Ideia arquivada." : "Ideia restaurada.");
