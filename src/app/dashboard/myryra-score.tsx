@@ -16,7 +16,6 @@ export default function MyryraScore({metrics,loading}:{metrics:VyraMetrics|null;
  useEffect(()=>{
   if(activeModule!=="home")return;
   let cancelled=false;
-  setFocusMinutes(null);
   async function loadFocus(){
    try {
     const supabase=createClient();

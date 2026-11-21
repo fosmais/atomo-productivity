@@ -48,7 +48,7 @@ export default function MykaSupport() {
   useEffect(() => {
     if (!open || !topic.startsWith("billing-")) return;
     const controller = new AbortController();
-    setBillingInfo("Consultando assinatura...");
+    queueMicrotask(() => { if (!controller.signal.aborted) setBillingInfo("Consultando assinatura..."); });
     fetch("/api/billing/subscription", { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         if (response.status === 401 || response.status === 403) return "Entre na sua conta para consultar sua assinatura.";
@@ -66,9 +66,9 @@ export default function MykaSupport() {
 
   useEffect(() => {
     if (!open) return;
-    void loadTickets();
+    const initial = window.setTimeout(() => { void loadTickets(); }, 0);
     const interval = window.setInterval(() => { if (document.visibilityState === "visible") void loadTickets(); }, 60000);
-    return () => window.clearInterval(interval);
+    return () => { window.clearTimeout(initial); window.clearInterval(interval); };
   }, [open]);
 
   async function loadTickets() {

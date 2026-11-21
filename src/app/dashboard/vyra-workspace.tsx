@@ -7,6 +7,11 @@ import MykaSupport from "./myka-support";
 import EventReminders from "./event-reminders";
 import { VyraModuleContext, VyraNavigationContext } from "./vyra-module-context";
 
+const validModules = [
+  "home", "vyra-ai", "vyra-planner", "vyra-tasks", "vyra-calendar",
+  "vyra-scheduling", "vyra-performance", "vyra-finance", "vyra-health", "vyra-settings", "vyra-guide",
+];
+
 type VyraWorkspaceProps = {
   children: ReactNode;
 };
@@ -22,11 +27,6 @@ export default function VyraWorkspace({
   const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
   const [quickAction, setQuickAction] = useState<string | null>(null);
 
-  const validModules = [
-    "home", "vyra-ai", "vyra-planner", "vyra-tasks", "vyra-calendar",
-    "vyra-scheduling", "vyra-performance", "vyra-finance", "vyra-health", "vyra-settings",
-  ];
-
   // Persist the active workspace section in the URL so refresh and browser
   // navigation preserve the user's context without relying on local storage.
   useEffect(() => {
@@ -34,9 +34,9 @@ export default function VyraWorkspace({
       const requested = decodeURIComponent(window.location.hash.slice(1));
       setActiveModule(requested === "vyra-planner" ? "vyra-tasks" : validModules.includes(requested) ? requested : "home");
     };
-    syncFromUrl();
+    const timer = window.setTimeout(syncFromUrl, 0);
     window.addEventListener("hashchange", syncFromUrl);
-    return () => window.removeEventListener("hashchange", syncFromUrl);
+    return () => { window.clearTimeout(timer); window.removeEventListener("hashchange", syncFromUrl); };
   }, []);
 
   const navigateTo = (module: string) => {
@@ -67,6 +67,7 @@ export default function VyraWorkspace({
     "vyra-finance": "MYRYRA Finance",
     "vyra-health": "MYRYRA Saúde",
     "vyra-settings": "Preferências",
+    "vyra-guide": "Conheça a MYRYRA",
   };
 
   return (

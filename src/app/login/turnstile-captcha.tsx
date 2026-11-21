@@ -11,7 +11,7 @@ declare global {
 export default function TurnstileCaptcha({ onToken }: { onToken: (token: string) => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const callbackRef = useRef(onToken);
-  callbackRef.current = onToken;
+  useEffect(() => { callbackRef.current = onToken; }, [onToken]);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const key = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim();
   const diagnosticKey = key ? `${key.slice(0, 10)}…${key.slice(-6)} (${key.length} caracteres)` : "ausente";

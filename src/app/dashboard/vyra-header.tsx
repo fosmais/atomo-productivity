@@ -1,6 +1,7 @@
 "use client";
 import { useVyraNavigation } from "./vyra-module-context";
 import MykaPortrait from "@/components/myka-portrait";
+import Image from "next/image";
 import GlobalSearch from "./global-search";
 
 export default function VyraHeader() {
@@ -9,7 +10,9 @@ export default function VyraHeader() {
     <header className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/80 px-5 py-4 text-white">
       <div className="flex items-center gap-3">
         <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl">
-          <img
+          <Image
+            width={48}
+            height={48}
             src="/myryra-logo.png"
             alt="Logotipo MYRYRA"
             className="h-full w-full object-cover"

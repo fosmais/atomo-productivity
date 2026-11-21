@@ -52,7 +52,10 @@ export default function FinancialCarePanel() {
     } catch { setState("unavailable"); }
   }, []);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void refresh(); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [refresh]);
 
   async function submit(action: "cancel_renewal" | "downgrade", targetPlan?: "free" | "pro") {
     if (busy) return;

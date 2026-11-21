@@ -8,12 +8,9 @@ import { getCloudEvents } from "@/lib/event-cloud";
 import WhatNowCard from "./what-now-card";
 
 const portals = [
-  { label: "MIKA", subtitle: "Sua inteligência pessoal", icon: "✦", module: "vyra-ai" },
-  { label: "Seu dia e futuro", subtitle: "Agenda, planos e compromissos", icon: "▦", module: "vyra-calendar" },
-  { label: "Corpo e mente", subtitle: "Saúde, treino e bem-estar", icon: "♡", module: "vyra-health" },
-  { label: "Organização", subtitle: "Tarefas, foco e metas", icon: "✓", module: "vyra-tasks" },
-  { label: "Finanças e investimentos", subtitle: "Seu dinheiro e seus objetivos", icon: "◇", module: "vyra-finance" },
-  { label: "Sua evolução", subtitle: "Score, progresso e conquistas", icon: "◎", module: "vyra-performance" },
+  { label: "Meu dinheiro", subtitle: "Gastos e objetivos", icon: "◇", module: "vyra-finance" },
+  { label: "Bem-estar", subtitle: "Cuide de você", icon: "♡", module: "vyra-health" },
+  { label: "Meu progresso", subtitle: "Suas conquistas", icon: "◎", module: "vyra-performance" },
 ];
 const dailyMessages = [
   "Um pequeno passo hoje pode transformar o seu amanhã.",
@@ -29,6 +26,10 @@ const dailyMessages = [
   "Equilíbrio também é uma forma de progresso.",
   "O melhor planejamento é aquele que cabe na sua vida.",
 ];
+function localDayKey(date: Date) {
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+}
+
 function dayOfYear(date: Date) {
   const today = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
   return Math.floor((today - Date.UTC(date.getFullYear(), 0, 1)) / 86400000);
@@ -39,10 +40,9 @@ export default function VyraHome() {
   const { navigateTo, navigateToQuickAction } = useVyraNavigation();
   const [metrics, setMetrics] = useState<VyraMetrics | null>(null);
   const [nextEvent, setNextEvent] = useState<{ title: string; start: string } | null>(null);
+  const [dayEvents, setDayEvents] = useState<{ title: string; start: string }[]>([]);
   const [agendaError, setAgendaError] = useState(false);
-  const [today, setToday] = useState<Date | null>(null);
-
-  useEffect(() => { setToday(new Date()); }, []);
+  const [today] = useState<Date | null>(() => new Date());
 
   useEffect(() => {
     if (activeModule !== "home") return;
@@ -70,15 +70,22 @@ export default function VyraHome() {
           ...(google.connected ? (google.events ?? []).filter((event: { start?: string | null; status?: string }) => event.start && event.status !== "cancelled").map((event: { title: string; start: string }) => ({ title: event.title, start: event.start })) : []),
         ].filter((event) => new Date(event.start).getTime() >= Date.now())
           .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
-        if (!cancelled) setNextEvent(events[0] ?? null);
+        if (!cancelled) {
+          setNextEvent(events[0] ?? null);
+          const todayKey = localDayKey(new Date());
+          setDayEvents(events.filter(event => localDayKey(new Date(event.start)) === todayKey).slice(0, 5));
+          setAgendaError(false);
+        }
       } catch {
-        if (!cancelled) setAgendaError(true);
+        if (!cancelled) { setAgendaError(true); setDayEvents([]); setNextEvent(null); }
       }
     }
     void loadAgenda();
+    window.addEventListener("myryra:events-updated", loadAgenda);
     return () => {
       cancelled = true;
       window.removeEventListener("myryra:tasks-updated", refreshMetrics);
+      window.removeEventListener("myryra:events-updated", loadAgenda);
     };
   }, [activeModule]);
 
@@ -98,33 +105,59 @@ export default function VyraHome() {
     <main className="flex min-w-0 flex-col gap-3 " aria-label="Início MYRYRA">
       <section className="rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-950/65 via-slate-900/80 to-slate-950 p-4 sm:p-6" aria-label="Boas-vindas MYRYRA">
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-300">{today ? new Intl.DateTimeFormat("pt-BR",{weekday:"long",day:"numeric",month:"long"}).format(today) : "MYRYRA · SEU ESPAÇO"}</p>
-        <h1 className="mt-2 max-w-xl text-2xl font-semibold leading-tight text-white sm:text-3xl">Como podemos tornar seu dia extraordinário?</h1>
+        <h1 className="mt-2 max-w-xl text-2xl font-semibold leading-tight text-white sm:text-3xl">Menos coisas na cabeça. Mais tempo para viver.</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-200">A MYRYRA reúne suas tarefas, compromissos e dinheiro. Você vê o que importa agora e a MIKA ajuda a dar o próximo passo.</p>
         <p className="mt-3 text-sm leading-relaxed text-violet-200" aria-label="Inspiração do dia">{today ? dailyMessages[dayOfYear(today)%dailyMessages.length] : "Um dia de cada vez. Grandes mudanças começam com pequenos passos."}</p>
-        <button type="button" onClick={() => navigateTo("vyra-ai")} className="mt-4 flex w-full items-center gap-3 rounded-xl border border-violet-400/30 bg-violet-500/15 p-3 text-left transition hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-700/60 text-xl text-violet-100" aria-hidden="true">✦</span>
-          <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-white">Sua MIKA está aqui</span><span className="block text-xs text-violet-200">Planeje, converse ou descubra seu próximo passo.</span></span>
-          <span className="text-violet-200" aria-hidden="true">↗</span>
-        </button>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button type="button" onClick={() => navigateToQuickAction?.("capture")} className="rounded-xl bg-violet-600 px-3 py-3 text-sm font-semibold text-white hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-violet-400">+ Criar tarefa</button>
+          <button type="button" onClick={() => navigateTo("vyra-ai")} className="rounded-xl border border-violet-400/35 bg-violet-500/15 px-3 py-3 text-sm font-semibold text-violet-100 hover:bg-violet-500/25 focus-visible:outline-2 focus-visible:outline-violet-400">✦ Falar com a MIKA</button>
+        </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2" aria-label="Resumo rápido">
-        <button type="button" onClick={() => navigateTo("vyra-calendar")} className="min-w-0 rounded-xl border border-white/10 bg-slate-900/50 p-3 text-left hover:border-violet-400/50">
-          <span className="block text-slate-400">Próximo compromisso</span>
-          <span className="mt-1 block truncate font-semibold text-white">{nextEvent ? nextEvent.title : agendaError ? "Agenda indisponível" : "Nenhum compromisso"}</span>
-          {nextEvent && <span className="mt-1 block text-violet-300">{new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(nextEvent.start))}</span>}
-        </button>
-        <button type="button" onClick={() => navigateTo("vyra-performance")} className="rounded-xl border border-white/10 bg-slate-900/50 p-3 text-left hover:border-violet-400/50">
-          <span className="block text-slate-400">Seu progresso</span>
-          <span className="mt-1 block text-lg font-semibold text-white">{progress === null ? "—" : `${progress}%`}</span>
-          <span className="block text-slate-400">{metrics?.pending ?? "—"} pendentes</span>
-        </button>
+      <section aria-label="Seu dia interativo" className="rounded-2xl border border-violet-400/25 bg-slate-900/70 p-4 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-base font-semibold text-white">O que precisa da sua atenção hoje?</h2>
+            <p className="mt-1 text-xs text-slate-300">Veja seus próximos compromissos e escolha uma tarefa para começar.</p>
+          </div>
+          <button type="button" onClick={() => navigateTo("vyra-calendar")} className="rounded-lg border border-violet-400/35 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/15">Ver agenda</button>
+        </div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <button type="button" onClick={() => navigateTo("vyra-calendar")} className="rounded-xl border border-white/10 bg-slate-950/55 p-3 text-left hover:border-violet-400/50">
+            <span className="block text-xs text-violet-300">A seguir · Agenda</span>
+            <span className="mt-1 block truncate text-sm font-semibold text-white">{nextEvent ? nextEvent.title : agendaError ? "Não foi possível consultar sua agenda" : "Sem compromissos futuros"}</span>
+            {nextEvent && <span className="mt-1 block text-xs text-slate-300">{new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(nextEvent.start))}</span>}
+          </button>
+          <button type="button" onClick={() => navigateTo("vyra-tasks")} className="rounded-xl border border-white/10 bg-slate-950/55 p-3 text-left hover:border-violet-400/50">
+            <span className="block text-xs text-violet-300">A seguir · Prioridades</span>
+            <span className="mt-1 block text-sm font-semibold text-white">{metrics ? metrics.pending + " tarefa(s) pendente(s)" : "Consultar minhas tarefas"}</span>
+            <span className="mt-1 block text-xs text-slate-300">{smartSuggestion.message}</span>
+          </button>
+        </div>
+        <div className="mt-3 rounded-xl border border-white/10 bg-slate-950/40 p-3" aria-label="Linha do tempo de hoje">
+          <h3 className="text-xs font-semibold text-violet-200">Linha do tempo de hoje</h3>
+          {dayEvents.length > 0 ? (
+            <ol className="mt-2 space-y-2">
+              {dayEvents.map((event, index) => (
+                <li key={event.start + "-" + index} className="flex items-start gap-3 border-l-2 border-violet-500/50 pl-3">
+                  <time className="shrink-0 text-xs font-semibold text-violet-300" dateTime={event.start}>{new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(event.start))}</time>
+                  <span className="min-w-0 flex-1 break-words text-xs text-white">{event.title}</span>
+                  <button type="button" onClick={() => navigateTo("vyra-calendar")} aria-label={`Ver ou reagendar ${event.title} na Agenda`} className="shrink-0 rounded-md border border-violet-400/30 px-2 py-1 text-xs text-violet-200 hover:bg-violet-500/15">Ver / reagendar</button>
+                </li>
+              ))}
+            </ol>
+          ) : <p className="mt-2 text-xs text-slate-400">{agendaError ? "Agenda indisponível. Tente novamente na Agenda." : "Nenhum compromisso restante para hoje."}</p>}
+        </div>
+        <div className="mt-3 flex justify-end">
+          <button type="button" onClick={() => navigateTo("vyra-tasks")} className="rounded-lg border border-violet-400/35 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/15">Concluir tarefas</button>
+        </div>
       </section>
 
       <details className="group rounded-2xl border border-violet-400/35 bg-gradient-to-br from-violet-950/70 via-slate-900/85 to-slate-950 p-4 shadow-sm sm:p-5">
         <summary className="flex cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden">
           <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-700/45 text-2xl text-violet-200">✦</span>
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold text-white">Sugestão inteligente da MIKA</span>
+            <span className="block text-sm font-semibold text-white">Uma dica para você</span>
             <span className="mt-1 block text-xs leading-relaxed text-violet-200">{smartSuggestion.message}</span>
           </span>
           <span aria-hidden="true" className="text-lg text-violet-200 transition-transform group-open:rotate-90">›</span>
@@ -135,33 +168,47 @@ export default function VyraHome() {
         </div>
       </details>
 
-      <section aria-label="Explore seu universo">
-        <h2 className="mb-3 text-base font-semibold text-white">Explore seu universo</h2>
-        <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:grid-cols-3">
-          {portals.map(item => <button key={item.label} type="button" onClick={() => navigateTo(item.module)} className="flex min-h-24 min-w-0 flex-col items-start justify-center gap-2 rounded-xl border border-violet-400/15 bg-slate-900/65 p-3 text-left transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
-            <span className="text-2xl text-violet-300" aria-hidden="true">{item.icon}</span>
-            <span className="break-words text-sm font-semibold leading-snug text-white">{item.label}</span>
-            <span className="break-words text-xs leading-snug text-slate-400">{item.subtitle}</span>
+      <section aria-label="O que você quer fazer?">
+        <h2 className="mb-3 text-base font-semibold text-white">Outras áreas da sua vida</h2>
+        <div className="grid grid-cols-3 gap-2">
+          {portals.map(item => <button key={item.label} type="button" onClick={() => navigateTo(item.module)} className="flex min-h-20 min-w-0 flex-col items-center justify-center gap-1 rounded-xl border border-violet-400/15 bg-slate-900/65 p-2 text-center transition hover:border-violet-400/60 hover:bg-violet-500/15 focus-visible:outline-2 focus-visible:outline-violet-400">
+            <span className="text-xl text-violet-300" aria-hidden="true">{item.icon}</span>
+            <span className="break-words text-xs font-semibold leading-snug text-white sm:text-sm">{item.label}</span>
+            <span className="hidden break-words text-xs leading-snug text-slate-400 sm:block">{item.subtitle}</span>
           </button>)}
         </div>
       </section>
-      <details className="group rounded-2xl border border-violet-400/20 bg-slate-900/65 p-4 sm:p-5">
-        <summary className="flex cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden"><span aria-hidden="true" className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-700/25 text-xl text-violet-200">▦</span><span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-white">Todas as ferramentas</span><span className="mt-1 block text-xs text-slate-400">Explore os recursos adicionais da MYRYRA</span></span><span aria-hidden="true" className="text-lg text-violet-200 transition-transform group-open:rotate-90">›</span></summary>
-        <div className="mt-3 grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:grid-cols-3">
+      <details aria-label="Como a MYRYRA ajuda" className="rounded-2xl border border-violet-400/20 bg-slate-900/65 p-4 sm:p-5">
+        <summary className="cursor-pointer text-sm font-semibold text-violet-200">Primeira vez aqui? Veja como começar</summary>
+        <div className="mt-3">
+        <h2 className="text-base font-semibold text-white">Três passos para começar</h2>
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
           {[
-            {label:"Nova tarefa",module:"vyra-tasks",action:"capture"},
-            {label:"Agenda",module:"vyra-calendar"},
-            {label:"Lembretes",module:"vyra-tasks",action:"capture"},
-            {label:"Metas",module:"vyra-tasks",action:"goals"},
-            {label:"Planejamento",module:"vyra-tasks",action:"kanban"},
-            {label:"Configurações",module:"vyra-settings"},
-            {label:"Ajuda e suporte",module:"support"},
-            {label:"Saúde",module:"vyra-health"},
-            {label:"Finanças",module:"vyra-finance"},
-            {label:"Sua evolução",module:"vyra-performance"}
-          ].map(item=><button key={item.label} type="button" onClick={()=>item.module==="support"?window.dispatchEvent(new CustomEvent("myryra:open-support")):"action" in item && item.action ? navigateToQuickAction?.(item.action) : navigateTo(item.module)} className="min-w-0 break-words rounded-lg border border-white/10 bg-slate-950/70 px-3 py-3 text-left text-xs font-medium text-white transition hover:border-violet-400/50 focus-visible:outline-2 focus-visible:outline-violet-400">{item.label}</button>)}
+            { title: "1. Anote", text: "Coloque suas tarefas e compromissos em um só lugar.", action: "Criar tarefa", module: "vyra-tasks", quick: true },
+            { title: "2. Escolha", text: "Veja o que é importante hoje e comece por uma coisa.", action: "Ver minhas tarefas", module: "vyra-tasks" },
+            { title: "3. Peça ajuda", text: "A MIKA ajuda a organizar ideias e encontrar o próximo passo.", action: "Falar com a MIKA", module: "vyra-ai" },
+          ].map(item => (
+            <div key={item.title} className="rounded-xl border border-white/10 bg-slate-950/50 p-3">
+              <h3 className="text-sm font-semibold text-white">{item.title}</h3>
+              <p className="mt-2 text-xs leading-relaxed text-slate-300">{item.text}</p>
+              <button type="button" onClick={() => item.quick ? navigateToQuickAction?.("capture") : navigateTo(item.module)} className="mt-3 rounded-lg border border-violet-400/35 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/15">{item.action}</button>
+            </div>
+          ))}
+        </div>
+        <details className="mt-3 rounded-xl border border-white/10 p-3">
+          <summary className="cursor-pointer text-xs font-semibold text-violet-200">Tarefa, compromisso ou plano?</summary>
+          <p className="mt-2 text-xs leading-relaxed text-slate-300">Tarefa é algo para fazer. Compromisso tem dia e horário. Plano reúne passos para alcançar um objetivo.</p>
+        </details>
         </div>
       </details>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+        <span className="text-xs text-slate-400">Precisa de mais alguma coisa?</span>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => navigateTo("vyra-settings")} className="rounded-lg border border-white/15 px-3 py-2 text-xs font-medium text-slate-300 hover:border-violet-400/50">Minha conta</button>
+          <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("myryra:open-support"))} className="rounded-lg border border-white/15 px-3 py-2 text-xs font-medium text-slate-300 hover:border-violet-400/50">Ajuda</button>
+        </div>
+      </div>
 
 
     </main>

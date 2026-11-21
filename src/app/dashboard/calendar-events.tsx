@@ -157,7 +157,9 @@ export default function CalendarEvents() {
   }
 
   useEffect(() => {
-    void loadGoogleEvents();
+    // Defer the initial refresh so state updates do not run synchronously in the effect.
+    const timer = window.setTimeout(() => { void loadGoogleEvents(); }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const [title, setTitle] = useState("");

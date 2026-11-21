@@ -67,7 +67,10 @@ export default function DailyBriefing() {
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const initialRefresh = window.setTimeout(() => { void load(); }, 0);
+    return () => window.clearTimeout(initialRefresh);
+  }, [load]);
 
   return (
     <section className="rounded-2xl border border-violet-500/30 bg-slate-900 p-5 text-white" aria-label="Resumo do dia">

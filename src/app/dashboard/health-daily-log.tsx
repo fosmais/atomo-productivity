@@ -31,7 +31,10 @@ export default function HealthDailyLog() {
     else setLogs((data || []) as Log[]);
     setLoading(false);
   }
-  useEffect(() => { void refresh(); }, []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void refresh(); }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
   const selected = options.find(item => item.id === category)!;
   async function save() {
     const number = selected.unit ? Number(value.replace(",", ".")) : null;

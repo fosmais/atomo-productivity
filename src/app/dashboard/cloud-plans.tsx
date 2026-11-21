@@ -33,7 +33,12 @@ export default function CloudPlans() {
   }
 
   useEffect(() => {
-    void loadPlans();
+    let active = true;
+    getCloudPlans().then(
+      data => { if (active) { setPlans(data); setLoading(false); } },
+      err => { if (active) { setError(err instanceof Error ? err.message : "Erro ao carregar planos."); setLoading(false); } }
+    );
+    return () => { active = false; };
   }, []);
 
   async function handleSave() {

@@ -164,7 +164,8 @@ export default function SmartSchedulingPanel() {
   }
 
   useEffect(() => {
-    void loadSuggestions();
+    const timer = window.setTimeout(() => { void loadSuggestions(); }, 0);
+    return () => window.clearTimeout(timer);
   }, [loadSuggestions]);
 
   return (

@@ -116,10 +116,11 @@ export default function TaskKanban() {
   }, [focusedTaskId]);
 
   useEffect(() => {
-    void loadTasks();
+    const initialTimer = window.setTimeout(() => { void loadTasks(); }, 0);
     const refresh = () => { void loadTasks(); };
     window.addEventListener("myryra:tasks-updated", refresh);
     return () => {
+      window.clearTimeout(initialTimer);
       ++latestLoadRef.current;
       window.removeEventListener("myryra:tasks-updated", refresh);
     };

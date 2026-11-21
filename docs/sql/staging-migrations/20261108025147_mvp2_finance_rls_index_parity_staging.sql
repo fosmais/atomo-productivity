@@ -1,0 +1,9 @@
+-- Isolated Finance staging parity migration. Preserve UPDATE policies for trash experiments.
+CREATE INDEX IF NOT EXISTS myryra_finance_entries_user_created_idx ON public.myryra_finance_entries(user_id,created_at DESC);
+CREATE INDEX IF NOT EXISTS myryra_finance_subscriptions_user_due_idx ON public.myryra_finance_subscriptions(user_id,next_due_date);
+ALTER POLICY finance_entries_select_own ON public.myryra_finance_entries RENAME TO finance_select_own;
+ALTER POLICY finance_entries_insert_own ON public.myryra_finance_entries RENAME TO finance_insert_own;
+ALTER POLICY finance_entries_delete_own ON public.myryra_finance_entries RENAME TO finance_delete_own;
+ALTER POLICY finance_subscriptions_select_own ON public.myryra_finance_subscriptions RENAME TO finance_subscriptions_select;
+ALTER POLICY finance_subscriptions_insert_own ON public.myryra_finance_subscriptions RENAME TO finance_subscriptions_insert;
+ALTER POLICY finance_subscriptions_delete_own ON public.myryra_finance_subscriptions RENAME TO finance_subscriptions_delete;

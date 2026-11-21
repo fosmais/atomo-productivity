@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 const headers = { "Cache-Control": "private, no-store" };
@@ -8,6 +8,7 @@ const headers = { "Cache-Control": "private, no-store" };
  * No service-role credentials, no provider mutations.
  */
 export async function GET(request: Request) {
+  await connection();
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return NextResponse.json({ error: "Autenticação necessária." }, { status: 401, headers });

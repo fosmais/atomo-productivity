@@ -18,3 +18,5 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - name: Lint MYRYRA Finance wallet
+        run: npx eslint src/app/dashboard/myryra-finance-starter.tsx

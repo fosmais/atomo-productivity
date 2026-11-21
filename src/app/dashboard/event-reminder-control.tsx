@@ -8,8 +8,9 @@ export default function EventReminderControl({ eventId, startsAt }: { eventId: s
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [renderedAt] = useState(() => Date.now());
 
-  if (new Date(startsAt).getTime() <= Date.now()) return null;
+  if (new Date(startsAt).getTime() <= renderedAt) return null;
 
   async function handleSave() {
     if (saving) return;

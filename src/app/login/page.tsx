@@ -32,9 +32,11 @@ export default function LoginPage() {
     // Keep Preview on its own hostname for isolated email/password homologation.
     // Google OAuth remains canonicalized separately until Preview redirect URIs are configured.
     const params = new URLSearchParams(window.location.search);
-    if (params.get("mode") === "signup") setMode("signup");
-    const errorCode = params.get("error");
     const requestedReturn = params.get("next");
+    const applyInitialParams = () => {
+      if (!active) return;
+      if (params.get("mode") === "signup") setMode("signup");
+    const errorCode = params.get("error");
     if (requestedReturn === "/suporte-admin") setReturnTo(requestedReturn);
     if (params.get("mfa") === "required") { setMessage("Acesso Google concluído. Aguarde a verificação do autenticador para finalizar o login."); setIsError(false); }
     if (errorCode === "recovery") {
@@ -47,6 +49,8 @@ export default function LoginPage() {
       setIsError(true);
       setMessage("Não foi possível confirmar o link. Solicite um novo e-mail.");
     }
+    };
+    const initialTimer = window.setTimeout(applyInitialParams, 0);
     async function resumeMfa() {
       try {
         const supabase = createClient();
@@ -70,7 +74,7 @@ export default function LoginPage() {
       }
     }
     void resumeMfa();
-    return () => { active = false; };
+    return () => { active = false; window.clearTimeout(initialTimer); };
   }, [router]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
