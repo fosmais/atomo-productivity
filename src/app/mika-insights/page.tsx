@@ -99,13 +99,18 @@ export default function MikaInsightsPage() {
           if (!response.ok) throw new Error(result && typeof result === "object" && "error" in result && typeof result.error === "string" ? result.error : "Não foi possível transcrever.");
           if (!result || typeof result !== "object" || !("text" in result) || typeof result.text !== "string") throw new Error("Resposta de transcrição inválida.");
           const transcript = result.text;
-          const combined = [draft.trim(), transcript].filter(Boolean).join(draft.trim() ? "\n" : "");
-          if (combined.length > 10000) {
-            throw new Error("Transcrição muito longa. Reduza o texto para até 10.000 caracteres.");
-          }
-          setDraft(combined);
-          setVoiceDraft(true);
-          setNotice("Áudio transcrito. Revise o texto antes de salvar.");
+          // Use the latest draft: the recorder callback can outlive the render that started recording.
+          setDraft((current) => {
+            const existing = current.trim();
+            const combined = [existing, transcript].filter(Boolean).join(existing ? "\n" : "");
+            if (combined.length > 10000) {
+              setError("Transcrição muito longa. Reduza o texto para até 10.000 caracteres.");
+              return current;
+            }
+            setVoiceDraft(true);
+            setNotice("Áudio transcrito. Revise o texto antes de salvar.");
+            return combined;
+          });
         } catch (e: unknown) { setError(e instanceof Error ? e.message : "Falha na transcrição."); }
         finally { setTranscribing(false); }
       };
