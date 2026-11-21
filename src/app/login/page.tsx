@@ -38,7 +38,7 @@ export default function LoginPage() {
       if (!active) return;
       if (params.get("mode") === "signup") setMode("signup");
       if (params.get("session") === "expired") { setIsError(false); setMessage("Sua sessão expirou. Entre novamente para continuar com segurança."); }
-      if (requestedReturn === "/suporte-admin") setReturnTo(requestedReturn);
+      if ((requestedReturn === "/suporte-admin" || requestedReturn === "/mika-insights")) setReturnTo(requestedReturn);
       if (params.get("mfa") === "required") { setMessage("Acesso Google concluído. Aguarde a verificação do autenticador para finalizar o login."); setIsError(false); }
       if (errorCode === "recovery") {
         setIsError(true);
@@ -59,7 +59,7 @@ export default function LoginPage() {
         const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
         if (assurance.error || !active) return;
         if (assurance.data.currentLevel === "aal2" || assurance.data.nextLevel === "aal1") {
-          router.replace(requestedReturn === "/suporte-admin" ? "/suporte-admin" : "/dashboard");
+          router.replace(requestedReturn === "/suporte-admin" || requestedReturn === "/mika-insights" ? requestedReturn : "/dashboard");
           router.refresh();
           return;
         }
