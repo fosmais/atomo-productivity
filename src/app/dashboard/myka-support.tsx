@@ -24,6 +24,7 @@ export default function MykaSupport() {
   const [message, setMessage] = useState("");
   const [topic, setTopic] = useState("context");
   const [sending, setSending] = useState(false);
+  const [authorizeMika, setAuthorizeMika] = useState(false);
   const [status, setStatus] = useState("");
   const [tickets, setTickets] = useState<Array<{ id: string; subject: string; status: string; priority: string; updated_at: string; created_at: string }>>([]);
   const [ticketsNotice, setTicketsNotice] = useState("");
@@ -118,6 +119,7 @@ export default function MykaSupport() {
           category: topic.startsWith("billing-") ? "billing" : "general",
           subject: selected.title,
           message: trimmed,
+          authorizeMika: authorizeMika && !topic.startsWith("billing-"),
         }),
       });
       const result = await response.json() as {
@@ -137,6 +139,7 @@ export default function MykaSupport() {
       void loadTickets();
       void viewReplies(result.ticket.id);
       setMessage("");
+      setAuthorizeMika(false);
     } catch (err) { setError(err instanceof Error ? err.message : "Não foi possível registrar a solicitação."); }
     finally { setSending(false); }
   }
@@ -159,6 +162,7 @@ export default function MykaSupport() {
         <div className="space-y-2">
           <label htmlFor="myka-support-message" className="block text-sm font-medium">Ainda precisa de ajuda? Abra um chamado</label>
           <textarea id="myka-support-message" value={message} onChange={e => setMessage(e.target.value)} maxLength={1500} rows={4} placeholder="Descreva sua dúvida ou problema (mínimo 10 caracteres). Não informe dados de pagamento..." className="w-full resize-y rounded-xl border border-slate-700 bg-slate-900 p-3 text-sm text-white placeholder:text-slate-500" />
+          {!topic.startsWith("billing-") && <label className="flex items-start gap-2 text-xs text-slate-300"><input type="checkbox" checked={authorizeMika} onChange={e => setAuthorizeMika(e.target.checked)} className="mt-0.5 accent-violet-500" /><span>Autorizo a MIKA a analisar o texto deste chamado para tentar responder automaticamente. Posso continuar sem autorizar; nesse caso, o atendimento será humano.</span></label>}
           <button type="button" onClick={() => void send()} disabled={sending || message.trim().length < 10} className="w-full rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold disabled:opacity-50">{sending ? "Registrando..." : "Abrir chamado"}</button>
           {status && <p role="status" className="text-sm text-emerald-300">{status}</p>}
           {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
