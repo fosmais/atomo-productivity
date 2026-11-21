@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { hasCurrentLegalAcceptance } from "@/lib/privacy/legal-acceptance";
 
-export const runtime = "nodejs";
 const headers = { "Cache-Control": "private, no-store" };
 const categories = new Set(["general", "billing"]);
 
