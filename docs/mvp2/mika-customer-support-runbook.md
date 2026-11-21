@@ -104,3 +104,9 @@ The current ticket RLS policy includes a historical authenticated INSERT policy,
 - The existing versioned migration `20261121050000_support_server_only_ticket_creation.sql` already revokes authenticated `INSERT/UPDATE/DELETE` and drops the legacy insert policy; `20261121060000_support_atomic_ticket_rate_limit.sql` additionally restricts ticket grants and RPC execution. Do not duplicate or prematurely deploy these migrations.
 - Release gate: after an approved, controlled production migration, verify `has_table_privilege('authenticated','public.support_tickets','INSERT') = false`, that the legacy INSERT policy is absent, that owner-scoped reads still work, and that authorized server-side creation and rate limits pass. This check is pending, not yet passed.
 - Production internal support tables `support_email_outbox`, `support_ticket_replies`, `support_admins` expose no direct `anon` or `authenticated` table privileges in this audit. Finance, Journey, and teacher sessions have RLS and role grants, but ownership policy effectiveness still needs authenticated multi-user E2E tests.
+
+## Email outbox schema drift — verified read-only
+
+- `public.support_email_outbox.processing_started_at` exists in the isolated support homologation database but **does not exist in production**. The worker uses this lease timestamp to atomically claim, recover and complete queued notifications.
+- Production must not enable `MIKA_EMAIL_ENABLED` or the support outbox cron until the reviewed `20261121040000_support_outbox_recovery.sql` migration and subsequent security migrations are applied through the controlled release process, with column presence verified.
+- This is distinct from the missing full-app schema baseline in the isolated branch. Fix both before calling MVP2 integrated validation complete.
