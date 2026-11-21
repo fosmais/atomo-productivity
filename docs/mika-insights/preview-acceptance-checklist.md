@@ -49,3 +49,7 @@
 - [ ] Revalidar CI e deployment no commit final após eventuais ajustes.
 
 **Estado:** homologação funcional P0 ainda não concluída; PR deve permanecer draft. Nenhum merge, deploy em PROD ou cobrança real autorizado por este documento.
+
+## Evidência declarada pelo homologador — 20/11/2026
+- **Cenários 5–7 (edição, arquivamento/restauração, exclusão):** PASS informado pelo usuário para os quatro comportamentos no Preview. Registro baseado na confirmação do homologador, **não** em execução automatizada pelo assistente; dispositivo, horário exato e capturas não fornecidos.
+- **Cenários 8–9 (concorrência e isolamento):** ainda aguardam validação funcional com duas sessões/contas. Os testes SQL anteriores não substituem essa etapa.
