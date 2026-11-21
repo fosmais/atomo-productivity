@@ -74,3 +74,10 @@ The current ticket RLS policy includes a historical authenticated INSERT policy,
 - RPC migrated to SECURITY INVOKER; direct SELECT on auth.users removed because service_role cannot read that table. FK still enforces user existence. Inherited authenticated TRUNCATE/TRIGGER/REFERENCES grants were revoked.
 - Latest Preview deployment `dpl_2d8aznNVjfM7Amp6CpS1KxT3FQUd` on commit `316fdece7187c8603a4df7c3d121e1dfed4cd7c0` reached READY. Production unchanged.
 - Outstanding: authenticated HTTP E2E, concurrent API requests, Resend sandbox, MIKA AI safety, Android regression, final release approval. Decommission the hourly-billed branch when homologation is complete.
+
+## Branch synchronization investigation — 2026-11-21
+
+- Production has 45 migration history entries; isolated support branch has 7, with only `autopilot_transactional_reservation` shared. The branch is `MIGRATIONS_FAILED` while its database is `ACTIVE_HEALTHY`.
+- Rebase request returned success, but follow-up status remained `MIGRATIONS_FAILED` and the migration count remained 7. Do not claim synchronization succeeded.
+- Supabase health advisors returned no lints. Security advisor reports four INFO `rls_enabled_no_policy` notices on service-only support tables; intentional unless access model changes.
+- Next step: inspect Supabase Dashboard > Manage Branches > branch > View logs for the exact migration failure before reset/recreation. Do not merge branch into production. Do not point full-app Preview to this incomplete schema.
