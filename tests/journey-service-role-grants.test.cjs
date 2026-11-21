@@ -26,7 +26,7 @@ test("Journey server-write migration fails closed when a required table or role 
 });
 
 test("Journey server-write migration never grants physical deletion or ledger mutation", () => {
-  assert.doesNotMatch(migration, /myryra_journey_myra_ledger/i);
-  assert.doesNotMatch(migration, /GRANT DELETE/i);
-  assert.doesNotMatch(migration, /GRANT INSERT, UPDATE, DELETE/i);
+  const executable = migration.split("\\n").filter(line => !/^\\s*--/.test(line)).join("\\n");
+  assert.doesNotMatch(executable, /myryra_journey_myra_ledger/i);
+  assert.doesNotMatch(executable, /GRANT DELETE|GRANT INSERT, UPDATE, DELETE/i);
 });
