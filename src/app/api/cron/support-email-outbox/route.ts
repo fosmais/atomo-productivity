@@ -13,17 +13,23 @@ export async function GET(request: Request) {
   try {
     const admin = createSupabaseAdmin();
     const { data: pending, error } = await admin.from("support_email_outbox")
-      .select("id,event_type,source_id,recipient,subject,payload,attempts")
-      .eq("status", "pending").order("created_at", { ascending: true }).limit(10);
+      .select("id,event_type,source_id,recipient,subject,payload,attempts,status,processing_started_at")
+      .or(`status.eq.pending,and(status.eq.processing,processing_started_at.lt.${new Date(Date.now() - 10 * 60 * 1000).toISOString()})`)
+      .order("created_at", { ascending: true }).limit(10);
     if (error) throw error;
 
     let sent = 0, failed = 0, skipped = 0;
     for (const item of pending ?? []) {
       const nextAttempt = Number(item.attempts ?? 0) + 1;
       // Compare-and-set claim prevents two concurrent workers from sending the same row.
-      const { data: claimed, error: claimError } = await admin.from("support_email_outbox")
-        .update({ status: "processing", attempts: nextAttempt, last_error: null })
-        .eq("id", item.id).eq("status", "pending").select("id").maybeSingle();
+      let claim = admin.from("support_email_outbox")
+        .update({ status: "processing", attempts: nextAttempt, processing_started_at: new Date().toISOString(), last_error: null })
+        .eq("id", item.id);
+      if (item.status === "pending") claim = claim.eq("status", "pending");
+      else if (item.status === "processing" && item.processing_started_at)
+        claim = claim.eq("status", "processing").eq("processing_started_at", item.processing_started_at);
+      else { skipped++; continue; }
+      const { data: claimed, error: claimError } = await claim.select("id").maybeSingle();
       if (claimError) { failed++; continue; }
       if (!claimed) { skipped++; continue; }
 
@@ -47,14 +53,14 @@ export async function GET(request: Request) {
       });
       if (result.sent) {
         const { error: updateError } = await admin.from("support_email_outbox")
-          .update({ status: "sent", sent_at: new Date().toISOString(), last_error: null })
+          .update({ status: "sent", sent_at: new Date().toISOString(), processing_started_at: null, last_error: null })
           .eq("id", item.id).eq("status", "processing");
         if (updateError) failed++; else sent++;
       } else {
         const terminal = nextAttempt >= 5;
         const reason = (result.reason ?? "Falha no envio").slice(0, 300);
         const { error: updateError } = await admin.from("support_email_outbox")
-          .update({ status: terminal ? "failed" : "pending", last_error: reason })
+          .update({ status: terminal ? "failed" : "pending", processing_started_at: null, last_error: reason })
           .eq("id", item.id).eq("status", "processing");
         if (updateError) failed++; else failed++;
       }
