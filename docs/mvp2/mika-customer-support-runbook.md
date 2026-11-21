@@ -162,3 +162,16 @@ The six missing core tables have **30 local constraints** (including primary key
 - `mika_teacher_sessions`: 7 constraints; unique `(id,owner_id)` for downstream composite FK, topic 1–120 characters, level 1–40 characters, status `active/completed/cancelled`, owner and journey FKs, PK.
 
 This catalog inspection does not authorize deployment of a reconstructed schema. Indexes, triggers, policies, grants, functions, migration provenance and cross-table dependencies remain mandatory for a faithful schema-only baseline.
+
+## Baseline index inventory — read-only production catalog
+
+The six missing tables have **16 indexes** in production:
+
+- `events` (5): `events_pkey`, `events_user_start_idx`, `events_user_deleted_at_idx`, partial `events_user_category_idx` (`deleted_at IS NULL`), partial unique `events_autopilot_task_once_per_user_idx` on `(user_id, notes)` where notes starts with `Tarefa MYRYRA: `.
+- `tasks` (2): `tasks_pkey`, `tasks_user_deleted_at_idx`.
+- `plans` (1): `plans_pkey`.
+- `myryra_finance_entries` (2): `myryra_finance_entries_pkey`, `myryra_finance_entries_user_created_idx`.
+- `myryra_journeys` (3): `myryra_journeys_pkey`, `myryra_journeys_owner_idx`, partial unique `myryra_journeys_owner_confirmation_key_uq` (`confirmation_key IS NOT NULL`).
+- `mika_teacher_sessions` (3): `mika_teacher_sessions_pkey`, unique `mika_teacher_sessions_id_owner_id_key`, `mika_teacher_sessions_owner_created_idx`.
+
+The `events_autopilot_task_once_per_user_idx` is the exact index whose migration failed in isolated homologation because `public.events` did not exist. Preserve migration ordering and the original partial predicates. This inventory is diagnostic, not an authorization to alter production or fabricate the missing schema.
