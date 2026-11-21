@@ -77,6 +77,7 @@ REVOKE ALL ON public.support_admins FROM anon, authenticated;
 REVOKE ALL ON public.support_ticket_replies FROM anon, authenticated;
 REVOKE ALL ON public.support_ticket_events FROM anon, authenticated;
 REVOKE ALL ON public.support_email_outbox FROM anon, authenticated;
+GRANT ALL ON public.support_tickets, public.support_admins, public.support_ticket_replies, public.support_ticket_events, public.support_email_outbox TO service_role;
 
 CREATE OR REPLACE FUNCTION public.support_tickets_touch_updated_at()
 RETURNS trigger
