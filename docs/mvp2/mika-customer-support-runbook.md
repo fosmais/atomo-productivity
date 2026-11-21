@@ -30,6 +30,7 @@ Vercel Cron calls `/api/cron/support-email-outbox` every five minutes. The endpo
 ## Safety and privacy
 
 - Customer tickets are created server-side from the authenticated session; client-supplied user IDs are rejected.
+- The follow-up migration `20261121050000_support_server_only_ticket_creation.sql` removes direct INSERT/UPDATE/DELETE grants for authenticated users and drops the former INSERT policy, including on databases where the core migration was already applied. Verify this behavior in an isolated branch before production migration.
 - The support throttle is independent from MIKA/Concierge AI quotas (5 tickets/hour and 10/day).
 - The AI is restricted to basic product guidance. Account, security, billing, refunds, personal-data and out-of-scope cases are escalated.
 - The AI receives ticket text only after checking current legal acceptance.
@@ -43,7 +44,8 @@ Vercel Cron calls `/api/cron/support-email-outbox` every five minutes. The endpo
 4. With email disabled, verify the worker reports disabled and does not mutate the queue.
 5. With a valid Resend test key, verify one email, one sent row, and no duplicate on the next run.
 6. Enable MIKA AI only in isolated Preview and test a known FAQ, an out-of-scope billing request, missing consent, and provider timeout.
-7. Verify cross-user reads are denied and production flags remain unchanged.
+7. Verify cross-user reads are denied, direct client ticket INSERT is rejected, and production flags remain unchanged.
+8. Confirm the `/api/support/replies` endpoint returns only the authenticated owner’s replies and labels AI vs human messages in the widget.
 
 
 ## Isolated Preview guard
