@@ -123,9 +123,6 @@ export async function POST(request: Request) {
             ticket_id: ticket.id, author_type: "myka", author_id: null, body: answer
           });
           if (replyError) throw replyError;
-          const { error: updateError } = await admin.from("support_tickets")
-            .update({ status: "in_progress" }).eq("id", ticket.id).eq("user_id", user.id);
-          if (updateError) throw updateError;
           mika = { answered: true, escalated: false };
         }
       } catch {
