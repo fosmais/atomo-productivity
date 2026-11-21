@@ -183,3 +183,14 @@ The six missing baseline tables contain **24 policies**: `events` 5, `tasks` 4, 
 **Security/behavior review finding:** `events` has two permissive UPDATE policies. `Users can update own events` checks only `auth.uid() = user_id`, while `events_owner_update_category` additionally requires `deleted_at IS NULL`. PostgreSQL combines permissive policies with OR, so the latter restriction does **not** prevent updates of soft-deleted events when the former allows them. Determine intended soft-delete and restore behavior before proposing a policy change; preserve legitimate restore functionality. No production RLS changes were applied.
 
 The policies inventory is insufficient to declare tenant isolation tested: execute authenticated two-user E2E probes against an isolated complete baseline before release.
+
+## Core table triggers — production metadata, read-only
+
+Among the six missing core tables, the production catalog exposes one non-internal trigger:
+
+- `myryra_guard_blocking_event_overlap` on `public.events`, `BEFORE INSERT OR UPDATE OF user_id, starts_at, ends_at, blocks_time, deleted_at`.
+- Its `public.myryra_guard_blocking_event_overlap()` PL/pgSQL function skips deleted or non-blocking events, rejects invalid intervals, and preserves pre-existing overlaps when the owner and blocking interval remain unchanged.
+- For new or moved blocking intervals it sets a 5-second lock timeout, takes a per-user transaction-scoped advisory lock via `pg_advisory_xact_lock(hashtextextended(user_id::text, 77429))`, then rejects overlapping active blocking events with SQLSTATE `23P01`.
+- A complete isolated baseline must restore this exact behavior before calendar concurrency tests; merely recreating `events` columns, constraints, indexes and RLS would yield misleading test results.
+
+No production trigger or function was changed. Do not apply this isolated finding as a production fix.
