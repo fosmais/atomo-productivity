@@ -26,5 +26,7 @@ jobs:
       - run: npm ci
       - name: ESLint (MIKA Insights)
         run: npx eslint src/app/mika-insights src/app/api/mika-insights
+      - name: Generate Next.js route and layout types
+        run: npx next typegen
       - name: TypeScript
         run: npx tsc --noEmit
