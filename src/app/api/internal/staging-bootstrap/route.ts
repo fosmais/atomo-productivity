@@ -9,6 +9,8 @@ const workflow = "journey-auth-staging.yml";
 async function authorize() {
   // Never permit a test dispatch from a production deployment.
   if (process.env.VERCEL_ENV !== "preview" || process.env.MYRYRA_STAGING_TEST_CONSOLE_ENABLED !== "true") return false;
+  // Preview deployments must authenticate against the dedicated staging Supabase project.
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL !== "https://xanavauqzsrgvdfhcrsm.supabase.co") return false;
   const db = await createClient();
   const { data, error } = await db.auth.getUser();
   if (error || !data.user) return false;
