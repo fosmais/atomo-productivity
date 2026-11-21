@@ -177,3 +177,17 @@ test('MIKA task approval RPC is owner-scoped, atomic, idempotent and does not ex
 });
 
 
+
+
+const mikaStagingWorkflow = fs.readFileSync(path.join(__dirname, '../.github/workflows/mika-agent-two-user-concurrency-staging.yml'), 'utf8');
+
+test('MIKA two-user concurrency workflow is manual, staging-only and uses synthetic accounts', () => {
+ assert.ok(mikaStagingWorkflow.includes('workflow_dispatch'));
+ assert.ok(mikaStagingWorkflow.includes('environment: staging'));
+ assert.ok(mikaStagingWorkflow.includes('https://xanavauqzsrgvdfhcrsm.supabase.co'));
+ assert.ok(mikaStagingWorkflow.includes('MIKA_TEST_PROPOSAL_ID'));
+ assert.ok(mikaStagingWorkflow.includes('mika-cross-user-staging.cjs'));
+ assert.ok(mikaStagingWorkflow.includes('mika-concurrency-staging.cjs'));
+ assert.ok(mikaStagingWorkflow.includes('Two distinct synthetic users required'));
+ assert.doesNotMatch(mikaStagingWorkflow, /SUPABASE_SERVICE_ROLE_KEY|target: production/i);
+});
