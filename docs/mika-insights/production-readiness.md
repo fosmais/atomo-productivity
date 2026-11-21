@@ -15,6 +15,12 @@
 5. Confirmar variáveis de ambiente e flags de cobrança da build de produção. **Não promover um deployment Preview com Supabase Preview embutido**; construir deployment de produção a partir do código aprovado e das variáveis Production.
 6. Executar smoke tests de produção, monitorar logs e ter rollback do código preparado. Reverter DDL somente após avaliar dados criados por usuários, sem `DROP TABLE` automático.
 
+## Auditoria de permissões no Supabase Preview (2026-11-21)
+- `mika_ideas`: RLS ativo, quatro políticas.
+- `mika_action_proposals` e `mika_action_audit`: RLS ativo, uma política cada.
+- `mika_internal.ai_quota`: RLS desativado, schema privado com grants revogados; revisar habilitação de RLS como defesa em profundidade antes da migração para produção.
+- As funções `mika_consume_ai_quota`, `mika_decide_proposal` e `mika_execute_approved_task` não concedem EXECUTE a `anon`; `authenticated` tem EXECUTE. Revisão de SECURITY DEFINER e ownership ainda necessária.
+
 ## Critérios de aceite
 - Login e CAPTCHA funcionam; sessões não são compartilhadas entre ambientes.
 - RLS restringe acesso ao proprietário; `anon` não acessa ideias.
