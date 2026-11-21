@@ -1,6 +1,17 @@
 name: Journey Auth isolation (staging only)
 on:
   workflow_dispatch:
+    inputs:
+      bootstrap_synthetic_accounts:
+        description: 'Bootstrap two synthetic staging identities only'
+        required: false
+        type: boolean
+        default: false
+      run_mika_concurrency:
+        description: 'Run MIKA concurrency tests (not used by this bootstrap workflow)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -35,5 +46,14 @@ jobs:
             fi
           done
       - run: npm ci --ignore-scripts
+      - name: Bootstrap two synthetic staging identities only
+        if: inputs.bootstrap_synthetic_accounts == true && inputs.run_mika_concurrency != true
+        run: node scripts/mika-two-users-staging.cjs
       - name: Verify two real staging Auth sessions and Journey isolation
+        if: inputs.bootstrap_synthetic_accounts != true
         run: node scripts/journey-auth-isolation-staging.cjs
+      - name: Reject unsupported combined bootstrap and concurrency request
+        if: inputs.bootstrap_synthetic_accounts == true && inputs.run_mika_concurrency == true
+        run: |
+          echo '::error::Bootstrap and concurrency must run as separate reviewed operations.'
+          exit 1
