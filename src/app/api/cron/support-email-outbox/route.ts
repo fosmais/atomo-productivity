@@ -37,21 +37,28 @@ export async function GET(request: Request) {
       const message = typeof payload.message === "string" ? payload.message : "Novo registro de suporte na MYRYRA.";
       const ticketId = String(item.source_id);
       const recipient = process.env.SUPPORT_INBOX_EMAIL || "support@myryra.com";
-      const result = await sendSupportEmail({
-        to: recipient,
-        subject: typeof item.subject === "string" ? item.subject.slice(0, 180) : "[MYRYRA] Novo atendimento",
-        ticketId,
-        idempotencyKey: `support-outbox/${item.id}`,
-        message: [
-          "Tipo: " + String(item.event_type),
-          "Protocolo: " + ticketId,
-          "Categoria: " + String(payload.category ?? "geral"),
-          "Assunto: " + String(payload.subject ?? item.subject ?? "Suporte"),
-          "Usuário: " + String(payload.user_id ?? "não identificado"),
-          "",
-          message.slice(0, 1500)
-        ].join("\n")
-      });
+      const customerAcknowledgement = item.event_type === "ticket_acknowledgement";
+      const recipient = customerAcknowledgement ? String(item.recipient) : (process.env.SUPPORT_INBOX_EMAIL || "support@myryra.com");
+      const emailMessage = customerAcknowledgement
+        ? message.slice(0, 1500)
+        : [
+            "Tipo: " + String(item.event_type),
+            "Protocolo: " + ticketId,
+            "Categoria: " + String(payload.category ?? "geral"),
+            "Assunto: " + String(payload.subject ?? item.subject ?? "Suporte"),
+            "Usuário: " + String(payload.user_id ?? "não identificado"),
+            "",
+            message.slice(0, 1500)
+          ].join("\\n");
+      const result = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(recipient)
+        ? await sendSupportEmail({
+            to: recipient,
+            subject: typeof item.subject === "string" ? item.subject.slice(0, 180) : "[MYRYRA] Novo atendimento",
+            ticketId,
+            idempotencyKey: `support-outbox/${item.id}`,
+            message: emailMessage
+          })
+        : { sent: false, reason: "Destinatário inválido" };
       if (result.sent) {
         const { error: updateError } = await admin.from("support_email_outbox")
           .update({ status: "sent", sent_at: new Date().toISOString(), processing_started_at: null, last_error: null })
