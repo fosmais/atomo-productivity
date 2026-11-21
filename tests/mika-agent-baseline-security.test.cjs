@@ -125,11 +125,17 @@ test('internal task execution uses authenticated transactional RPC and fails clo
 });
 
 
-test('unhomologated MIKA task execution cannot be enabled in Vercel production', () => {
+test('unhomologated MIKA task execution fails closed outside the dedicated staging Preview', () => {
  const route = fs.readFileSync(path.join(__dirname, '../src/app/api/mika/execute-approved-task/route.ts'), 'utf8');
- assert.match(route, /process\.env\.VERCEL_ENV === "production"/);
- assert.ok(route.indexOf('process.env.VERCEL_ENV === "production"') < route.indexOf('MYRYRA_MIKA_INTERNAL_EXECUTION_ENABLED !== "true"'));
- assert.ok(route.indexOf('process.env.VERCEL_ENV === "production"') < route.indexOf('supabase.rpc("mika_execute_approved_task"'));
+ assert.ok(route.includes('process.env.VERCEL_ENV !== "preview"'));
+ assert.ok(route.includes('process.env.VERCEL_GIT_COMMIT_REF !== "feat/myryra-mvp2-mika-agent-engine"'));
+ assert.ok(route.includes('process.env.NEXT_PUBLIC_SUPABASE_URL !== "https://xanavauqzsrgvdfhcrsm.supabase.co"'));
+ assert.ok(route.includes('process.env.MYRYRA_MIKA_INTERNAL_EXECUTION_ENABLED !== "true"'));
+ const previewGuardPosition = route.indexOf('process.env.VERCEL_ENV !== "preview"');
+ const clientInitializationPosition = route.indexOf('const supabase = await createClient()');
+ const rpcPosition = route.indexOf('supabase.rpc("mika_execute_approved_task"');
+ assert.ok(previewGuardPosition >= 0 && clientInitializationPosition > previewGuardPosition);
+ assert.ok(rpcPosition > previewGuardPosition);
 });
 
 
@@ -169,3 +175,5 @@ test('MIKA task approval RPC is owner-scoped, atomic, idempotent and does not ex
  assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.mika_approve_task_proposal\(uuid\) TO authenticated/);
  assert.doesNotMatch(sql, /INSERT INTO public\.tasks|mika_execute_approved_task\(/i);
 });
+
+
