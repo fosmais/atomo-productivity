@@ -16,7 +16,7 @@ test("support submission authenticates, validates, rate limits and stores owner-
   assert.match(submit, /daily.count/);
   assert.match(submit, /user_id: user\.id/);
   assert.match(submit, /Campos não permitidos/);
-  assert.match(submit, /support_email_outbox/);
+  assert.match(submit, /support_email_outbox/);\n  assert.match(submit, /readBoundedJson/);\n  assert.match(submit, /bytes > 4096/);
   assert.match(submit, /event_type: "ticket_created"/);
 });
 
@@ -39,7 +39,7 @@ test("support email worker requires cron secret and explicit email enablement", 
 test("support outbox worker claims atomically and retries with a bounded limit", () => {
   assert.match(worker, /\.eq\("status", "pending"\)\.select\("id"\)\.maybeSingle\(\)/);
   assert.match(worker, /status: "processing"/);
-  assert.match(worker, /nextAttempt >= 5/);
+  assert.match(worker, /nextAttempt >= 5/);\n  assert.match(worker, /processing_started_at/);\n  assert.match(worker, /10 \\* 60 \\* 1000/);
   assert.match(worker, /status: terminal \? "failed" : "pending"/);
 });
 
