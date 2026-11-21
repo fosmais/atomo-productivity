@@ -9,8 +9,8 @@ Este documento controla os sete gates finais acordados. Percentual histórico de
 **Status: PARCIAL / BLOQUEADO POR E2E AUTENTICADO**
 
 - Implementado: vínculo de sessão da Professora com missão/jornada/proprietário; exercícios oficiais versionados; avaliação persistida; guard de conclusão; crédito MYRA idempotente.
-- Evidência: CI dos branches de homologação; testes SQL sintéticos com rollback para nota mínima, exercício vigente e crédito único.
-- Workflow de staging atualizado em main para executar bootstrap e isolamento automaticamente em cada push desta branch, usando somente secrets do environment staging.
+- Evidência atual (21/11): HEAD d30e0a29 com 3/3 GitHub Actions SUCCESS; Preview do mesmo SHA READY e prebuild com 282/282 testes aprovados. Testes SQL sintéticos com rollback validaram nota mínima, exercício vigente e crédito único.
+- Workflow de staging atualizado em main para executar bootstrap e isolamento automaticamente em cada push desta branch, usando somente secrets do environment staging. Ainda não há evidência acessível de execução Auth real; não marcar o gate como aprovado.
 - Pendente: HTTP E2E com sessão real (login → jornada → aula → exercício oficial → resposta → avaliação MIKA → conclusão → saldo MYRA), incluindo aceite legal/MFA.
 - Não marcar concluído com base em teste estático ou SQL sintético.
 
@@ -26,7 +26,7 @@ Este documento controla os sete gates finais acordados. Percentual histórico de
 
 **Status: CÓDIGO / CI / PREVIEW APROVADOS; E2E PENDENTE**
 
-- Commit 0a478287620c5c1c1c41e5b1c39d63509cca06a4 restringe a execução de tarefas aprovadas ao Preview da branch feat/myryra-mvp2-mika-agent-engine e ao Supabase staging exato.
+- Commit 0a478287620c5c1c1c41e5b1c39d63509cca06a4 restringe a execução de tarefas aprovadas ao Preview da branch feat/myryra-mvp2-mika-agent-engine e ao Supabase staging exato. PR #11 mais recente: 2/2 GitHub Actions SUCCESS e Preview READY.
 - Vercel Preview READY: https://atomo-productivity-5y3yb5x1q-fosmais.vercel.app.
 - npm test: 217 aprovados, 0 falhas; build Next.js concluído.
 - Pendente: configurar credenciais branch-scoped de staging, executar E2E de proposta/aprovação/execução/replay, verificar auditoria persistida e concorrência. Execução continua desativada enquanto variáveis não estiverem configuradas.
@@ -38,7 +38,8 @@ Este documento controla os sete gates finais acordados. Percentual histórico de
 - Implementado: edição owner-scoped, valores em centavos, confirmação de persistência, lixeira/soft delete e filtros de saldo/resumo.
 - Criados scripts/finance-two-users-staging.cjs e workflow manual .github/workflows/finance-two-users-staging.yml para duas contas sintéticas; cobre isolamento de leitura/escrita, edição, soft delete e restauração de lançamentos/assinaturas.
 - Vercel Preview READY: https://atomo-productivity-cbyqf0rei-fosmais.vercel.app.
-- Pendente: executar workflow com secrets do environment GitHub staging; validar reconciliação de saldo, metas, importação e assinaturas com duas sessões reais.
+- Evidência atual: suíte de contrato 107/107 passou no prebuild; Preview READY; workflow de duas contas disponível em main com gatilho push/manual.
+- Pendente: execução do workflow com secrets do environment GitHub staging; validar reconciliação de saldo, metas, importação e assinaturas com duas sessões reais.
 
 ## 5. Regressão Android
 
