@@ -4,11 +4,11 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const migration = fs.readFileSync(
-  path.join(__dirname, "../supabase/migrations/20261121103000_journey_client_mutation_hardening.sql"),
+  path.join(__dirname, "../supabase/migrations/20261121034639_journey_client_mutation_hardening.sql"),
   "utf8",
 );
 const grants = fs.readFileSync(
-  path.join(__dirname, "../supabase/migrations/20261121100000_journey_service_role_server_write_grants.sql"),
+  path.join(__dirname, "../supabase/migrations/20261121034552_journey_service_role_server_write_grants.sql"),
   "utf8",
 );
 
