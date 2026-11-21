@@ -21,6 +21,7 @@ test("support submission authenticates, validates, bounds payload and uses its o
   assert.match(submit, /support_email_outbox/);
   assert.match(submit, /readBoundedJson/);
   assert.match(submit, /bytes > 4096/);
+  assert.ok(submit.includes(String.raw`/^\d+$/`), "Content-Length must use a digit regex, not a literal backslash");
   assert.match(submit, /event_type: "ticket_created"/);
   assert.match(submit, /ticket_acknowledgement/);
   assert.match(submit, /user.email_confirmed_at/);
@@ -46,6 +47,8 @@ test("MIKA support AI requires explicit enablement and current legal acceptance"
   assert.match(submit, /\[\[ESCALATE\]\]/);
   assert.match(submit, /myka_authorized: true/);
   assert.match(submit, /author_type: "myka"/);
+  assert.match(submit, /category !== "billing"/);
+  assert.match(submit, /if \(!legalReady\) throw new Error/);
 });
 
 test("support email worker requires cron secret and explicit email enablement", () => {
