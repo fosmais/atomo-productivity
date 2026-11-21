@@ -79,7 +79,7 @@ export async function GET(request: Request) {
         const reason = (result.reason ?? "Falha no envio").slice(0, 300);
         const { error: updateError } = await admin.from("support_email_outbox")
           .update({ status: terminal ? "failed" : "pending", processing_started_at: null, last_error: reason })
-          .eq("id", item.id).eq("status", "processing");
+          .eq("id", item.id).eq("status", "processing").eq("processing_started_at", leaseStartedAt);
         if (updateError) failed++; else failed++;
       }
     }
