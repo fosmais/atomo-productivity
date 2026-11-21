@@ -9,15 +9,14 @@ const email = fs.readFileSync(path.join(__dirname, "../src/lib/support/email.ts"
 const migration = fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261121040000_support_outbox_recovery.sql"), "utf8");
 const coreMigration = fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261121030000_support_core_schema.sql"), "utf8");
 const serverOnlyMigration = fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261121050000_support_server_only_ticket_creation.sql"), "utf8");
+const atomicMigration = fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261121060000_support_atomic_ticket_rate_limit.sql"), "utf8");
 const client = fs.readFileSync(path.join(__dirname, "../src/app/dashboard/myka-support.tsx"), "utf8");
 
 test("support submission authenticates, validates, bounds payload and uses its own throttle", () => {
   assert.match(submit, /auth\.getUser\(\)/);
-  assert.match(submit, /hourAgo/);
-  assert.match(submit, /dayAgo/);
-  assert.match(submit, /hourly.count/);
-  assert.match(submit, /daily.count/);
-  assert.match(submit, /user_id: user\.id/);
+  assert.match(submit, /rpc\("create_support_ticket_limited"/);
+  assert.match(submit, /p_user_id: user\.id/);
+  assert.match(submit, /SUPPORT_RATE_LIMIT_EXCEEDED/);
   assert.match(submit, /Campos não permitidos/);
   assert.match(submit, /support_email_outbox/);
   assert.match(submit, /readBoundedJson/);
@@ -49,7 +48,7 @@ test("MIKA support AI requires explicit enablement and current legal acceptance"
   assert.match(submit, /hasCurrentLegalAcceptance\(user\.id\)/);
   assert.match(submit, /OPENAI_API_KEY/);
   assert.match(submit, /\[\[ESCALATE\]\]/);
-  assert.match(submit, /myka_authorized: authorizeMika/);
+  assert.match(submit, /p_authorize_mika: authorizeMika/);
   assert.match(submit, /input\.authorizeMika === true && category !== "billing"/);
   assert.match(submit, /&& authorizeMika && category !== "billing"/);
   assert.match(client, /checked=\{authorizeMika\}/);
@@ -105,4 +104,13 @@ test('email outbox completion is scoped to the active worker lease', () => {
   assert.match(worker, /const leaseStartedAt = new Date\(\)\.toISOString\(\)/);
   assert.match(worker, /processing_started_at: leaseStartedAt/);
   assert.equal((worker.match(/\.eq\("processing_started_at", leaseStartedAt\)/g) || []).length, 2);
+});
+
+test('support ticket rate limit is transaction-atomic and server-only', () => {
+  assert.match(atomicMigration, /pg_advisory_xact_lock/);
+  assert.match(atomicMigration, /v_hour_count >= 5 OR v_day_count >= 10/);
+  assert.match(atomicMigration, /SUPPORT_RATE_LIMIT_EXCEEDED/);
+  assert.match(atomicMigration, /REVOKE ALL ON FUNCTION public\.create_support_ticket_limited.*FROM PUBLIC, anon, authenticated/);
+  assert.match(atomicMigration, /GRANT EXECUTE ON FUNCTION public\.create_support_ticket_limited.*TO service_role/);
+  assert.doesNotMatch(submit, /from\("support_tickets"\)\.insert/);
 });
