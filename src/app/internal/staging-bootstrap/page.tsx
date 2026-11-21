@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 
 type Run = { id: number; status: string; conclusion: string | null; url: string; created_at: string };
@@ -9,15 +9,15 @@ export default function StagingBootstrapPage() {
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  const refresh = useCallback(async () => {
+  async function refresh() {
     const response = await fetch("/api/internal/staging-bootstrap", { cache: "no-store" });
     if (!response.ok) { setMessage("Área indisponível para esta conta ou ambiente."); return; }
     const data = await response.json();
     setConfigured(data.configured);
     setRuns(data.runs ?? []);
     if (data.message) setMessage(data.message);
-  }, []);
-  useEffect(() => { void refresh(); }, [refresh]);
+  }
+  // Initial data is loaded by an explicit user action; no effect-driven state cascade.
   async function bootstrap() {
     if (!window.confirm("Criar ou verificar duas contas sintéticas SOMENTE em staging? Nenhuma ação em produção será executada.")) return;
     setBusy(true);
