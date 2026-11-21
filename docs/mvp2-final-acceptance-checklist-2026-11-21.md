@@ -10,6 +10,7 @@ Este documento controla os sete gates finais acordados. Percentual histórico de
 
 - Implementado: vínculo de sessão da Professora com missão/jornada/proprietário; exercícios oficiais versionados; avaliação persistida; guard de conclusão; crédito MYRA idempotente.
 - Evidência: CI dos branches de homologação; testes SQL sintéticos com rollback para nota mínima, exercício vigente e crédito único.
+- Workflow de staging atualizado em main para executar bootstrap e isolamento automaticamente em cada push desta branch, usando somente secrets do environment staging.
 - Pendente: HTTP E2E com sessão real (login → jornada → aula → exercício oficial → resposta → avaliação MIKA → conclusão → saldo MYRA), incluindo aceite legal/MFA.
 - Não marcar concluído com base em teste estático ou SQL sintético.
 
