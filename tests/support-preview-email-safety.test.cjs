@@ -46,3 +46,10 @@ test("non-production worker skips unapproved queued recipients before claiming a
   const claim = cron.indexOf('const nextAttempt = Number(item.attempts ?? 0) + 1');
   assert.ok(skipGuard > 0 && skipGuard < claim, "recipient guard must run before incrementing attempts");
 });
+
+test("non-production queue filters recipients before applying the batch limit", () => {
+  const filter = cron.indexOf('pendingQuery.in("recipient", testRecipients)');
+  const limit = cron.indexOf('.limit(10)');
+  assert.ok(filter > 0 && limit > filter, "recipient filter must precede LIMIT");
+  assert.match(cron, /if \(process\.env\.VERCEL_ENV !== "production"\) pendingQuery = pendingQuery\.in/);
+});
