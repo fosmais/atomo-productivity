@@ -1,0 +1,69 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const route = fs.readFileSync(path.join(__dirname, '../src/app/api/internal/finance-notifications/route.ts'), 'utf8');
+const claim = fs.readFileSync(path.join(__dirname, '../docs/mvp2/finance-delivery-atomic-claim-homolog.sql'), 'utf8');
+const recovery = fs.readFileSync(path.join(__dirname, '../docs/mvp2/finance-delivery-stale-recovery-homolog.sql'), 'utf8');
+
+test('finance worker excludes deferred notifications before batch limit', () => {
+  const dueFilter = route.indexOf('.or(`next_attempt_at.is.null,next_attempt_at.lte.');
+  const limit = route.indexOf('.limit(MAX_BATCH)');
+  assert.ok(dueFilter >= 0 && limit > dueFilter);
+});
+test('finance worker remains explicitly dry-run and secret protected', () => {
+  assert.match(route, /MYRYRA_NOTIFICATION_WORKER_SECRET/);
+  assert.match(route, /mode: "dry-run"/);
+  assert.match(route, /deliveryEnabled: false/);
+  assert.match(route, /previewClaimRequested/);
+});
+test('finance claim uses atomic row locking and service-only access', () => {
+  assert.match(claim, /FOR UPDATE OF d SKIP LOCKED/);
+  assert.match(claim, /auth\.role\(\).*service_role/);
+  assert.match(claim, /REVOKE ALL.*PUBLIC,anon,authenticated/);
+});
+test('stale recovery is bounded and does not resend externally', () => {
+  assert.match(recovery, /p_stale_minutes < 5/);
+  assert.match(recovery, /FOR UPDATE SKIP LOCKED/);
+  assert.match(recovery, /status='cancelled'/);
+  assert.match(recovery, /next_attempt_at=NULL/);
+  assert.match(recovery, /pending delivery outcome reconciliation/);
+});
+
+test('atomic finance claim requires matching notification ownership', () => {
+  assert.match(claim, /n\.id=d\.notification_id AND n\.user_id=d\.user_id/);
+  assert.match(claim, /p\.user_id=d\.user_id/);
+});
+test('atomic finance claim enforces explicit consent for each channel', () => {
+  assert.match(claim, /d\.channel='email' AND p\.email_enabled IS TRUE/);
+  assert.match(claim, /d\.channel='push' AND p\.push_enabled IS TRUE/);
+  assert.match(claim, /d\.attempts < 3/);
+  assert.match(claim, /d\.next_attempt_at IS NULL OR d\.next_attempt_at <= now\(\)/);
+});
+
+test('finance claim preview is gated by Vercel preview and explicit opt-in', () => {
+  assert.match(route, /VERCEL_ENV !== "preview"/);
+  assert.match(route, /MYRYRA_FINANCE_CLAIM_PREVIEW_ENABLED !== "true"/);
+  assert.match(route, /\.rpc\("claim_finance_delivery_batch"/);
+  assert.match(route, /deliveryEnabled: false/);
+  assert.match(route, /reserved: data\?\.length \?\? 0/);
+});
+
+test('claim-preview refuses a production or unknown Supabase host', () => {
+  assert.match(route, /dbHost !== "woqpzvqfaeqteiqpsaqi\.supabase\.co"/);
+  const hostCheck = route.indexOf('dbHost !== "woqpzvqfaeqteiqpsaqi.supabase.co"');
+  const claimCall = route.indexOf('.rpc("claim_finance_delivery_batch"');
+  assert.ok(hostCheck >= 0 && claimCall > hostCheck);
+  assert.match(route, /Banco de homologação não configurado/);
+});
+
+test('claim-preview fails closed without staging credentials before admin client creation', () => {
+  const missingKey = route.indexOf('previewClaimRequested && !process.env.SUPABASE_SECRET_KEY');
+  const hostCheck = route.indexOf('dbHost !== "woqpzvqfaeqteiqpsaqi.supabase.co"');
+  const previewAdmin = route.indexOf('const admin = createSupabaseAdmin();', hostCheck);
+  const claimCall = route.indexOf('.rpc("claim_finance_delivery_batch"');
+  assert.ok(missingKey >= 0 && missingKey < hostCheck && hostCheck < previewAdmin && previewAdmin < claimCall);
+  assert.match(route, /Credencial de homologação indisponível/);
+  assert.match(route, /status: 503/);
+});
