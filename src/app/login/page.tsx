@@ -222,7 +222,7 @@ export default function LoginPage() {
       });
       if (result.error) throw result.error;
       setMfaCode("");
-      router.push("/dashboard");
+      router.push(returnTo);
       router.refresh();
     } catch (error) {
       setIsError(true);
