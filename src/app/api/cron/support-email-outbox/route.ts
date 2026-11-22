@@ -7,7 +7,10 @@ export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`)
     return NextResponse.json({ error: "Não autorizado." }, { status: 401, headers: { "Cache-Control": "no-store" } });
-  // Independent release gate: scheduled executions never send mail until explicitly enabled.\n  if (process.env.MIKA_SUPPORT_CRON_RELEASE_ENABLED !== "true")\n    return NextResponse.json({ processed: 0, disabled: true }, { headers: { "Cache-Control": "no-store" } });\n  if (process.env.MIKA_EMAIL_ENABLED !== "true" || !process.env.RESEND_API_KEY)
+  // Independent release gate: scheduled executions never send mail until explicitly enabled.
+  if (process.env.MIKA_SUPPORT_CRON_RELEASE_ENABLED !== "true")
+    return NextResponse.json({ processed: 0, disabled: true }, { headers: { "Cache-Control": "no-store" } });
+  if (process.env.MIKA_EMAIL_ENABLED !== "true" || !process.env.RESEND_API_KEY)
     return NextResponse.json({ processed: 0, disabled: true }, { headers: { "Cache-Control": "no-store" } });
 
   // In non-production, never claim queued messages without an explicit test-recipient allowlist.
@@ -76,7 +79,8 @@ export async function GET(request: Request) {
             "Usuário: " + String(payload.user_id ?? "não identificado"),
             "",
             message.slice(0, 1500)
-          ].join("\n");
+          ].join("
+");
       // Treat provider/network exceptions as a failed attempt, not as a failure of the whole batch.
       // Keep the same idempotency key on retries, including after an ambiguous provider response.
       let result: { sent: boolean; reason?: string };
