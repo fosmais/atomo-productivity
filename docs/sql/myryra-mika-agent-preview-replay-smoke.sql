@@ -1,0 +1,271 @@
+-- Disposable PG16 only. Replays MIKA Agent function after preview-derived foundation.
+create schema auth;
+create table auth.users(id uuid primary key);
+create role authenticated nologin;
+create role anon nologin;
+create role service_role nologin;
+create function auth.uid() returns uuid language sql stable as $$
+ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid
+$$;
+\i docs/sql/myryra-core-foundation-candidate.sql
+\i docs/sql/myryra-core-constraints-candidate.sql
+\i docs/sql/myryra-mika-agent-preview-foundation-candidate.sql
+\i supabase/migrations/20261109120000_mika_execution_approved_plan_compat.sql
+do $test$
+declare n int;
+begin
+ if to_regprocedure('public.mika_execute_approved_task(uuid,uuid)') is null then
+  raise exception 'MIKA Agent execution function missing';
+ end if;
+ select count(*) into n from pg_policies
+ where schemaname='public' and tablename in ('mika_action_proposals','mika_action_audit');
+ if n<>2 then raise exception 'Expected two owner-read policies, found %',n; end if;
+ select count(*) into n from pg_indexes
+ where schemaname='public' and tablename in ('mika_action_proposals','mika_action_audit');
+ if n<>8 then raise exception 'Expected eight MIKA Agent indexes, found %',n; end if;
+end $test$;
+
+
+-- Authorization negatives: unauthenticated and cross-tenant proposal must not execute.
+insert into auth.users(id) values
+ ('11111111-1111-4111-8111-111111111111'),
+ ('22222222-2222-4222-8222-222222222222');
+insert into public.mika_action_proposals(id,user_id,action_type,payload,status,approved_at)
+values (
+ 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+ '11111111-1111-4111-8111-111111111111',
+ 'create_task',
+ '{"type":"create_task","title":"Valid test task","reason":"Smoke test","due_at":null,"plan_id":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"}'::jsonb,
+ 'approved',now()
+);
+insert into public.mika_action_audit(proposal_id,user_id,event_type)
+values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','11111111-1111-4111-8111-111111111111','approved');
+grant usage on schema public,auth to authenticated;
+grant execute on function auth.uid() to authenticated;
+set role authenticated;
+do $test$
+begin
+ perform set_config('request.jwt.claim.sub','',false);
+ begin
+  perform public.mika_execute_approved_task('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+  raise exception 'Unauthenticated execution unexpectedly succeeded';
+ exception when sqlstate '28000' then null; end;
+ perform set_config('request.jwt.claim.sub','22222222-2222-4222-8222-222222222222',false);
+ begin
+  perform public.mika_execute_approved_task('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+  raise exception 'Cross-tenant execution unexpectedly succeeded';
+ exception when sqlstate 'P0002' then null; end;
+end $test$;
+reset role;
+do $test$
+declare n int;
+begin
+ select count(*) into n from public.tasks;
+ if n<>0 then raise exception 'Unauthorized execution created tasks'; end if;
+ select count(*) into n from public.mika_action_proposals where status='approved';
+ if n<>1 then raise exception 'Unauthorized execution changed proposal status'; end if;
+end $test$;
+
+
+-- Approved proposals must match the exact plan and have an approval audit.
+insert into public.mika_action_proposals(id,user_id,action_type,payload,status,approved_at)
+values (
+ 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+ '11111111-1111-4111-8111-111111111111',
+ 'create_task',
+ '{"type":"create_task","title":"Unapproved audit test","reason":"Smoke test","due_at":null,"plan_id":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"}'::jsonb,
+ 'approved',now()
+);
+set role authenticated;
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',false);
+do $test$
+begin
+ begin
+  perform public.mika_execute_approved_task(
+   'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+   'dddddddd-dddd-4ddd-8ddd-dddddddddddd');
+  raise exception 'Plan mismatch unexpectedly succeeded';
+ exception when sqlstate '22023' then null; end;
+ begin
+  perform public.mika_execute_approved_task(
+   'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+   'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+  raise exception 'Missing approval audit unexpectedly succeeded';
+ exception when sqlstate 'P0001' then null; end;
+end $test$;
+reset role;
+do $test$
+declare n int;
+begin
+ select count(*) into n from public.tasks;
+ if n<>0 then raise exception 'Invalid approvals created tasks'; end if;
+ select count(*) into n from public.mika_action_proposals where status='approved';
+ if n<>2 then raise exception 'Invalid approvals modified proposal status'; end if;
+end $test$;
+
+-- Authorized execution: approved proposal and owner-scoped approval audit.
+insert into public.plans(id,user_id,title)
+values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','11111111-1111-4111-8111-111111111111','Owner plan');
+set role authenticated;
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',false);
+do $test$
+declare r record;
+begin
+ select * into r from public.mika_execute_approved_task(
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+ );
+ if r.execution_status <> 'executed' or r.task_id is null then
+  raise exception 'Approved MIKA execution did not create a task';
+ end if;
+ select * into r from public.mika_execute_approved_task(
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+ );
+ if r.execution_status <> 'already_executed' then
+  raise exception 'MIKA execution is not idempotent';
+ end if;
+end $test$;
+reset role;
+do $test$
+declare n int;
+begin
+ select count(*) into n from public.tasks
+ where user_id='11111111-1111-4111-8111-111111111111'
+ and plan_id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+ if n<>1 then raise exception 'Expected exactly one authorized task, got %',n; end if;
+ select count(*) into n from public.mika_action_audit
+ where proposal_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and event_type='succeeded';
+ if n<>1 then raise exception 'Expected one success audit record, got %',n; end if;
+end $test$;
+
+
+-- Expired proposal: no task creation; function marks expiry and writes an audit.
+insert into public.mika_action_proposals(id,user_id,action_type,payload,status,approved_at,created_at,expires_at)
+values (
+ 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+ '11111111-1111-4111-8111-111111111111',
+ 'create_task',
+ '{"type":"create_task","title":"Expired test task","reason":"Smoke test","due_at":null,"plan_id":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"}'::jsonb,
+ 'approved',now()-interval '40 minutes',now()-interval '45 minutes',now()-interval '15 minutes'
+);
+insert into public.mika_action_audit(proposal_id,user_id,event_type,created_at)
+values (
+ 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+ '11111111-1111-4111-8111-111111111111',
+ 'approved',now()-interval '40 minutes'
+);
+set role authenticated;
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',false);
+do $test$
+declare r record;
+begin
+ select * into r from public.mika_execute_approved_task(
+  'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+  'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+ if r.execution_status <> 'expired' or r.task_id is not null then
+  raise exception 'Expired proposal did not return expired without task';
+ end if;
+end $test$;
+reset role;
+do $test$
+declare n int;
+begin
+ select count(*) into n from public.tasks;
+ if n<>1 then raise exception 'Expired proposal created an extra task'; end if;
+ select count(*) into n from public.mika_action_proposals
+ where id='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee' and status='expired';
+ if n<>1 then raise exception 'Expired proposal status not persisted'; end if;
+ select count(*) into n from public.mika_action_audit
+ where proposal_id='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee' and event_type='expired';
+ if n<>1 then raise exception 'Expired proposal audit missing'; end if;
+end $test$;
+
+
+-- Rejected proposal must never execute, even with an approval audit.
+insert into public.mika_action_proposals(id,user_id,action_type,payload,status,approved_at)
+values (
+ 'ffffffff-ffff-4fff-8fff-ffffffffffff',
+ '11111111-1111-4111-8111-111111111111',
+ 'create_task',
+ '{"type":"create_task","title":"Rejected test task","reason":"Smoke test","due_at":null,"plan_id":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"}'::jsonb,
+ 'rejected',now()
+);
+insert into public.mika_action_audit(proposal_id,user_id,event_type)
+values ('ffffffff-ffff-4fff-8fff-ffffffffffff','11111111-1111-4111-8111-111111111111','approved');
+set role authenticated;
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',false);
+do $test$
+begin
+ begin
+  perform public.mika_execute_approved_task(
+   'ffffffff-ffff-4fff-8fff-ffffffffffff',
+   'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+  raise exception 'Rejected proposal unexpectedly executed';
+ exception when sqlstate 'P0001' then null; end;
+end $test$;
+reset role;
+do $test$
+declare n int;
+begin
+ select count(*) into n from public.tasks;
+ if n<>1 then raise exception 'Rejected proposal created a task'; end if;
+ select count(*) into n from public.mika_action_proposals
+ where id='ffffffff-ffff-4fff-8fff-ffffffffffff' and status='rejected';
+ if n<>1 then raise exception 'Rejected proposal status changed'; end if;
+end $test$;
+
+
+-- Unsupported action types must not execute through the task-only function.
+insert into public.mika_action_proposals(id,user_id,action_type,payload,status,approved_at)
+values (
+ '99999999-9999-4999-8999-999999999999',
+ '11111111-1111-4111-8111-111111111111',
+ 'create_event',
+ '{"type":"create_event","title":"Unsupported event","reason":"Smoke test","due_at":null,"plan_id":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"}'::jsonb,
+ 'approved',now()
+);
+insert into public.mika_action_audit(proposal_id,user_id,event_type)
+values ('99999999-9999-4999-8999-999999999999','11111111-1111-4111-8111-111111111111','approved');
+set role authenticated;
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',false);
+do $test$
+begin
+ begin
+  perform public.mika_execute_approved_task(
+   '99999999-9999-4999-8999-999999999999',
+   'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+  raise exception 'Unsupported action unexpectedly executed';
+ exception when sqlstate 'P0001' then null; end;
+end $test$;
+reset role;
+do $test$
+declare n int;
+begin
+ if has_function_privilege('anon','public.mika_execute_approved_task(uuid,uuid)','EXECUTE')
+    or has_function_privilege('service_role','public.mika_execute_approved_task(uuid,uuid)','EXECUTE')
+    or exists (select 1 from pg_proc p where p.oid='public.mika_execute_approved_task(uuid,uuid)'::regprocedure and exists (select 1 from aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a where a.grantee=0 and a.privilege_type='EXECUTE')) then
+  raise exception 'MIKA Agent execution function exposed to unauthorized role';
+ end if;
+ if not has_function_privilege('authenticated','public.mika_execute_approved_task(uuid,uuid)','EXECUTE') then
+  raise exception 'Authenticated role missing MIKA Agent execute grant';
+ end if;
+ select count(*) into n from public.tasks;
+ if n<>1 then raise exception 'Unsupported action created task'; end if;
+end $test$;
+
+
+-- Preview-derived table permissions: authenticated can read but cannot mutate directly.
+do $test$
+begin
+ if not has_table_privilege('authenticated','public.mika_action_proposals','SELECT')
+ or not has_table_privilege('authenticated','public.mika_action_audit','SELECT') then
+  raise exception 'Authenticated SELECT parity with previews is missing';
+ end if;
+ if has_table_privilege('authenticated','public.mika_action_proposals','INSERT,UPDATE,DELETE')
+ or has_table_privilege('authenticated','public.mika_action_audit','INSERT,UPDATE,DELETE')
+ or has_table_privilege('anon','public.mika_action_proposals','SELECT')
+ or has_table_privilege('anon','public.mika_action_audit','SELECT') then
+  raise exception 'MIKA Agent table privilege escalation detected';
+ end if;
+end $test$;

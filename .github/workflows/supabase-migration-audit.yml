@@ -1,0 +1,36 @@
+name: Supabase migration registry audit
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'scripts/audit-supabase-migrations.sh'
+      - 'scripts/compare-supabase-migration-inventories.sh'
+      - 'docs/supabase-*-registered-migrations-20261117.txt'
+      - '.github/workflows/supabase-migration-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  compare-registries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out PR code
+        uses: actions/checkout@v4
+      - name: Run read-only migration inventory comparison
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/compare-supabase-migration-inventories.sh feat/myryra-mvp2-mika-agent-engine | tee migration-audit-report.txt
+      - name: Upload comparison report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-migration-audit
+          path: migration-audit-report.txt
+          if-no-files-found: warn
+          retention-days: 7
