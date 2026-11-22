@@ -1,3 +1,33 @@
+-- Fail closed before any DDL if an existing quota table uses another schema.
+-- Production currently uses usage_count and a three-column primary key.
+DO $quota_preflight$
+DECLARE
+  v_table regclass := to_regclass('mika_internal.ai_quota');
+  v_columns text;
+  v_pk text;
+BEGIN
+  IF v_table IS NULL THEN
+    RETURN; -- Fresh installation: CREATE TABLE below supplies the expected shape.
+  END IF;
+  SELECT string_agg(a.attname, ',' ORDER BY k.ordinality)
+    INTO v_pk
+    FROM pg_constraint c
+    JOIN unnest(c.conkey) WITH ORDINALITY AS k(attnum, ordinality) ON true
+    JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.attnum
+   WHERE c.conrelid = v_table AND c.contype = 'p';
+  SELECT string_agg(column_name, ',' ORDER BY column_name)
+    INTO v_columns
+    FROM information_schema.columns
+   WHERE table_schema = 'mika_internal'
+     AND table_name = 'ai_quota'
+     AND column_name IN ('requests','usage_count');
+  IF v_pk IS DISTINCT FROM 'user_id,action'
+     OR v_columns IS DISTINCT FROM 'requests' THEN
+    RAISE EXCEPTION 'MIKA quota migration blocked: existing schema is incompatible (PK %, counter %). No changes applied.', v_pk, v_columns;
+  END IF;
+END
+$quota_preflight$;
+
 create table if not exists public.mika_ideas (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
