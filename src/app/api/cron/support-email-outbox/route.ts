@@ -17,15 +17,17 @@ export async function GET(request: Request) {
 
   try {
     const admin = createSupabaseAdmin();
-    const { data: pending, error } = await admin.from("support_email_outbox")
+    const testRecipients = (process.env.MIKA_SUPPORT_TEST_RECIPIENTS ?? "")
+      .split(",").map((address) => address.trim().toLowerCase()).filter(Boolean);
+    let pendingQuery = admin.from("support_email_outbox")
       .select("id,event_type,source_id,recipient,subject,payload,attempts,status,processing_started_at")
-      .or(`status.eq.pending,and(status.eq.processing,processing_started_at.lt.${new Date(Date.now() - 10 * 60 * 1000).toISOString()})`)
-      .order("created_at", { ascending: true }).limit(10);
+      .or(`status.eq.pending,and(status.eq.processing,processing_started_at.lt.${new Date(Date.now() - 10 * 60 * 1000).toISOString()})`);
+    // Filter before LIMIT so a backlog of customer addresses cannot starve approved test mail.
+    if (process.env.VERCEL_ENV !== "production") pendingQuery = pendingQuery.in("recipient", testRecipients);
+    const { data: pending, error } = await pendingQuery.order("created_at", { ascending: true }).limit(10);
     if (error) throw error;
 
     let sent = 0, failed = 0, skipped = 0;
-    const testRecipients = (process.env.MIKA_SUPPORT_TEST_RECIPIENTS ?? "")
-      .split(",").map((address) => address.trim().toLowerCase()).filter(Boolean);
     for (const item of pending ?? []) {
       // Do not claim or burn retries for customer addresses in non-production.
       // Such messages remain queued until explicitly handled in the correct environment.
