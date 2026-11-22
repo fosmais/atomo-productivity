@@ -65,3 +65,29 @@ test("Local and unlabelled environments also reject unlisted recipients", async 
     assert.equal(h.calls.length, 0);
   }
 });
+
+test("Provider network failure returns safe error and never leaks credentials", async () => {
+  const env = { VERCEL_ENV: "preview", RESEND_API_KEY: "sensitive-test-secret", MIKA_SUPPORT_TEST_RECIPIENTS: "qa@example.invalid" };
+  const h = harness(env);
+  // Replace the mock transport by a rejection to emulate timeout or network failure.
+  const exports = {};
+  vm.runInNewContext(js, {
+    exports,
+    process: { env },
+    fetch: async () => { throw new Error("sensitive-test-secret network details"); },
+    AbortSignal: { timeout: () => ({}) },
+  });
+  const result = await exports.sendSupportEmail(notice);
+  assert.equal(result.sent, false);
+  assert.match(result.reason, /Falha de comunicação/);
+  assert.doesNotMatch(result.reason, /sensitive-test-secret/);
+  assert.equal(h.calls.length, 0);
+});
+
+test("Support emails always link to production, not the Preview host", async () => {
+  const h = harness({ VERCEL_ENV: "preview", RESEND_API_KEY: "dummy", MIKA_SUPPORT_TEST_RECIPIENTS: "qa@example.invalid" });
+  assert.equal((await h.send(notice)).sent, true);
+  const payload = JSON.parse(h.calls[0][1].body);
+  assert.match(payload.text, /https:\/\/myryra\.com/);
+  assert.doesNotMatch(payload.text, /vercel\.app/);
+});
