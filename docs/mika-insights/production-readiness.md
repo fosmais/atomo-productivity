@@ -51,3 +51,8 @@ Definições inspecionadas diretamente no banco Preview, sem executar ações em
 - RPC de Production: `SECURITY DEFINER`, `search_path=''`, `authenticated` com EXECUTE, `anon` sem EXECUTE; autenticação via `auth.uid()`, ações `suggest` (12/h) e `transcribe` (20/h).
 - A tabela privada não concede SELECT direto a `anon` nem `authenticated` e possui RLS habilitado.
 - **Ações:** preservar RPC e schema atuais; testar quotas com sessões autenticadas e verificar a interface e os endpoints antes de qualquer release seletiva. CAPTCHA de homologação e E2E permanecem pendentes. Nenhuma mudança no banco de Production foi feita nesta revalidação.
+
+## Revisão de contratos de API e RLS — 2026-11-22
+- Conferidos `src/app/api/mika-insights/suggest/route.ts` e `transcribe/route.ts`: autenticação por `auth.getUser()`, limites de tamanho, formatos aceitos, quotas via `mika_consume_ai_quota` antes da chamada OpenAI, resposta de erro quando indisponível.
+- Conferida política real de Production em `public.mika_ideas`: RLS ativo; política `ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id)`; colunas esperadas pela interface presentes.
+- **Somente revisão estática e consultas read-only**; ainda não foram executados testes HTTP com sessões distintas, gravação de áudio, concorrência ou verificação do CAPTCHA.
