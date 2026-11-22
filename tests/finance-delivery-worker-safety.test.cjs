@@ -28,3 +28,14 @@ test('stale recovery is bounded and does not resend externally', () => {
   assert.match(recovery, /FOR UPDATE SKIP LOCKED/);
   assert.match(recovery, /attempts>=3 THEN NULL/);
 });
+
+test('atomic finance claim requires matching notification ownership', () => {
+  assert.match(claim, /n\.id=d\.notification_id AND n\.user_id=d\.user_id/);
+  assert.match(claim, /p\.user_id=d\.user_id/);
+});
+test('atomic finance claim enforces explicit consent for each channel', () => {
+  assert.match(claim, /d\.channel='email' AND p\.email_enabled IS TRUE/);
+  assert.match(claim, /d\.channel='push' AND p\.push_enabled IS TRUE/);
+  assert.match(claim, /d\.attempts < 3/);
+  assert.match(claim, /d\.next_attempt_at IS NULL OR d\.next_attempt_at <= now\(\)/);
+});
