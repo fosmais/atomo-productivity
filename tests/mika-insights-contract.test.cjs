@@ -62,3 +62,21 @@ test("MIKA quota migration fails closed on the incompatible Production schema", 
   assert.match(migration, /revoke all on function public\.mika_consume_ai_quota\(text\) from public, anon/);
   assert.match(migration, /grant execute on function public\.mika_consume_ai_quota\(text\) to authenticated/);
 });
+
+test("MIKA Insights bounds request bodies even without trustworthy Content-Length", () => {
+  assert.match(suggest, /totalBytes > 4096/);
+  assert.match(suggest, /reader\.cancel\(\)/);
+  assert.match(suggest, /new TextDecoder\("utf-8", \{ fatal: true \}\)/);
+  assert.match(transcribe, /receivedBytes > 11 \* 1024 \* 1024/);
+  assert.match(transcribe, /reader\.cancel\(\)/);
+  assert.match(transcribe, /audio\.size > 10 \* 1024 \* 1024/);
+  assert.match(transcribe, /allowed\.includes\(mime\)/);
+});
+
+test("MIKA Insights AI is opt-in and does not persist responses at OpenAI", () => {
+  assert.match(suggest, /store: false/);
+  assert.match(suggest, /maxRetries: 0/);
+  assert.match(transcribe, /maxRetries: 0/);
+  assert.match(ideas, /Nenhuma tarefa foi criada automaticamente/);
+  assert.match(ideas, /Revise o texto antes de salvar/);
+});
