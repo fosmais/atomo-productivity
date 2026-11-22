@@ -7,6 +7,9 @@ export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`)
     return NextResponse.json({ error: "Não autorizado." }, { status: 401, headers: { "Cache-Control": "no-store" } });
+  // Independent release gate: scheduled executions never send mail until explicitly enabled.
+  if (process.env.MIKA_SUPPORT_CRON_RELEASE_ENABLED !== "true")
+    return NextResponse.json({ processed: 0, disabled: true }, { headers: { "Cache-Control": "no-store" } });
   if (process.env.MIKA_EMAIL_ENABLED !== "true" || !process.env.RESEND_API_KEY)
     return NextResponse.json({ processed: 0, disabled: true }, { headers: { "Cache-Control": "no-store" } });
 

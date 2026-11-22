@@ -53,10 +53,17 @@ test("cron stays disabled without provider credentials", async () => {
 
 test("non-production cron does not query DB without test recipients", async () => {
   for (const envName of ["preview", "development", undefined]) {
-    const h = setup({ CRON_SECRET: "expected", MIKA_EMAIL_ENABLED: "true", RESEND_API_KEY: "dummy", VERCEL_ENV: envName });
+    const h = setup({ CRON_SECRET: "expected", MIKA_EMAIL_ENABLED: "true", RESEND_API_KEY: "dummy", MIKA_SUPPORT_CRON_RELEASE_ENABLED: "true", VERCEL_ENV: envName });
     const result = await h.get(h.request("Bearer expected"));
     assert.equal(result.body.disabled, true);
     assert.equal(result.body.reason, "Test recipients not configured");
     assert.equal(h.getAdminCalls(), 0);
   }
+});
+
+test("scheduled email worker stays disabled until independent release gate", async () => {
+  const h = setup({ CRON_SECRET: "expected", MIKA_EMAIL_ENABLED: "true", RESEND_API_KEY: "dummy", VERCEL_ENV: "production" });
+  const result = await h.get(h.request("Bearer expected"));
+  assert.equal(result.body.disabled, true);
+  assert.equal(h.getAdminCalls(), 0);
 });
