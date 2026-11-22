@@ -79,8 +79,7 @@ export async function GET(request: Request) {
             "Usuário: " + String(payload.user_id ?? "não identificado"),
             "",
             message.slice(0, 1500)
-          ].join("
-");
+          ].join("\n");
       // Treat provider/network exceptions as a failed attempt, not as a failure of the whole batch.
       // Keep the same idempotency key on retries, including after an ambiguous provider response.
       let result: { sent: boolean; reason?: string };
