@@ -11,11 +11,17 @@ BEGIN
   END IF;
   RETURN QUERY
   WITH candidates AS (
-    SELECT id FROM public.myryra_finance_delivery_log
-    WHERE status IN ('pending','failed')
-      AND attempts < 3
-      AND (next_attempt_at IS NULL OR next_attempt_at <= now())
-    ORDER BY created_at,id
+    SELECT d.id FROM public.myryra_finance_delivery_log d
+    JOIN public.myryra_finance_notifications n
+      ON n.id=d.notification_id AND n.user_id=d.user_id
+    JOIN public.myryra_finance_alert_preferences p
+      ON p.user_id=d.user_id
+    WHERE d.status IN ('pending','failed')
+      AND d.attempts < 3
+      AND (d.next_attempt_at IS NULL OR d.next_attempt_at <= now())
+      AND ((d.channel='email' AND p.email_enabled IS TRUE)
+        OR (d.channel='push' AND p.push_enabled IS TRUE))
+    ORDER BY d.created_at,d.id
     FOR UPDATE SKIP LOCKED
     LIMIT LEAST(GREATEST(p_limit,1),50)
   )
