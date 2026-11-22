@@ -22,8 +22,8 @@ create table if not exists mika_internal.ai_quota (
   user_id uuid not null references auth.users(id) on delete cascade,
   action text not null check (action in ('suggest','transcribe')),
   window_start timestamptz not null,
-  usage_count integer not null default 0 check (usage_count >= 0),
-  primary key (user_id, action, window_start)
+  requests integer not null default 0 check (requests >= 0),
+  primary key (user_id, action)
 );
 alter table mika_internal.ai_quota enable row level security;
 revoke all on mika_internal.ai_quota from public, anon, authenticated;
@@ -35,28 +35,27 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_user_id uuid := auth.uid();
+  v_user uuid := auth.uid();
   v_limit integer;
-  v_window timestamptz := date_trunc('hour', now());
-  v_count integer;
+  v_allowed integer;
 begin
-  if v_user_id is null then
-    raise exception 'authentication required' using errcode = '28000';
+  if v_user is null or p_action not in ('suggest','transcribe') then
+    return false;
   end if;
-  if p_action = 'suggest' then
-    v_limit := 12;
-  elsif p_action = 'transcribe' then
-    v_limit := 20;
-  else
-    raise exception 'invalid action' using errcode = '22023';
-  end if;
-  insert into mika_internal.ai_quota(user_id, action, window_start, usage_count)
-  values (v_user_id, p_action, v_window, 1)
-  on conflict (user_id, action, window_start)
-  do update set usage_count = mika_internal.ai_quota.usage_count + 1
-    where mika_internal.ai_quota.usage_count < v_limit
-  returning usage_count into v_count;
-  return v_count is not null;
+  v_limit := case p_action when 'suggest' then 12 when 'transcribe' then 20 end;
+  insert into mika_internal.ai_quota(user_id,action,window_start,requests)
+  values(v_user,p_action,now(),1)
+  on conflict (user_id,action) do update
+  set window_start = case
+        when mika_internal.ai_quota.window_start <= now() - interval '1 hour' then now()
+        else mika_internal.ai_quota.window_start end,
+      requests = case
+        when mika_internal.ai_quota.window_start <= now() - interval '1 hour' then 1
+        else mika_internal.ai_quota.requests + 1 end
+  where mika_internal.ai_quota.window_start <= now() - interval '1 hour'
+     or mika_internal.ai_quota.requests < v_limit
+  returning 1 into v_allowed;
+  return coalesce(v_allowed = 1,false);
 end;
 $$;
 revoke all on function public.mika_consume_ai_quota(text) from public, anon;
