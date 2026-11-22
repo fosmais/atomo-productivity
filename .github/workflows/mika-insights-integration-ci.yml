@@ -1,6 +1,20 @@
 name: MIKA Insights integration checks
 
 on:
+  push:
+    branches:
+      - 'feat/mika-insights-myryra-integration'
+    paths:
+      - 'src/app/mika-insights/**'
+      - 'src/app/api/mika-insights/**'
+      - 'src/app/dashboard/vyra-navigation.tsx'
+      - 'src/app/login/page.tsx'
+      - 'tests/mika-insights-contract.test.cjs'
+      - 'docs/mika-insights/**'
+      - 'supabase/migrations/20261121033400_mika_insights_core_schema_and_quota.sql'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/mika-insights-integration-ci.yml'
   pull_request:
     paths:
       - 'src/app/mika-insights/**'
