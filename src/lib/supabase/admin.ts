@@ -5,26 +5,28 @@ export function createSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const secretKey = process.env.SUPABASE_SECRET_KEY;
 
-  // MVP2 and selective Concierge release builds must target only staging.
-  // Reject production, other projects and malformed URLs before admin access.
-  if (
-    process.env.VERCEL_ENV !== "production" &&
-    [
-      "feat/mvp2-professora-journey-myra-26",
-      "release/mika-concierge-v2-db-gate-20261121",
-    ].includes(process.env.VERCEL_GIT_COMMIT_REF || "")
-  ) {
+  // A selective release must NEVER access a non-staging project, even if
+  // accidentally promoted to a production deployment.
+  const branch = process.env.VERCEL_GIT_COMMIT_REF || "";
+  const isSelectiveRelease = branch === "release/mika-concierge-v2-db-gate-20261121";
+  const isMvp2Preview = branch === "feat/mvp2-professora-journey-myra-26" &&
+    process.env.VERCEL_ENV !== "production";
+
+  if (isSelectiveRelease || isMvp2Preview) {
     let stagingUrl: URL;
     try {
       stagingUrl = new URL(supabaseUrl || "");
     } catch {
-      throw new Error("Preview MVP2 exige URL válida do Supabase de homologação.");
+      throw new Error("MIKA staging exige URL válida do Supabase de homologação.");
     }
     if (
       stagingUrl.protocol !== "https:" ||
-      stagingUrl.hostname !== "xanavauqzsrgvdfhcrsm.supabase.co"
+      stagingUrl.hostname !== "xanavauqzsrgvdfhcrsm.supabase.co" ||
+      stagingUrl.pathname !== "/" ||
+      stagingUrl.search !== "" ||
+      stagingUrl.hash !== ""
     ) {
-      throw new Error("Preview MVP2 não pode usar Supabase fora da homologação.");
+      throw new Error("MIKA staging não pode usar Supabase fora da homologação.");
     }
   }
 
