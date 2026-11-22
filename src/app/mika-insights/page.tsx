@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
 
 type SuggestedTask = { title: string; priority: "Alta" | "Média" | "Normal"; dueDate: string | null };
 
@@ -278,7 +279,13 @@ export default function MikaInsightsPage() {
   return (
     <main className="mx-auto max-w-3xl space-y-6 p-4 sm:p-8">
       <header>
+        <Link href="/dashboard" className="mb-3 inline-flex min-h-11 items-center text-sm text-violet-300 underline-offset-4 hover:underline">← Voltar à Home</Link>
         <h1 className="text-2xl font-semibold">MIKA Insights</h1>
+        <details className="mt-3 rounded-xl border border-violet-400/25 bg-violet-400/5 p-3 text-sm">
+          <summary className="cursor-pointer font-semibold text-violet-200">Para que serve e como usar?</summary>
+          <p className="mt-2 opacity-80">Guarde ideias por texto ou voz, encontre-as pela busca e peça à MIKA sugestões para transformá-las em um plano. Você pode editar, arquivar, restaurar ou excluir cada ideia.</p>
+          <p className="mt-2 opacity-80">As sugestões não criam tarefas automaticamente: revise o plano e escolha o que deseja fazer.</p>
+        </details>
         <p className="text-sm opacity-70">Capture uma ideia agora. Decida o próximo passo depois.</p>
       </header>
       <section className="space-y-3 rounded-2xl border border-violet-400/20 bg-[#101b30]/90 p-4 shadow-xl shadow-violet-950/10" aria-label="Nova ideia">
