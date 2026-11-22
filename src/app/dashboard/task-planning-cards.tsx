@@ -28,7 +28,7 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
       const details = document.querySelector<HTMLDetailsElement>(`[data-feature-id="${quickAction}"]`);
       if (details) {
         details.open = true;
-        details.scrollIntoView({ behavior: "smooth", block: "center" });
+        details.scrollIntoView({ behavior: "smooth", block: quickAction === "kanban" ? "start" : "center" });
         if (quickAction === "capture") {
           window.setTimeout(() => window.dispatchEvent(new Event("myryra:focus-quick-capture")), 100);
         } else if (quickAction === "goals") {
@@ -38,6 +38,21 @@ export default function TaskPlanningCards({ tasks, today, intelligence, focus }:
     }, 80);
     return () => { active = false; window.clearTimeout(timer); };
   }, [activeModule, quickAction]);
+  useEffect(() => {
+    const openFilteredTasks = (event: Event) => {
+      const filter = (event as CustomEvent<{ filter?: string }>).detail?.filter;
+      if (filter !== "pending" && filter !== "overdue") return;
+      setActive("tasks");
+      window.requestAnimationFrame(() => {
+        const kanban = document.querySelector<HTMLDetailsElement>('[data-feature-id="kanban"]');
+        if (!kanban) return;
+        kanban.open = true;
+        kanban.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    };
+    window.addEventListener("myryra:task-filter", openFilteredTasks);
+    return () => window.removeEventListener("myryra:task-filter", openFilteredTasks);
+  }, []);
   const panels: Record<View, ReactNode> = { tasks, today, intelligence, focus };
 
   function selectSection(id: View) {
