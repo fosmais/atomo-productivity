@@ -73,6 +73,19 @@ export default function VyraHome() {
 
   return (
     <main className="mx-auto grid w-full max-w-7xl min-w-0 grid-cols-1 items-start gap-4 pb-24 lg:grid-cols-[minmax(0,1.55fr)_minmax(300px,0.85fr)] lg:gap-5 lg:pb-8" aria-label="MIKA Universe — MYRYRA Flow+">
+      <section className="col-span-full rounded-2xl border border-violet-400/30 bg-[#15132b] p-4 text-white sm:p-5" aria-labelledby="mika-insights-heading">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h2 id="mika-insights-heading" className="text-lg font-semibold">✧ MIKA Insights — suas ideias em ação</h2>
+            <p className="mt-1 max-w-2xl text-sm text-slate-300">Registre ideias por texto ou voz, organize seus pensamentos e transforme boas ideias em planos e tarefas com a ajuda da MIKA.</p>
+          </div>
+          <Link href="/mika-insights" className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-violet-500 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300">Abrir MIKA Insights →</Link>
+        </div>
+        <details className="mt-3 text-sm text-slate-300">
+          <summary className="cursor-pointer font-medium text-violet-200">Como funciona?</summary>
+          <p className="mt-2">Capture uma ideia, revise ou edite, peça sugestões de próximos passos e acompanhe as ideias planejadas ou arquivadas. Suas ideias ficam vinculadas à sua conta.</p>
+        </details>
+      </section>
       <section className="relative isolate min-w-0 overflow-hidden rounded-[28px] border border-violet-400/30 bg-[#0d1029] p-5 shadow-[0_20px_80px_rgba(77,18,130,.18)] sm:p-7" aria-label="MIKA Universe">
         <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full bg-violet-600/25 blur-3xl" />
         <div aria-hidden="true" className="pointer-events-none absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-fuchsia-600/15 blur-3xl" />
