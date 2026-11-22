@@ -39,3 +39,11 @@ test("MIKA Insights updates and deletion use owner and optimistic concurrency gu
     assert.match(ideas, new RegExp("async function " + action + "\\([^)]*\\) \\{\\s*if \\(busy\\) return;"));
   }
 });
+
+
+test("MIKA Insights microphone capture cannot overlap active operations", () => {
+  assert.match(ideas, /async function startRecording\(\) \{\s*if \(busy \|\| recording \|\| transcribing\) return;/);
+  assert.match(ideas, /if \(recorder\.state === "recording"\) recorder\.stop\(\)/);
+  assert.match(ideas, /setTranscribing\(true\)/);
+  assert.match(ideas, /finally \{ setTranscribing\(false\); \}/);
+});
