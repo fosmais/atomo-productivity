@@ -44,3 +44,10 @@ Definições inspecionadas diretamente no banco Preview, sem executar ações em
 - `mika_execute_approved_task`: exige `auth.uid()`, bloqueia proposta por proprietário, exige status `approved` e ação `create_task`, valida expiração, plano e título, grava tarefa com `user_id` do token e audita; segunda chamada retorna `already_executed` após conferir plano. Requer teste de concorrência, payload malformado e regressão da tabela `tasks`.
 - **Risco de publicação:** o código atual da página MIKA Insights não chama as duas RPCs de execução da MIKA Agente; não implantar essas funções em produção apenas por fazerem parte do Preview. Aplicar princípio do menor privilégio e migrar só os componentes efetivamente utilizados na primeira entrega.
 - As três funções usam `SECURITY DEFINER` e `search_path=''`. Revisão estática não equivale a teste funcional autenticado ou auditoria independente.
+
+## Revalidação somente leitura de Production — 2026-11-22
+- **Corrige o inventário de 2026-11-21:** em Production já existem `public.mika_ideas`, `mika_internal.ai_quota` e a RPC `public.mika_consume_ai_quota(text)`. Não recriar nem substituir automaticamente esses objetos.
+- A tabela de quotas em Production usa coluna `usage_count`, não `requests` como no SQL antigo de Preview; a RPC de Production foi inspecionada e usa `usage_count` e janela horária. **Aplicar `ai-quota-preview.sql` diretamente em Production seria incompatível** e poderia substituir a RPC existente por código que referencia coluna ausente.
+- RPC de Production: `SECURITY DEFINER`, `search_path=''`, `authenticated` com EXECUTE, `anon` sem EXECUTE; autenticação via `auth.uid()`, ações `suggest` (12/h) e `transcribe` (20/h).
+- A tabela privada não concede SELECT direto a `anon` nem `authenticated` e possui RLS habilitado.
+- **Ações:** preservar RPC e schema atuais; testar quotas com sessões autenticadas e verificar a interface e os endpoints antes de qualquer release seletiva. CAPTCHA de homologação e E2E permanecem pendentes. Nenhuma mudança no banco de Production foi feita nesta revalidação.
