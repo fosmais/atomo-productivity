@@ -35,3 +35,19 @@ test("AI routes do not use elevated Supabase service credentials", () => {
     assert.match(route, /createClient\(\)/);
   }
 });
+
+test("mutations scope writes to owner and use optimistic concurrency", () => {
+  const updates = [...page.matchAll(/\.update\(\{/g)].length;
+  assert.equal(updates, 3, "archive, plan and edit must all be guarded");
+  const guards = [...page.matchAll(/\.eq\("updated_at", (?:idea|currentIdea)\.updated_at\)/g)].length;
+  assert.equal(guards, 4, "archive, plan, edit and delete must check current version");
+  const ownerGuards = [...page.matchAll(/\.eq\("user_id", user\.id\)/g)].length;
+  assert.ok(ownerGuards >= 5, "read and every write must scope to the signed-in user");
+  assert.match(page, /\.delete\(\)\.eq\("id", id\)\.eq\("user_id", user\.id\)/);
+});
+
+test("suggestion API rejects archived ideas and never creates tasks automatically", () => {
+  assert.match(suggest, /idea\.status === "archived"/);
+  assert.doesNotMatch(suggest, /\.from\("tasks"\)\.insert\(/);
+  assert.match(page, /Nenhuma tarefa foi criada automaticamente/);
+});
