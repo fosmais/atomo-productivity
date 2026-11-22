@@ -21,19 +21,16 @@ export async function POST(request: NextRequest) {
       .select("id,user_id,notification_id,channel,status,attempts,next_attempt_at")
       .in("status", ["pending", "failed"])
       .lt("attempts", MAX_ATTEMPTS)
+      // Filter due work before LIMIT so deferred retries cannot starve ready items.
+      .or(`next_attempt_at.is.null,next_attempt_at.lte.${now}`)
       .order("created_at", { ascending: true })
       .limit(MAX_BATCH);
     if (error) throw error;
 
     let eligible = 0;
     let optedOut = 0;
-    let notDue = 0;
     let missingNotification = 0;
     for (const item of deliveries ?? []) {
-      if (item.next_attempt_at && item.next_attempt_at > now) {
-        notDue++;
-        continue;
-      }
       const { data: notification, error: notificationError } = await admin
         .from("myryra_finance_notifications")
         .select("id,user_id")
@@ -64,7 +61,7 @@ export async function POST(request: NextRequest) {
       inspected: deliveries?.length ?? 0,
       eligible,
       optedOut,
-      notDue,
+      notDue: 0, // Kept for API compatibility; deferred items are excluded in SQL.
       missingNotification,
       maxAttempts: MAX_ATTEMPTS,
       message: "Nenhuma notificação foi enviada ou alterada."
