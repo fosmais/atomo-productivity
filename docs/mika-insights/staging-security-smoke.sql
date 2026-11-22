@@ -1,29 +1,28 @@
--- MIKA Insights: teste transacional de controle de acesso e cotas (homologação).
--- Execute somente no Supabase de homologação. Nenhuma alteração é persistida.
--- Não simula login real nem substitui testes E2E com hCaptcha.
+-- MIKA Insights | staging-only, rollback-only access-control smoke test.
+-- Execute no SQL Editor do projeto de HOMOLOGACAO (nunca Production).
+-- Verifica usuario autenticado sem JWT; nao substitui E2E/hCaptcha.
 BEGIN;
+SET LOCAL ROLE authenticated;
 DO $$
-DECLARE
-  v_user uuid;
-  v_allowed boolean;
 BEGIN
-  IF has_function_privilege('anon', 'public.mika_consume_ai_quota(text)', 'EXECUTE') THEN
-    RAISE EXCEPTION 'FAIL: anon can execute quota RPC';
+  IF auth.uid() IS NOT NULL THEN
+    RAISE EXCEPTION 'FAIL: unexpected user identity';
   END IF;
-  IF NOT has_function_privilege('authenticated', 'public.mika_consume_ai_quota(text)', 'EXECUTE') THEN
-    RAISE EXCEPTION 'FAIL: authenticated cannot execute quota RPC';
+  IF public.mika_consume_ai_quota('invalid') IS DISTINCT FROM false THEN
+    RAISE EXCEPTION 'FAIL: invalid quota action accepted';
   END IF;
-  SELECT id INTO v_user FROM auth.users LIMIT 1;
-  IF v_user IS NULL THEN
-    RAISE NOTICE 'SKIP: no existing auth user; RPC identity checks not exercised';
-    RETURN;
+  IF public.mika_consume_ai_quota('suggest') IS DISTINCT FROM false THEN
+    RAISE EXCEPTION 'FAIL: quota consumed without user identity';
   END IF;
-  PERFORM set_config('request.jwt.claim.sub', v_user::text, true);
-  SET LOCAL ROLE authenticated;
-  SELECT public.mika_consume_ai_quota('invalid') INTO v_allowed;
-  IF v_allowed IS DISTINCT FROM false THEN
-    RAISE EXCEPTION 'FAIL: unknown action accepted';
+  IF EXISTS (SELECT 1 FROM public.mika_ideas) THEN
+    RAISE EXCEPTION 'FAIL: ideas visible without user identity';
   END IF;
-  RAISE NOTICE 'PASS: invalid quota action rejected';
+  RAISE NOTICE 'PASS: identity, invalid action, quota and idea visibility';
 END $$;
 ROLLBACK;
+
+-- Permissoes verificadas separadamente, sem assumir usuario de teste existente:
+SELECT
+  NOT has_function_privilege('anon','public.mika_consume_ai_quota(text)','EXECUTE') AS anon_quota_denied,
+  has_function_privilege('authenticated','public.mika_consume_ai_quota(text)','EXECUTE') AS authenticated_quota_granted,
+  NOT has_table_privilege('anon','public.mika_ideas','SELECT') AS anon_ideas_denied;
