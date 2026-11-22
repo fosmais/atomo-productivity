@@ -49,3 +49,16 @@ test("MIKA Insights microphone capture cannot overlap active operations", () => 
   assert.match(ideas, /setTranscribing\(true\)/);
   assert.match(ideas, /finally \{ setTranscribing\(false\); \}/);
 });
+
+test("MIKA quota migration fails closed on the incompatible Production schema", () => {
+  const migration = source("supabase/migrations/20261121033400_mika_insights_core_schema_and_quota.sql");
+  const guard = migration.indexOf("DO $quota_preflight$");
+  const ddl = migration.indexOf("create table if not exists public.mika_ideas");
+  assert.ok(guard >= 0 && guard < ddl, "schema guard must precede all migration DDL");
+  assert.match(migration, /v_pk IS DISTINCT FROM 'user_id,action'/);
+  assert.match(migration, /v_columns IS DISTINCT FROM 'requests'/);
+  assert.match(migration, /RAISE EXCEPTION 'MIKA quota migration blocked:/);
+  assert.match(migration, /on conflict \(user_id,action\)/);
+  assert.match(migration, /revoke all on function public\.mika_consume_ai_quota\(text\) from public, anon/);
+  assert.match(migration, /grant execute on function public\.mika_consume_ai_quota\(text\) to authenticated/);
+});
