@@ -20,10 +20,12 @@ export async function GET(request: Request) {
 
   try {
     const admin = createSupabaseAdmin();
+    const supportedEventTypes = ["ticket_created", "ticket_acknowledgement"];
     const testRecipients = (process.env.MIKA_SUPPORT_TEST_RECIPIENTS ?? "")
       .split(",").map((address) => address.trim().toLowerCase()).filter(Boolean);
     let pendingQuery = admin.from("support_email_outbox")
       .select("id,event_type,source_id,recipient,subject,payload,attempts,status,processing_started_at")
+      .in("event_type", supportedEventTypes)
       .or(`status.eq.pending,and(status.eq.processing,processing_started_at.lt.${new Date(Date.now() - 10 * 60 * 1000).toISOString()})`);
     // Filter before LIMIT so a backlog of customer addresses cannot starve approved test mail.
     if (process.env.VERCEL_ENV !== "production") pendingQuery = pendingQuery.in("recipient", testRecipients);
