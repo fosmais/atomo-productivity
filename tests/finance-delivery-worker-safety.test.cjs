@@ -26,7 +26,9 @@ test('finance claim uses atomic row locking and service-only access', () => {
 test('stale recovery is bounded and does not resend externally', () => {
   assert.match(recovery, /p_stale_minutes < 5/);
   assert.match(recovery, /FOR UPDATE SKIP LOCKED/);
-  assert.match(recovery, /attempts>=3 THEN NULL/);
+  assert.match(recovery, /status='cancelled'/);
+  assert.match(recovery, /next_attempt_at=NULL/);
+  assert.match(recovery, /pending delivery outcome reconciliation/);
 });
 
 test('atomic finance claim requires matching notification ownership', () => {
