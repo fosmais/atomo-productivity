@@ -21,7 +21,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Reserva de homologação desabilitada." }, { status: 403 });
   }
   try {
-    const admin = createSupabaseAdmin();
+    if (previewClaimRequested && !process.env.SUPABASE_SECRET_KEY) {
+      return NextResponse.json({ error: "Credencial de homologação indisponível." }, { status: 503 });
+    }
     if (previewClaimRequested) {
       // Hard-bind mutable claim tests to the dedicated isolated Supabase project.
       // A Preview deployment accidentally pointed at production must not mutate its queue.
@@ -35,6 +37,7 @@ export async function POST(request: NextRequest) {
       if (dbHost !== "woqpzvqfaeqteiqpsaqi.supabase.co") {
         return NextResponse.json({ error: "Banco de homologação não configurado." }, { status: 403 });
       }
+      const admin = createSupabaseAdmin();
       const { data, error } = await admin.rpc("claim_finance_delivery_batch", { p_limit: MAX_BATCH });
       if (error) throw error;
       return NextResponse.json({
@@ -44,6 +47,7 @@ export async function POST(request: NextRequest) {
         message: "Reservas de homologação criadas; nenhum envio realizado."
       }, { headers: { "Cache-Control": "no-store" } });
     }
+    const admin = createSupabaseAdmin();
     const now = new Date().toISOString();
     const { data: deliveries, error } = await admin
       .from("myryra_finance_delivery_log")
