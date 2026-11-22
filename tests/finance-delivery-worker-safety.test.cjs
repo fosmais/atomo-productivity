@@ -57,3 +57,13 @@ test('claim-preview refuses a production or unknown Supabase host', () => {
   assert.ok(hostCheck >= 0 && claimCall > hostCheck);
   assert.match(route, /Banco de homologação não configurado/);
 });
+
+test('claim-preview fails closed without staging credentials before admin client creation', () => {
+  const missingKey = route.indexOf('previewClaimRequested && !process.env.SUPABASE_SECRET_KEY');
+  const hostCheck = route.indexOf('dbHost !== "woqpzvqfaeqteiqpsaqi.supabase.co"');
+  const previewAdmin = route.indexOf('const admin = createSupabaseAdmin();', hostCheck);
+  const claimCall = route.indexOf('.rpc("claim_finance_delivery_batch"');
+  assert.ok(missingKey >= 0 && missingKey < hostCheck && hostCheck < previewAdmin && previewAdmin < claimCall);
+  assert.match(route, /Credencial de homologação indisponível/);
+  assert.match(route, /status: 503/);
+});
