@@ -152,6 +152,7 @@ export default function MikaInsightsPage() {
   }
 
   async function setArchived(id: string, archived: boolean) {
+    if (busy) return;
     setBusy(true); setError(""); setNotice("");
     try {
       const client = createClient();
@@ -229,6 +230,7 @@ export default function MikaInsightsPage() {
   }
 
   async function updateIdea(id: string) {
+    if (busy) return;
     const content = editContent.trim();
     if (!content || content.length > 10000 || busy) return;
     setBusy(true); setError(""); setNotice("");
@@ -252,6 +254,7 @@ export default function MikaInsightsPage() {
   }
 
   async function removeIdea(id: string) {
+    if (busy) return;
     if (!window.confirm("Excluir esta ideia permanentemente?")) return;
     setBusy(true); setError(""); setNotice("");
     try {
