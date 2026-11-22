@@ -26,6 +26,13 @@ export async function PATCH(request: Request) {
         { status: 401 }
       );
     }
+    if (process.env.MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true" &&
+        !(await hasCurrentLegalAcceptance(auth.user.id))) {
+      return NextResponse.json(
+        { error: "Aceite dos documentos legais vigentes necessário.", code: "LEGAL_ACCEPTANCE_REQUIRED" },
+        { status: 403, headers: { "Cache-Control": "private, no-store" } },
+      );
+    }
 
     const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
     if (assurance.error) {
