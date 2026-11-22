@@ -16,7 +16,7 @@ test('finance worker remains explicitly dry-run and secret protected', () => {
   assert.match(route, /MYRYRA_NOTIFICATION_WORKER_SECRET/);
   assert.match(route, /mode: "dry-run"/);
   assert.match(route, /deliveryEnabled: false/);
-  assert.doesNotMatch(route, /\.rpc\("claim_finance_delivery_batch"/);
+  assert.match(route, /previewClaimRequested/);
 });
 test('finance claim uses atomic row locking and service-only access', () => {
   assert.match(claim, /FOR UPDATE SKIP LOCKED/);
@@ -40,4 +40,12 @@ test('atomic finance claim enforces explicit consent for each channel', () => {
   assert.match(claim, /d\.channel='push' AND p\.push_enabled IS TRUE/);
   assert.match(claim, /d\.attempts < 3/);
   assert.match(claim, /d\.next_attempt_at IS NULL OR d\.next_attempt_at <= now\(\)/);
+});
+
+test('finance claim preview is gated by Vercel preview and explicit opt-in', () => {
+  assert.match(route, /VERCEL_ENV !== "preview"/);
+  assert.match(route, /MYRYRA_FINANCE_CLAIM_PREVIEW_ENABLED !== "true"/);
+  assert.match(route, /\.rpc\("claim_finance_delivery_batch"/);
+  assert.match(route, /deliveryEnabled: false/);
+  assert.match(route, /reserved: data\?\.length \?\? 0/);
 });
