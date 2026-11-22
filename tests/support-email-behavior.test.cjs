@@ -54,3 +54,14 @@ test("Provider failures return safe error without leaking secrets", async () => 
   assert.equal(result.sent, false);
   assert.match(result.reason, /HTTP 503/);
 });
+
+test("Local and unlabelled environments also reject unlisted recipients", async () => {
+  for (const env of [
+    { RESEND_API_KEY: "dummy" },
+    { VERCEL_ENV: "development", RESEND_API_KEY: "dummy" },
+  ]) {
+    const h = harness(env);
+    assert.equal((await h.send(notice)).sent, false);
+    assert.equal(h.calls.length, 0);
+  }
+});
