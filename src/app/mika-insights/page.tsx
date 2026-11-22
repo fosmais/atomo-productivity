@@ -70,6 +70,7 @@ export default function MikaInsightsPage() {
   }, [load]);
 
   async function startRecording() {
+    if (busy || recording || transcribing) return;
     setError(""); setNotice("");
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
       setError("Gravação não disponível neste navegador. Você pode digitar sua ideia."); return;
