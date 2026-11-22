@@ -12,9 +12,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
   }
 
-  // Deliberately dry-run only: no external provider, no queue mutations or sends.
+  // Production stays read-only. Preview reservation requires explicit opt-in.
+  const previewClaimRequested = request.nextUrl.searchParams.get("mode") === "claim-preview";
+  if (previewClaimRequested && (
+    process.env.VERCEL_ENV !== "preview" ||
+    process.env.MYRYRA_FINANCE_CLAIM_PREVIEW_ENABLED !== "true"
+  )) {
+    return NextResponse.json({ error: "Reserva de homologação desabilitada." }, { status: 403 });
+  }
   try {
     const admin = createSupabaseAdmin();
+    if (previewClaimRequested) {
+      const { data, error } = await admin.rpc("claim_finance_delivery_batch", { p_limit: MAX_BATCH });
+      if (error) throw error;
+      return NextResponse.json({
+        mode: "claim-preview",
+        deliveryEnabled: false,
+        reserved: data?.length ?? 0,
+        message: "Reservas de homologação criadas; nenhum envio realizado."
+      }, { headers: { "Cache-Control": "no-store" } });
+    }
     const now = new Date().toISOString();
     const { data: deliveries, error } = await admin
       .from("myryra_finance_delivery_log")
