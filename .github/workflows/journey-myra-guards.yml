@@ -1,0 +1,26 @@
+name: Journey MYRA route guards
+
+on:
+  pull_request:
+    paths:
+      - 'src/app/api/journeys/**'
+      - 'scripts/test-journey-myra-route-guards.cjs'
+      - '.github/workflows/journey-myra-guards.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  route-guards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check Journey mission route guards
+        run: node scripts/test-journey-myra-route-guards.cjs

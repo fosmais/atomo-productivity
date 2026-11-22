@@ -1,5 +1,8 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { hasCurrentLegalAcceptance } from "@/lib/privacy/legal-acceptance";
+import { checkConciergeRateLimit } from "@/lib/rate-limit";
 import { validateTaskInput } from "@/lib/task-validation";
 
 type GeneratedTask = {
@@ -25,6 +28,61 @@ function isGeneratedTask(value: unknown): value is GeneratedTask {
 }
 
 export async function POST(request: Request) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json(
+      { error: "Usuário não autenticado." },
+      { status: 401 }
+    );
+  }
+
+  const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (assurance.error) return NextResponse.json({ error: "Verificação de sessão indisponível." }, { status: 503 });
+  if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
+    return NextResponse.json({ error: "Segundo fator obrigatório.", code: "MFA_REQUIRED" }, { status: 403 });
+  }
+
+  // Require current legal acceptance before processing user text with an AI provider.
+  if (process.env.MYRYRA_LEGAL_ACCEPTANCE_GATE_ENABLED === "true" &&
+      !(await hasCurrentLegalAcceptance(user.id))) {
+    return NextResponse.json(
+      { error: "Aceite dos documentos legais vigentes necessário.", code: "LEGAL_ACCEPTANCE_REQUIRED" },
+      { status: 403, headers: { "Cache-Control": "private, no-store" } },
+    );
+  }
+
+  let rateLimit;
+
+  try {
+    rateLimit = await checkConciergeRateLimit(user.id);
+  } catch {
+    console.error("VYRA: Rate limiting indisponível.");
+
+    return NextResponse.json(
+      { error: "Serviço temporariamente indisponível. Tente novamente." },
+      { status: 503 }
+    );
+  }
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Limite de requisições atingido. Tente novamente mais tarde." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(
+            Math.max(1, Math.ceil((rateLimit.reset - Date.now()) / 1000))
+          ),
+        },
+      }
+    );
+  }
   const contentType = request.headers.get("content-type") ?? "";
   const mediaType = contentType.split(";")[0].trim().toLowerCase();
 
@@ -35,10 +93,31 @@ export async function POST(request: Request) {
     );
   }
 
+  const declaredLength = request.headers.get("content-length");
+  if (declaredLength !== null && /^\d+$/.test(declaredLength) && Number(declaredLength) > 32768) {
+    return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+  }
+
   let body: unknown;
 
   try {
-    body = await request.json();
+    const reader = request.body?.getReader();
+    if (!reader) throw new Error("Corpo ausente");
+    const decoder = new TextDecoder("utf-8", { fatal: true });
+    let rawBody = "";
+    let bytes = 0;
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      bytes += chunk.value.byteLength;
+      if (bytes > 32768) {
+        await reader.cancel();
+        return NextResponse.json({ error: "Requisição muito grande." }, { status: 413 });
+      }
+      rawBody += decoder.decode(chunk.value, { stream: true });
+    }
+    rawBody += decoder.decode();
+    body = JSON.parse(rawBody);
   } catch {
     return NextResponse.json(
       { error: "Envie um JSON válido." },

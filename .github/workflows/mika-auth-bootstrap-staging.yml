@@ -1,0 +1,36 @@
+name: MIKA synthetic Auth bootstrap (staging only)
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: staging
+    env:
+      MIKA_STAGING_ANON_KEY: ${{ secrets.MIKA_STAGING_ANON_KEY }}
+      MIKA_TEST_EMAIL: ${{ secrets.MIKA_TEST_EMAIL }}
+      MIKA_TEST_PASSWORD: ${{ secrets.MIKA_TEST_PASSWORD }}
+      MIKA_TEST_OTHER_EMAIL: ${{ secrets.MIKA_TEST_OTHER_EMAIL }}
+      MIKA_TEST_OTHER_PASSWORD: ${{ secrets.MIKA_TEST_OTHER_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Validate dedicated staging credentials are configured
+        shell: bash
+        run: |
+          for key in MIKA_STAGING_ANON_KEY MIKA_TEST_EMAIL MIKA_TEST_PASSWORD MIKA_TEST_OTHER_EMAIL MIKA_TEST_OTHER_PASSWORD; do
+            if [[ -z "${!key}" ]]; then
+              echo "::error::Missing staging secret: $key"
+              exit 1
+            fi
+          done
+      - run: npm ci --ignore-scripts
+      - name: Create or verify two isolated synthetic Auth identities
+        run: node scripts/mika-two-users-staging.cjs

@@ -1,4 +1,5 @@
 export type SavedTask = {
+  id?: string;
   title: string;
   priority: "Alta" | "Média" | "Normal";
   dueDate: string | null;

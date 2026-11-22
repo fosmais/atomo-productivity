@@ -1,0 +1,88 @@
+import React, { useEffect, useState } from "react";
+import { Pressable, Text, View } from "react-native";
+import { AudioModule, RecordingPresets, useAudioRecorder } from "expo-audio";
+
+type Props = { onRecorded: (uri: string) => void };
+
+export function MykaVoiceRecorder({ onRecorded }: Props) {
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const [recording, setRecording] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      // Release the microphone if the MYKA screen unmounts mid-recording.
+      if (recorder.isRecording) {
+        void recorder.stop().catch(() => undefined).finally(() => {
+          void AudioModule.setAudioModeAsync({ allowsRecording: false }).catch(() => undefined);
+        });
+      }
+    };
+  }, [recorder]);
+
+  async function toggleRecording() {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      if (recording) {
+        await recorder.stop();
+        await AudioModule.setAudioModeAsync({ allowsRecording: false });
+        setRecording(false);
+        if (recorder.uri) onRecorded(recorder.uri);
+        else setError("Não foi possível acessar o áudio gravado.");
+      } else {
+        const permission = await AudioModule.requestRecordingPermissionsAsync();
+        if (!permission.granted) {
+          setError("Autorize o microfone nas configurações do Android.");
+          return;
+        }
+        await AudioModule.setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+        await recorder.prepareToRecordAsync();
+        recorder.record();
+        setRecording(true);
+      }
+    } catch {
+      if (recorder.isRecording) {
+        await recorder.stop().catch(() => undefined);
+      }
+      await AudioModule.setAudioModeAsync({ allowsRecording: false }).catch(() => undefined);
+      setError("Falha na gravação. Tente novamente.");
+      setRecording(false);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function discardRecording() {
+    if (!recording || busy) return;
+    setBusy(true);
+    try {
+      await recorder.stop();
+      await AudioModule.setAudioModeAsync({ allowsRecording: false });
+      setRecording(false);
+      setError(null);
+    } catch {
+      await AudioModule.setAudioModeAsync({ allowsRecording: false }).catch(() => undefined);
+      setError("Não foi possível descartar a gravação.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return <View style={{ gap: 8 }}>
+    <Pressable accessibilityRole="button" disabled={busy} onPress={() => void toggleRecording()}>
+      <Text style={{ color: "#B98AFF", fontWeight: "700" }}>
+        {busy ? "Aguarde..." : recording ? "Encerrar gravação" : "Gravar mensagem de voz"}
+      </Text>
+    </Pressable>
+    {recording ? <>
+      <Text accessibilityRole="text" style={{ color: "#CDBDE8" }}>Microfone ativo. Toque para finalizar.</Text>
+      <Pressable accessibilityRole="button" disabled={busy} onPress={() => void discardRecording()}>
+        <Text style={{ color: "#FCA5A5", fontWeight: "700" }}>Cancelar gravação</Text>
+      </Pressable>
+    </> : null}
+    {error ? <Text style={{ color: "#FCA5A5" }}>{error}</Text> : null}
+  </View>;
+}
