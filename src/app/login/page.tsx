@@ -98,7 +98,7 @@ export default function LoginPage() {
           email,
           password,
           options: {
-            emailRedirectTo: "https://www.myryra.com/auth/confirm",
+            emailRedirectTo: `${window.location.origin}/auth/confirm`,
             ...(captchaEnabled ? { captchaToken } : {}),
           },
         });
@@ -193,7 +193,7 @@ export default function LoginPage() {
     try {
       if (captchaEnabled && !captchaToken) throw new Error("Conclua a verificação antirobô.");
       const result = await createClient().auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: "https://www.myryra.com/auth/recovery-callback",
+        redirectTo: `${window.location.origin}/auth/recovery-callback`,
         ...(captchaEnabled ? { captchaToken } : {}),
       });
       if (result.error) throw result.error;
