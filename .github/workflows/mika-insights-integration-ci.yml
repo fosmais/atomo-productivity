@@ -7,6 +7,7 @@ on:
       - 'src/app/api/mika-insights/**'
       - 'src/app/dashboard/vyra-navigation.tsx'
       - 'src/app/login/page.tsx'
+      - 'tests/mika-insights-contract.test.cjs'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/mika-insights-integration-ci.yml'
@@ -26,6 +27,8 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - name: MIKA Insights contract regression
+        run: node --test tests/mika-insights-contract.test.cjs
       - name: ESLint (MIKA Insights and MYRYRA integration)
         run: npx eslint src/app/mika-insights src/app/api/mika-insights src/app/dashboard/vyra-navigation.tsx src/app/login/page.tsx
       - name: Generate Next.js route and layout types
