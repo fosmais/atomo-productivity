@@ -42,8 +42,10 @@ test("MIKA Insights updates and deletion use owner and optimistic concurrency gu
 
 
 test("MIKA Insights microphone capture cannot overlap active operations", () => {
-  assert.match(ideas, /async function startRecording\(\) \{\s*if \(busy \|\| recording \|\| transcribing\) return;/);
+  assert.match(ideas, /async function startRecording\(\) \{\s*if \(busy \|\| recording \|\| transcribing \|\| microphonePendingRef\.current\) return;/);
   assert.match(ideas, /if \(recorder\.state === "recording"\) recorder\.stop\(\)/);
+  assert.match(ideas, /microphonePendingRef\.current = true;/);
+  assert.match(ideas, /microphonePendingRef\.current = false;/);
   assert.match(ideas, /setTranscribing\(true\)/);
   assert.match(ideas, /finally \{ setTranscribing\(false\); \}/);
 });
