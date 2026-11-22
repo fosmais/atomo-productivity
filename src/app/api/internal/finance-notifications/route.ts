@@ -23,6 +23,18 @@ export async function POST(request: NextRequest) {
   try {
     const admin = createSupabaseAdmin();
     if (previewClaimRequested) {
+      // Hard-bind mutable claim tests to the dedicated isolated Supabase project.
+      // A Preview deployment accidentally pointed at production must not mutate its queue.
+      const dbHost = (() => {
+        try {
+          return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").hostname;
+        } catch {
+          return "";
+        }
+      })();
+      if (dbHost !== "woqpzvqfaeqteiqpsaqi.supabase.co") {
+        return NextResponse.json({ error: "Banco de homologação não configurado." }, { status: 403 });
+      }
       const { data, error } = await admin.rpc("claim_finance_delivery_batch", { p_limit: MAX_BATCH });
       if (error) throw error;
       return NextResponse.json({
