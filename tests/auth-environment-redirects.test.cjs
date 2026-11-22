@@ -22,3 +22,11 @@ test("auth callbacks redirect relative to the incoming request origin", () => {
   assert.match(confirmation, /new URL\([^\n]+, url\.origin\)/);
   assert.match(recovery, /new URL\([^\n]+, url\.origin\)/);
 });
+
+test("MFA completion preserves the requested protected destination", () => {
+  const verifyMfa = login.match(/async function verifyMfa\([\s\S]*?\n  }\n\n  return \(/)?.[0];
+  assert.ok(verifyMfa, "MFA handler must exist");
+  assert.match(verifyMfa, /router\.push\(returnTo\)/);
+  assert.doesNotMatch(verifyMfa, /router\.push\(["\x27]\/dashboard["\x27]\)/);
+  assert.match(login, /requestedReturn === "\/mika-insights"/);
+});
