@@ -53,3 +53,9 @@ test("non-production queue filters recipients before applying the batch limit", 
   assert.ok(filter > 0 && limit > filter, "recipient filter must precede LIMIT");
   assert.match(cron, /if \(process\.env\.VERCEL_ENV !== "production"\) pendingQuery = pendingQuery\.in/);
 });
+
+
+test("email worker claims match the observed attempt count to reject stale pending snapshots", () => {
+  assert.match(cron, /\.eq\("id", item\.id\)\.eq\("attempts", item\.attempts\)/);
+  assert.ok(cron.indexOf('.eq("id", item.id).eq("attempts", item.attempts)') < cron.indexOf('if (item.status === "pending") claim'));
+});
