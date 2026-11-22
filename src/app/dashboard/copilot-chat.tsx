@@ -4,12 +4,14 @@ import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import MykaPortrait from "@/components/myka-portrait";
 import MikaAgentMode from "./mika-agent-mode";
+import MikaAppConnections from "./mika-app-connections";
 import type { FormEvent } from "react";
 import TaskConfirmation from "./task-confirmation";
 import { useVyraActiveModule } from "./vyra-module-context";
 import EventConfirmation from "./event-confirmation";
 import type { SavedTask } from "@/lib/plan-storage";
 import type { NewCalendarEvent } from "@/lib/event-cloud";
+import { getExternalAppCapability } from "@/lib/mika/external-app-registry";
 
 type ChatMessage = {
   id?: string;
@@ -47,12 +49,22 @@ function isTaskProposal(
 }
 
 const EXTERNAL_APP_LINKS = [
-  { name: "Uber", pattern: /\buber\b/i, url: "https://m.uber.com/looking", action: "Abrir Uber" },
-  { name: "Spotify", pattern: /\bspotify\b/i, url: "https://open.spotify.com/", action: "Abrir Spotify" },
-  { name: "WhatsApp", pattern: /\bwhats?app\b/i, url: "https://wa.me/", action: "Abrir WhatsApp" },
-  { name: "Google Maps", pattern: /\b(google maps|maps)\b/i, url: "https://www.google.com/maps", action: "Abrir Google Maps" },
-  { name: "YouTube", pattern: /\byoutube\b/i, url: "https://www.youtube.com/", action: "Abrir YouTube" },
+  { id: "uber", name: "Uber", pattern: /\buber\b/i },
+  { id: "spotify", name: "Spotify", pattern: /\bspotify\b/i },
+  { id: "whatsapp", name: "WhatsApp", pattern: /\bwhats?app\b/i },
+  { id: "google-maps", name: "Google Maps", pattern: /\b(google maps|maps)\b/i },
+  { id: "youtube", name: "YouTube", pattern: /\byoutube\b/i },
+  { id: "google-calendar", name: "Google Calendar", pattern: /\b(google calendar|agenda do google)\b/i },
+  { id: "waze", name: "Waze", pattern: /\bwaze\b/i },
+  { id: "99", name: "99", pattern: /\b(99|99app)\b/i },
 ] as const;
+
+function resolveExternalApp(app: (typeof EXTERNAL_APP_LINKS)[number] | undefined) {
+  if (!app) return null;
+  const capability = getExternalAppCapability(app.id);
+  if (!capability || capability.apiExecutionEnabled !== false) return null;
+  return { ...app, url: capability.handoffUrl, action: `Abrir ${app.name}` };
+}
 
 function appLinkForMessage(messages: ChatMessage[], index: number) {
   const message = messages[index];
@@ -60,9 +72,9 @@ function appLinkForMessage(messages: ChatMessage[], index: number) {
   const previous = messages[index - 1];
   if (previous?.role !== "user") return null;
   const text = previous.content.trim();
-  const request = /\b(abrir|abra|abre|acesse|acessar|iniciar|coloque|tocar|reproduzir|chamar|pedir|solicitar|corrida|viagem)\b/i;
+  const request = /\b(abrir|abra|abre|acesse|acessar|iniciar|coloque|tocar|reproduzir|chamar|pedir|solicitar|corrida|viagem|navegar|agendar|enviar)\b/i;
   const explicitApp = EXTERNAL_APP_LINKS.find((app) => app.pattern.test(text));
-  if (explicitApp && request.test(text)) return explicitApp;
+  if (explicitApp && request.test(text)) return resolveExternalApp(explicitApp);
   // Continue a recent app request when the user supplies a destination or approval.
   // Never infer an app from an unrelated conversation.
   const recentRequest = messages.slice(Math.max(0, index - 8), index - 1).reverse()
@@ -71,10 +83,11 @@ function appLinkForMessage(messages: ChatMessage[], index: number) {
   if (!recentRequest) return null;
   const app = EXTERNAL_APP_LINKS.find((candidate) => candidate.pattern.test(recentRequest.content));
   if (!app) return null;
-  const approval = /^(segue|seguir|sim|pode|continue|continuar|ok|vamos|confirmo)[!. ]*$/i.test(text);
-  const destination = app.name === "Uber" &&
+  // Uma aprovação genérica não deve criar um novo link nem ser tratada como autorização de ação.
+  const approval = false;
+  const destination = (app.name === "Uber" || app.name === "99") &&
     /\b(corrida|viagem|destino|para|ate|até|avenida|av\.?|rua|aeroporto|estacao|estação)\b/i.test(text);
-  return approval || destination ? app : null;
+  return approval || destination ? resolveExternalApp(app) : null;
 }
 
 export default function CopilotChat() {
@@ -123,6 +136,7 @@ function isEventProposal(
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [input, setInput] = useState("");
+  const [rideOrigin, setRideOrigin] = useState("");
   const [pendingConciergePrompt, setPendingConciergePrompt] = useState<string | null>(null);
   useEffect(() => {
     if (activeModule !== "vyra-ai") return;
@@ -665,6 +679,7 @@ setConversationId(data.conversationId);
   return (
     <section className="min-w-0 rounded-2xl border border-violet-400/20 bg-gradient-to-b from-slate-900 to-slate-950 p-3 text-white shadow-xl shadow-violet-950/20 sm:p-7">
       <MikaAgentMode />
+      <MikaAppConnections />
       <div className="mb-5">
         <p className="text-xs font-semibold uppercase tracking-[.2em] text-violet-300">
           MIKA
@@ -725,7 +740,17 @@ setConversationId(data.conversationId);
             </div>
             {appLinkForMessage(messages, index) && (
               <div className="ml-10 rounded-xl border border-violet-400/30 bg-violet-950/30 p-3 text-sm sm:ml-12">
-                <p className="mb-2 text-violet-100">A MIKA pode encaminhar você ao serviço solicitado. A abertura depende do dispositivo; ações dentro do aplicativo precisam ser confirmadas por você e podem exigir uma integração específica.</p>
+                {(appLinkForMessage(messages, index)!.name === "Uber" || appLinkForMessage(messages, index)!.name === "99") && (
+                  <div className="mb-3 space-y-2">
+                    <label htmlFor={`ride-origin-${index}`} className="block text-xs font-medium text-violet-200">Ponto de partida (opcional)</label>
+                    <div className="flex flex-wrap gap-2">
+                      <input id={`ride-origin-${index}`} type="text" maxLength={180} autoComplete="street-address" value={rideOrigin} onChange={(event) => setRideOrigin(event.target.value)} placeholder="Ex.: Rua e número, bairro" className="min-w-0 flex-1 rounded-lg border border-violet-400/30 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-400" />
+                      <button type="button" disabled={loading || !rideOrigin.trim()} onClick={() => { const origin = rideOrigin.trim(); if (!origin) return; setRideOrigin(""); void sendTextMessage(`Minha origem para a viagem no aplicativo ${appLinkForMessage(messages, index)!.name} é: ${origin}. Mantenha o destino informado anteriormente e me oriente para confirmar a corrida no aplicativo escolhido.`); }} className="rounded-lg border border-violet-400/50 px-3 py-2 text-sm font-medium text-violet-100 disabled:opacity-50">Informar origem</button>
+                    </div>
+                    <p className="text-xs text-slate-400">A origem será enviada à MIKA no chat. O botão abaixo apenas abre o Uber; nenhum dado é enviado automaticamente ao aplicativo.</p>
+                  </div>
+                )}
+                <p className="mb-2 text-violet-100">{(appLinkForMessage(messages, index)!.name === "Uber" || appLinkForMessage(messages, index)!.name === "99") ? "Abrir o aplicativo não solicita uma corrida. Confira origem, destino e preço no serviço antes de confirmar." : "Este botão apenas abre o aplicativo externo. Nenhuma ação é executada automaticamente."}</p>
                 <a href={appLinkForMessage(messages, index)!.url} target="_blank" rel="noopener noreferrer" className="inline-flex rounded-lg bg-violet-600 px-4 py-2 font-semibold text-white hover:bg-violet-500">{appLinkForMessage(messages, index)!.action} ↗</a>
               </div>
             )}
