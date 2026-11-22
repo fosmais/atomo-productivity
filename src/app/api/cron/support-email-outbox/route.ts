@@ -51,7 +51,7 @@ export async function GET(request: Request) {
       const leaseStartedAt = new Date().toISOString();
       let claim = admin.from("support_email_outbox")
         .update({ status: "processing", attempts: nextAttempt, processing_started_at: leaseStartedAt, last_error: null })
-        .eq("id", item.id);
+        .eq("id", item.id).eq("attempts", item.attempts);
       if (item.status === "pending") claim = claim.eq("status", "pending");
       else if (item.status === "processing" && item.processing_started_at)
         claim = claim.eq("status", "processing").eq("processing_started_at", item.processing_started_at);
