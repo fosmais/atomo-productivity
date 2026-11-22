@@ -49,3 +49,11 @@ test('finance claim preview is gated by Vercel preview and explicit opt-in', () 
   assert.match(route, /deliveryEnabled: false/);
   assert.match(route, /reserved: data\?\.length \?\? 0/);
 });
+
+test('claim-preview refuses a production or unknown Supabase host', () => {
+  assert.match(route, /dbHost !== "woqpzvqfaeqteiqpsaqi\.supabase\.co"/);
+  const hostCheck = route.indexOf('dbHost !== "woqpzvqfaeqteiqpsaqi.supabase.co"');
+  const claimCall = route.indexOf('.rpc("claim_finance_delivery_batch"');
+  assert.ok(hostCheck >= 0 && claimCall > hostCheck);
+  assert.match(route, /Banco de homologação não configurado/);
+});
