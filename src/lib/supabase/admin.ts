@@ -5,11 +5,14 @@ export function createSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const secretKey = process.env.SUPABASE_SECRET_KEY;
 
-  // The MVP2 preview must target only its dedicated staging project.
+  // MVP2 and selective Concierge release previews must target only staging.
   // Reject production, other projects and malformed URLs before admin access.
   if (
     process.env.VERCEL_ENV === "preview" &&
-    process.env.VERCEL_GIT_COMMIT_REF === "feat/mvp2-professora-journey-myra-26"
+    [
+      "feat/mvp2-professora-journey-myra-26",
+      "release/mika-concierge-v2-db-gate-20261121",
+    ].includes(process.env.VERCEL_GIT_COMMIT_REF || "")
   ) {
     let stagingUrl: URL;
     try {
