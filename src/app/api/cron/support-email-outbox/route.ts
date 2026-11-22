@@ -61,15 +61,22 @@ export async function GET(request: Request) {
             "",
             message.slice(0, 1500)
           ].join("\n");
-      const result = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)
-        ? await sendSupportEmail({
-            to: recipient,
-            subject: typeof item.subject === "string" ? item.subject.slice(0, 180) : "[MYRYRA] Novo atendimento",
-            ticketId,
-            idempotencyKey: `support-outbox/${item.id}`,
-            message: emailMessage
-          })
-        : { sent: false, reason: "Destinatário inválido" };
+      // Treat provider/network exceptions as a failed attempt, not as a failure of the whole batch.
+      // Keep the same idempotency key on retries, including after an ambiguous provider response.
+      let result: { sent: boolean; reason?: string };
+      try {
+        result = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)
+          ? await sendSupportEmail({
+              to: recipient,
+              subject: typeof item.subject === "string" ? item.subject.slice(0, 180) : "[MYRYRA] Novo atendimento",
+              ticketId,
+              idempotencyKey: `support-outbox/${item.id}`,
+              message: emailMessage
+            })
+          : { sent: false, reason: "Destinatário inválido" };
+      } catch {
+        result = { sent: false, reason: "Falha temporária do provedor de e-mail" };
+      }
       if (result.sent) {
         const { data: completed, error: updateError } = await admin.from("support_email_outbox")
           .update({ status: "sent", sent_at: new Date().toISOString(), processing_started_at: null, last_error: null })
