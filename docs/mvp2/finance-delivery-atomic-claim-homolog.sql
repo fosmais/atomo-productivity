@@ -22,7 +22,7 @@ BEGIN
       AND ((d.channel='email' AND p.email_enabled IS TRUE)
         OR (d.channel='push' AND p.push_enabled IS TRUE))
     ORDER BY d.created_at,d.id
-    FOR UPDATE SKIP LOCKED
+    FOR UPDATE OF d SKIP LOCKED
     LIMIT LEAST(GREATEST(p_limit,1),50)
   )
   UPDATE public.myryra_finance_delivery_log d
