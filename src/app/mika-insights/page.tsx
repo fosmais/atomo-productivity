@@ -29,6 +29,7 @@ export default function MikaInsightsPage() {
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
+  const microphonePendingRef = useRef(false);
   const chunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [voiceDraft, setVoiceDraft] = useState(false);
@@ -70,9 +71,11 @@ export default function MikaInsightsPage() {
   }, [load]);
 
   async function startRecording() {
-    if (busy || recording || transcribing) return;
+    if (busy || recording || transcribing || microphonePendingRef.current) return;
+    microphonePendingRef.current = true;
     setError(""); setNotice("");
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      microphonePendingRef.current = false;
       setError("Gravação não disponível neste navegador. Você pode digitar sua ideia."); return;
     }
     let stream: MediaStream | null = null;
@@ -116,10 +119,12 @@ export default function MikaInsightsPage() {
         finally { setTranscribing(false); }
       };
       recorderRef.current = recorder; recorder.start(); setRecording(true);
+      microphonePendingRef.current = false;
       recordingTimerRef.current = setTimeout(() => {
         if (recorder.state === "recording") recorder.stop();
       }, 60000);
     } catch {
+      microphonePendingRef.current = false;
       stream?.getTracks().forEach((track) => track.stop());
       setRecording(false);
       setError("Não foi possível acessar o microfone. Verifique a permissão ou digite sua ideia.");
