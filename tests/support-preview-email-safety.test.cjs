@@ -32,3 +32,10 @@ test("support AI remains opt-in, non-billing and subject to legal acceptance", (
   assert.match(submit, /hasCurrentLegalAcceptance\(user\.id\)/);
   assert.match(submit, /MIKA_SUPPORT_AI_ENABLED === "true"/);
 });
+
+test("non-production cron does not claim messages without configured test recipients", () => {
+  assert.match(cron, /VERCEL_ENV !== "production"/);
+  assert.match(cron, /MIKA_SUPPORT_TEST_RECIPIENTS/);
+  assert.match(cron, /Test recipients not configured/);
+  assert.ok(cron.indexOf("Test recipients not configured") < cron.indexOf("const admin = createSupabaseAdmin()"));
+});
