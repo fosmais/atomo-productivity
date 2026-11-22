@@ -1,5 +1,5 @@
 -- Staging-only recovery for abandoned finance delivery leases.
--- No external sends; stale processing rows return to failed for future claim.
+-- No external sends; ambiguous delivery outcomes are quarantined, not retried.
 CREATE OR REPLACE FUNCTION public.recover_stale_finance_delivery_batch(
   p_limit integer DEFAULT 50,
   p_stale_minutes integer DEFAULT 15
@@ -25,9 +25,9 @@ BEGIN
     LIMIT LEAST(GREATEST(p_limit,1),50)
   ), changed AS (
     UPDATE public.myryra_finance_delivery_log d
-    SET status='failed',
-        next_attempt_at=CASE WHEN d.attempts>=3 THEN NULL ELSE now()+interval '5 minutes' END,
-        last_error='Processing lease expired; delivery outcome requires reconciliation',
+    SET status='cancelled',
+        next_attempt_at=NULL,
+        last_error='Processing lease expired; quarantined pending delivery outcome reconciliation',
         updated_at=now()
     FROM candidates c WHERE d.id=c.id
     RETURNING d.attempts
