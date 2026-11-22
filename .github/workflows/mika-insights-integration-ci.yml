@@ -8,6 +8,8 @@ on:
       - 'src/app/dashboard/vyra-navigation.tsx'
       - 'src/app/login/page.tsx'
       - 'tests/mika-insights-contract.test.cjs'
+      - 'docs/mika-insights/**'
+      - 'supabase/migrations/20261121033400_mika_insights_core_schema_and_quota.sql'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/mika-insights-integration-ci.yml'
