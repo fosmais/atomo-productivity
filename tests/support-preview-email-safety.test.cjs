@@ -39,3 +39,10 @@ test("non-production cron does not claim messages without configured test recipi
   assert.match(cron, /Test recipients not configured/);
   assert.ok(cron.indexOf("Test recipients not configured") < cron.indexOf("const admin = createSupabaseAdmin()"));
 });
+
+test("non-production worker skips unapproved queued recipients before claiming a lease", () => {
+  assert.match(cron, /testRecipients\.includes\(String\(item\.recipient \?\? ""\)\.trim\(\)\.toLowerCase\(\)\)/);
+  const skipGuard = cron.indexOf('!testRecipients.includes(String(item.recipient ?? "").trim().toLowerCase())');
+  const claim = cron.indexOf('const nextAttempt = Number(item.attempts ?? 0) + 1');
+  assert.ok(skipGuard > 0 && skipGuard < claim, "recipient guard must run before incrementing attempts");
+});
