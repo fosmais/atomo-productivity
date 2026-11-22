@@ -7,8 +7,8 @@ const email = fs.readFileSync(path.join(__dirname, "../src/lib/support/email.ts"
 const cron = fs.readFileSync(path.join(__dirname, "../src/app/api/cron/support-email-outbox/route.ts"), "utf8");
 const submit = fs.readFileSync(path.join(__dirname, "../src/app/api/support/submit/route.ts"), "utf8");
 
-test("preview email requires an explicit recipient allowlist", () => {
-  assert.match(email, /VERCEL_ENV === "preview"/);
+test("non-production email requires an explicit recipient allowlist", () => {
+  assert.match(email, /VERCEL_ENV !== "production"/);
   assert.match(email, /MIKA_SUPPORT_TEST_RECIPIENTS/);
   assert.match(email, /allowed\.includes\(notice\.to\.trim\(\)\.toLowerCase\(\)\)/);
   assert.match(email, /Destinatário não autorizado para homologação/);
