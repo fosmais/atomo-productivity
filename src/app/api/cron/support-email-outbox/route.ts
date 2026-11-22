@@ -10,6 +10,11 @@ export async function GET(request: Request) {
   if (process.env.MIKA_EMAIL_ENABLED !== "true" || !process.env.RESEND_API_KEY)
     return NextResponse.json({ processed: 0, disabled: true }, { headers: { "Cache-Control": "no-store" } });
 
+  // In non-production, never claim queued messages without an explicit test-recipient allowlist.
+  // Otherwise, rejected messages would consume retries and become permanently failed.
+  if (process.env.VERCEL_ENV !== "production" && !(process.env.MIKA_SUPPORT_TEST_RECIPIENTS ?? "").split(",").some((address) => address.trim()))
+    return NextResponse.json({ processed: 0, disabled: true, reason: "Test recipients not configured" }, { headers: { "Cache-Control": "no-store" } });
+
   try {
     const admin = createSupabaseAdmin();
     const { data: pending, error } = await admin.from("support_email_outbox")
