@@ -56,3 +56,9 @@ Definições inspecionadas diretamente no banco Preview, sem executar ações em
 - Conferidos `src/app/api/mika-insights/suggest/route.ts` e `transcribe/route.ts`: autenticação por `auth.getUser()`, limites de tamanho, formatos aceitos, quotas via `mika_consume_ai_quota` antes da chamada OpenAI, resposta de erro quando indisponível.
 - Conferida política real de Production em `public.mika_ideas`: RLS ativo; política `ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id)`; colunas esperadas pela interface presentes.
 - **Somente revisão estática e consultas read-only**; ainda não foram executados testes HTTP com sessões distintas, gravação de áudio, concorrência ou verificação do CAPTCHA.
+
+## Diagnóstico de configuração hCaptcha no Vercel — 2026-11-22
+- Inspeção de **metadados de variáveis, sem descriptografar valores**: a branch `feat/mika-insights-myryra-integration` tem override próprio para `NEXT_PUBLIC_SUPABASE_URL` (Preview), mas `NEXT_PUBLIC_HCAPTCHA_SITE_KEY` está configurada globalmente para os targets Preview **e** Production, sem override específico dessa branch.
+- O login escolhe hCaptcha quando `NEXT_PUBLIC_HCAPTCHA_SITE_KEY` está definida. O erro anterior `sitekey-secret-mismatch` é consistente com uma sitekey global não correspondente à secret configurada no Supabase Auth do projeto de staging. Isso é hipótese fundamentada, não confirmação do valor das credenciais.
+- Correção exigida: configurar sitekey **exclusiva para a branch Preview** correspondente à secret hCaptcha cadastrada no Supabase Auth de homologação; não compartilhar secret de Production, não desativar CAPTCHA e não registrar valores em GitHub.
+- Após ajuste, novo deployment Preview e teste real de login/cadastro com CAPTCHA; confirmar domínio/sitekey permitido pelo provedor. Nenhum segredo foi lido ou alterado nesta auditoria.
