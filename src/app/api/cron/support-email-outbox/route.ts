@@ -24,7 +24,16 @@ export async function GET(request: Request) {
     if (error) throw error;
 
     let sent = 0, failed = 0, skipped = 0;
+    const testRecipients = (process.env.MIKA_SUPPORT_TEST_RECIPIENTS ?? "")
+      .split(",").map((address) => address.trim().toLowerCase()).filter(Boolean);
     for (const item of pending ?? []) {
+      // Do not claim or burn retries for customer addresses in non-production.
+      // Such messages remain queued until explicitly handled in the correct environment.
+      if (process.env.VERCEL_ENV !== "production" &&
+          !testRecipients.includes(String(item.recipient ?? "").trim().toLowerCase())) {
+        skipped++;
+        continue;
+      }
       const nextAttempt = Number(item.attempts ?? 0) + 1;
       if (nextAttempt > 5) {
         let exhausted = admin.from("support_email_outbox")
