@@ -19,7 +19,7 @@ test('finance worker remains explicitly dry-run and secret protected', () => {
   assert.match(route, /previewClaimRequested/);
 });
 test('finance claim uses atomic row locking and service-only access', () => {
-  assert.match(claim, /FOR UPDATE SKIP LOCKED/);
+  assert.match(claim, /FOR UPDATE OF d SKIP LOCKED/);
   assert.match(claim, /auth\.role\(\).*service_role/);
   assert.match(claim, /REVOKE ALL.*PUBLIC,anon,authenticated/);
 });
