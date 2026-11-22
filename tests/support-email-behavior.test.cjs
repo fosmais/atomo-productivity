@@ -91,3 +91,20 @@ test("Support emails always link to production, not the Preview host", async () 
   assert.match(payload.text, /https:\/\/myryra\.com/);
   assert.doesNotMatch(payload.text, /vercel\.app/);
 });
+
+test("Ambiguous retry reuses identical provider idempotency key and message", async () => {
+  const h = harness({ VERCEL_ENV: "preview", RESEND_API_KEY: "dummy", MIKA_SUPPORT_TEST_RECIPIENTS: "qa@example.invalid" });
+  assert.equal((await h.send(notice)).sent, true);
+  assert.equal((await h.send(notice)).sent, true);
+  assert.equal(h.calls.length, 2);
+  const [first, retry] = h.calls;
+  assert.equal(first[1].headers["Idempotency-Key"], retry[1].headers["Idempotency-Key"]);
+  assert.equal(first[1].body, retry[1].body);
+});
+
+test("Distinct outbox events use distinct idempotency keys", async () => {
+  const h = harness({ VERCEL_ENV: "preview", RESEND_API_KEY: "dummy", MIKA_SUPPORT_TEST_RECIPIENTS: "qa@example.invalid" });
+  await h.send(notice);
+  await h.send({ ...notice, idempotencyKey: "support-outbox/another-event" });
+  assert.notEqual(h.calls[0][1].headers["Idempotency-Key"], h.calls[1][1].headers["Idempotency-Key"]);
+});
