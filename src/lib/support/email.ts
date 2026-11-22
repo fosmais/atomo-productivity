@@ -2,9 +2,9 @@ const FROM = "MYRYRA Support <support@myryra.com>";
 type SupportNotice = { to: string; subject: string; ticketId: string; message: string; idempotencyKey?: string };
 
 export async function sendSupportEmail(notice: SupportNotice): Promise<{ sent: boolean; reason?: string }> {
-  // Preview must never send customer-facing mail using inherited provider credentials.
+  // Non-production environments must never send customer-facing mail using inherited provider credentials.
   // Explicitly allow only dedicated test recipients, even when email delivery is enabled.
-  if (process.env.VERCEL_ENV === "preview") {
+  if (process.env.VERCEL_ENV !== "production") {
     const allowed = (process.env.MIKA_SUPPORT_TEST_RECIPIENTS ?? "")
       .split(",").map((email) => email.trim().toLowerCase()).filter(Boolean);
     if (!allowed.includes(notice.to.trim().toLowerCase()))
