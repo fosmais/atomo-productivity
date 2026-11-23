@@ -33,7 +33,8 @@ export default function CloudPlans() {
   }
 
   useEffect(() => {
-    void loadPlans();
+    // Schedule the initial fetch outside the synchronous effect body.
+    void Promise.resolve().then(() => loadPlans());
   }, []);
 
   async function handleSave() {
