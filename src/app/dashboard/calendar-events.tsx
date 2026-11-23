@@ -1,0 +1,1109 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { useVyraNavigation } from "./vyra-module-context";
+import EventReminderControl from "./event-reminder-control";
+import { EVENT_CATEGORIES, suggestEventCategory, type EventCategory } from "@/lib/event-categories";
+import {
+  getCloudEvents,
+  saveCloudEvent,
+  deleteCloudEvent,
+  renameCloudEvent,
+  updateCloudEventCategory,
+  type CalendarEvent,
+  type EventType,
+} from "@/lib/event-cloud";
+
+type CalendarTask = { id: string; title: string; due_date: string | null; completed: boolean; priority: string };
+
+type GoogleCalendarEvent = {
+  id: string | null;
+  calendarId?: string;
+  calendarName?: string;
+  title: string;
+  start: string | null;
+  end: string | null;
+  location: string | null;
+  htmlLink: string | null;
+};
+export default function CalendarEvents() {
+  const { navigateTo } = useVyraNavigation();
+  const [agentActionByEvent, setAgentActionByEvent] = useState<Record<string, { id: string; status: string }>>({});
+  const [agentBusyEvent, setAgentBusyEvent] = useState<string | null>(null);
+  const [agentFeedbackByEvent, setAgentFeedbackByEvent] = useState<Record<string, string>>({});
+  const [agentHistoryError, setAgentHistoryError] = useState("");
+  const [agentHistoryLoading, setAgentHistoryLoading] = useState(true);
+  useEffect(() => {
+    let active = true;
+    async function restoreAgentActions() {
+      try {
+        const response = await fetch("/api/mika/actions?actionType=concierge_planning", { cache: "no-store" });
+        if (!response.ok) throw new Error("Não foi possível recuperar as autorizações da MIKA.");
+        const payload: unknown = await response.json();
+        if (!payload || typeof payload !== "object" || !("actions" in payload) || !Array.isArray(payload.actions)) throw new Error("Histórico inválido.");
+        const restored: Record<string, { id: string; status: string }> = {};
+        for (const item of payload.actions) {
+          if (!item || typeof item !== "object" || item.action_type !== "concierge_planning" ||
+              typeof item.event_id !== "string" || typeof item.id !== "string" || typeof item.status !== "string") continue;
+          if (!restored[item.event_id]) restored[item.event_id] = { id: item.id, status: item.status };
+        }
+        if (active) setAgentActionByEvent(restored);
+      } catch {
+        if (active) setAgentHistoryError("Não foi possível carregar o histórico de autorizações. Tente atualizar a página.");
+      }
+    }
+    void restoreAgentActions().finally(() => { if (active) setAgentHistoryLoading(false); });
+    return () => { active = false; };
+  }, []);
+  async function proposeConciergeAction(event: CalendarEvent) {
+    if (!event.concierge || agentBusyEvent || agentHistoryLoading || agentHistoryError || (agentActionByEvent[event.id] && !["cancelled", "expired", "failed"].includes(agentActionByEvent[event.id].status))) return;
+    setAgentBusyEvent(event.id);
+    try {
+      const response = await fetch("/api/mika/actions", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId: event.id, service: "other", actionType: "concierge_planning",
+          proposal: { title: event.title, destination: event.location, departureAddress: event.concierge.departureAddress,
+            services: event.concierge.services, startsAt: event.startsAt } }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.action?.id) throw new Error(payload.error || "Não foi possível criar a proposta.");
+      setAgentActionByEvent(current => ({ ...current, [event.id]: { id: payload.action.id, status: "awaiting_authorization" } }));
+      setAgentFeedbackByEvent(current => ({ ...current, [event.id]: "Proposta registrada. Revise os serviços e autorize somente se estiver de acordo." }));
+    } catch (error) {
+      setAgentFeedbackByEvent(current => ({ ...current, [event.id]: error instanceof Error ? error.message : "Erro ao registrar proposta." }));
+    } finally { setAgentBusyEvent(null); }
+  }
+  async function decideConciergeAction(eventId: string, decision: "authorize" | "cancel") {
+    const action = agentActionByEvent[eventId];
+    if (!action || agentBusyEvent) return;
+    setAgentBusyEvent(eventId);
+    try {
+      const response = await fetch("/api/mika/actions", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actionId: action.id, decision }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível registrar a decisão.");
+      setAgentActionByEvent(current => ({ ...current, [eventId]: { id: action.id, status: payload.action.status } }));
+      setAgentFeedbackByEvent(current => ({ ...current, [eventId]: decision === "authorize"
+        ? "Planejamento autorizado e registrado. Nenhuma reserva, pagamento ou aplicativo externo foi executado."
+        : "Proposta cancelada. Nenhuma ação externa foi executada." }));
+    } catch (error) {
+      setAgentFeedbackByEvent(current => ({ ...current, [eventId]: error instanceof Error ? error.message : "Erro ao registrar decisão." }));
+    } finally { setAgentBusyEvent(null); }
+  }
+  const [showCategoryLegend, setShowCategoryLegend] = useState(false);
+  const [syncToGoogle, setSyncToGoogle] = useState(false);
+  const [syncNotice, setSyncNotice] = useState("");
+  const [syncingEventId, setSyncingEventId] = useState<string | null>(null);
+  function planWithMyka(event: Pick<CalendarEvent, "title" | "startsAt" | "endsAt" | "location" | "concierge">) {
+    if (!event.concierge) return;
+    const services = event.concierge.services.map(service => (({ transport: "transporte", parking: "estacionamento", restaurant: "restaurante", hotel: "hospedagem" } as Record<string, string>)[service] || service)).join(", ") || "orientações gerais";
+    const formatDate = (value: string) => new Intl.DateTimeFormat("pt-BR", { dateStyle: "full", timeStyle: "short" }).format(new Date(value));
+    const prompt = `Atue como MIKA Concierge da MYRYRA. Organize este compromisso em um plano curto, claro e acionável. Título: ${event.title}. Início (horário local do usuário): ${formatDate(event.startsAt)}. Término (horário local do usuário): ${formatDate(event.endsAt)}. Destino: ${event.location || "não informado"}. Origem: ${event.concierge.departureAddress || "a definir"}. Serviços solicitados: ${services}. Estruture: 1) resumo do compromisso; 2) opções de deslocamento pertinentes e como consultá-las; 3) horário de saída apenas se houver duração de rota confiável, caso contrário explique o que falta; 4) estacionamento, restaurante e hospedagem somente se solicitados; 5) checklist breve. Pergunte a origem se ausente. Diferencie sugestões de informações verificadas. Não invente tempo de trânsito, preços, disponibilidade, estabelecimentos ou reservas. Não faça compras ou reservas sem autorização explícita.`;
+    try {
+      sessionStorage.setItem("myryra:myka:concierge-handoff", prompt.slice(0, 3500));
+      navigateTo("vyra-ai");
+    } catch {
+      setError("Não foi possível abrir a MIKA agora. Tente novamente.");
+    }
+  }
+  function downloadConciergeReminder(event: Pick<CalendarEvent, "title" | "startsAt" | "endsAt" | "location" | "concierge">, travelMinutes: number, bufferMinutes: number, source: "manual" | "google") {
+    if (!event.concierge || !Number.isFinite(travelMinutes) || !Number.isInteger(travelMinutes) || travelMinutes <= 0 || travelMinutes > 480 || !Number.isFinite(bufferMinutes) || !Number.isInteger(bufferMinutes) || bufferMinutes < 0 || bufferMinutes > 180 || !Number.isFinite(Date.parse(event.startsAt)) || !Number.isFinite(Date.parse(event.endsAt)) || Date.parse(event.endsAt) <= Date.parse(event.startsAt)) {
+      setError("Não foi possível criar o alerta: confira os horários e o tempo de deslocamento.");
+      return;
+    }
+    const icsEscape = (value: string) => value.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
+    const utc = (value: string) => new Date(value).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+    const departure = new Date(new Date(event.startsAt).getTime() - (travelMinutes + bufferMinutes) * 60000);
+    const notes = `MIKA Concierge: saída planejada para ${new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(departure)}. Tempo de trajeto ${source === "google" ? "estimado pelo Google Routes" : "informado manualmente"}: ${travelMinutes} min; margem: ${bufferMinutes} min. Confira o trânsito antes de sair. Não é uma estimativa em tempo real.`;
+    const lines = [
+      "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//MYRYRA//MIKA Concierge//PT",
+      "BEGIN:VEVENT", "UID:" + crypto.randomUUID() + "@myryra.com",
+      "DTSTAMP:" + utc(new Date().toISOString()),
+      "DTSTART:" + utc(event.startsAt), "DTEND:" + utc(event.endsAt),
+      "SUMMARY:" + icsEscape(event.title),
+      "LOCATION:" + icsEscape(event.location || ""),
+      "DESCRIPTION:" + icsEscape(notes),
+      "BEGIN:VALARM", "TRIGGER:-PT" + (travelMinutes + bufferMinutes) + "M", "ACTION:DISPLAY",
+      "DESCRIPTION:" + icsEscape("MIKA Concierge: hora planejada de sair"),
+      "END:VALARM", "END:VEVENT", "END:VCALENDAR"
+    ];
+    const blob = new Blob([lines.join("\r\n") + "\r\n"], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "myryra-concierge-lembrete.ics";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+  const [travelByEvent, setTravelByEvent] = useState<Record<string, { minutes: number; source: "manual" | "google" }>>({});
+  const [conciergeBufferMinutes, setConciergeBufferMinutes] = useState(15);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [favoriteEventIds, setFavoriteEventIds] = useState<string[]>([]);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<EventCategory | "all">("all");
+  const [favoriteBusyId, setFavoriteBusyId] = useState<string | null>(null);
+  const [tasks, setTasks] = useState<CalendarTask[]>([]);
+  const [tasksError, setTasksError] = useState("");
+  useEffect(() => {
+    let active = true;
+    async function loadCalendarTasks() {
+      try {
+        const supabase = createClient();
+        const { data: auth, error: authError } = await supabase.auth.getUser();
+        if (authError || !auth.user) throw new Error("Faça login para visualizar tarefas.");
+        const { data, error } = await supabase.from("tasks")
+          .select("id, title, due_date, completed, priority")
+          .eq("user_id", auth.user.id)
+          .not("due_date", "is", null)
+          .order("due_date", { ascending: true })
+          .limit(500);
+        if (error) throw error;
+        if (active) { setTasks((data ?? []) as CalendarTask[]); setTasksError(""); }
+      } catch {
+        if (active) setTasksError("Não foi possível carregar as tarefas no calendário.");
+      }
+    }
+    void loadCalendarTasks();
+    window.addEventListener("myryra:tasks-updated", loadCalendarTasks);
+    return () => { active = false; window.removeEventListener("myryra:tasks-updated", loadCalendarTasks); };
+  }, []);
+  const [showForm, setShowForm] = useState(false);
+  const [showAllGoogle, setShowAllGoogle] = useState(false);
+  const [showAllLocal, setShowAllLocal] = useState(false);
+  const [periodFilter, setPeriodFilter] = useState<"today" | "week" | "all">("week");
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [calendarView, setCalendarView] = useState<"day" | "week" | "month">("week");
+  const [calendarOffset, setCalendarOffset] = useState(0);
+  // VYRA_GOOGLE_CALENDAR_INTEGRATION
+  const [googleEvents, setGoogleEvents] = useState<GoogleCalendarEvent[]>([]);
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(true);
+  const [googleError, setGoogleError] = useState("");
+  const [googleReconnectRequired, setGoogleReconnectRequired] = useState(false);
+
+  async function loadGoogleEvents() {
+    setGoogleLoading(true);
+    setGoogleError("");
+    setGoogleReconnectRequired(false);
+
+    try {
+      const response = await fetch("/api/google/events", {
+        cache: "no-store",
+      });
+
+      if (response.status === 409) {
+        const detail: { code?: string } = await response.json();
+        if (detail.code === "GOOGLE_CALENDAR_RECONNECT_REQUIRED") {
+          setGoogleConnected(false);
+          setGoogleEvents([]);
+          setGoogleReconnectRequired(true);
+          setGoogleError("Sua conexão Google Calendar precisa ser renovada.");
+          return;
+        }
+      }
+      if (!response.ok) {
+        throw new Error("Não foi possível consultar o Google Calendar.");
+      }
+
+      const data: {
+        connected: boolean;
+        events: GoogleCalendarEvent[];
+      } = await response.json();
+
+      setGoogleConnected(data.connected);
+      setGoogleEvents(data.events ?? []);
+    } catch {
+      setGoogleError("Falha ao atualizar os compromissos do Google.");
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => { if (active) void loadGoogleEvents(); });
+    return () => { active = false; };
+  }, []);
+
+  const [title, setTitle] = useState("");
+  const [startsAt, setStartsAt] = useState("");
+  const [endsAt, setEndsAt] = useState("");
+  const [location, setLocation] = useState("");
+  const [eventType, setEventType] = useState<EventType>("appointment");
+  const [category, setCategory] = useState<EventCategory>("personal");
+  const [categoryChosen, setCategoryChosen] = useState(false);
+  const [blocksTime, setBlocksTime] = useState(false);
+  const [conciergeEnabled, setConciergeEnabled] = useState(false);
+  const [departureAddress, setDepartureAddress] = useState("");
+  const [conciergeServices, setConciergeServices] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const [renaming, setRenaming] = useState(false);
+  const [categoryBusyId, setCategoryBusyId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+
+  async function loadEvents() {
+    const result = await getCloudEvents();
+    setEvents(result);
+    // Favorites are optional metadata; a failed favorites query must not make a saved event appear to have failed.
+    try {
+      await loadFavoriteEvents();
+    } catch {
+      setFavoriteEventIds([]);
+    }
+  }
+
+  async function loadFavoriteEvents() {
+    const supabase = createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) throw new Error("Sessão expirada.");
+    const { data, error: favoritesError } = await supabase.from("favorites")
+      .select("event_id").eq("user_id", user.id).not("event_id", "is", null);
+    if (favoritesError) throw favoritesError;
+    setFavoriteEventIds((data ?? []).flatMap((row) => row.event_id ? [row.event_id as string] : []));
+  }
+
+  async function toggleFavoriteEvent(event: CalendarEvent) {
+    if (favoriteBusyId) return;
+    setFavoriteBusyId(event.id);
+    setError("");
+    try {
+      const supabase = createClient();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error("Sessão expirada.");
+      if (favoriteEventIds.includes(event.id)) {
+        const { error } = await supabase.from("favorites").delete()
+          .eq("user_id", user.id).eq("event_id", event.id);
+        if (error) throw error;
+        setFavoriteEventIds((ids) => ids.filter((id) => id !== event.id));
+      } else {
+        const { error } = await supabase.from("favorites").insert({
+          user_id: user.id, event_id: event.id, task_id: null
+        });
+        if (error) throw error;
+        setFavoriteEventIds((ids) => [...ids, event.id]);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível atualizar o favorito.");
+    } finally { setFavoriteBusyId(null); }
+  }
+
+  useEffect(() => {
+    // MYKA and other dashboard modules can save an event independently.
+    // Refresh when they notify us or when the user returns to this tab.
+    let lastRefresh = 0;
+    const refresh = () => {
+      if (document.visibilityState !== "visible") return;
+      const now = Date.now();
+      if (now - lastRefresh < 2000) return;
+      lastRefresh = now;
+      void loadEvents().catch(() =>
+        setError("Não foi possível atualizar os compromissos.")
+      );
+      void loadGoogleEvents();
+    };
+    window.addEventListener("myryra:events-updated", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener("myryra:events-updated", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    getCloudEvents()
+      .then((result) => {
+        if (active) { setEvents(result); void loadFavoriteEvents().catch(() => { if (active) setFavoriteEventIds([]); }); }
+      })
+      .catch((err: unknown) => {
+        if (active) {
+          setError(
+            err instanceof Error ? err.message : "Erro ao carregar eventos."
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function retryGoogleSync(event: CalendarEvent) {
+    if (syncingEventId) return;
+    setSyncingEventId(event.id);
+    setSyncNotice("");
+    try {
+      const response = await fetch("/api/google/events/sync-myryra", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ localEventId: event.id, title: event.title, startsAt: event.startsAt, endsAt: event.endsAt }),
+      });
+      if (!response.ok) {
+        const detail: { error?: string; code?: string } = await response.json();
+        setSyncNotice(detail.code === "GOOGLE_WRITE_CONSENT_REQUIRED"
+          ? "Autorize a criação de eventos Google em Configurações e tente novamente."
+          : detail.error || "Não foi possível sincronizar este compromisso.");
+      } else {
+        setSyncNotice("Sincronização com Google Calendar confirmada.");
+        await loadGoogleEvents();
+      }
+    } catch {
+      setSyncNotice("Falha de conexão com o Google. Tente novamente.");
+    } finally {
+      setSyncingEventId(null);
+    }
+  }
+
+  async function handleSave() {
+    if (!title.trim() || !startsAt || !endsAt) {
+      setError("Preencha o título, o início e o término do compromisso.");
+      return;
+    }
+    const startMs = new Date(startsAt).getTime();
+    const endMs = new Date(endsAt).getTime();
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
+      setError("O término deve ser posterior ao início do compromisso.");
+      return;
+    }
+
+    if (startMs < Date.now() - 60_000) {
+      setError("Não é possível agendar um novo compromisso no passado. Escolha uma data e horário futuros.");
+      return;
+    }
+
+    if (conciergeEnabled && eventType === "appointment" && !location.trim()) {
+      setError("Informe o endereço do destino para ativar o Concierge.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+
+    try {
+      const savedEventId = await saveCloudEvent({
+        title,
+        startsAt,
+        endsAt,
+        location,
+        eventType,
+        category,
+        blocksTime,
+        concierge: conciergeEnabled && eventType === "appointment" ? {
+          departureAddress: departureAddress.trim(),
+          services: conciergeServices,
+        } : undefined,
+      });
+
+      setSyncNotice("");
+      if (syncToGoogle) {
+        try {
+          const response = await fetch("/api/google/events/sync-myryra", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ localEventId: savedEventId, title: title.trim(), startsAt: new Date(startsAt).toISOString(), endsAt: new Date(endsAt).toISOString(), location }),
+          });
+          if (!response.ok) {
+            const detail: { error?: string; code?: string } = await response.json();
+            setSyncNotice(detail.code === "GOOGLE_WRITE_CONSENT_REQUIRED"
+              ? "Salvo na MYRYRA, mas falta autorizar a criação no Google. Conecte em Configurações e tente novamente."
+              : `Salvo na MYRYRA, mas não enviado ao Google: ${detail.error || "tente novamente"}`);
+          } else {
+            setSyncNotice("Compromisso salvo na MYRYRA e confirmado no Google Calendar.");
+            void loadGoogleEvents();
+          }
+        } catch {
+          setSyncNotice("Salvo na MYRYRA, mas não foi possível confirmar o envio ao Google.");
+        }
+      }
+      await loadEvents();
+      window.dispatchEvent(new Event("myryra:events-updated"));
+      // Keep the user in Agenda: route estimates and departure planning live on the event card.
+      // MIKA chat remains an explicit optional action ("Planejar com a MIKA").
+      if (conciergeEnabled && eventType === "appointment") {
+        const savedDate = new Date(startsAt);
+        const dayKey = `${savedDate.getFullYear()}-${String(savedDate.getMonth() + 1).padStart(2, "0")}-${String(savedDate.getDate()).padStart(2, "0")}`;
+        setSelectedDay(dayKey);
+        setPeriodFilter("all");
+      } else {
+        setSelectedDay(null);
+      }
+      setTitle("");
+      setStartsAt("");
+      setEndsAt("");
+      setLocation("");
+      setEventType("appointment");
+      setCategory("personal");
+      setCategoryChosen(false);
+      setBlocksTime(false);
+      setConciergeEnabled(false);
+      setDepartureAddress("");
+      setConciergeServices([]);
+      setShowForm(false);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Erro ao salvar compromisso."
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleRename() {
+    if (!editingId || renaming) return;
+    setRenaming(true);
+    setError("");
+    try {
+      await renameCloudEvent(editingId, editingTitle);
+      await loadEvents();
+      window.dispatchEvent(new Event("myryra:events-updated"));
+      setEditingId(null);
+      setEditingTitle("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível renomear o compromisso.");
+    } finally {
+      setRenaming(false);
+    }
+  }
+
+  async function handleCategoryChange(eventId: string, nextCategory: EventCategory) {
+    if (categoryBusyId) return;
+    setCategoryBusyId(eventId);
+    setError("");
+    try {
+      await updateCloudEventCategory(eventId, nextCategory);
+      setEvents((previous) => previous.map((event) => event.id === eventId ? { ...event, category: nextCategory } : event));
+      window.dispatchEvent(new Event("myryra:events-updated"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível atualizar a categoria.");
+    } finally {
+      setCategoryBusyId(null);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!window.confirm("Excluir este compromisso?")) return;
+
+    setDeletingId(id);
+    setError("");
+
+    try {
+      await deleteCloudEvent(id);
+      await loadEvents();
+      window.dispatchEvent(new Event("myryra:events-updated"));
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Erro ao excluir compromisso."
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  function formatDate(value: string) {
+    return new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(new Date(value));
+  }
+
+  const now = new Date();
+  const todayKey = now.toLocaleDateString("en-CA");
+  const weekEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7);
+  function dateKey(value: string | null) {
+    if (!value) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    const date = new Date(value);
+    return Number.isFinite(date.getTime()) ? date.toLocaleDateString("en-CA") : "";
+  }
+  function inPeriod(value: string | null) {
+    const key = dateKey(value);
+    if (selectedDay) return key === selectedDay;
+    if (!key) return periodFilter === "all";
+    if (periodFilter === "all") return true;
+    if (periodFilter === "today") return key === todayKey;
+    return key >= todayKey && key < weekEnd.toLocaleDateString("en-CA");
+  }
+  function timeLabel(value: string | null) {
+    if (!value) return "—";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return "Dia inteiro";
+    const date = new Date(value);
+    return Number.isFinite(date.getTime()) ? date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "—";
+  }
+  function dateHeading(value: string | null) {
+    const key = dateKey(value);
+    if (!key) return "Sem data";
+    const [year, month, day] = key.split("-");
+    return `${day}/${month}/${year}`;
+  }
+  const anchor = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (calendarView === "day") anchor.setDate(anchor.getDate() + calendarOffset);
+  if (calendarView === "week") anchor.setDate(anchor.getDate() - ((anchor.getDay() + 6) % 7) + calendarOffset * 7);
+  if (calendarView === "month") {
+    anchor.setDate(1);
+    anchor.setMonth(anchor.getMonth() + calendarOffset);
+  }
+  const daysCount = calendarView === "day" ? 1 : calendarView === "week" ? 7 : new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0).getDate();
+  const calendarDays = Array.from({ length: daysCount }, (_, i) => {
+    const date = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() + i);
+    const key = date.toLocaleDateString("en-CA");
+    const items = [
+      ...events.filter((e) => dateKey(e.startsAt) === key && (categoryFilter === "all" || e.category === categoryFilter)).map((e) => ({ key: `local-${e.id}`, title: e.title, at: timeLabel(e.startsAt), color: EVENT_CATEGORIES[e.category].color })),
+      ...googleEvents.filter((e) => dateKey(e.start) === key).map((e, j) => ({ key: `google-${e.id ?? j}`, title: e.title, at: timeLabel(e.start), color: "#64748B" })),
+      ...tasks.filter((t) => dateKey(t.due_date) === key).map((t) => ({ key: `task-${t.id}`, title: `${t.completed ? "✓ " : "□ "}${t.title}`, at: "Tarefa", color: "#64748B" })),
+    ].sort((a, b) => a.at.localeCompare(b.at));
+    return { key, date, items };
+  });
+  const calendarPeriod = anchor.toLocaleDateString("pt-BR", calendarView === "month" ? { month: "long", year: "numeric" } : { day: "numeric", month: "long", year: "numeric" });
+  function suggestFreeHours(key: string): number[] {
+    const busy = [
+      ...events.filter((event) => event.blocksTime && dateKey(event.startsAt) === key).map((event) => ({ start: event.startsAt, end: event.endsAt })),
+      ...googleEvents.filter((event) => dateKey(event.start) === key).map((event) => ({ start: event.start, end: event.end })),
+    ].filter((event) => event.start && event.end);
+    return [9, 10, 11, 13, 14, 15, 16, 17].filter((hour) => {
+      const slotStart = new Date(`${key}T${String(hour).padStart(2, "0")}:00:00`).getTime();
+      const slotEnd = slotStart + 60 * 60 * 1000;
+      return busy.every((event) => {
+        const start = new Date(event.start!).getTime();
+        const end = new Date(event.end!).getTime();
+        return !Number.isFinite(start) || !Number.isFinite(end) || slotEnd <= start || slotStart >= end;
+      });
+    });
+  }
+  function startEventAtHour(key: string, hour: number) {
+    const localValue = (value: Date) => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}T${String(value.getHours()).padStart(2, "0")}:${String(value.getMinutes()).padStart(2, "0")}`;
+    const start = new Date(`${key}T${String(hour).padStart(2, "0")}:00:00`);
+    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    setStartsAt(localValue(start));
+    setEndsAt(localValue(end));
+    setSelectedDay(key);
+    setShowForm(true);
+    window.requestAnimationFrame(() => document.getElementById("myryra-calendar-event-form")?.scrollIntoView({ behavior: "smooth", block: "center" }));
+  }
+  function startEventOnDay(key: string) {
+    const day = new Date(`${key}T09:00:00`);
+    if (Number.isNaN(day.getTime())) return;
+    const end = new Date(day.getTime() + 60 * 60 * 1000);
+    const localValue = (value: Date) => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}T${String(value.getHours()).padStart(2, "0")}:${String(value.getMinutes()).padStart(2, "0")}`;
+    setStartsAt(localValue(day));
+    setEndsAt(localValue(end));
+    setShowForm(true);
+    setSelectedDay(key);
+    window.requestAnimationFrame(() => document.getElementById("myryra-calendar-event-form")?.scrollIntoView({ behavior: "smooth", block: "center" }));
+  }
+
+  const filteredGoogle = googleEvents.filter((event) => inPeriod(event.start))
+    .sort((a, b) => (a.start ?? "").localeCompare(b.start ?? ""));
+  const filteredLocal = events.filter((event) => inPeriod(event.startsAt) && (categoryFilter === "all" || event.category === categoryFilter) && (!favoritesOnly || favoriteEventIds.includes(event.id)))
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  const visibleGoogle = showAllGoogle ? filteredGoogle : filteredGoogle.slice(0, 5);
+  const visibleLocal = showAllLocal ? filteredLocal : filteredLocal.slice(0, 5);
+
+  return (
+    <section className="min-w-0 space-y-4 text-white">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-slate-400">Eventos e tarefas MYRYRA + Google, em uma única visão.</p>
+
+      </div>
+
+      {tasksError && <p role="status" className="mt-3 text-xs text-amber-300">{tasksError}</p>}
+      <div className="rounded-2xl border border-white/15 bg-slate-900/75 p-3 sm:p-5" aria-label="Smart Calendar">
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+          <div className="flex w-full flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-wider text-violet-300 sm:text-xs">Smart Calendar · Beta</p><h3 className="mt-1 text-sm font-semibold capitalize sm:text-lg">{calendarPeriod}</h3></div>
+          <button type="button" onClick={() => setShowForm(true)} aria-haspopup="dialog" className="min-h-10 shrink-0 rounded-xl bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500 sm:text-sm">+ Novo compromisso</button>
+          </div>
+          <div className="flex w-full gap-1.5 sm:w-auto sm:gap-2">
+            {(["day", "week", "month"] as const).map((view) => <button key={view} type="button" aria-pressed={calendarView === view} onClick={() => { setCalendarView(view); setCalendarOffset(0); setSelectedDay(null); }} className={`min-h-9 flex-1 rounded-lg px-2 py-1.5 text-xs font-semibold transition sm:flex-none sm:px-3 sm:py-2 ${calendarView === view ? "bg-violet-500 text-white" : "border border-white/10 text-slate-300 hover:bg-white/10"}`}>{view === "day" ? "Dia" : view === "week" ? "Semana" : "Mês"}</button>)}
+          </div>
+        </div>
+        <label className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-slate-300 sm:mt-3"><span className="sr-only sm:not-sr-only">Categorias</span><span aria-hidden="true" className="sm:hidden">Categoria</span><select aria-label="Filtrar eventos MYRYRA no calendário por categoria" value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value as EventCategory | "all"); setShowAllLocal(false); }} className="rounded-lg border border-white/15 bg-slate-800 px-2 py-1.5 text-white"><option value="all">Todos</option>{Object.entries(EVENT_CATEGORIES).map(([id, item]) => <option key={id} value={id}>{item.label}</option>)}</select><span className="hidden text-slate-500 sm:inline">Tarefas e Google Calendar não são filtrados</span></label>
+        <button type="button" onClick={() => setShowCategoryLegend((value) => !value)} aria-expanded={showCategoryLegend} className="mt-2 text-xs font-medium text-violet-300 underline underline-offset-4">{showCategoryLegend ? "Ocultar legenda" : "Mostrar legenda de categorias"}</button>
+        {showCategoryLegend && <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+          {Object.entries(EVENT_CATEGORIES).map(([id, item]) => <button key={id} type="button" aria-pressed={categoryFilter === id} onClick={() => setCategoryFilter(id as EventCategory)} className={`flex items-center gap-2 rounded-lg border p-2 text-left text-xs ${categoryFilter === id ? "border-violet-400 bg-violet-500/15" : "border-white/10"}`}><span className="h-7 w-1 rounded-full" style={{backgroundColor:item.color}}/><span className="min-w-0"><span className="block font-semibold">{({work:"💼",family:"👨‍👩‍👧",leisure:"🌴",health:"❤️",personal:"✨",study:"📚"} as Record<string,string>)[id]} {item.label}</span><span className="block text-[11px] text-slate-400">{({work:"Reuniões e projetos",family:"Compromissos familiares",leisure:"Passeios e diversão",health:"Consultas e exercícios",personal:"Assuntos particulares",study:"Cursos e aprendizado"} as Record<string,string>)[id]}</span></span></button>)}
+        </div>}
+        <div className="mt-2 flex items-center gap-1.5 sm:mt-3 sm:gap-2">
+          <button type="button" onClick={() => setCalendarOffset((n) => n - 1)} aria-label="Período anterior" className="rounded-lg border border-white/10 px-3 py-1.5 hover:bg-white/10">‹</button>
+          <button type="button" onClick={() => { setCalendarOffset(0); setSelectedDay(null); }} className="rounded-lg border border-white/10 px-3 py-1.5 text-xs hover:bg-white/10">Hoje</button>
+          <button type="button" onClick={() => setCalendarOffset((n) => n + 1)} aria-label="Próximo período" className="rounded-lg border border-white/10 px-3 py-1.5 hover:bg-white/10">›</button>
+          <span className="ml-auto hidden text-xs text-slate-400 sm:inline">Eventos + tarefas MYRYRA + Google</span>
+        </div>
+        <div className={`mt-3 grid gap-1.5 sm:mt-4 sm:gap-2 ${calendarView === "day" ? "grid-cols-1" : calendarView === "week" ? "grid-cols-2 md:grid-cols-7" : "grid-cols-3 sm:grid-cols-5 lg:grid-cols-7"}`}>
+          {calendarDays.map(({ key, date, items }) => <button key={key} type="button" onClick={() => { setSelectedDay(key); setPeriodFilter("all"); }} aria-label={`Ver eventos de ${date.toLocaleDateString("pt-BR")}`} aria-pressed={selectedDay === key} className={`min-h-20 min-w-0 rounded-xl border p-1.5 text-left transition hover:border-violet-400/60 sm:min-h-24 sm:p-2 ${selectedDay === key ? "border-violet-400 bg-violet-500/15" : key === todayKey ? "border-violet-500/40 bg-violet-500/10" : "border-white/10 bg-slate-900/70"}`}>
+            <span className="block truncate text-[11px] font-semibold capitalize text-slate-300 sm:text-xs">{date.toLocaleDateString("pt-BR", { weekday: "short" })} {date.getDate()}</span>
+            <span className="mt-1 block space-y-1 sm:mt-2">{items.slice(0, calendarView === "month" ? 2 : 3).map((item) => <span key={item.key} className="block truncate rounded border-l-2 bg-white/10 px-1 py-0.5 text-[10px] text-white sm:border-l-4 sm:px-1.5 sm:py-1 sm:text-xs" style={{ borderLeftColor: item.color }} title={item.title}>{item.at !== "Dia inteiro" ? `${item.at} · ` : ""}{item.title}</span>)}</span>
+            {items.length > (calendarView === "month" ? 2 : 3) && <span className="mt-1 block text-xs text-slate-400">+{items.length - (calendarView === "month" ? 2 : 3)} eventos</span>}
+          </button>)}
+        </div>
+        {selectedDay && <div className="mt-4 rounded-xl border border-violet-400/20 bg-violet-500/5 p-3">
+          <p className="text-sm font-semibold text-violet-100">Horários potencialmente livres · 1 hora</p>
+          <p className="mt-1 text-xs text-slate-400">Sugestões locais com base nos compromissos carregados. Não garantem disponibilidade e ainda não utilizam IA.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {suggestFreeHours(selectedDay).length ? suggestFreeHours(selectedDay).map((hour) => <button key={hour} type="button" onClick={() => startEventAtHour(selectedDay, hour)} className="rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-100 hover:bg-violet-500/25">{String(hour).padStart(2, "0")}:00</button>) : <span className="text-xs text-slate-400">Nenhum horário sugerido neste período.</span>}
+          </div>
+        </div>}
+        {selectedDay && <div className="mt-3 flex flex-wrap items-center gap-3">
+          <button type="button" onClick={() => startEventOnDay(selectedDay)} className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500">+ Criar evento neste dia</button>
+          <button type="button" onClick={() => setSelectedDay(null)} className="text-xs font-medium text-violet-300 underline">Limpar filtro do dia selecionado</button>
+        </div>}
+      </div>
+
+
+      {showForm && <div role="presentation" className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/85 p-3 backdrop-blur-sm sm:p-6">
+      <div id="myryra-calendar-event-form" role="dialog" aria-modal="true" aria-label="Novo compromisso" className="max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-2xl border border-violet-400/40 bg-slate-950 p-4 shadow-2xl shadow-violet-950/70 sm:p-6">
+      <div className="mb-4 flex items-center justify-between gap-3"><h3 className="text-lg font-semibold text-white">Novo compromisso</h3><button type="button" onClick={() => setShowForm(false)} disabled={saving} aria-label="Fechar formulário" className="min-h-10 min-w-10 rounded-lg border border-white/20 px-3 py-1 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50">✕</button></div>
+      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+        <input
+          type="text"
+          value={title}
+          onChange={(event) => { setTitle(event.target.value); if (!categoryChosen) setCategory(suggestEventCategory(event.target.value)); }}
+          maxLength={200}
+          placeholder="Nome do compromisso"
+          aria-label="Nome do compromisso"
+          className="min-w-0 w-full rounded-xl border border-white/10 bg-slate-800/80 p-3 text-white outline-none transition focus:border-violet-400/60 focus:ring-2 focus:ring-violet-500/20"
+        />
+
+        <input
+          type="text"
+          value={location}
+          onChange={(event) => setLocation(event.target.value)}
+          placeholder="Local ou endereço"
+          aria-label="Local ou endereço"
+          className="min-w-0 w-full rounded-xl border border-white/10 bg-slate-800/80 p-3 text-white outline-none transition focus:border-violet-400/60 focus:ring-2 focus:ring-violet-500/20"
+        />
+
+        <label className="min-w-0 space-y-1 text-sm">
+          <span>Início</span>
+          <input
+            type="datetime-local"
+            value={startsAt}
+            onChange={(event) => setStartsAt(event.target.value)}
+            className="min-w-0 w-full rounded-xl border border-white/10 bg-slate-800/80 p-3 text-white outline-none transition focus:border-violet-400/60 focus:ring-2 focus:ring-violet-500/20"
+          />
+        </label>
+
+        <label className="min-w-0 space-y-1 text-sm">
+          <span>Término</span>
+          <input
+            type="datetime-local"
+            value={endsAt}
+            onChange={(event) => setEndsAt(event.target.value)}
+            className="min-w-0 w-full rounded-xl border border-white/10 bg-slate-800/80 p-3 text-white outline-none transition focus:border-violet-400/60 focus:ring-2 focus:ring-violet-500/20"
+          />
+        </label>
+      </div>
+
+      <label className="mt-4 block space-y-2 text-sm">
+        <span className="block">Categoria do compromisso</span>
+        <select value={category} onChange={(event) => { setCategory(event.target.value as EventCategory); setCategoryChosen(true); }} className="w-full rounded-xl border border-white/10 bg-slate-800 p-3 text-white">
+          {Object.entries(EVENT_CATEGORIES).map(([id, item]) => <option key={id} value={id}>{item.label}</option>)}
+        </select>
+        <span className="block text-xs text-slate-400">A categoria é sugerida pelo título; você pode alterá-la.</span>
+      </label>
+      <div className="mt-4 grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
+        <label className="min-w-0 space-y-2 text-sm">
+          <span className="block">Tipo de evento</span>
+
+          <select
+            value={eventType}
+            onChange={(event) => {
+              const nextType = event.target.value as EventType;
+              setEventType(nextType);
+              setBlocksTime(nextType === "unavailable");
+            }}
+            className="min-w-0 w-full rounded-xl border border-white/10 bg-slate-800/80 p-3 text-white outline-none transition focus:border-violet-400/60 focus:ring-2 focus:ring-violet-500/20"
+          >
+            <option value="appointment">Compromisso</option>
+            <option value="unavailable">Indisponibilidade</option>
+          </select>
+        </label>
+
+        <label className="flex items-center gap-3 rounded-lg border border-slate-700 p-3 text-sm">
+          <input
+            type="checkbox"
+            checked={blocksTime}
+            onChange={(event) => setBlocksTime(event.target.checked)}
+            className="h-4 w-4 accent-violet-600"
+          />
+
+          Bloquear este horário na agenda
+        </label>
+      </div>
+
+      {eventType === "appointment" && <div className="mt-4 rounded-2xl border border-violet-500/30 bg-slate-900/70 p-4">
+        <label className="flex cursor-pointer items-center gap-3 text-sm font-semibold">
+          <input type="checkbox" checked={conciergeEnabled} onChange={e => setConciergeEnabled(e.target.checked)} className="h-4 w-4 accent-violet-500" />
+          Ativar MIKA Concierge
+        </label>
+        <p className="mt-1 text-xs text-slate-400">Configure os serviços aqui. Ao solicitar o planejamento, a MIKA abrirá o chat com os dados deste compromisso.</p>
+        {conciergeEnabled && <div className="mt-4 space-y-3">
+          <label className="block space-y-1 text-sm"><span>Endereço de partida (opcional)</span>
+            <input value={departureAddress} onChange={e => setDepartureAddress(e.target.value)} maxLength={300} placeholder="Casa, trabalho ou outro endereço" className="w-full rounded-xl border border-white/10 bg-slate-800 p-3 text-white" />
+          </label>
+          <p className="text-xs text-slate-400">O destino será o endereço do campo Local do compromisso.</p>
+          <fieldset><legend className="mb-2 text-sm">Quais serviços você precisa?</legend>
+            <div className="grid grid-cols-2 gap-2">
+              {([["transport", "Transporte"], ["parking", "Estacionamento"], ["restaurant", "Restaurante"], ["hotel", "Hospedagem"]] as const).map(([id, label]) => (
+                <label key={id} className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-800/70 p-3 text-xs sm:text-sm">
+                  <input type="checkbox" checked={conciergeServices.includes(id)} onChange={e => setConciergeServices(current => e.target.checked ? [...current, id] : current.filter(item => item !== id))} className="accent-violet-500" />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <p className="text-xs text-violet-200">A MIKA poderá sugerir opções e horários. Nenhuma reserva ou pagamento será realizado automaticamente.</p>
+        </div>}
+      </div>}
+      {error && <p role="alert" className="mt-3 text-sm text-red-300">{error}</p>}
+      <label className="mt-4 flex items-center gap-2 text-sm text-slate-200"><input type="checkbox" checked={syncToGoogle} onChange={(event) => setSyncToGoogle(event.target.checked)} className="accent-violet-500" />Adicionar também ao Google Calendar (requer autorização de escrita)</label>
+      <div className="sticky bottom-0 z-10 mt-4 flex flex-wrap items-center gap-2 border-t border-white/10 bg-slate-950/95 py-3 backdrop-blur-sm sm:gap-3">
+      <button type="button" onClick={() => setShowForm(false)} disabled={saving}
+        className="min-h-11 flex-1 rounded-xl border border-slate-600 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800 disabled:opacity-50 sm:flex-none sm:px-4 sm:py-3">Cancelar</button>
+      <button
+        type="button"
+        onClick={handleSave}
+        disabled={saving || !title.trim() || !startsAt || !endsAt}
+        className="min-h-11 flex-[2] rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-5 sm:py-3 sm:text-base"
+      >
+        {saving ? "Salvando..." : "Adicionar compromisso"}
+      </button>
+      </div>
+
+      </div></div>}
+      {syncNotice && <p role="status" className="mt-3 text-sm text-amber-200">{syncNotice}</p>}
+      {error && (
+        <p role="alert" className="mt-3 text-sm text-red-400">
+          {error}
+        </p>
+      )}
+
+      {/* VYRA_GOOGLE_LAYOUT_FIX */}
+      {/* Google Calendar — eventos externos somente leitura */}
+      <div className="mt-6 min-w-0 max-w-full overflow-hidden rounded-xl border border-violet-500/30 bg-slate-900/50 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="font-semibold">Google Calendar</h3>
+            <p className="text-xs text-slate-400">
+              Compromissos sincronizados dos próximos 30 dias
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void loadGoogleEvents()}
+            disabled={googleLoading}
+            className="rounded-lg bg-violet-700 px-3 py-2 text-sm font-medium disabled:opacity-50"
+          >
+            {googleLoading ? "Atualizando..." : "Atualizar"}
+          </button>
+        </div>
+
+        {googleError && (
+          <div role="alert" className="mt-3 space-y-2">
+            <p className="text-sm text-amber-300">{googleError}</p>
+            {googleReconnectRequired && <a href="/api/google/connect" className="inline-block rounded-lg border border-violet-500 px-3 py-2 text-sm text-violet-200">Reconectar Google Calendar</a>}
+          </div>
+        )}
+
+        {!googleLoading && !googleConnected && !googleError && (
+          <a
+            href="/api/google/connect"
+            className="mt-3 inline-block text-sm text-violet-300 underline"
+          >
+            Conectar Google Calendar
+          </a>
+        )}
+
+        {!googleLoading && googleConnected && (
+          <div className="mt-4 space-y-3">
+            {filteredGoogle.length === 0 ? (
+              <p className="text-sm text-slate-400">
+                Nenhum compromisso neste período.
+              </p>
+            ) : (
+              visibleGoogle.map((event, index) => (
+                <div key={event.id ?? `google-${index}`} className="space-y-2">
+                  {(index === 0 || dateKey(visibleGoogle[index - 1].start) !== dateKey(event.start)) && <h4 className="pt-2 text-xs font-semibold uppercase tracking-wider text-violet-300">{dateHeading(event.start)}</h4>}
+                <div
+                  className="relative ml-2 min-w-0 max-w-full overflow-hidden rounded-lg border border-slate-700 border-l-2 border-l-violet-500 bg-slate-950/50 p-3"
+                >
+                  <details className="group">
+                    <summary className="cursor-pointer list-none rounded-md py-1 pr-9 focus-visible:outline-2 focus-visible:outline-violet-400">
+                      <span className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                        <span className="min-w-0 break-words font-medium"><span className="mr-2 text-xs font-semibold tabular-nums text-violet-300">{timeLabel(event.start)}</span>{event.title}</span>
+                        <span className="shrink-0 text-xs text-violet-300 group-open:hidden">Detalhes +</span><span className="hidden shrink-0 text-xs text-violet-300 group-open:inline">Recolher −</span>
+                      </span>
+                    </summary>
+                    <div className="mt-3 flex min-w-0 flex-wrap items-start justify-between gap-3 border-t border-slate-800 pt-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="mt-1 text-xs text-violet-300">
+                        Google Calendar · {event.calendarName || "Calendário principal"} · Somente leitura
+                      </p>
+
+                      {event.start && (
+                        <p className="mt-1 break-words text-sm text-slate-400 [overflow-wrap:anywhere]">
+                          {/^\d{4}-\d{2}-\d{2}$/.test(event.start)
+                            ? `Dia inteiro: ${event.start.split("-").reverse().join("/")}`
+                            : new Date(event.start).toLocaleString("pt-BR")}
+                          {event.end &&
+                            !/^\d{4}-\d{2}-\d{2}$/.test(event.start) &&
+                            ` até ${new Date(event.end).toLocaleString("pt-BR")}`}
+                        </p>
+                      )}
+
+                      {event.location && (
+                        /^https?:\/\//i.test(event.location.trim()) ? (
+                          <a
+                            href={event.location.trim().split(/\s/)[0]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-2 inline-flex items-center gap-2 rounded-lg border border-violet-500/40 bg-violet-500/10 px-3 py-2 text-sm font-medium text-violet-200 transition hover:bg-violet-500/20"
+                          >
+                            <span>↗</span>
+                            {event.location.includes("zoom.us")
+                              ? "Entrar na reunião Zoom"
+                              : event.location.includes("meet.google.com")
+                                ? "Entrar no Google Meet"
+                                : event.location.includes("teams.microsoft.com")
+                                  ? "Entrar no Microsoft Teams"
+                                  : "Abrir link do evento"}
+                          </a>
+                        ) : (
+                          <p className="mt-1 break-words text-sm text-slate-400 [overflow-wrap:anywhere]">
+                            Local: {event.location}
+                          </p>
+                        )
+                      )}
+                    </div>
+
+                    {event.htmlLink && (
+                      <a
+                        href={event.htmlLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 whitespace-nowrap text-xs text-violet-300 underline"
+                      >
+                        Abrir no Google
+                      </a>
+                    )}
+                  </div>
+                  </details>
+                </div>
+                </div>
+              ))
+            )}
+            {filteredGoogle.length > 5 && <button type="button" onClick={() => setShowAllGoogle((value) => !value)} className="text-sm font-semibold text-violet-300 underline">{showAllGoogle ? "Mostrar menos" : `Ver todos os ${filteredGoogle.length} compromissos`}</button>}
+          </div>
+        )}
+      </div>
+      <div className="mt-6 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3"><h3 className="font-semibold">Eventos cadastrados</h3><label className="inline-flex items-center gap-2 text-xs text-slate-300">Tema <select aria-label="Filtrar eventos por categoria" value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value as EventCategory | "all"); setShowAllLocal(false); }} className="rounded-lg border border-white/15 bg-slate-800 px-2 py-1.5 text-white"><option value="all">Todos</option>{Object.entries(EVENT_CATEGORIES).map(([id, item]) => <option key={id} value={id}>{item.label}</option>)}</select></label><label className="inline-flex items-center gap-2 text-xs text-slate-300"><input type="checkbox" checked={favoritesOnly} onChange={(event) => setFavoritesOnly(event.target.checked)} className="accent-violet-500" />★ Somente favoritos</label></div>
+
+        {loading ? (
+          <p className="text-sm text-slate-400">Carregando eventos...</p>
+        ) : filteredLocal.length === 0 ? (
+          <p className="text-sm text-slate-400">
+            Nenhum compromisso neste período.
+          </p>
+        ) : (
+          visibleLocal.map((event, index) => (
+            <div key={event.id} className="space-y-2">
+              {(index === 0 || dateKey(visibleLocal[index - 1].startsAt) !== dateKey(event.startsAt)) && <h4 className="pt-2 text-xs font-semibold uppercase tracking-wider text-violet-300">{dateHeading(event.startsAt)}</h4>}
+            <div
+              className="relative ml-0 min-w-0 rounded-lg border border-slate-700 border-l-4 bg-slate-950/50 p-3 sm:ml-2" style={{ borderLeftColor: EVENT_CATEGORIES[event.category].color }}
+            >
+              <button type="button" onClick={() => void toggleFavoriteEvent(event)} disabled={favoriteBusyId !== null}
+                aria-pressed={favoriteEventIds.includes(event.id)}
+                aria-label={favoriteEventIds.includes(event.id) ? "Remover compromisso dos favoritos" : "Favoritar compromisso"}
+                title={favoriteEventIds.includes(event.id) ? "Remover favorito" : "Adicionar favorito"}
+                className={`absolute right-3 top-2 z-10 rounded-md px-1.5 text-xl hover:bg-violet-500/15 disabled:opacity-50 ${favoriteEventIds.includes(event.id) ? "text-amber-300" : "text-slate-400"}`}>
+                {favoriteEventIds.includes(event.id) ? "★" : "☆"}
+              </button>
+              <details className="group">
+                <summary className="cursor-pointer list-none rounded-md py-1 pr-12 focus-visible:outline-2 focus-visible:outline-violet-400">
+                  <span className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="min-w-0 break-words font-semibold"><span className="mr-2 text-xs font-semibold tabular-nums text-violet-300">{timeLabel(event.startsAt)}</span>{event.title}</span>
+                    <span className="shrink-0 text-xs text-slate-400 group-open:hidden">Detalhes +</span><span className="hidden shrink-0 text-xs text-slate-400 group-open:inline">Recolher −</span>
+                  </span>
+                </summary>
+                <div className="mt-3 grid min-w-0 grid-cols-1 gap-3 border-t border-slate-800 pt-3 sm:grid-cols-2">
+                <div className="min-w-0 break-words [overflow-wrap:anywhere] sm:col-span-2">
+
+                  <p className="mt-1 text-xs font-semibold" style={{ color: EVENT_CATEGORIES[event.category].color }}>{EVENT_CATEGORIES[event.category].label}</p>
+                  <label className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-300">
+                    Categoria
+                    <select aria-label={`Categoria de ${event.title}`} value={event.category}
+                      disabled={categoryBusyId !== null}
+                      onChange={(e) => void handleCategoryChange(event.id, e.target.value as EventCategory)}
+                      className="rounded-lg border border-white/15 bg-slate-800 px-2 py-1.5 text-white disabled:opacity-50">
+                      {Object.entries(EVENT_CATEGORIES).map(([id, item]) => <option key={id} value={id}>{item.label}</option>)}
+                    </select>
+                  </label>
+                  <p className="mt-1 text-xs text-violet-300">
+                    {event.eventType === "unavailable"
+                      ? "Indisponibilidade"
+                      : "Compromisso"}
+                    {" · "}
+                    {event.blocksTime
+                      ? "Horário bloqueado"
+                      : "Sem bloqueio automático"}
+                  </p>
+
+                  <p className="mt-1 text-sm text-slate-400">
+                    {formatDate(event.startsAt)} até {formatDate(event.endsAt)}
+                  </p>
+                  {<button type="button"
+                    disabled={syncingEventId !== null}
+                    onClick={() => void retryGoogleSync(event)}
+                    className="mt-2 rounded-lg border border-violet-500/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/15 disabled:opacity-50">
+                    {syncingEventId === event.id ? "Sincronizando..." : "Enviar / reenviar ao Google Calendar"}
+                  </button>}
+
+                  {event.location && (
+                    <p className="mt-1 text-sm text-slate-400">
+                      Local: {event.location}
+                    </p>
+                  )}
+                  {event.concierge && <div className="mt-3 rounded-xl border border-violet-500/30 bg-violet-500/10 p-3 text-sm">
+                    <p className="font-semibold text-violet-200">MIKA Concierge · Planejamento ativo</p>
+                    <p className="mt-1 text-xs text-slate-300">Partida: {event.concierge.departureAddress || "A definir com a MIKA"}</p>
+                    <p className="mt-1 text-xs text-slate-300">Serviços: {event.concierge.services.map(service => (({ transport: "Transporte", parking: "Estacionamento", restaurant: "Restaurante", hotel: "Hospedagem" } as Record<string, string>)[service] || service)).join(", ") || "Nenhum selecionado"}</p>
+                    <p className="mt-2 text-xs text-slate-400">As opções ainda precisam ser planejadas. Reservas e pagamentos exigem confirmação.</p>
+                    <button type="button" onClick={() => planWithMyka(event)} className="mt-3 rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500">Planejar com a MIKA</button>
+                    <div className="mt-3 rounded-lg border border-violet-400/20 p-3">
+                      <p className="text-xs font-semibold text-violet-200">MIKA Agente · Autorização do planejamento</p>
+                      <p className="mt-1 text-xs text-slate-300">Registre uma proposta para os serviços selecionados. A autorização não faz reservas nem pagamentos.</p>
+                      {(!agentActionByEvent[event.id] || ["cancelled", "expired", "failed"].includes(agentActionByEvent[event.id].status)) && <button type="button" disabled={agentBusyEvent !== null || agentHistoryLoading || Boolean(agentHistoryError)} onClick={() => proposeConciergeAction(event)} className="mt-2 rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 disabled:opacity-50">Preparar proposta</button>}
+                      {agentActionByEvent[event.id]?.status === "awaiting_authorization" && <div className="mt-2 flex flex-wrap gap-2">
+                        <button type="button" disabled={agentBusyEvent !== null} onClick={() => decideConciergeAction(event.id, "authorize")} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Autorizar planejamento</button>
+                        <button type="button" disabled={agentBusyEvent !== null} onClick={() => decideConciergeAction(event.id, "cancel")} className="rounded-lg border border-white/20 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Cancelar proposta</button>
+                      </div>}
+                      {agentActionByEvent[event.id]?.status === "authorized" && <p className="mt-2 text-xs text-emerald-300">Planejamento autorizado e registrado. Nenhuma reserva ou pagamento foi executado.</p>}
+                      {agentActionByEvent[event.id]?.status === "cancelled" && <p className="mt-2 text-xs text-slate-300">Última proposta cancelada.</p>}
+                      {agentHistoryError && <p role="alert" className="mt-2 text-xs text-amber-300">{agentHistoryError}</p>}
+                      {agentFeedbackByEvent[event.id] && <p role="status" className="mt-2 text-xs text-slate-300">{agentFeedbackByEvent[event.id]}</p>}
+                    </div>
+                    <div className="mt-3 rounded-lg border border-violet-400/20 p-3">
+                      <p className="text-xs font-semibold text-violet-200">Planejar horário de saída</p>
+                      <p className="mt-1 text-xs text-slate-400">Informe a duração aproximada do trajeto ou consulte a estimativa de rota. O alerta só ficará disponível após definir um tempo de deslocamento.</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-3">
+                        <label className="text-xs text-slate-300">Trajeto (min)
+                          <input type="number" min={1} max={480} step={5} value={travelByEvent[event.id]?.minutes ?? ""} placeholder="Min" onChange={(e) => { const raw = e.target.value; if (raw === "") { setTravelByEvent(current => { const next = { ...current }; delete next[event.id]; return next; }); return; } const minutes = Math.min(480, Math.max(1, Number(raw) || 1)); setTravelByEvent(current => ({ ...current, [event.id]: { minutes, source: "manual" } })); }} className="ml-2 w-16 rounded-lg border border-white/15 bg-slate-800 px-2 py-1.5 text-white" />
+                        </label>
+                        <label className="text-xs text-slate-300">Margem (min)
+                          <select value={conciergeBufferMinutes} onChange={(e) => setConciergeBufferMinutes(Number(e.target.value))} className="ml-2 rounded-lg border border-white/15 bg-slate-800 px-2 py-1.5 text-white">
+                            <option value={0}>0</option><option value={10}>10</option><option value={15}>15</option><option value={30}>30</option><option value={45}>45</option>
+                          </select>
+                        </label>
+                      </div>
+                      <p className="mt-2 text-xs text-violet-200">{travelByEvent[event.id] ? <>Saída sugerida: {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(new Date(event.startsAt).getTime() - (travelByEvent[event.id].minutes + conciergeBufferMinutes) * 60000))}</> : "Defina o tempo de trajeto para calcular o horário de saída."}</p>
+                      <button type="button" onClick={() => { const travel = travelByEvent[event.id]; if (travel) downloadConciergeReminder(event, travel.minutes, conciergeBufferMinutes, travel.source); }} disabled={!travelByEvent[event.id]} className="mt-2 rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10 disabled:cursor-not-allowed disabled:opacity-50">Adicionar alerta de saída ao calendário</button>
+                      <p className="mt-1 text-xs text-slate-400">Importe o arquivo no calendário para receber o alerta. O horário depende da duração informada por você.</p>
+                    </div>
+                    <ConciergeRouteEstimate event={event} onEstimate={(minutes) => setTravelByEvent(current => ({ ...current, [event.id]: { minutes, source: "google" } }))} />
+                    <details className="mt-3 rounded-lg border border-violet-400/20 p-3"><summary className="cursor-pointer text-xs font-semibold text-violet-200">Serviços do compromisso · Ver opções</summary>
+                    {event.location && <div className="mt-2 flex flex-wrap gap-2">
+                      <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.location)}&travelmode=driving${event.concierge.departureAddress ? `&origin=${encodeURIComponent(event.concierge.departureAddress)}` : ""}`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">Ver trajeto de carro ↗</a>
+                      <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.location)}&travelmode=transit${event.concierge.departureAddress ? `&origin=${encodeURIComponent(event.concierge.departureAddress)}` : ""}`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">Transporte público ↗</a>
+                      {event.concierge.services.includes("parking") && <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("estacionamento próximo de " + event.location)}`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">Buscar estacionamento ↗</a>}
+                      {event.concierge.services.includes("restaurant") && <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("restaurantes próximos de " + event.location)}`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">Buscar restaurantes ↗</a>}
+                      {event.concierge.services.includes("hotel") && <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("hotéis próximos de " + event.location)}`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 hover:bg-violet-500/10">Buscar hotéis ↗</a>}
+                    </div>}
+                    <p className="mt-2 text-xs text-slate-400">As opções abrem o Google Maps. Não há reserva ou pagamento automático.</p>
+                    </details>
+                  </div>}
+                </div>
+
+                <div className="min-w-0 sm:col-span-2"><EventReminderControl eventId={event.id} startsAt={event.startsAt} /></div>
+                <div className="flex min-w-0 flex-col gap-2">
+                  {editingId === event.id ? (
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <input aria-label="Novo título do compromisso" value={editingTitle} maxLength={200}
+                        onChange={(e) => setEditingTitle(e.target.value)}
+                        className="min-h-11 min-w-0 basis-full rounded-lg border border-violet-400/50 bg-slate-800 px-3 py-2 text-base text-white sm:basis-auto sm:flex-1" />
+                      <button type="button" onClick={() => void handleRename()} disabled={renaming || !editingTitle.trim()}
+                        className="min-h-11 flex-1 rounded-lg bg-violet-600 px-3 py-2 text-sm disabled:opacity-50 sm:flex-none">{renaming ? "Salvando..." : "Salvar"}</button>
+                      <button type="button" onClick={() => setEditingId(null)} disabled={renaming}
+                        className="min-h-11 flex-1 rounded-lg border border-white/20 px-3 py-2 text-sm sm:flex-none">Cancelar</button>
+                    </div>
+                  ) : (
+                    <button type="button" onClick={() => { setEditingId(event.id); setEditingTitle(event.title); }}
+                      className="min-h-11 self-start rounded-lg border border-violet-400/40 px-3 py-2 text-sm text-violet-200">Editar título</button>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(event.id)}
+                  disabled={deletingId !== null}
+                  className="min-h-11 w-full rounded-lg bg-red-900 px-3 py-2 text-sm disabled:opacity-50 sm:w-auto sm:justify-self-start"
+                >
+                  {deletingId === event.id ? "Excluindo..." : "Excluir"}
+                </button>
+              </div>
+              </details>
+            </div>
+            </div>
+          ))
+        )}
+        {filteredLocal.length > 5 && <button type="button" onClick={() => setShowAllLocal((value) => !value)} className="text-sm font-semibold text-violet-300 underline">{showAllLocal ? "Mostrar menos" : `Ver todos os ${filteredLocal.length} eventos`}</button>}
+      </div>
+    </section>
+  );
+}
+
+function ConciergeRouteEstimate({ event, onEstimate }: { event: CalendarEvent; onEstimate: (minutes: number) => void }) {
+  const [result, setResult] = useState<{ durationSeconds: number; distanceMeters: number | null; calculatedAt: string } | null>(null);
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const origin = event.concierge?.departureAddress?.trim();
+  const destination = event.location?.trim();
+  if (!event.concierge?.services.includes("transport")) return null;
+
+  async function estimate() {
+    if (!origin || !destination || loading) return;
+    setLoading(true);
+    setResult(null);
+    setMessage("");
+    try {
+      const response = await fetch("/api/concierge/route", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ origin, destination }),
+        signal: AbortSignal.timeout(10000),
+      });
+      const data: { error?: string; durationSeconds?: number; distanceMeters?: number | null; calculatedAt?: string } = await response.json();
+      if (!response.ok || typeof data.durationSeconds !== "number" || !Number.isFinite(data.durationSeconds) || data.durationSeconds <= 0 || data.durationSeconds > 480 * 60 || typeof data.calculatedAt !== "string" || !Number.isFinite(Date.parse(data.calculatedAt))) {
+        setMessage("Não foi possível obter uma estimativa confiável. Informe o tempo de trajeto manualmente no campo acima ou consulte o Google Maps.");
+        return;
+      }
+      setResult({ durationSeconds: data.durationSeconds, distanceMeters: typeof data.distanceMeters === "number" && Number.isFinite(data.distanceMeters) && data.distanceMeters >= 0 ? data.distanceMeters : null, calculatedAt: data.calculatedAt });
+      onEstimate(Math.min(480, Math.max(1, Math.ceil(data.durationSeconds / 60))));
+    } catch {
+      setMessage("Consulta indisponível. Informe o tempo de trajeto manualmente no campo acima ou consulte o Google Maps.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return <div className="mt-3 rounded-lg border border-violet-400/20 p-3">
+    <p className="text-xs font-semibold text-violet-200">Estimativa de deslocamento · Carro</p>
+    {!origin ? <p className="mt-1 text-xs text-slate-400">Informe o endereço de partida para calcular a rota.</p> :
+      <button type="button" onClick={estimate} disabled={loading || !destination} className="mt-2 rounded-lg border border-violet-400/40 px-3 py-2 text-xs font-semibold text-violet-200 disabled:opacity-50">{loading ? "Consultando..." : "Consultar duração e distância"}</button>}
+    {message && <p role="status" className="mt-2 text-xs text-slate-400">{message}</p>}
+    {result && <div role="status" className="mt-2 text-xs text-slate-200">
+      <p>Tempo estimado: {Math.ceil(result.durationSeconds / 60)} min{result.distanceMeters !== null ? ` · ${(result.distanceMeters / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} km` : ""}</p>
+      <p className="mt-1 text-slate-400">Consulta realizada às {new Date(result.calculatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}. Estimativa sujeita a mudanças no trânsito. A duração foi aplicada ao planejamento de saída acima; confira a margem de segurança.</p>
+    </div>}
+  </div>;
+}
