@@ -1,4 +1,5 @@
 import SettingsCards from "./settings-cards";
+import Link from "next/link";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
@@ -157,6 +158,7 @@ async function DashboardContent() {
           <FeatureAccordion id="goals" title="Metas rápidas" description="Acompanhe pequenas conquistas" userId={user.id}><QuickGoals userId={user.id} /></FeatureAccordion>
           <FeatureAccordion id="plans" title="Meus planos" description="Acompanhe seus planos" userId={user.id}><CloudPlans /></FeatureAccordion>
           <FeatureAccordion id="capture" title="Captura Inteligente" description="Transforme ideias em tarefas" userId={user.id}><QuickCapture /></FeatureAccordion>
+          <div className="rounded-xl border border-violet-400/30 bg-violet-950/30 p-4"><h3 className="font-semibold text-white">MIKA Insights</h3><p className="mt-2 text-sm text-slate-300">Registre ideias por texto ou voz, organize pensamentos e receba sugestões de próximos passos com IA. Nenhuma tarefa é criada automaticamente.</p><Link href="/mika-insights" className="mt-3 inline-flex rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">Abrir MIKA Insights</Link></div>
         </div>
         <FeatureAccordion id="kanban" title="Quadro de tarefas" description="Visualize e edite tarefas por andamento" userId={user.id} defaultOpen><TaskKanban /></FeatureAccordion>
       </div>}
