@@ -14,7 +14,7 @@ async function invoke({ key, fetchImpl, timeoutImpl = () => ({}) }) {
   const exports = {};
   const context = {
     exports,
-    process: { env: key ? { RESEND_API_KEY: key } : {} },
+    process: { env: { ...(key ? { RESEND_API_KEY: key } : {}), VERCEL_ENV: "preview", MIKA_SUPPORT_TEST_RECIPIENTS: "recipient@example.invalid" } },
     fetch: fetchImpl,
     AbortSignal: { timeout: timeoutImpl }
   };
