@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -32,6 +33,14 @@ async function DashboardContent() {
         </h2>
 
         <CloudPlans />
+      </section>
+
+      <section className="rounded-xl border border-violet-500/40 bg-violet-950/20 p-6">
+        <h2 className="text-xl font-semibold">MIKA Insights</h2>
+        <p className="mt-2 text-slate-300">Registre ideias por texto ou voz, organize seus pensamentos e receba sugestões de planos de ação da MIKA. Nenhuma tarefa é criada automaticamente.</p>
+        <Link href="/mika-insights" className="mt-4 inline-flex rounded-lg bg-violet-600 px-4 py-2 font-medium text-white hover:bg-violet-500">
+          Abrir MIKA Insights
+        </Link>
       </section>
 
       <LogoutButton />
