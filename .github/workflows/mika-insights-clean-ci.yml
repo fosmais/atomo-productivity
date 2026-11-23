@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'src/app/mika-insights/**'
+      - 'src/app/dashboard/page.tsx'
       - 'src/app/api/mika-insights/**'
       - 'src/app/login/**'
       - 'tests/support-*.test.cjs'
