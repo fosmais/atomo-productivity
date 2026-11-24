@@ -1,0 +1,15 @@
+const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),ts=require("typescript");
+const exportsObj={};vm.runInNewContext(ts.transpileModule(fs.readFileSync("src/lib/mika/planner.ts","utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports:exportsObj});
+const order=exportsObj.orderPlannerActions;
+const task=(id,dependsOn=[])=>({id,kind:"create_task",title:id,dependsOn});
+const event=(id,start,end)=>({...task(id),kind:"create_event",startsAt:start,endsAt:end});
+test("dependency order",()=>assert.equal(Array.from(order([task("b",["a"]),task("a")]),x=>x.id).join(","),"a,b"));
+test("missing dependency",()=>assert.throws(()=>order([task("a",["b"])]),/missing_dependency/));
+test("cycle",()=>assert.throws(()=>order([task("a",["b"]),task("b",["a"])]),/cyclic_dependency/));
+test("duplicate id",()=>assert.throws(()=>order([task("a"),task("a")]),/invalid_action/));
+test("empty and oversized",()=>{assert.throws(()=>order([]),/invalid_plan_size/);assert.throws(()=>order(Array.from({length:21},(_,i)=>task(String(i)))),/invalid_plan_size/)});
+test("external action rejected",()=>assert.throws(()=>order([{...task("a"),kind:"payment"}]),/invalid_action/));
+test("invalid interval",()=>assert.throws(()=>order([event("a","2026-11-25T12:00Z","2026-11-25T11:00Z")]),/invalid_interval/));
+test("overlap",()=>assert.throws(()=>order([event("a","2026-11-25T10:00Z","2026-11-25T12:00Z"),event("b","2026-11-25T11:00Z","2026-11-25T13:00Z")]),/overlapping_actions/));
+test("adjacent events allowed",()=>assert.equal(order([event("a","2026-11-25T10:00Z","2026-11-25T11:00Z"),event("b","2026-11-25T11:00Z","2026-11-25T12:00Z")]).length,2));
+test("input not mutated",()=>{const a=task("a");const result=order([a]);result[0].dependsOn.push("b");assert.equal(a.dependsOn.length,0)});
