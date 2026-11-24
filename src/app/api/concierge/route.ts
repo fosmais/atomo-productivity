@@ -1,3 +1,4 @@
+import { hasCurrentOptionalConsent } from "@/lib/privacy/optional-consent";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
@@ -200,6 +201,14 @@ export async function POST(request: Request) {
       );
     }
 
+    let processingPurpose = "general";
+    if ("processingPurpose" in body && body.processingPurpose !== undefined) {
+      if (body.processingPurpose !== "general" && body.processingPurpose !== "health_mika_sharing")
+        return NextResponse.json({ error: "Finalidade inválida." }, { status: 400 });
+      processingPurpose = body.processingPurpose;
+    }
+    if (processingPurpose === "health_mika_sharing" && !(await hasCurrentOptionalConsent(user.id, "health_mika_sharing")))
+      return NextResponse.json({ error: "Consentimento de saúde necessário." }, { status: 403 });
     stage = "conversation_history";
     // Contexto recuperado exclusivamente da conversa autenticada.
     // Nunca confiar no identificador enviado pelo cliente sem verificar o dono.
@@ -207,13 +216,18 @@ export async function POST(request: Request) {
     if (typeof conversationIdInput === "string") {
       const { data: ownedConversation, error: ownershipError } = await supabase
         .from("myka_conversations")
-        .select("id")
+        .select("id, processing_purpose")
         .eq("id", conversationIdInput)
         .eq("user_id", user.id)
         .maybeSingle();
       if (ownershipError) throw ownershipError;
       if (!ownedConversation) {
         return NextResponse.json({ error: "Conversa nao encontrada." }, { status: 404 });
+      }
+      if (ownedConversation.processing_purpose !== "general" || processingPurpose === "health_mika_sharing") {
+        if (ownedConversation.processing_purpose !== "health_mika_sharing" || !(await hasCurrentOptionalConsent(user.id, "health_mika_sharing")))
+          return NextResponse.json({ error: "Inicie uma nova conversa autorizada para continuar." }, { status: 403 });
+        processingPurpose = "health_mika_sharing";
       }
       const { data: savedHistory, error: historyError } = await supabase
         .from("myka_messages")
@@ -848,7 +862,8 @@ if (!rateLimit.allowed) {
         .from("myka_conversations")
         .insert({
           user_id: user.id,
-          title: lastMessage.content.slice(0, 100),
+          title: processingPurpose === "health_mika_sharing" ? "Saúde e bem-estar" : lastMessage.content.slice(0, 100),
+          processing_purpose: processingPurpose,
         })
         .select("id")
         .single();
