@@ -23,7 +23,8 @@ export default function HealthWorkspace() {
   const [days, setDays] = useState(3);
   const [minutes, setMinutes] = useState(30);
   const [limitations, setLimitations] = useState("");
-  const [consent, setConsent] = useState(false);
+  const [storageConsent, setStorageConsent] = useState(false);
+  const [mikaConsent, setMikaConsent] = useState(false);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -50,7 +51,7 @@ export default function HealthWorkspace() {
     return () => { cancelled = true; };
   }, []);
   async function saveProfile() {
-    if (!consent) { setMessage("Autorize o armazenamento do perfil antes de salvar."); return; }
+    if (!storageConsent) { setMessage("Autorize o armazenamento do perfil antes de salvar."); return; }
     setSaving(true);
     setMessage("");
     const supabase = createClient();
@@ -86,13 +87,13 @@ export default function HealthWorkspace() {
     const profile = await supabase.from("myryra_health_profiles").delete().eq("user_id", user.id);
     setSaving(false);
     if (profile.error) { setMessage("Histórico excluído, mas não foi possível excluir o perfil."); window.dispatchEvent(new Event("myryra:health:changed")); return; }
-    setProfileSaved(false); setGoal("fitness"); setSelected([]); setDays(3); setMinutes(30); setLimitations(""); setConsent(false);
+    setProfileSaved(false); setGoal("fitness"); setSelected([]); setDays(3); setMinutes(30); setLimitations(""); setStorageConsent(false); setMikaConsent(false);
     setMessage("Seu perfil e históricos de saúde e musculação foram excluídos.");
     window.dispatchEvent(new Event("myryra:health:changed"));
     window.dispatchEvent(new Event("myryra:health:profile-changed"));
   }
   function openMika() {
-    if (!consent) { setMessage("Confirme antes de enviar suas respostas à MIKA."); return; }
+    if (!mikaConsent) { setMessage("Confirme antes de enviar suas respostas à MIKA."); return; }
     const objective = goals.find(item => item.id === goal)?.label ?? "";
     const prompt = [
       "Atue como MIKA, assistente de hábitos saudáveis da MYRYRA.",
@@ -122,7 +123,8 @@ export default function HealthWorkspace() {
     <fieldset className="space-y-2"><legend className="text-sm font-semibold text-white">De quais atividades você gosta?</legend><div className="flex flex-wrap gap-2">{activities.map(activity => <label key={activity} className={"cursor-pointer rounded-full border px-3 py-2 text-sm " + (selected.includes(activity) ? "border-violet-400 bg-violet-600/20" : "border-white/15 bg-slate-900/60")}><input type="checkbox" checked={selected.includes(activity)} onChange={e => setSelected(current => e.target.checked ? [...current, activity] : current.filter(a => a !== activity))} className="mr-2 accent-violet-500" />{activity}</label>)}</div></fieldset>
     <div className="grid gap-3 sm:grid-cols-2"><label className="text-sm text-slate-200">Dias disponíveis por semana<select value={days} onChange={e => setDays(Number(e.target.value))} className="mt-2 w-full rounded-xl border border-white/20 bg-slate-900 p-3 text-white">{[1,2,3,4,5,6,7].map(day => <option key={day} value={day}>{day} {day === 1 ? "dia" : "dias"}</option>)}</select></label><label className="text-sm text-slate-200">Minutos por sessão<select value={minutes} onChange={e => setMinutes(Number(e.target.value))} className="mt-2 w-full rounded-xl border border-white/20 bg-slate-900 p-3 text-white">{[15,20,30,45,60,90].map(value => <option key={value} value={value}>{value} minutos</option>)}</select></label></div>
     <label className="block text-sm text-slate-200">Há limitações ou cuidados que a MIKA deva considerar? (opcional)<textarea value={limitations} maxLength={500} onChange={e => setLimitations(e.target.value)} rows={3} placeholder="Compartilhe apenas o que considerar necessário." className="mt-2 w-full rounded-xl border border-white/20 bg-slate-900 p-3 text-white placeholder:text-slate-500" /></label>
-    <label className="flex items-start gap-3 text-sm text-slate-300"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="mt-1 accent-violet-500" /><span>Autorizo o uso destas respostas para salvar meu perfil de saúde ou conversar com a MIKA sobre bem-estar. Posso excluir o perfil quando quiser.</span></label>
+    <label className="flex items-start gap-3 text-sm text-slate-300"><input type="checkbox" checked={storageConsent} onChange={e => setStorageConsent(e.target.checked)} className="mt-1 accent-violet-500" /><span>Autorizo salvar estas respostas no meu perfil de saúde. Posso excluir o perfil quando quiser.</span></label>
+    <label className="flex items-start gap-3 text-sm text-slate-300"><input type="checkbox" checked={mikaConsent} onChange={e => setMikaConsent(e.target.checked)} className="mt-1 accent-violet-500" /><span>Autorizo compartilhar estas respostas com a MIKA para esta avaliação de bem-estar, incluindo limitações que eu informar. Esta autorização é independente de salvar o perfil.</span></label>
     {message && <p role="alert" className="text-sm text-amber-300">{message}</p>}
     <div className="flex flex-wrap items-center gap-3">
       <button type="button" disabled={saving || loadingProfile} onClick={() => void saveProfile()} className="rounded-xl border border-violet-400/50 px-4 py-3 font-semibold text-violet-100 hover:bg-violet-600/20 disabled:opacity-50">{saving ? "Salvando..." : loadingProfile ? "Carregando..." : "Salvar meu perfil"}</button>
