@@ -14,9 +14,9 @@ export async function hasCurrentOptionalConsent(userId: string, purposeKey: stri
     if (purposeError || !purpose || purpose.required || purpose.legal_basis !== "consent") return false;
     const { data: choices, error: choiceError } = await client.from("myryra_privacy_choices")
       .select("granted,occurred_at").eq("user_id", userId).eq("purpose_key", purposeKey)
-      .eq("purpose_version", purpose.purpose_version).order("occurred_at", { ascending: false }).limit(2);
+      .eq("purpose_version", purpose.purpose_version).order("occurred_at", { ascending: false }).order("granted", { ascending: true }).limit(1);
     if (choiceError || !choices?.length || choices[0].granted !== true) return false;
-    // Ambiguous simultaneous decisions fail closed.
-    return !choices[1] || choices[1].occurred_at !== choices[0].occurred_at || choices[1].granted === true;
+    // Revocation wins when multiple decisions share the latest timestamp.
+    return true;
   } catch { return false; }
 }
