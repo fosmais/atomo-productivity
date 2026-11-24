@@ -1,0 +1,13 @@
+const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),ts=require("typescript");
+const exportsObj={};vm.runInNewContext(ts.transpileModule(fs.readFileSync("src/lib/mika/decision-engine.ts","utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports:exportsObj});
+const rank=exportsObj.rankMikaCandidates,now=Date.parse("2026-11-25T12:00:00Z");
+const c=(id,extra={})=>({id,importance:3,durationMinutes:20,dependsOn:[],...extra});
+const ids=(a,done=[],minutes=60)=>Array.from(rank(a,done,minutes,now),x=>x.id).join(",");
+test("importance ranking",()=>assert.equal(ids([c("a"),c("b",{importance:5})]),"b,a"));
+test("overdue urgency",()=>assert.equal(ids([c("a",{importance:5}),c("b",{dueAt:"2026-11-24T12:00Z"})]),"b,a"));
+test("deadline buckets",()=>assert.equal(Array.from(rank([c("a",{dueAt:"2026-11-26T12:00Z"}),c("b",{dueAt:"2026-12-02T12:00Z"}),c("c")],[],60,now),x=>x.score).join(","),"60,40,30"));
+test("dependency eligibility",()=>{assert.equal(ids([c("a",{dependsOn:["b"]})]),"");assert.equal(ids([c("a",{dependsOn:["b"]})],["b"]),"a")});
+test("self dependency blocked",()=>assert.equal(ids([c("a",{dependsOn:["a"]})]),""));
+test("duration and completed filter",()=>assert.equal(ids([c("a",{durationMinutes:61}),c("b"),c("c")],["b"]),"c"));
+test("stable tie break",()=>assert.equal(ids([c("z"),c("a")]),"a,z"));
+test("invalid inputs",()=>{assert.throws(()=>ids([c("a",{importance:6})]),/invalid_candidate/);assert.throws(()=>ids([c("a",{durationMinutes:0})]),/invalid_candidate/);assert.throws(()=>ids([c("a"),c("a")]),/invalid_candidate/);assert.throws(()=>ids([c("a",{dueAt:"invalid"})]),/invalid_deadline/);assert.throws(()=>ids([],[],-1),/invalid_context/)});
