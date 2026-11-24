@@ -38,6 +38,10 @@ export default function SettingsCards({ appearance, security, integrations, data
       </div>
       {panels[active]}
     </section>}
+    <a href="/privacidade" className="block rounded-2xl border border-white/15 bg-slate-900/75 p-4 text-left hover:border-violet-400/50 focus-visible:outline-2 focus-visible:outline-violet-400">
+      <span className="block text-sm font-semibold text-white">Central de Privacidade</span>
+      <span className="mt-1 block text-xs text-slate-400">Consulte e gerencie suas autorizações opcionais.</span>
+    </a>
     <div className="rounded-2xl border border-white/10 bg-slate-900/50 p-4">{footer}</div>
   </div>;
 }
