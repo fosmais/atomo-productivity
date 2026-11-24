@@ -4,5 +4,10 @@
       "path": "/api/cron/support-email-outbox",
       "schedule": "*/5 * * * *"
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "test/mvp2-offline-regression-20261124": false
+    }
+  }
 }
