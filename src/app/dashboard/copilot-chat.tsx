@@ -97,6 +97,7 @@ function isEventProposal(
   }, [messages, historyLoading]);
   const [input, setInput] = useState("");
   const [healthConversation, setHealthConversation] = useState(false);
+  const healthHandoffRef = useRef(false);
   const [pendingConciergePrompt, setPendingConciergePrompt] = useState<string | null>(null);
   useEffect(() => {
     if (activeModule !== "vyra-ai") return;
@@ -112,6 +113,7 @@ function isEventProposal(
       if (conciergePrompt) setPendingConciergePrompt(prompt.slice(0, 1500));
       else {
         if (!investmentPrompt && healthPrompt) {
+          healthHandoffRef.current = true;
           setHealthConversation(true);
           setConversationId(null);
           setMessages([]);
@@ -290,7 +292,7 @@ async function startVoice() {
               : null,
           }));
 
-        if (active) {
+        if (active && !healthHandoffRef.current) {
           setConversationId(data.conversationId);
           setMessages(restored);
         }
@@ -631,7 +633,7 @@ setConversationId(data.conversationId);
   }
 
   useEffect(() => {
-    if (healthConversation || !pendingConciergePrompt || historyLoading || loading || error || dailyLimitReached || activeModule !== "vyra-ai") return;
+    if (!pendingConciergePrompt || historyLoading || loading || error || dailyLimitReached || activeModule !== "vyra-ai" || healthConversation) return;
     const prompt = pendingConciergePrompt;
     let active = true;
     queueMicrotask(() => {
