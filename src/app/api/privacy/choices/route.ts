@@ -42,6 +42,19 @@ export async function POST(request: Request) {
       !notice.published_at || new Date(notice.published_at).getTime() > Date.now() || new Date(notice.effective_at).getTime() > Date.now()) {
     return NextResponse.json({ error: "Finalidade ou aviso não disponível para consentimento." }, { status: 409 });
   }
+  const now = new Date().toISOString();
+  const [currentPurpose, currentNotice] = await Promise.all([
+    service.from("myryra_privacy_purposes").select("purpose_version").eq("purpose_key", purposeKey)
+      .eq("active", true).order("purpose_version", { ascending: false }).limit(1).maybeSingle(),
+    service.from("myryra_privacy_document_versions").select("id").eq("document_type", "privacy_notice")
+      .eq("status", "published").lte("effective_at", now).lte("published_at", now)
+      .order("effective_at", { ascending: false }).order("published_at", { ascending: false })
+      .order("id", { ascending: false }).limit(1).maybeSingle(),
+  ]);
+  if (currentPurpose.error || currentNotice.error)
+    return NextResponse.json({ error: "Não foi possível verificar a versão vigente." }, { status: 503 });
+  if (granted && (currentPurpose.data?.purpose_version !== purposeVersion || currentNotice.data?.id !== noticeVersionId))
+    return NextResponse.json({ error: "Atualize a página para consultar a versão vigente." }, { status: 409 });
   const { data: existing, error: existingError } = await service.from("myryra_privacy_choices")
     .select("id,purpose_key,purpose_version,granted,notice_version_id")
     .eq("user_id", auth.user.id).eq("request_id", requestId).maybeSingle();
