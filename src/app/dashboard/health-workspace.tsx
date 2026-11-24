@@ -92,8 +92,15 @@ export default function HealthWorkspace() {
     window.dispatchEvent(new Event("myryra:health:changed"));
     window.dispatchEvent(new Event("myryra:health:profile-changed"));
   }
-  function openMika() {
+  async function openMika() {
     if (!mikaConsent) { setMessage("Confirme antes de enviar suas respostas à MIKA."); return; }
+    try {
+      const response = await fetch("/api/privacy/health-sharing", { cache: "no-store" });
+      if (!response.ok || (await response.json()).allowed !== true) {
+        setMessage("Autorize o compartilhamento de saúde na Central de Privacidade antes de continuar.");
+        return;
+      }
+    } catch { setMessage("Não foi possível verificar sua autorização."); return; }
     const objective = goals.find(item => item.id === goal)?.label ?? "";
     const prompt = [
       "Atue como MIKA, assistente de hábitos saudáveis da MYRYRA.",
@@ -130,7 +137,7 @@ export default function HealthWorkspace() {
       <button type="button" disabled={saving || loadingProfile} onClick={() => void saveProfile()} className="rounded-xl border border-violet-400/50 px-4 py-3 font-semibold text-violet-100 hover:bg-violet-600/20 disabled:opacity-50">{saving ? "Salvando..." : loadingProfile ? "Carregando..." : "Salvar meu perfil"}</button>
       {profileSaved && <button type="button" onClick={() => void deleteProfile()} className="rounded-xl border border-rose-400/30 px-4 py-3 text-sm text-rose-200 hover:bg-rose-500/10">Excluir perfil salvo</button>}
     </div>
-    <button type="button" onClick={openMika} className="w-full rounded-xl bg-violet-600 px-4 py-3 font-semibold text-white hover:bg-violet-500 sm:w-auto">Continuar avaliação com a MIKA</button>
+    <button type="button" onClick={() => void openMika()} className="w-full rounded-xl bg-violet-600 px-4 py-3 font-semibold text-white hover:bg-violet-500 sm:w-auto">Continuar avaliação com a MIKA</button>
     <HealthWorkoutPlanner />
     <HealthExerciseLibrary />
     <HealthProgress />
