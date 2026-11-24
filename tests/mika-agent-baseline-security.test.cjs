@@ -128,7 +128,7 @@ test('internal task execution uses authenticated transactional RPC and fails clo
 test('unhomologated MIKA task execution fails closed outside the dedicated staging Preview', () => {
  const route = fs.readFileSync(path.join(__dirname, '../src/app/api/mika/execute-approved-task/route.ts'), 'utf8');
  assert.ok(route.includes('process.env.VERCEL_ENV !== "preview"'));
- assert.ok(route.includes('process.env.VERCEL_GIT_COMMIT_REF !== "feat/myryra-mvp2-mika-agent-engine"'));
+ assert.ok(route.includes('!["feat/myryra-mvp2-mika-agent-engine", "release/myryra-mvp2-final-20261123"].includes(process.env.VERCEL_GIT_COMMIT_REF ?? "")'));
  assert.ok(route.includes('process.env.NEXT_PUBLIC_SUPABASE_URL !== "https://xanavauqzsrgvdfhcrsm.supabase.co"'));
  assert.ok(route.includes('process.env.MYRYRA_MIKA_INTERNAL_EXECUTION_ENABLED !== "true"'));
  const previewGuardPosition = route.indexOf('process.env.VERCEL_ENV !== "preview"');
