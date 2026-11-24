@@ -96,6 +96,7 @@ function isEventProposal(
     if (container) container.scrollTop = container.scrollHeight;
   }, [messages, historyLoading]);
   const [input, setInput] = useState("");
+  const [healthConversation, setHealthConversation] = useState(false);
   const [pendingConciergePrompt, setPendingConciergePrompt] = useState<string | null>(null);
   useEffect(() => {
     if (activeModule !== "vyra-ai") return;
@@ -109,7 +110,14 @@ function isEventProposal(
     else sessionStorage.removeItem("myryra:myka:health-handoff");
     queueMicrotask(() => {
       if (conciergePrompt) setPendingConciergePrompt(prompt.slice(0, 1500));
-      else setInput(prompt.slice(0, 1500));
+      else {
+        if (!investmentPrompt && healthPrompt) {
+          setHealthConversation(true);
+          setConversationId(null);
+          setMessages([]);
+        }
+        setInput(prompt.slice(0, 1500));
+      }
     });
   }, [activeModule]);
   const [loading, setLoading] = useState(false);
@@ -503,6 +511,7 @@ async function startVoice() {
             content: message.content.slice(0, 1500),
           })),
           conversationId: conversationId ?? undefined,
+          processingPurpose: healthConversation ? "health_mika_sharing" : "general",
         }),
       });
 
@@ -622,7 +631,7 @@ setConversationId(data.conversationId);
   }
 
   useEffect(() => {
-    if (!pendingConciergePrompt || historyLoading || loading || error || dailyLimitReached || activeModule !== "vyra-ai") return;
+    if (healthConversation || !pendingConciergePrompt || historyLoading || loading || error || dailyLimitReached || activeModule !== "vyra-ai") return;
     const prompt = pendingConciergePrompt;
     let active = true;
     queueMicrotask(() => {
@@ -633,7 +642,7 @@ setConversationId(data.conversationId);
     // Only dispatch a saved Concierge handoff once when the chat becomes ready.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => { active = false; };
-  }, [pendingConciergePrompt, historyLoading, loading, error, dailyLimitReached, activeModule]);
+  }, [pendingConciergePrompt, historyLoading, loading, error, dailyLimitReached, activeModule, healthConversation]);
 
   return (
     <section className="min-w-0 rounded-2xl border border-violet-400/20 bg-gradient-to-b from-slate-900 to-slate-950 p-3 text-white shadow-xl shadow-violet-950/20 sm:p-7">
