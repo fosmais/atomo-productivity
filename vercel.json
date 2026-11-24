@@ -7,7 +7,8 @@
   ],
   "git": {
     "deploymentEnabled": {
-      "test/mvp2-offline-regression-20261124": false
+      "test/mvp2-offline-regression-20261124": false,
+      "feat/myryra-mvp3-agent-foundation": false
     }
   }
 }
