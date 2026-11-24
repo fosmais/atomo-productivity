@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   // Execution is restricted to the dedicated Preview branch and its isolated Supabase project.
   // Fail closed in production, local development, and every non-staging deployment.
   if (process.env.VERCEL_ENV !== "preview" ||
-      process.env.VERCEL_GIT_COMMIT_REF !== "feat/myryra-mvp2-mika-agent-engine" ||
+      !["feat/myryra-mvp2-mika-agent-engine", "release/myryra-mvp2-final-20261123"].includes(process.env.VERCEL_GIT_COMMIT_REF ?? "") ||
       process.env.NEXT_PUBLIC_SUPABASE_URL !== "https://xanavauqzsrgvdfhcrsm.supabase.co")
     return NextResponse.json({ error: "Execução interna disponível somente na homologação isolada." }, { status: 503, headers });
   if (process.env.MYRYRA_MIKA_INTERNAL_EXECUTION_ENABLED !== "true")
