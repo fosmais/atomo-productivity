@@ -46,8 +46,8 @@ function MobileCaptchaContent() {
           callback.searchParams.set("state", state);
           window.location.replace(callback.toString());
         },
-        "expired-callback": () => setStatus("A verificação expirou. Conclua novamente."),
-        "error-callback": () => setStatus("Não foi possível validar. Atualize a página e tente novamente."),
+        "expired-callback": () => setRuntimeStatus("A verificação expirou. Conclua novamente."),
+        "error-callback": () => setRuntimeStatus("Não foi possível validar. Atualize a página e tente novamente."),
       });
     };
 
