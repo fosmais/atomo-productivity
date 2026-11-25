@@ -4,6 +4,9 @@ import {NextResponse} from "next/server";
 import {authenticateRequest} from "@/lib/supabase/request-client";
 import {checkConciergeRateLimit} from "@/lib/rate-limit";
 import {verifyApprovalProposal} from "@/lib/mika/autopilot-approval-token";
+import {GET as getGoogleEvents} from "@/app/api/google/events/route";
+import {consolidateBusyIntervals} from "@/lib/mika/autopilot-google-busy";
+import {revalidateApprovedSlots} from "@/lib/mika/autopilot-revalidate";
 import {selectApprovedSlots} from "@/lib/mika/autopilot-approval";
 const reply=(body:object,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"no-store"}});
 export async function POST(request:Request){
@@ -25,6 +28,22 @@ export async function POST(request:Request){
    const now=Date.now();
    const proposal=verifyApprovalProposal(body.approvalToken,user.id,now);
    const slots=selectApprovedSlots(proposal.slots,body.approvedIds,now);
+   const first=Math.min(...slots.map(s=>s.start)),last=Math.max(...slots.map(s=>s.end));
+   if(last-first>31*86400000)return reply({error:"Período de aprovação muito amplo."},422);
+   const [tasksResult,eventsResult,prefsResult]=await Promise.all([
+    (await authenticateRequest(request)).supabase.from("tasks").select("id,completed,deleted_at,due_date,duration_minutes").eq("user_id",user.id).in("id",slots.map(s=>s.id)),
+    (await authenticateRequest(request)).supabase.from("events").select("starts_at,ends_at,blocks_time").eq("user_id",user.id).is("deleted_at",null).lt("starts_at",new Date(last).toISOString()).gt("ends_at",new Date(first).toISOString()),
+    (await authenticateRequest(request)).supabase.from("planning_preferences").select("time_zone").eq("user_id",user.id).maybeSingle()
+   ]);
+   if(tasksResult.error||eventsResult.error||prefsResult.error)return reply({error:"Não foi possível revalidar sua agenda."},503);
+   const googleUrl=new URL(request.url);googleUrl.pathname="/api/google/events";googleUrl.search="";
+   googleUrl.searchParams.set("timeMin",new Date(first).toISOString());googleUrl.searchParams.set("timeMax",new Date(last).toISOString());
+   const googleResponse=await getGoogleEvents(new Request(googleUrl,{headers:request.headers}));
+   if(!googleResponse.ok)return reply({error:"Não foi possível confirmar a disponibilidade do Google Calendar."},503);
+   const external=await googleResponse.json();
+   const internal=(eventsResult.data??[]).filter(e=>e.blocks_time!==false).map(e=>({start:Date.parse(e.starts_at),end:Date.parse(e.ends_at)}));
+   const busy=consolidateBusyIntervals(internal,external,prefsResult.data?.time_zone??"America/Sao_Paulo");
+   try{revalidateApprovedSlots(slots,tasksResult.data??[],busy,now);}catch{return reply({error:"A agenda ou as tarefas mudaram. Gere novas sugestões antes de aprovar."},409);}
    if(process.env.MIKA_AUTOPILOT_PERSIST_ENABLED!=="true")return reply({mode:"validation_only",validated:true,persisted:false,executed:false,slots});
    const digest=createHash("sha256").update(body.approvalToken.split(".")[0]).digest("hex");
    const admin=createSupabaseAdmin();
