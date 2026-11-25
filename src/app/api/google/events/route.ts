@@ -5,7 +5,7 @@ import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { createGoogleOAuthClient } from "@/lib/google-calendar";
 import { decryptGoogleToken, encryptGoogleToken } from "@/lib/google-token-crypto";
 
-export async function GET() {
+export async function GET(request?: Request) {
   await connection();
   const supabase = await createClient();
 
@@ -133,9 +133,13 @@ export async function GET() {
       auth: oauth,
     });
 
-    const now = new Date();
-    const until = new Date(now);
-    until.setDate(until.getDate() + 30);
+    const params = request ? new URL(request.url).searchParams : new URLSearchParams();
+    const from = params.get("timeMin"), to = params.get("timeMax");
+    const now = from ? new Date(from) : new Date();
+    const until = to ? new Date(to) : new Date(now.getTime()+30*86400000);
+    if ((from===null)!==(to===null) || !Number.isFinite(now.getTime()) || !Number.isFinite(until.getTime()) || until<=now || until.getTime()-now.getTime()>31*86400000) {
+      return NextResponse.json({error:"Intervalo de calendário inválido."},{status:400});
+    }
 
     // Listar calendarios acessiveis, incluindo os secundarios.
     const calendarEntries: import("googleapis").calendar_v3.Schema$CalendarListEntry[] = [];
