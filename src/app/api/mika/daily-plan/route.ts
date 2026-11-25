@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/supabase/request-client";
 import { buildMikaDailyBriefing } from "@/lib/mika/daily-briefing";
+import { generatePlanningWindows } from "@/lib/planning-windows";
 import { proposeTaskSlots } from "@/lib/mika/autopilot-task-slots";
 import { checkConciergeRateLimit } from "@/lib/rate-limit";
 
@@ -31,11 +32,12 @@ export async function POST(request: Request) {
     if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start || end-start > 86400000 || Math.abs(start-now) > 3*86400000) {
       return NextResponse.json({ error: "Período inválido." }, { status: 400 });
     }
-    const [tasksResult, eventsResult] = await Promise.all([
+    const [tasksResult, eventsResult, preferencesResult] = await Promise.all([
       supabase.from("tasks").select("id, title, priority, due_date, completed").eq("user_id", user.id).eq("completed", false).is("deleted_at", null).limit(201),
       supabase.from("events").select("title, starts_at, ends_at, blocks_time").eq("user_id", user.id).is("deleted_at", null).lt("starts_at", dayEnd).gt("ends_at", dayStart).limit(201),
+      supabase.from("planning_preferences").select("start_time, end_time, weekdays, time_zone").eq("user_id",user.id).maybeSingle(),
     ]);
-    if (tasksResult.error || eventsResult.error) {
+    if (tasksResult.error || eventsResult.error || preferencesResult.error) {
       console.error("[MIKA] Daily briefing query failed");
       return NextResponse.json({ error: "Não foi possível consultar sua agenda e tarefas." }, { status: 500 });
     }
@@ -52,8 +54,16 @@ export async function POST(request: Request) {
       id:t.id, importance: ["alta","high"].includes(String(t.priority).toLowerCase())?5:["media","média","medium"].includes(String(t.priority).toLowerCase())?3:1,
       durationMinutes:25, dependsOn:[]
     }));
-    const busy = (eventsResult.data ?? []).filter(e=>e.blocks_time!==false).map(e=>({start:Date.parse(e.starts_at),end:Date.parse(e.ends_at)}));
-    const autopilot = proposeTaskSlots({start,end},busy,candidates,[],now);
+    const busy = (eventsResult.data ?? []).map(e=>({start:Date.parse(e.starts_at),end:Date.parse(e.ends_at)}));
+    const pref=preferencesResult.data;
+    const preferences=pref?{startTime:pref.start_time.slice(0,5),endTime:pref.end_time.slice(0,5),weekdays:pref.weekdays,timeZone:pref.time_zone}:{startTime:"09:00",endTime:"18:00",weekdays:[1,2,3,4,5],timeZone:"America/Sao_Paulo"};
+    const windows=generatePlanningWindows(preferences,new Date(start),2);
+    const autopilot: ReturnType<typeof proposeTaskSlots>=[];
+    for(const w of windows){
+      const from=Math.max(start,w.start.getTime()),to=Math.min(end,w.end.getTime());
+      if(to<=from)continue;
+      autopilot.push(...proposeTaskSlots({start:from,end:to},busy,candidates.filter(t=>!autopilot.some(a=>a.id===t.id)),[],now));
+    }
     return NextResponse.json({ plan, autopilot: { suggestions:autopilot, estimatedMinutes:25, scope:"undated_tasks_only", mode:"read_only" }, mode: "read_only", generatedAt: new Date(now).toISOString() }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Não foi possível preparar seu dia." }, { status: 500 });
