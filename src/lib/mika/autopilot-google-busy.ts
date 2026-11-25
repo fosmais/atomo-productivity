@@ -18,3 +18,10 @@ export function externalBusyIntervals(events:readonly ExternalEvent[],fallbackZo
     return [{start,end}];
   });
 }
+
+/** Never interpret an unsuccessful external lookup as an empty calendar. */
+export function consolidateBusyIntervals(internal:readonly {start:number;end:number}[],external:{connected:boolean;events:readonly ExternalEvent[]},zone:string){
+  if(!external||typeof external.connected!=="boolean"||!Array.isArray(external.events))throw new Error("Consulta externa indisponível.");
+  if(!external.connected&&external.events.length)throw new Error("Conexão externa inconsistente.");
+  return [...internal,...externalBusyIntervals(external.events,zone)];
+}
