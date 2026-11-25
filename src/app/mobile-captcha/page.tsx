@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 declare global {
@@ -14,7 +14,7 @@ declare global {
   }
 }
 
-export default function MobileCaptchaPage() {
+function MobileCaptchaContent() {
   const params = useSearchParams();
   const state = params.get("state") || "";
   const [status, setStatus] = useState("Carregando verificação de segurança...");
@@ -85,4 +85,8 @@ export default function MobileCaptchaPage() {
       </section>
     </main>
   );
+}
+
+export default function MobileCaptchaPage() {
+  return <Suspense fallback={<main className="flex min-h-dvh items-center justify-center bg-[#070716] text-white">Carregando verificação...</main>}><MobileCaptchaContent /></Suspense>;
 }
