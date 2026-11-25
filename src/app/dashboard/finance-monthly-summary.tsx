@@ -21,8 +21,10 @@ export default function FinanceMonthlySummary() {
         const client = createClient();
         const { data: auth, error: authError } = await client.auth.getUser();
         if (authError || !auth.user) throw new Error("Faça login para consultar os gráficos.");
-        const { data, error: queryError } = await client.from("myryra_finance_entries")
-          .select("amount_cents,kind,created_at").eq("user_id", auth.user.id).order("created_at", { ascending: false }).limit(1000);
+        let entryQuery = client.from("myryra_finance_entries")
+          .select("amount_cents,kind,created_at").eq("user_id", auth.user.id);
+        if (process.env.NEXT_PUBLIC_MYRYRA_FINANCE_TRASH_ENABLED === "true") entryQuery = entryQuery.is("deleted_at", null);
+        const { data, error: queryError } = await entryQuery.order("created_at", { ascending: false }).limit(1000);
         if (queryError) throw queryError;
         if (alive) setEntries((data ?? []) as Entry[]);
         const { data: billData, error: billError } = await client.from("myryra_finance_planned_expenses").select("amount_cents,due_date,paid_at").eq("user_id", auth.user.id).limit(1000);
