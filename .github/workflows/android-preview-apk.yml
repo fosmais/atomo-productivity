@@ -2,9 +2,9 @@ name: MYRYRA Android preview APK
 
 on:
   workflow_dispatch:
-  push:
+  pull_request:
     branches:
-      - fix/mvp2-finance-current-official
+      - feat/mvp2-professora-journey-myra-26
     paths:
       - '.github/workflows/android-preview-apk.yml'
       - 'apps/mobile/**'
