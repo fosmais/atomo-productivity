@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/myryra-mvp1-billing-foundation
+      - fix/mvp2-finance-current-official
     paths:
       - "apps/mobile/**"
       - ".github/workflows/mobile-validation.yml"
