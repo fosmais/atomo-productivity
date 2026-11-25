@@ -1,5 +1,6 @@
 import { GET as getGoogleEvents } from "@/app/api/google/events/route";
 import { consolidateBusyIntervals } from "@/lib/mika/autopilot-google-busy";
+import { signApprovalProposal } from "@/lib/mika/autopilot-approval-token";
 import { TZDate } from "@date-fns/tz";
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/supabase/request-client";
@@ -84,7 +85,8 @@ export async function POST(request: Request) {
       if(to<=from)continue;
       autopilot.push(...proposeTaskSlots({start:from,end:to},combinedBusy,candidates.filter(t=>!autopilot.some(a=>a.id===t.id)),[],now));
     }
-    return NextResponse.json({ plan, autopilot: { suggestions:autopilot.map(a=>({...a,title:(tasksResult.data ?? []).find(t=>t.id===a.id)?.title ?? 'Tarefa', estimated:!((tasksResult.data ?? []).some(t=>t.id===a.id&&Number.isInteger(t.duration_minutes)&&t.duration_minutes>0&&t.duration_minutes<=1440))})), googleCalendarConnected:external.connected, timeZone:preferences.timeZone, fallbackMinutes:25, scope:"undated_tasks_only", mode:"read_only" }, mode: "read_only", generatedAt: new Date(now).toISOString() }, { headers: { "Cache-Control": "no-store" } });
+    const approvalToken=autopilot.length&&process.env.MIKA_AUTOPILOT_APPROVAL_SECRET?signApprovalProposal(user.id,autopilot):null;
+    return NextResponse.json({ plan, autopilot: { suggestions:autopilot.map(a=>({...a,title:(tasksResult.data ?? []).find(t=>t.id===a.id)?.title ?? 'Tarefa', estimated:!((tasksResult.data ?? []).some(t=>t.id===a.id&&Number.isInteger(t.duration_minutes)&&t.duration_minutes>0&&t.duration_minutes<=1440))})), approvalToken, googleCalendarConnected:external.connected, timeZone:preferences.timeZone, fallbackMinutes:25, scope:"undated_tasks_only", mode:"read_only" }, mode: "read_only", generatedAt: new Date(now).toISOString() }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Não foi possível preparar seu dia." }, { status: 500 });
   }
