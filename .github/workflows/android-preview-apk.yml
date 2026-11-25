@@ -2,6 +2,12 @@ name: MYRYRA Android preview APK
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - fix/mvp2-finance-current-official
+    paths:
+      - '.github/workflows/android-preview-apk.yml'
+      - 'apps/mobile/**'
 
 permissions:
   contents: read
