@@ -1,5 +1,6 @@
 "use client";
 import FeatureHint from "./feature-hint";
+import AutopilotCard from "./autopilot-card";
 
 import { useCallback, useEffect, useState } from "react";
 import { getCloudPlans } from "@/lib/plan-cloud";
@@ -117,6 +118,7 @@ export default function DailyBriefing() {
                 ))}</ul>}
             </div>
           </div>
+          <AutopilotCard />
           <p className="text-xs text-slate-400">Resumo dos dados MYRYRA. O tempo livre considera as janelas de planejamento e eventos bloqueantes da MYRYRA; compromissos externos não estão incluídos neste cálculo.</p>
         </div>
       )}
