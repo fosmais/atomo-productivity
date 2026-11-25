@@ -8,6 +8,7 @@ declare global {
     hcaptcha?: {
       render: (element: HTMLElement, options: Record<string, unknown>) => string;
       remove: (id: string) => void;
+      reset: (id: string) => void;
     };
     myryraHcaptchaLoaded?: boolean;
     myryraHcaptchaReady?: () => void;
