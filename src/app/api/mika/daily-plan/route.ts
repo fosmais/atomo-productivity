@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Período inválido." }, { status: 400 });
     }
     const [tasksResult, eventsResult, preferencesResult] = await Promise.all([
-      supabase.from("tasks").select("id, title, priority, due_date, completed").eq("user_id", user.id).eq("completed", false).is("deleted_at", null).limit(201),
+      supabase.from("tasks").select("id, title, priority, due_date, completed, duration_minutes").eq("user_id", user.id).eq("completed", false).is("deleted_at", null).limit(201),
       supabase.from("events").select("title, starts_at, ends_at, blocks_time").eq("user_id", user.id).is("deleted_at", null).lt("starts_at", dayEnd).gt("ends_at", dayStart).limit(201),
       supabase.from("planning_preferences").select("start_time, end_time, weekdays, time_zone").eq("user_id",user.id).maybeSingle(),
     ]);
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     // remain in the briefing; only undated tasks receive estimated focus slots.
     const candidates = (tasksResult.data ?? []).filter(t=>!t.due_date).slice(0,100).map(t=>({
       id:t.id, importance: ["alta","high"].includes(String(t.priority).toLowerCase())?5:["media","média","medium"].includes(String(t.priority).toLowerCase())?3:1,
-      durationMinutes:25, dependsOn:[]
+      durationMinutes:Number.isInteger(t.duration_minutes)&&t.duration_minutes>0&&t.duration_minutes<=1440?t.duration_minutes:25, dependsOn:[]
     }));
     const busy = (eventsResult.data ?? []).map(e=>({start:Date.parse(e.starts_at),end:Date.parse(e.ends_at)}));
     const pref=preferencesResult.data;
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       if(to<=from)continue;
       autopilot.push(...proposeTaskSlots({start:from,end:to},busy,candidates.filter(t=>!autopilot.some(a=>a.id===t.id)),[],now));
     }
-    return NextResponse.json({ plan, autopilot: { suggestions:autopilot.map(a=>({...a,title:(tasksResult.data ?? []).find(t=>t.id===a.id)?.title ?? 'Tarefa'})), estimatedMinutes:25, scope:"undated_tasks_only", mode:"read_only" }, mode: "read_only", generatedAt: new Date(now).toISOString() }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ plan, autopilot: { suggestions:autopilot.map(a=>({...a,title:(tasksResult.data ?? []).find(t=>t.id===a.id)?.title ?? 'Tarefa', estimated:!((tasksResult.data ?? []).some(t=>t.id===a.id&&Number.isInteger(t.duration_minutes)&&t.duration_minutes>0&&t.duration_minutes<=1440))})), fallbackMinutes:25, scope:"undated_tasks_only", mode:"read_only" }, mode: "read_only", generatedAt: new Date(now).toISOString() }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Não foi possível preparar seu dia." }, { status: 500 });
   }
