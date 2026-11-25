@@ -1,17 +1,12 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
 
-function assertPreviewProject(
-  supabaseUrl: string | undefined,
-  expectedHost: string,
-  invalidUrlMessage: string,
-  invalidProjectMessage: string,
-) {
+function assertPreviewProject(supabaseUrl: string | undefined, expectedHost: string) {
   let stagingUrl: URL;
   try {
     stagingUrl = new URL(supabaseUrl || "");
   } catch {
-    throw new Error(invalidUrlMessage);
+    throw new Error("Preview MVP3 exige URL válida do Supabase de homologação.");
   }
   if (
     stagingUrl.protocol !== "https:" ||
@@ -20,7 +15,7 @@ function assertPreviewProject(
     stagingUrl.search !== "" ||
     stagingUrl.hash !== ""
   ) {
-    throw new Error(invalidProjectMessage);
+    throw new Error("Preview MVP3 não pode usar Supabase fora do projeto de homologação autorizado.");
   }
 }
 
@@ -28,29 +23,31 @@ export function createSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const secretKey = process.env.SUPABASE_SECRET_KEY;
 
-  // Keep the existing MVP2 pin and independently pin MVP3 to its own branch DB.
+  // Preserve the tested MVP2 project pin without changing its contract.
   if (
     process.env.VERCEL_ENV === "preview" &&
     process.env.VERCEL_GIT_COMMIT_REF === "feat/mvp2-professora-journey-myra-26"
   ) {
-    assertPreviewProject(
-      supabaseUrl,
-      "xanavauqzsrgvdfhcrsm.supabase.co",
-      "Preview MVP2 exige URL válida do Supabase de homologação.",
-      "Preview MVP2 não pode usar Supabase fora da homologação.",
-    );
+    let stagingUrl: URL;
+    try {
+      stagingUrl = new URL(supabaseUrl || "");
+    } catch {
+      throw new Error("Preview MVP2 exige URL válida do Supabase de homologação.");
+    }
+    if (
+      stagingUrl.protocol !== "https:" ||
+      stagingUrl.hostname !== "xanavauqzsrgvdfhcrsm.supabase.co"
+    ) {
+      throw new Error("Preview MVP2 não pode usar Supabase fora da homologação.");
+    }
   }
 
+  // MVP3 Preview is pinned to its isolated Supabase branch project.
   if (
     process.env.VERCEL_ENV === "preview" &&
     process.env.VERCEL_GIT_COMMIT_REF === "feat/myryra-mvp3-agent-foundation"
   ) {
-    assertPreviewProject(
-      supabaseUrl,
-      "woqpzvqfaeqteiqpsaqi.supabase.co",
-      "Preview MVP3 exige URL válida do Supabase de homologação.",
-      "Preview MVP3 não pode usar Supabase fora do projeto de homologação autorizado.",
-    );
+    assertPreviewProject(supabaseUrl, "woqpzvqfaeqteiqpsaqi.supabase.co");
   }
 
   // Explicit fail-closed switch while the dedicated staging admin credential
