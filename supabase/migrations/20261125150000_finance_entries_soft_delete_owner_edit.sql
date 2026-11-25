@@ -6,14 +6,15 @@ alter table public.myryra_finance_entries
 create index if not exists myryra_finance_entries_user_deleted_created_idx
   on public.myryra_finance_entries (user_id, deleted_at, created_at desc);
 
--- Authenticated clients may edit only fields used by the wallet UI.
-revoke update on public.myryra_finance_entries from authenticated;
+-- Remove broad table-level UPDATE before granting only supported fields.
+revoke update on table public.myryra_finance_entries from authenticated;
 grant update (description, amount_cents, kind, deleted_at)
-  on public.myryra_finance_entries to authenticated;
+  on table public.myryra_finance_entries to authenticated;
 
+-- Replace legacy policies to avoid duplicate or broader UPDATE paths.
 drop policy if exists finance_update_own on public.myryra_finance_entries;
 drop policy if exists finance_entries_update_own on public.myryra_finance_entries;
-create policy finance_update_own on public.myryra_finance_entries
+create policy finance_entries_update_own on public.myryra_finance_entries
   for update to authenticated
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
