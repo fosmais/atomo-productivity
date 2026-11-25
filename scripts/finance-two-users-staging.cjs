@@ -38,7 +38,7 @@ async function main() {
   const runTag = "[MYRYRA-STAGING-RLS] " + new Date().toISOString() + " " + Math.random().toString(36).slice(2, 9);
   async function add(owner, suffix) {
     const { data, error } = await owner.client.from("myryra_finance_entries")
-      .insert({ description: runTag + " " + suffix, amount_cents: 1000, kind: "income" })
+      .insert({ user_id: owner.userId, description: runTag + " " + suffix, amount_cents: 1000, kind: "income" })
       .select("id,user_id,description,amount_cents,kind,deleted_at").single();
     if (error) throw error;
     assert.equal(data.user_id, owner.userId);
@@ -64,7 +64,7 @@ async function main() {
   const foreignEdit = await a.client.from("myryra_finance_entries")
     .update({ amount_cents: 999999 }).eq("id", rowB.id).select("id");
   if (foreignEdit.error) {
-    assert.match(foreignEdit.error.code || "", /^(42501|PGRST301)$/, "Unexpected cross-user update error");
+    assert.match(foreignEdit.error.code || "", /^42501$/, "Unexpected cross-user update error");
   } else {
     assert.equal(foreignEdit.data.length, 0, "Cross-user update must affect zero rows");
   }
