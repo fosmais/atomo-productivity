@@ -22,7 +22,7 @@ test("wallet operations guard against pending mutations and refreshes", () => {
   assert.ok(section("const addEntry = async", "const saveOpeningBalance = async").includes("if (saving || balanceSaving || loading || error) return"));
   assert.ok(section("const saveOpeningBalance = async", "const deleteEntry = async").includes("if (saving || balanceSaving || loading || error) return"));
   assert.ok(section("const deleteEntry = async", "return (").includes("if (saving || balanceSaving || loading || error) return"));
-  assert.ok(source.includes("disabled={saving || balanceSaving || loading || Boolean(error)} onClick={() => void deleteEntry(item.id)}"));
+  assert.ok(source.includes("disabled={saving || balanceSaving || loading || Boolean(error) || editingId === item.id} onClick={() => void deleteEntry(item.id)}"));
 });
 
 test("wallet retries failed refresh and preserves visible records", () => {
@@ -131,7 +131,7 @@ test("wallet prevents mutations while financial data is stale", () => {
   ]) {
     assert.ok(section(start, end).includes("if (saving || balanceSaving || loading || error) return;"));
   }
-  assert.equal((source.match(/disabled=\{saving \|\| balanceSaving \|\| loading \|\| Boolean\(error\)\}/g) ?? []).length, 4);
+  assert.equal((source.match(/disabled=\{saving \|\| balanceSaving \|\| loading \|\| Boolean\(error\)\}/g) ?? []).length, 3);
 });
 
 test("wallet verifies persisted entry matches request before updating local history", () => {
