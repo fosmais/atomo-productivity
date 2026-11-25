@@ -1,0 +1,38 @@
+name: MYRYRA Finance two-user RLS (staging only)
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  finance-rls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: staging
+    env:
+      MYRYRA_FINANCE_STAGING_ANON_KEY: ${{ secrets.MYRYRA_FINANCE_STAGING_ANON_KEY }}
+      FINANCE_TEST_EMAIL: ${{ secrets.FINANCE_TEST_EMAIL }}
+      FINANCE_TEST_PASSWORD: ${{ secrets.FINANCE_TEST_PASSWORD }}
+      FINANCE_TEST_OTHER_EMAIL: ${{ secrets.FINANCE_TEST_OTHER_EMAIL }}
+      FINANCE_TEST_OTHER_PASSWORD: ${{ secrets.FINANCE_TEST_OTHER_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/mvp2-finance-current-official
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Require dedicated synthetic staging identities
+        shell: bash
+        run: |
+          for key in MYRYRA_FINANCE_STAGING_ANON_KEY FINANCE_TEST_EMAIL FINANCE_TEST_PASSWORD FINANCE_TEST_OTHER_EMAIL FINANCE_TEST_OTHER_PASSWORD; do
+            if [[ -z "${!key}" ]]; then
+              echo "::error::Missing staging secret: $key"
+              exit 1
+            fi
+          done
+      - run: npm ci --ignore-scripts
+      - name: Verify two-user Finance RLS, edit, trash and restore
+        run: node scripts/finance-two-users-staging.cjs

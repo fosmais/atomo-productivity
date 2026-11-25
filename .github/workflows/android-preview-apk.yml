@@ -2,6 +2,12 @@ name: MYRYRA Android preview APK
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - feat/mvp2-professora-journey-myra-26
+    paths:
+      - '.github/workflows/android-preview-apk.yml'
+      - 'apps/mobile/**'
 
 permissions:
   contents: read
@@ -17,7 +23,7 @@ jobs:
       - name: Checkout preview branch
         uses: actions/checkout@v4
         with:
-          ref: feat/myryra-mvp1-billing-foundation
+          ref: fix/mvp2-finance-current-official
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -34,7 +40,7 @@ jobs:
           test -n "$EXPO_PUBLIC_SUPABASE_ANON_KEY" || { echo "::error::Chave de homologação ausente"; exit 1; }
           test -n "$EXPO_PUBLIC_MYRYRA_API_URL" || { echo "::error::API de homologação ausente"; exit 1; }
           case "$EXPO_PUBLIC_SUPABASE_URL" in
-            https://vzgahbceixjrdlqdtwoy.supabase.co) ;;
+            https://xanavauqzsrgvdfhcrsm.supabase.co) ;;
             *) echo "::error::Somente o projeto Supabase isolado de homologação é permitido"; exit 1 ;;
           esac
           case "$EXPO_PUBLIC_MYRYRA_API_URL" in
@@ -44,12 +50,9 @@ jobs:
           case "$EXPO_PUBLIC_MYRYRA_API_URL" in
             *myryra.com*|*atomo-productivity.com*|*vercel.app*) echo "::error::Utilize uma API de homologação isolada, sem alias público de produção/preview"; exit 1 ;;
           esac
-      - name: Link configured EAS project for this CI run
-        env:
-          EXPO_PROJECT_ID: ${{ vars.MYRYRA_EXPO_PROJECT_ID }}
+      - name: Validate EAS project ID from app configuration
         run: |
-          test -n "$EXPO_PROJECT_ID" || { echo "::error::Configure MYRYRA_EXPO_PROJECT_ID"; exit 1; }
-          node -e 'const fs=require("fs");const id=process.env.EXPO_PROJECT_ID;if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)){process.exit(1)}const path="app.json";const config=JSON.parse(fs.readFileSync(path,"utf8"));config.expo.extra={...(config.expo.extra||{}),eas:{projectId:id}};fs.writeFileSync(path,JSON.stringify(config,null,2));'
+          node -e 'const fs=require("fs");const config=JSON.parse(fs.readFileSync("app.json","utf8"));const id=config?.expo?.extra?.eas?.projectId;if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id||"")){console.error("Configure a valid expo.extra.eas.projectId in apps/mobile/app.json");process.exit(1)}console.log("EAS project ID validated from app.json")'
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Verify Expo SDK dependency compatibility
@@ -67,11 +70,7 @@ jobs:
       - name: Confirm EAS project linkage
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          EXPO_PROJECT_ID: ${{ vars.MYRYRA_EXPO_PROJECT_ID }}
-        run: |
-          test -n "$EXPO_PROJECT_ID" || { echo "::error::Configure MYRYRA_EXPO_PROJECT_ID com o ID do projeto EAS"; exit 1; }
-          node -e 'const id=process.env.EXPO_PROJECT_ID;if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))process.exit(1)' || { echo "::error::ID do projeto EAS inválido"; exit 1; }
-          eas project:info --non-interactive
+        run: eas project:info --non-interactive
       - name: Request internal APK build
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
