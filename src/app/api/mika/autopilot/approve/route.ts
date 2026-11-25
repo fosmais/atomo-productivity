@@ -1,3 +1,5 @@
+import {createHash} from "node:crypto";
+import {createSupabaseAdmin} from "@/lib/supabase/admin";
 import {NextResponse} from "next/server";
 import {authenticateRequest} from "@/lib/supabase/request-client";
 import {checkConciergeRateLimit} from "@/lib/rate-limit";
@@ -23,7 +25,13 @@ export async function POST(request:Request){
    const now=Date.now();
    const proposal=verifyApprovalProposal(body.approvalToken,user.id,now);
    const slots=selectApprovedSlots(proposal.slots,body.approvedIds,now);
-   return reply({mode:"validation_only",validated:true,persisted:false,executed:false,slots});
+   if(process.env.MIKA_AUTOPILOT_PERSIST_ENABLED!=="true")return reply({mode:"validation_only",validated:true,persisted:false,executed:false,slots});
+   const digest=createHash("sha256").update(body.approvalToken.split(".")[0]).digest("hex");
+   const admin=createSupabaseAdmin();
+   const {data,error}=await admin.from("mika_autopilot_approvals").insert({user_id:user.id,proposal_digest:digest,slots,expires_at:new Date(proposal.expiresAt).toISOString()}).select("id").single();
+   if(error?.code==="23505")return reply({error:"Proposta já utilizada."},409);
+   if(error||!data)return reply({error:"Não foi possível registrar a autorização."},503);
+   return reply({mode:"approval_only",validated:true,persisted:true,executed:false,approvalId:data.id,slots});
   }catch{return reply({error:"Proposta inválida ou expirada. Gere novas sugestões."},400)}
  }catch{return reply({error:"Não foi possível validar a seleção."},503)}
 }
