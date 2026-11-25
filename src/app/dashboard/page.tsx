@@ -27,6 +27,7 @@ import GoogleCalendarSettings from "./google-calendar-settings";
 import ExternalIntegrations from "./external-integrations";
 import SmartSchedulingPanel from "./smart-scheduling-panel";
 import AutoPilot from "./auto-pilot";
+import AutopilotHistory from "./autopilot-history";
 import TaskKanban from "./task-kanban";
 import TaskPlanningCards from "./task-planning-cards";
 import MyryraTrash from "./myryra-trash";
@@ -202,6 +203,7 @@ async function DashboardContent() {
       >
         <div className="grid min-w-0 gap-3 md:grid-cols-2">
         <FeatureAccordion id="autopilot" title="AutoPilot" description="Encontre horários para executar tarefas" userId={user.id}><AutoPilot /></FeatureAccordion>
+        <FeatureAccordion id="autopilot-history" title="Histórico da MIKA" description="Consulte aprovações e compromissos criados" userId={user.id}><AutopilotHistory /></FeatureAccordion>
         <FeatureAccordion id="scheduling" title="Smart Scheduling" description="Sugestões inteligentes para sua agenda" userId={user.id}><SmartSchedulingPanel /></FeatureAccordion>
         </div>
       </VyraSection>
