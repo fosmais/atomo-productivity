@@ -5,8 +5,10 @@ on:
     branches:
       - feat/myryra-mvp1-billing-foundation
       - release/myryra-android-1.0.0
+      - fix/android-hcaptcha-login
     paths:
       - "apps/mobile/**"
+      - "src/app/mobile-captcha/**"
       - ".github/workflows/mobile-validation.yml"
   workflow_dispatch:
 
