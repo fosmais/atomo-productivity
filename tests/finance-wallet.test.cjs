@@ -97,7 +97,8 @@ test("wallet refuses unsafe aggregated balances before updating visible records"
 test("finance deletion requires explicit confirmation before database mutation", () => {
   const deletion = section("const deleteEntry = async (id: string) => {", "return (");
   assert.ok(deletion.includes("window.confirm("));
-  assert.ok(deletion.includes("Esta ação não pode ser desfeita."));
+  assert.ok(deletion.includes("Você poderá restaurá-lo na lixeira."));
+  assert.ok(deletion.includes("A exclusão é definitiva e não pode ser desfeita."));
   assert.ok(deletion.indexOf("window.confirm(") < deletion.indexOf("setSaving(true)"));
   assert.ok(deletion.indexOf("window.confirm(") < deletion.indexOf('.delete().eq("id", id)'));
 });
@@ -130,7 +131,7 @@ test("wallet prevents mutations while financial data is stale", () => {
   ]) {
     assert.ok(section(start, end).includes("if (saving || balanceSaving || loading || error) return;"));
   }
-  assert.equal((source.match(/disabled=\{saving \|\| balanceSaving \|\| loading \|\| Boolean\(error\)\}/g) ?? []).length, 3);
+  assert.equal((source.match(/disabled=\{saving \|\| balanceSaving \|\| loading \|\| Boolean\(error\)\}/g) ?? []).length, 4);
 });
 
 test("wallet verifies persisted entry matches request before updating local history", () => {
