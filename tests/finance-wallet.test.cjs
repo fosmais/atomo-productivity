@@ -40,7 +40,7 @@ test("wallet only publishes confirmed mutations", () => {
 
 test("wallet balance and entry controls share the same concurrency guard", () => {
   const guard = "saving || balanceSaving || loading || Boolean(error)";
-  assert.ok(source.includes(`disabled={${guard}} onClick={() => void deleteEntry(item.id)}`));
+  assert.ok(source.includes(`disabled={${guard} || editingId === item.id} onClick={() => void deleteEntry(item.id)}`));
   assert.ok(source.includes(`disabled={${guard}} className="rounded-xl bg-violet-600 px-4 py-3`));
   assert.ok(source.includes(`disabled={${guard}} className="rounded-xl bg-violet-600 px-4 py-2`));
 });
@@ -131,7 +131,7 @@ test("wallet prevents mutations while financial data is stale", () => {
   ]) {
     assert.ok(section(start, end).includes("if (saving || balanceSaving || loading || error) return;"));
   }
-  assert.equal((source.match(/disabled=\{saving \|\| balanceSaving \|\| loading \|\| Boolean\(error\)\}/g) ?? []).length, 3);
+  assert.equal((source.match(/disabled=\{saving \|\| balanceSaving \|\| loading \|\| Boolean\(error\)\}/g) ?? []).length, 4);
 });
 
 test("wallet verifies persisted entry matches request before updating local history", () => {
