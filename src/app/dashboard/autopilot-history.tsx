@@ -13,7 +13,15 @@ export default function AutopilotHistory(){
   }catch(e){setError(e instanceof Error?e.message:"Falha ao carregar histórico.");}
   finally{setLoading(false);}
  },[]);
- useEffect(()=>{void load();},[load]);
+ useEffect(()=>{
+  let active=true;
+  fetch("/api/mika/autopilot/history?limit=50",{cache:"no-store"})
+   .then(async response=>{const body=await response.json();if(!response.ok||!Array.isArray(body.items))throw new Error(body.error||"Não foi possível carregar o histórico.");return body.items as Entry[];})
+   .then(data=>{if(active)setItems(data);})
+   .catch(e=>{if(active)setError(e instanceof Error?e.message:"Falha ao carregar histórico.");})
+   .finally(()=>{if(active)setLoading(false);});
+  return()=>{active=false;};
+ },[]);
  const date=(value:string)=>new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(new Date(value));
  return <section className="rounded-xl border border-white/10 bg-slate-950/60 p-4" aria-label="Histórico do MIKA AutoPilot">
   <div className="flex flex-wrap items-center justify-between gap-2"><div><h3 className="font-semibold text-white">Histórico do AutoPilot</h3><p className="mt-1 text-sm text-slate-400">Acompanhe autorizações e compromissos criados pela MIKA.</p></div><button type="button" onClick={()=>void load()} disabled={loading} className="rounded-lg border border-violet-400/40 px-3 py-2 text-sm text-violet-200 disabled:opacity-50">{loading?"Atualizando...":"Atualizar"}</button></div>
