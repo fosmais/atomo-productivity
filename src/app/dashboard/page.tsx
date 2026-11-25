@@ -27,6 +27,7 @@ import GoogleCalendarSettings from "./google-calendar-settings";
 import ExternalIntegrations from "./external-integrations";
 import SmartSchedulingPanel from "./smart-scheduling-panel";
 import AutoPilot from "./auto-pilot";
+import AutopilotCard from "./autopilot-card";
 import AutopilotHistory from "./autopilot-history";
 import TaskKanban from "./task-kanban";
 import TaskPlanningCards from "./task-planning-cards";
@@ -202,7 +203,8 @@ async function DashboardContent() {
         description="Descubra os melhores horários para suas tarefas com base nas prioridades, durações e compromissos da sua agenda."
       >
         <div className="grid min-w-0 gap-3 md:grid-cols-2">
-        <FeatureAccordion id="autopilot" title="AutoPilot" description="Encontre horários para executar tarefas" userId={user.id}><AutoPilot /></FeatureAccordion>
+        <FeatureAccordion id="autopilot" title="AutoPilot clássico" description="Sugestões locais de horários para suas tarefas" userId={user.id}><AutoPilot /></FeatureAccordion>
+        <FeatureAccordion id="mika-agent-autopilot" title="MIKA Agente · AutoPilot" description="Planeje, aprove e acompanhe a execução controlada de tarefas" userId={user.id}><AutopilotCard /></FeatureAccordion>
         <FeatureAccordion id="autopilot-history" title="Histórico da MIKA" description="Consulte aprovações e compromissos criados" userId={user.id}><AutopilotHistory /></FeatureAccordion>
         <FeatureAccordion id="scheduling" title="Smart Scheduling" description="Sugestões inteligentes para sua agenda" userId={user.id}><SmartSchedulingPanel /></FeatureAccordion>
         </div>
