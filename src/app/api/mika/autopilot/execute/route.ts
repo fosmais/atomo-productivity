@@ -13,7 +13,7 @@ export async function POST(request:Request){
   if(assuranceUnavailable)return reply({error:"Verificação de sessão indisponível."},503);
   if(mfaRequired)return reply({error:"Segundo fator obrigatório."},403);
   if(process.env.MIKA_AUTOPILOT_EXECUTION_ENABLED!=="true")return reply({error:"Execução ainda não habilitada."},503);
-  if(process.env.VERCEL_ENV!=="preview"||new URL(process.env.NEXT_PUBLIC_SUPABASE_URL??"https://invalid.local").hostname!=="woqpzvqfaeqteiqpsaqi.supabase.co")return reply({error:"Execução disponível somente na homologação autorizada."},503);
+  if(process.env.VERCEL_ENV!=="preview"||new URL(process.env.NEXT_PUBLIC_SUPABASE_URL??"https://invalid.local").hostname!=="sdwguqyjuvuamfiingsp.supabase.co")return reply({error:"Execução disponível somente na homologação autorizada."},503);
   const limit=await checkConciergeRateLimit(user.id);
   if(!limit.allowed)return reply({error:"Muitas solicitações."},429);
   if(!(request.headers.get("content-type")??"").toLowerCase().startsWith("application/json"))return reply({error:"Envie JSON."},415);
