@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       if(to<=from)continue;
       autopilot.push(...proposeTaskSlots({start:from,end:to},busy,candidates.filter(t=>!autopilot.some(a=>a.id===t.id)),[],now));
     }
-    return NextResponse.json({ plan, autopilot: { suggestions:autopilot.map(a=>({...a,title:(tasksResult.data ?? []).find(t=>t.id===a.id)?.title ?? 'Tarefa', estimated:!((tasksResult.data ?? []).some(t=>t.id===a.id&&Number.isInteger(t.duration_minutes)&&t.duration_minutes>0&&t.duration_minutes<=1440))})), fallbackMinutes:25, scope:"undated_tasks_only", mode:"read_only" }, mode: "read_only", generatedAt: new Date(now).toISOString() }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ plan, autopilot: { suggestions:autopilot.map(a=>({...a,title:(tasksResult.data ?? []).find(t=>t.id===a.id)?.title ?? 'Tarefa', estimated:!((tasksResult.data ?? []).some(t=>t.id===a.id&&Number.isInteger(t.duration_minutes)&&t.duration_minutes>0&&t.duration_minutes<=1440))})), timeZone:preferences.timeZone, fallbackMinutes:25, scope:"undated_tasks_only", mode:"read_only" }, mode: "read_only", generatedAt: new Date(now).toISOString() }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Não foi possível preparar seu dia." }, { status: 500 });
   }
