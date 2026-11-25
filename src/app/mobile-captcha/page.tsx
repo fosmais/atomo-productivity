@@ -18,18 +18,17 @@ declare global {
 function MobileCaptchaContent() {
   const params = useSearchParams();
   const state = params.get("state") || "";
-  const [status, setStatus] = useState("Carregando verificação de segurança...");
+  const [runtimeStatus, setRuntimeStatus] = useState("Carregando verificação de segurança...");
   const sitekey = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY?.trim();
+  const validState = /^[a-z0-9-]{12,100}$/i.test(state);
+  const status = !validState
+    ? "Solicitação inválida. Volte ao aplicativo e tente novamente."
+    : !sitekey
+      ? "A verificação de segurança está indisponível. Contate o suporte MYRYRA."
+      : runtimeStatus;
 
   useEffect(() => {
-    if (!/^[a-z0-9-]{12,100}$/i.test(state)) {
-      setStatus("Solicitação inválida. Volte ao aplicativo e tente novamente.");
-      return;
-    }
-    if (!sitekey) {
-      setStatus("A verificação de segurança está indisponível. Contate o suporte MYRYRA.");
-      return;
-    }
+    if (!validState || !sitekey) return;
 
     let cancelled = false;
     let widgetId: string | undefined;
@@ -41,7 +40,7 @@ function MobileCaptchaContent() {
         theme: "dark",
         callback: (token: string) => {
           if (cancelled || !token) return;
-          setStatus("Verificação concluída. Retornando ao aplicativo...");
+          setRuntimeStatus("Verificação concluída. Retornando ao aplicativo...");
           const callback = new URL("myryra://captcha");
           callback.searchParams.set("token", token);
           callback.searchParams.set("state", state);
@@ -73,7 +72,7 @@ function MobileCaptchaContent() {
       if (window.myryraHcaptchaReady) window.myryraHcaptchaReady = previousReady;
       if (widgetId !== undefined) window.hcaptcha?.remove(widgetId);
     };
-  }, [sitekey, state]);
+  }, [sitekey, state, validState]);
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-[#070716] px-6 text-white">
