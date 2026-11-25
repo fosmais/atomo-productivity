@@ -12,6 +12,7 @@ grant update (description, amount_cents, kind, deleted_at)
   on public.myryra_finance_entries to authenticated;
 
 drop policy if exists finance_update_own on public.myryra_finance_entries;
+drop policy if exists finance_entries_update_own on public.myryra_finance_entries;
 create policy finance_update_own on public.myryra_finance_entries
   for update to authenticated
   using ((select auth.uid()) = user_id)
