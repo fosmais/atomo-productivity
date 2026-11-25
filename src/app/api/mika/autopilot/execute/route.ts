@@ -25,6 +25,7 @@ export async function POST(request:Request){
   if(approvalError)return reply({error:"Não foi possível consultar a autorização."},503);
   if(!approval)return reply({error:"Autorização não encontrada."},404);
   if(approval.execution_status==="executed")return reply({executed:true,eventIds:approval.executed_event_ids??[],idempotent:true});
+  if(approval.execution_status!=="pending")return reply({error:"A autorização não está pendente."},409);
   if(approval.expires_at<=new Date().toISOString())return reply({error:"Autorização expirada."},409);
   const slots=approval.slots as Array<{id:string;start:number;end:number}>;
   if(!Array.isArray(slots)||!slots.length||slots.length>100||slots.some(s=>!s||typeof s.id!=="string"||!Number.isFinite(s.start)||!Number.isFinite(s.end)))return reply({error:"Conteúdo da autorização inválido."},409);
