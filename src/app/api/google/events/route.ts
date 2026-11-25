@@ -5,7 +5,7 @@ import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { createGoogleOAuthClient } from "@/lib/google-calendar";
 import { decryptGoogleToken, encryptGoogleToken } from "@/lib/google-token-crypto";
 
-export async function GET(request?: Request) {
+export async function GET(request: Request) {
   await connection();
   const supabase = await createClient();
 
@@ -133,7 +133,7 @@ export async function GET(request?: Request) {
       auth: oauth,
     });
 
-    const params = request ? new URL(request.url).searchParams : new URLSearchParams();
+    const params = new URL(request.url).searchParams;
     const from = params.get("timeMin"), to = params.get("timeMax");
     const now = from ? new Date(from) : new Date();
     const until = to ? new Date(to) : new Date(now.getTime()+30*86400000);
