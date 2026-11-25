@@ -1,3 +1,5 @@
+import { GET as getGoogleEvents } from "@/app/api/google/events/route";
+import { consolidateBusyIntervals } from "@/lib/mika/autopilot-google-busy";
 import { TZDate } from "@date-fns/tz";
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/supabase/request-client";
@@ -66,14 +68,23 @@ export async function POST(request: Request) {
     const busy = (eventsResult.data ?? []).map(e=>({start:Date.parse(e.starts_at),end:Date.parse(e.ends_at)}));
     const pref=preferencesResult.data;
     const preferences=pref?{startTime:pref.start_time.slice(0,5),endTime:pref.end_time.slice(0,5),weekdays:pref.weekdays,timeZone:pref.time_zone}:{startTime:"09:00",endTime:"18:00",weekdays:[1,2,3,4,5],timeZone:"America/Sao_Paulo"};
+    const googleUrl=new URL(request.url);
+    googleUrl.pathname="/api/google/events";
+    googleUrl.search="";
+    googleUrl.searchParams.set("timeMin",new Date(start).toISOString());
+    googleUrl.searchParams.set("timeMax",new Date(end).toISOString());
+    const googleResponse=await getGoogleEvents(new Request(googleUrl,{headers:request.headers}));
+    if(!googleResponse.ok)return NextResponse.json({error:"Não foi possível confirmar a disponibilidade do Google Calendar.",code:"EXTERNAL_AVAILABILITY_UNAVAILABLE"},{status:503});
+    const external=await googleResponse.json();
+    const combinedBusy=consolidateBusyIntervals(busy,external,preferences.timeZone);
     const windows=generatePlanningWindows(preferences,new Date(start),2);
     const autopilot: ReturnType<typeof proposeTaskSlots>=[];
     for(const w of windows){
       const from=Math.max(start,w.start.getTime()),to=Math.min(end,w.end.getTime());
       if(to<=from)continue;
-      autopilot.push(...proposeTaskSlots({start:from,end:to},busy,candidates.filter(t=>!autopilot.some(a=>a.id===t.id)),[],now));
+      autopilot.push(...proposeTaskSlots({start:from,end:to},combinedBusy,candidates.filter(t=>!autopilot.some(a=>a.id===t.id)),[],now));
     }
-    return NextResponse.json({ plan, autopilot: { suggestions:autopilot.map(a=>({...a,title:(tasksResult.data ?? []).find(t=>t.id===a.id)?.title ?? 'Tarefa', estimated:!((tasksResult.data ?? []).some(t=>t.id===a.id&&Number.isInteger(t.duration_minutes)&&t.duration_minutes>0&&t.duration_minutes<=1440))})), timeZone:preferences.timeZone, fallbackMinutes:25, scope:"undated_tasks_only", mode:"read_only" }, mode: "read_only", generatedAt: new Date(now).toISOString() }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ plan, autopilot: { suggestions:autopilot.map(a=>({...a,title:(tasksResult.data ?? []).find(t=>t.id===a.id)?.title ?? 'Tarefa', estimated:!((tasksResult.data ?? []).some(t=>t.id===a.id&&Number.isInteger(t.duration_minutes)&&t.duration_minutes>0&&t.duration_minutes<=1440))})), googleCalendarConnected:external.connected, timeZone:preferences.timeZone, fallbackMinutes:25, scope:"undated_tasks_only", mode:"read_only" }, mode: "read_only", generatedAt: new Date(now).toISOString() }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Não foi possível preparar seu dia." }, { status: 500 });
   }
