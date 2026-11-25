@@ -25,14 +25,17 @@ async function login(email, password) {
   }
   return { client, userId: data.user.id };
 }
+const created = [];
+const owners = [];
 async function main() {
   const [a, b] = await Promise.all([
     login(env.FINANCE_TEST_EMAIL, env.FINANCE_TEST_PASSWORD),
     login(env.FINANCE_TEST_OTHER_EMAIL, env.FINANCE_TEST_OTHER_PASSWORD),
   ]);
+  owners.push(a, b);
+  try {
   assert.notEqual(a.userId, b.userId, "Two distinct Auth users are required");
   const runTag = "[MYRYRA-STAGING-RLS] " + new Date().toISOString() + " " + Math.random().toString(36).slice(2, 9);
-  const created = [];
   async function add(owner, suffix) {
     const { data, error } = await owner.client.from("myryra_finance_entries")
       .insert({ description: runTag + " " + suffix, amount_cents: 1000, kind: "income" })
@@ -85,14 +88,16 @@ async function main() {
   if (restored.error) throw restored.error;
   assert.equal(restored.data.deleted_at, null, "Restore must return entry to active ledger");
 
-  // Leave only clearly tagged synthetic fixtures, soft-deleted, so reruns cannot pollute balances.
-  await Promise.all(created.map(async ({ owner, id }) => {
-    const { error } = await owner.client.from("myryra_finance_entries")
-      .update({ deleted_at: new Date().toISOString() }).eq("id", id);
-    if (error) throw error;
-  }));
-  await Promise.all([a.client.auth.signOut(), b.client.auth.signOut()]);
-  console.log("PASS: two authenticated staging users; owner read/edit; cross-user read/update denied; soft delete; trash visibility; restore; synthetic rows archived");
+  console.log("PASS: two authenticated staging users; owner read/edit; cross-user read/update denied; soft delete; trash visibility; restore");
+  } finally {
+    // Always archive any synthetic records created, even if an assertion fails midway.
+    await Promise.all(created.map(async ({ owner, id }) => {
+      const { error } = await owner.client.from("myryra_finance_entries")
+        .update({ deleted_at: new Date().toISOString() }).eq("id", id);
+      if (error) console.error("Could not archive synthetic staging row:", id, error.message);
+    }));
+    await Promise.all(owners.map(({ client }) => client.auth.signOut()));
+  }
 }
 main().catch((error) => {
   console.error("Finance staging RLS test failed:", error.message);
