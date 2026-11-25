@@ -47,7 +47,7 @@ export function createSupabaseAdmin() {
     process.env.VERCEL_ENV === "preview" &&
     process.env.VERCEL_GIT_COMMIT_REF === "feat/myryra-mvp3-agent-foundation"
   ) {
-    assertPreviewProject(supabaseUrl, "woqpzvqfaeqteiqpsaqi.supabase.co");
+    assertPreviewProject(supabaseUrl, "sdwguqyjuvuamfiingsp.supabase.co");
   }
 
   // Explicit fail-closed switch while the dedicated staging admin credential
