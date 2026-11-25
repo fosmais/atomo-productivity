@@ -29,3 +29,11 @@ test("configured day uses authenticated planning timezone before event query",()
   assert.ok(source.includes('local.getDate()+1'));
   assert.ok(source.includes('configuredToday ? 26*3600000 : 86400000'));
 });
+
+test("external availability is checked before proposing slots",()=>{
+ assert.ok(source.includes('if(!googleResponse.ok)'));
+ assert.ok(source.indexOf('if(!googleResponse.ok)')<source.indexOf('const combinedBusy='));
+ assert.ok(source.includes('consolidateBusyIntervals(busy,external,preferences.timeZone)'));
+ assert.ok(source.includes('end:to},combinedBusy,candidates'));
+ assert.ok(source.includes('EXTERNAL_AVAILABILITY_UNAVAILABLE'));
+});
