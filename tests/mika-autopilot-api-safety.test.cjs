@@ -1,6 +1,6 @@
 const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs");
 const source=fs.readFileSync("src/app/api/mika/daily-plan/route.ts","utf8");
-test("daily plan scopes both queries to authenticated user",()=>assert.equal((source.match(/\.eq\("user_id", user\.id\)/g)||[]).length,2));
+test("daily plan scopes all three queries to authenticated user",()=>assert.equal((source.match(/\.eq\("user_id",\s*user\.id\)/g)||[]).length,3));
 test("daily plan excludes deleted records",()=>assert.equal((source.match(/\.is\("deleted_at", null\)/g)||[]).length,2));
 test("daily plan rejects truncated results before suggestions",()=>{assert.equal((source.match(/\.limit\(201\)/g)||[]).length,2);assert.ok(source.indexOf("status:422")<source.indexOf("const autopilot:"))});
 test("autopilot excludes dated tasks and respects all saved events",()=>{assert.ok(source.includes("filter(t=>!t.due_date)"));assert.ok(source.includes("const busy = (eventsResult.data ?? []).map"))});
