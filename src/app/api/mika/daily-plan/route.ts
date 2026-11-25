@@ -1,3 +1,4 @@
+import { TZDate } from "@date-fns/tz";
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/supabase/request-client";
 import { buildMikaDailyBriefing } from "@/lib/mika/daily-briefing";
@@ -24,18 +25,26 @@ export async function POST(request: Request) {
     let body: unknown;
     try { body = JSON.parse(raw); } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
     if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ error: "Parâmetros inválidos." }, { status: 400 });
-    const { dayStart, dayEnd } = body as Record<string, unknown>;
+    let { dayStart, dayEnd } = body as Record<string, unknown>;
+    const configuredToday = (body as Record<string, unknown>).configuredToday === true;
+    const preferencesResult = await supabase.from("planning_preferences").select("start_time, end_time, weekdays, time_zone").eq("user_id",user.id).maybeSingle();
+    if (preferencesResult.error) return NextResponse.json({ error: "Não foi possível consultar suas preferências." }, { status: 500 });
+    if (configuredToday) {
+      const zone = preferencesResult.data?.time_zone ?? "America/Sao_Paulo";
+      const local = new TZDate(Date.now(), zone);
+      dayStart = new TZDate(local.getFullYear(),local.getMonth(),local.getDate(),0,0,0,zone).toISOString();
+      dayEnd = new TZDate(local.getFullYear(),local.getMonth(),local.getDate()+1,0,0,0,zone).toISOString();
+    }
     if (typeof dayStart !== "string" || typeof dayEnd !== "string" || !/^\d{4}-\d{2}-\d{2}T/.test(dayStart) || !/^\d{4}-\d{2}-\d{2}T/.test(dayEnd) || !/(Z|[+-]\d{2}:\d{2})$/.test(dayStart) || !/(Z|[+-]\d{2}:\d{2})$/.test(dayEnd)) {
       return NextResponse.json({ error: "Informe o início e fim do dia com fuso horário." }, { status: 400 });
     }
     const start = new Date(dayStart).getTime(), end = new Date(dayEnd).getTime(), now = Date.now();
-    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start || end-start > 86400000 || Math.abs(start-now) > 3*86400000) {
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start || end-start > (configuredToday ? 26*3600000 : 86400000) || Math.abs(start-now) > 3*86400000) {
       return NextResponse.json({ error: "Período inválido." }, { status: 400 });
     }
-    const [tasksResult, eventsResult, preferencesResult] = await Promise.all([
+    const [tasksResult, eventsResult] = await Promise.all([
       supabase.from("tasks").select("id, title, priority, due_date, completed, duration_minutes").eq("user_id", user.id).eq("completed", false).is("deleted_at", null).limit(201),
       supabase.from("events").select("title, starts_at, ends_at, blocks_time").eq("user_id", user.id).is("deleted_at", null).lt("starts_at", dayEnd).gt("ends_at", dayStart).limit(201),
-      supabase.from("planning_preferences").select("start_time, end_time, weekdays, time_zone").eq("user_id",user.id).maybeSingle(),
     ]);
     if (tasksResult.error || eventsResult.error || preferencesResult.error) {
       console.error("[MIKA] Daily briefing query failed");
