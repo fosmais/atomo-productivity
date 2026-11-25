@@ -9,7 +9,7 @@ const missing = required.filter((key) => !env[key]);
 if (missing.length) throw new Error("Missing staging-only settings: " + missing.join(", "));
 if (env.MYRYRA_FINANCE_STAGING_ANON_KEY.startsWith("sb_secret_")) throw new Error("Service-role/secret key is forbidden");
 for (const key of ["FINANCE_TEST_EMAIL","FINANCE_TEST_OTHER_EMAIL"]) {
-  if (!/^finance-staging-test[+._a-z0-9-]*@[^@]+\\.[^@]+$/i.test(env[key])) throw new Error("Only dedicated finance-staging-test synthetic accounts are allowed");
+  if (!/^finance-staging-test[+._a-z0-9-]*@[^@]+\.[^@]+$/i.test(env[key])) throw new Error("Only dedicated finance-staging-test synthetic accounts are allowed");
 }
 assert.notEqual(env.FINANCE_TEST_EMAIL.toLowerCase(), env.FINANCE_TEST_OTHER_EMAIL.toLowerCase());
 const makeClient = () => createClient(URL, env.MYRYRA_FINANCE_STAGING_ANON_KEY, {
