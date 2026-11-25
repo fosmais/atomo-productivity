@@ -7,8 +7,7 @@ export default function AutopilotCard(){
  async function organize(){
   setLoading(true);setError("");setItems(null);
   try{
-   const now=new Date(),start=new Date(now.getFullYear(),now.getMonth(),now.getDate()),end=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);
-   const response=await fetch("/api/mika/daily-plan",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({dayStart:start.toISOString(),dayEnd:end.toISOString()}),cache:"no-store"});
+   const response=await fetch("/api/mika/daily-plan",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({configuredToday:true}),cache:"no-store"});
    if(!response.ok)throw new Error("Não foi possível gerar sugestões agora.");
    const data=await response.json();
    if(!Array.isArray(data.autopilot?.suggestions))throw new Error("Sugestões indisponíveis.");
