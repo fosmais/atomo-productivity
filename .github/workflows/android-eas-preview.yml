@@ -1,0 +1,69 @@
+name: MYRYRA Android EAS Preview
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - fix/android-hcaptcha-login
+    paths:
+      - "apps/mobile/**"
+      - ".github/workflows/android-eas-preview.yml"
+  pull_request:
+    branches:
+      - release/myryra-android-1.0.0
+    paths:
+      - "apps/mobile/**"
+      - ".github/workflows/android-eas-preview.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: myryra-android-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate Android project
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npx expo-doctor
+
+  eas-preview:
+    name: Build Android APK with EAS
+    needs: validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - run: npm ci
+      - name: Verify EAS authentication
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::Configure the EXPO_TOKEN Actions secret before building the Android APK."
+            exit 1
+          fi
+      - name: Build preview APK
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: npx eas-cli build --platform android --profile preview --non-interactive --wait
