@@ -21,3 +21,11 @@ test("autopilot prioritizes candidates before applying engine capacity",()=>{
   assert.equal(candidates[0].durationMinutes,45);
   assert.ok(!candidates.some(t=>t.id==="dated"));
 });
+
+test("configured day uses authenticated planning timezone before event query",()=>{
+  assert.ok(source.includes('configuredToday === true'));
+  assert.ok(source.includes('preferencesResult.data?.time_zone'));
+  assert.ok(source.indexOf('if (configuredToday)')<source.indexOf('.from("events")'));
+  assert.ok(source.includes('local.getDate()+1'));
+  assert.ok(source.includes('configuredToday ? 26*3600000 : 86400000'));
+});
