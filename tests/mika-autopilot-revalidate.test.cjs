@@ -1,0 +1,12 @@
+const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),ts=require("typescript");
+const out={};
+vm.runInNewContext(ts.transpileModule(fs.readFileSync("src/lib/mika/autopilot-revalidate.ts","utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports:out,require});
+const check=out.revalidateApprovedSlots;
+const a={id:"a",start:60000,end:1560000},t={id:"a",completed:false,deleted_at:null,due_date:null,duration_minutes:25};
+test("valid slot and adjacent busy intervals",()=>assert.doesNotThrow(()=>check([a],[t],[{start:0,end:a.start},{start:a.end,end:a.end+1}],0)));
+test("reject newly occupied slot",()=>assert.throws(()=>check([a],[t],[{start:a.start+1,end:a.end}],0),/SLOT_OCCUPIED/));
+test("reject missing completed deleted or dated tasks",()=>{for(const tasks of [[],[{...t,completed:true}],[{...t,deleted_at:"x"}],[{...t,due_date:"x"}]])assert.throws(()=>check([a],tasks,[],0),/STALE_TASK/)});
+test("reject changed duration and accept fallback",()=>{assert.throws(()=>check([a],[{...t,duration_minutes:30}],[],0),/STALE_DURATION/);assert.doesNotThrow(()=>check([a],[{...t,duration_minutes:null}],[],0))});
+test("reject expired or duplicate slots",()=>{assert.throws(()=>check([a],[t],[],a.start+1),/STALE_APPROVAL/);assert.throws(()=>check([a,a],[t],[],0),/STALE_APPROVAL/)});
+test("reject overlapping approved tasks",()=>assert.throws(()=>check([a,{...a,id:"b",start:a.start+1,end:a.end+1}],[t,{...t,id:"b"}],[],0),/SLOT_OCCUPIED/));
+test("reject malformed busy interval and empty approval",()=>{assert.throws(()=>check([a],[t],[{start:2,end:1}],0),/INVALID_AVAILABILITY/);assert.throws(()=>check([],[],[],0),/INVALID_APPROVAL/)});
