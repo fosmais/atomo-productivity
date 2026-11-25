@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     });
     // Date-only deadlines are not converted to arbitrary UTC times. Overdue tasks
     // remain in the briefing; only undated tasks receive estimated focus slots.
-    const candidates = (tasksResult.data ?? []).filter(t=>!t.due_date).slice(0,100).map(t=>({
+    const candidates = (tasksResult.data ?? []).filter(t=>!t.due_date).map(t=>({
       id:t.id, importance: ["alta","high"].includes(String(t.priority).toLowerCase())?5:["media","média","medium"].includes(String(t.priority).toLowerCase())?3:1,
       durationMinutes:Number.isInteger(t.duration_minutes)&&t.duration_minutes>0&&t.duration_minutes<=1440?t.duration_minutes:25, dependsOn:[]
     }));
