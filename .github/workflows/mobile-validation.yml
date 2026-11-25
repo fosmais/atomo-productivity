@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/myryra-mvp1-billing-foundation
+      - release/myryra-android-1.0.0
     paths:
       - "apps/mobile/**"
       - ".github/workflows/mobile-validation.yml"

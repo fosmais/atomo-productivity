@@ -3,7 +3,7 @@
     "name": "MYRYRA",
     "slug": "myryra",
     "scheme": "myryra",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "android": {
@@ -17,7 +17,7 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "Permita que a MYKA use o microfone para gravar suas mensagens de voz.",
+          "microphonePermission": "Permita que a MIKA use o microfone para gravar suas mensagens de voz.",
           "recordAudioAndroid": true
         }
       ]
