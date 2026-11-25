@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     const candidates = (tasksResult.data ?? []).filter(t=>!t.due_date).map(t=>({
       id:t.id, importance: ["alta","high"].includes(String(t.priority).toLowerCase())?5:["media","média","medium"].includes(String(t.priority).toLowerCase())?3:1,
       durationMinutes:Number.isInteger(t.duration_minutes)&&t.duration_minutes>0&&t.duration_minutes<=1440?t.duration_minutes:25, dependsOn:[]
-    }));
+    })).sort((a,b)=>b.importance-a.importance||(a.id<b.id?-1:a.id>b.id?1:0)).slice(0,100);
     const busy = (eventsResult.data ?? []).map(e=>({start:Date.parse(e.starts_at),end:Date.parse(e.ends_at)}));
     const pref=preferencesResult.data;
     const preferences=pref?{startTime:pref.start_time.slice(0,5),endTime:pref.end_time.slice(0,5),weekdays:pref.weekdays,timeZone:pref.time_zone}:{startTime:"09:00",endTime:"18:00",weekdays:[1,2,3,4,5],timeZone:"America/Sao_Paulo"};
