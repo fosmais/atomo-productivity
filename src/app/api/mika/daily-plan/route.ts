@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/supabase/request-client";
 import { buildMikaDailyBriefing } from "@/lib/mika/daily-briefing";
+import { proposeTaskSlots } from "@/lib/mika/autopilot-task-slots";
 import { checkConciergeRateLimit } from "@/lib/rate-limit";
 
 /** Read-only daily plan. Never performs mutations or approves actions. */
@@ -31,18 +32,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Período inválido." }, { status: 400 });
     }
     const [tasksResult, eventsResult] = await Promise.all([
-      supabase.from("tasks").select("title, priority, due_date, completed").eq("user_id", user.id).eq("completed", false).is("deleted_at", null).limit(200),
-      supabase.from("events").select("title, starts_at, ends_at, blocks_time").eq("user_id", user.id).is("deleted_at", null).lt("starts_at", dayEnd).gt("ends_at", dayStart).limit(200),
+      supabase.from("tasks").select("id, title, priority, due_date, completed").eq("user_id", user.id).eq("completed", false).is("deleted_at", null).limit(201),
+      supabase.from("events").select("title, starts_at, ends_at, blocks_time").eq("user_id", user.id).is("deleted_at", null).lt("starts_at", dayEnd).gt("ends_at", dayStart).limit(201),
     ]);
     if (tasksResult.error || eventsResult.error) {
       console.error("[MIKA] Daily briefing query failed");
       return NextResponse.json({ error: "Não foi possível consultar sua agenda e tarefas." }, { status: 500 });
     }
+    if ((tasksResult.data?.length ?? 0)>200 || (eventsResult.data?.length ?? 0)>200) {
+      return NextResponse.json({error:"Agenda ou tarefas excedem o limite de análise."},{status:422});
+    }
     const plan = buildMikaDailyBriefing({
       tasks: tasksResult.data ?? [], events: eventsResult.data ?? [],
       dayStart, dayEnd, now: new Date(now).toISOString(),
     });
-    return NextResponse.json({ plan, mode: "read_only", generatedAt: new Date(now).toISOString() }, { headers: { "Cache-Control": "no-store" } });
+    // Date-only deadlines are not converted to arbitrary UTC times. Overdue tasks
+    // remain in the briefing; only undated tasks receive estimated focus slots.
+    const candidates = (tasksResult.data ?? []).filter(t=>!t.due_date).slice(0,100).map(t=>({
+      id:t.id, importance: ["alta","high"].includes(String(t.priority).toLowerCase())?5:["media","média","medium"].includes(String(t.priority).toLowerCase())?3:1,
+      durationMinutes:25, dependsOn:[]
+    }));
+    const busy = (eventsResult.data ?? []).filter(e=>e.blocks_time!==false).map(e=>({start:Date.parse(e.starts_at),end:Date.parse(e.ends_at)}));
+    const autopilot = proposeTaskSlots({start,end},busy,candidates,[],now);
+    return NextResponse.json({ plan, autopilot: { suggestions:autopilot, estimatedMinutes:25, scope:"undated_tasks_only", mode:"read_only" }, mode: "read_only", generatedAt: new Date(now).toISOString() }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Não foi possível preparar seu dia." }, { status: 500 });
   }
