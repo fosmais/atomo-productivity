@@ -1,0 +1,10 @@
+const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),ts=require("typescript");
+const exportsObj={};vm.runInNewContext(ts.transpileModule(fs.readFileSync("src/lib/mika/autopilot-slots.ts","utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports:exportsObj});
+const find=exportsObj.findFreeSlots,m=60000,w={start:0,end:120*m},b=(s,e)=>({start:s*m,end:e*m}),run=(busy,min=15)=>JSON.stringify(find(w,busy,min));
+test("empty calendar",()=>assert.equal(run([]),JSON.stringify([w])));
+test("overlapping busy intervals",()=>assert.equal(run([b(20,50),b(40,80)]),JSON.stringify([b(0,20),b(80,120)])));
+test("clipping outside window",()=>assert.equal(run([b(-20,30),b(90,150)]),JSON.stringify([b(30,90)])));
+test("fully occupied",()=>assert.equal(run([w]),"[]"));
+test("minimum duration",()=>assert.equal(run([b(10,100)],20),JSON.stringify([b(100,120)])));
+test("invalid interval rejected",()=>assert.throws(()=>run([b(50,40)]),/invalid_schedule/));
+test("adjacent busy intervals",()=>assert.equal(run([b(0,30),b(30,60)]),JSON.stringify([b(60,120)])));
