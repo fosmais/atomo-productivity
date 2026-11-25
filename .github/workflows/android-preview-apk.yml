@@ -17,7 +17,7 @@ jobs:
       - name: Checkout preview branch
         uses: actions/checkout@v4
         with:
-          ref: feat/myryra-mvp1-billing-foundation
+          ref: fix/mvp2-finance-current-official
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
