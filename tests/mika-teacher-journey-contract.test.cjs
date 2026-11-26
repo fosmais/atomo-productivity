@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const read = (relative) => fs.readFileSync(path.join(process.cwd(), relative), "utf8");
+const read = (relative) => fs.readFileSync(path.join(process.cwd(), relative), "utf8").replace(/\r\n/g, "\n");
 
 test("teacher session creation validates mission ownership and keeps mission optional", () => {
   const src = read("src/app/api/mika/lessons/sessions/route.ts");
