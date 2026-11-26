@@ -14,16 +14,16 @@ test('MIKA teacher: real grading, new session and cross-user isolation', {timeou
  assert.ok(key && secret && key!==secret);
  const admin=createClient(url,secret,{auth:{persistSession:false,autoRefreshToken:false}});
  const users=[];
- const checked=({data,error})=>{if(error)throw new Error(error.code||error.name||'Supabase operation failed');return data;};
+ const checked=({data,error},stage='database')=>{if(error){const safe=v=>typeof v==='string'&&/^[a-zA-Z0-9_]+$/.test(v)&&v.length<80?v:'unknown';throw new Error(`${stage}: ${safe(error.name)} code=${safe(error.code)} status=${Number.isInteger(error.status)?error.status:'unknown'}`);}return data;};
  async function login(email,password){
   const jar=new Map();
   const client=createServerClient(url,key,{cookies:{getAll:()=>Array.from(jar,([name,value])=>({name,value})),setAll:items=>items.forEach(({name,value})=>jar.set(name,value))}});
-  checked(await client.auth.signInWithPassword({email,password}));
+  checked(await client.auth.signInWithPassword({email,password}),'student-login');
   return {client,cookie:()=>Array.from(jar,([k,v])=>k+'='+v).join('; ')};
  }
  async function provision(){
   const email='mika-qa-'+randomUUID()+'@example.com',password=randomUUID()+randomUUID();
-  const {user}=checked(await admin.auth.admin.createUser({email,password,email_confirm:true}));
+  const {user}=checked(await admin.auth.admin.createUser({email,password,email_confirm:true}),'admin-create-student');
   users.push(user.id);
   return {id:user.id,email,password,...await login(email,password)};
  }
