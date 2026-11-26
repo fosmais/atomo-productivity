@@ -1,5 +1,5 @@
 const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs");
-const source=fs.readFileSync("src/app/api/mika/daily-plan/route.ts","utf8");
+const source=fs.readFileSync("src/app/api/mika/daily-plan/route.ts", "utf8").replace(/\r\n/g, "\n");
 test("daily plan scopes all three queries to authenticated user",()=>assert.equal((source.match(/\.eq\("user_id",\s*user\.id\)/g)||[]).length,3));
 test("daily plan excludes deleted records",()=>assert.equal((source.match(/\.is\("deleted_at", null\)/g)||[]).length,2));
 test("daily plan rejects truncated results before suggestions",()=>{assert.equal((source.match(/\.limit\(201\)/g)||[]).length,2);assert.ok(source.indexOf("status:422")<source.indexOf("const autopilot:"))});
