@@ -1,0 +1,35 @@
+name: MIKA Insights clean integration CI
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/app/mika-insights/**'
+      - 'src/app/api/mika-insights/**'
+      - 'src/app/dashboard/**'
+      - 'tests/support-*.test.cjs'
+      - '.github/workflows/mika-insights-isolated-ci.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mika-insights-clean-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Contract regression suite
+        run: npm test
+      - name: Lint MIKA Insights and dashboard
+        run: npx eslint src/app/mika-insights src/app/api/mika-insights src/app/dashboard
+      - name: Generate Next.js types
+        run: npx next typegen
+      - name: TypeScript validation
+        run: npx tsc --noEmit
