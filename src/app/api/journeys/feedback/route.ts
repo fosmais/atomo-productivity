@@ -148,7 +148,9 @@ export async function POST(request: Request) {
     if (!savedRows?.length) return NextResponse.json({ error: "A resposta ou avaliação mudou durante o processamento. Solicite uma nova avaliação." }, { status: 409 });
     return NextResponse.json({ feedback, saved: true, score: assessment.score, passed: assessment.passed }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
-    console.error("MIKA Journey feedback unavailable", error);
+    const safeCode = (value: unknown) => typeof value === "string" && /^[a-zA-Z0-9_]{1,80}$/.test(value) ? value : "unknown";
+    const detail = error instanceof OpenAI.APIError ? { status: error.status ?? 0, code: safeCode(error.code), type: safeCode(error.type) } : { type: safeCode(error instanceof Error ? error.name : undefined) };
+    console.error("MIKA Journey feedback unavailable", detail);
     return NextResponse.json({ error: "Não foi possível avaliar a resposta agora." }, { status: 503 });
   }
 }
