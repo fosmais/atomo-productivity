@@ -31,7 +31,18 @@ test('MIKA teacher: real grading, new session and cross-user isolation', {timeou
   const a=await provision(),b=await provision();
   const j=checked(await admin.from('myryra_journeys').insert({owner_id:a.id,title:'QA fundamentos de IA'}).select('id').single());
   const m=checked(await admin.from('myryra_journey_missions').insert({journey_id:j.id,title:'IA, machine learning e IA generativa'}).select('id').single());
-  const session=checked(await admin.from('mika_teacher_sessions').insert({owner_id:a.id,journey_id:j.id,mission_id:m.id,topic:'Fundamentos de IA'}).select('id').single());
+  async function createLesson(actor){
+   return fetch('http://127.0.0.1:3000/api/mika/lessons/sessions',{method:'POST',headers:{'content-type':'application/json',cookie:actor.cookie()},body:JSON.stringify({journeyId:j.id,missionId:m.id,topic:'Fundamentos de IA',level:'iniciante'}),signal:AbortSignal.timeout(15000)});
+  }
+  assert.equal((await createLesson(b)).status,404,'Cross-user lesson creation');
+  const lessonResponse=await createLesson(a);
+  assert.equal(lessonResponse.status,201,'Authenticated lesson creation');
+  const {session}=await lessonResponse.json();
+  assert.equal(session.mission_id,m.id);
+  assert.equal(session.journey_id,j.id);
+  const history=await fetch('http://127.0.0.1:3000/api/mika/lessons/sessions?journeyId='+j.id,{headers:{cookie:a.cookie()},signal:AbortSignal.timeout(15000)});
+  assert.equal(history.status,200,'Lesson history');
+  assert.ok((await history.json()).sessions.some(item=>item.id===session.id));
   const exercise='Escreva um exemplo de IA preditiva e outro de IA generativa aplicados ao seu trabalho.';
   async function grade(actor,answer){
    const res=await fetch('http://127.0.0.1:3000/api/journeys/feedback',{method:'POST',headers:{'content-type':'application/json',cookie:actor.cookie()},body:JSON.stringify({journeyId:j.id,missionId:m.id,sessionId:session.id,exercise,answer}),signal:AbortSignal.timeout(30000)});
