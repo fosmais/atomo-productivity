@@ -7,3 +7,8 @@ test("does not schedule past",()=>assert.equal(propose(w,[],[t("a")],[],60*m)[0]
 test("deadline respected",()=>assert.equal(propose(w,[],[t("a",{dueAt:new Date(20*m).toISOString()})],[],0).length,0));
 test("pending dependency blocked",()=>assert.equal(propose(w,[],[t("a",{dependsOn:["b"]})],[],0).length,0));
 test("approval required",()=>assert.equal(propose(w,[],[t("a")],[],0)[0].requiresApproval,true));
+
+test("registered durations fit without overlap",()=>{const r=propose(w,[],[t("a",{durationMinutes:45,importance:5}),t("b",{durationMinutes:15})],[],0);assert.equal(r.length,2);assert.equal(r[0].end-r[0].start,45*m);assert.equal(r[1].end-r[1].start,15*m);assert.ok(r[0].end<=r[1].start)});
+test("does not split tasks across busy intervals",()=>assert.equal(propose(w,[{start:40*m,end:80*m}],[t("a",{durationMinutes:45})],[],0).length,0));
+test("fully occupied window produces no suggestions",()=>assert.equal(propose(w,[w],[t("a")],[],0).length,0));
+test("one hundred candidates remain within window",()=>{const r=propose(w,[],Array.from({length:100},(_,i)=>t(String(i),{durationMinutes:1})),[],0);assert.equal(r.length,100);assert.equal(new Set(r.map(a=>a.id)).size,100);for(let i=0;i<r.length;i++){assert.ok(r[i].end<=w.end);if(i)assert.ok(r[i-1].end<=r[i].start)}});

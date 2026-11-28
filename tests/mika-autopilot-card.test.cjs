@@ -1,8 +1,8 @@
 const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs");
-const card=fs.readFileSync("src/app/dashboard/autopilot-card.tsx","utf8"),briefing=fs.readFileSync("src/app/dashboard/daily-briefing.tsx","utf8");
-test("card mounted in daily briefing",()=>assert.match(briefing,/<AutopilotCard\s*\/>/));
-test("card calls read-only daily plan",()=>assert.ok(card.includes('fetch("/api/mika/daily-plan"')));
-test("loading disables request button",()=>assert.ok(card.includes("disabled={loading}")));
-test("failure and empty state rendered",()=>{assert.ok(card.includes('role="alert"'));assert.ok(card.includes("Nenhuma sugestão disponível"))});
-test("estimate and external calendar limitation disclosed",()=>{assert.ok(card.includes("a.estimated"));assert.ok(card.includes("Calendários externos não são considerados"))});
-test("card has no execution endpoint",()=>assert.equal((card.match(/fetch\(/g)||[]).length,1));
+const card=fs.readFileSync("src/app/dashboard/autopilot-card.tsx","utf8"),page=fs.readFileSync("src/app/dashboard/page.tsx","utf8");
+test("MIKA Agent AutoPilot card is mounted in dashboard",()=>assert.ok(page.includes("<AutopilotCard />")));
+test("card requests read-only daily plan and exposes approval and execution APIs",()=>{assert.ok(card.includes('fetch("/api/mika/daily-plan"'));assert.ok(card.includes('fetch("/api/mika/autopilot/approve"'));assert.ok(card.includes('fetch("/api/mika/autopilot/execute"'));});
+test("loading and execution states disable repeated actions",()=>{assert.ok(card.includes("disabled={loading||validating||executing||cancelling||!!approvalId}"));assert.ok(card.includes("disabled={executing||cancelling}"));});
+test("failure and empty states are rendered",()=>{assert.ok(card.includes('role="alert"'));assert.ok(card.includes("Nenhuma sugestão disponível"));});
+test("task duration fallback and calendar read-only policy are disclosed",()=>{assert.ok(card.includes("estimativa de 25 minutos"));assert.ok(card.includes("Google Calendar permanece somente leitura"));});
+test("execution requires a persisted approval id and explicit user click",()=>{assert.match(card,/persisted&&approvalId&&<button/);assert.ok(card.includes('onClick={()=>void executeApproval()}'));});

@@ -1,3 +1,7 @@
+import { GET as getGoogleEvents } from "@/app/api/google/events/route";
+import { consolidateBusyIntervals } from "@/lib/mika/autopilot-google-busy";
+import { signApprovalProposal } from "@/lib/mika/autopilot-approval-token";
+import { TZDate } from "@date-fns/tz";
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/supabase/request-client";
 import { buildMikaDailyBriefing } from "@/lib/mika/daily-briefing";
@@ -24,18 +28,26 @@ export async function POST(request: Request) {
     let body: unknown;
     try { body = JSON.parse(raw); } catch { return NextResponse.json({ error: "JSON inválido." }, { status: 400 }); }
     if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ error: "Parâmetros inválidos." }, { status: 400 });
-    const { dayStart, dayEnd } = body as Record<string, unknown>;
+    let { dayStart, dayEnd } = body as Record<string, unknown>;
+    const configuredToday = (body as Record<string, unknown>).configuredToday === true;
+    const preferencesResult = await supabase.from("planning_preferences").select("start_time, end_time, weekdays, time_zone").eq("user_id",user.id).maybeSingle();
+    if (preferencesResult.error) return NextResponse.json({ error: "Não foi possível consultar suas preferências." }, { status: 500 });
+    if (configuredToday) {
+      const zone = preferencesResult.data?.time_zone ?? "America/Sao_Paulo";
+      const local = new TZDate(Date.now(), zone);
+      dayStart = new TZDate(local.getFullYear(),local.getMonth(),local.getDate(),0,0,0,zone).toISOString();
+      dayEnd = new TZDate(local.getFullYear(),local.getMonth(),local.getDate()+1,0,0,0,zone).toISOString();
+    }
     if (typeof dayStart !== "string" || typeof dayEnd !== "string" || !/^\d{4}-\d{2}-\d{2}T/.test(dayStart) || !/^\d{4}-\d{2}-\d{2}T/.test(dayEnd) || !/(Z|[+-]\d{2}:\d{2})$/.test(dayStart) || !/(Z|[+-]\d{2}:\d{2})$/.test(dayEnd)) {
       return NextResponse.json({ error: "Informe o início e fim do dia com fuso horário." }, { status: 400 });
     }
     const start = new Date(dayStart).getTime(), end = new Date(dayEnd).getTime(), now = Date.now();
-    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start || end-start > 86400000 || Math.abs(start-now) > 3*86400000) {
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start || end-start > (configuredToday ? 26*3600000 : 86400000) || Math.abs(start-now) > 3*86400000) {
       return NextResponse.json({ error: "Período inválido." }, { status: 400 });
     }
-    const [tasksResult, eventsResult, preferencesResult] = await Promise.all([
+    const [tasksResult, eventsResult] = await Promise.all([
       supabase.from("tasks").select("id, title, priority, due_date, completed, duration_minutes").eq("user_id", user.id).eq("completed", false).is("deleted_at", null).limit(201),
       supabase.from("events").select("title, starts_at, ends_at, blocks_time").eq("user_id", user.id).is("deleted_at", null).lt("starts_at", dayEnd).gt("ends_at", dayStart).limit(201),
-      supabase.from("planning_preferences").select("start_time, end_time, weekdays, time_zone").eq("user_id",user.id).maybeSingle(),
     ]);
     if (tasksResult.error || eventsResult.error || preferencesResult.error) {
       console.error("[MIKA] Daily briefing query failed");
@@ -50,21 +62,31 @@ export async function POST(request: Request) {
     });
     // Date-only deadlines are not converted to arbitrary UTC times. Overdue tasks
     // remain in the briefing; only undated tasks receive estimated focus slots.
-    const candidates = (tasksResult.data ?? []).filter(t=>!t.due_date).slice(0,100).map(t=>({
+    const candidates = (tasksResult.data ?? []).filter(t=>!t.due_date).map(t=>({
       id:t.id, importance: ["alta","high"].includes(String(t.priority).toLowerCase())?5:["media","média","medium"].includes(String(t.priority).toLowerCase())?3:1,
       durationMinutes:Number.isInteger(t.duration_minutes)&&t.duration_minutes>0&&t.duration_minutes<=1440?t.duration_minutes:25, dependsOn:[]
-    }));
+    })).sort((a,b)=>b.importance-a.importance||(a.id<b.id?-1:a.id>b.id?1:0)).slice(0,100);
     const busy = (eventsResult.data ?? []).map(e=>({start:Date.parse(e.starts_at),end:Date.parse(e.ends_at)}));
     const pref=preferencesResult.data;
     const preferences=pref?{startTime:pref.start_time.slice(0,5),endTime:pref.end_time.slice(0,5),weekdays:pref.weekdays,timeZone:pref.time_zone}:{startTime:"09:00",endTime:"18:00",weekdays:[1,2,3,4,5],timeZone:"America/Sao_Paulo"};
+    const googleUrl=new URL(request.url);
+    googleUrl.pathname="/api/google/events";
+    googleUrl.search="";
+    googleUrl.searchParams.set("timeMin",new Date(start).toISOString());
+    googleUrl.searchParams.set("timeMax",new Date(end).toISOString());
+    const googleResponse=await getGoogleEvents(new Request(googleUrl,{headers:request.headers}));
+    if(!googleResponse.ok)return NextResponse.json({error:"Não foi possível confirmar a disponibilidade do Google Calendar.",code:"EXTERNAL_AVAILABILITY_UNAVAILABLE"},{status:503});
+    const external=await googleResponse.json();
+    const combinedBusy=consolidateBusyIntervals(busy,external,preferences.timeZone);
     const windows=generatePlanningWindows(preferences,new Date(start),2);
     const autopilot: ReturnType<typeof proposeTaskSlots>=[];
     for(const w of windows){
       const from=Math.max(start,w.start.getTime()),to=Math.min(end,w.end.getTime());
       if(to<=from)continue;
-      autopilot.push(...proposeTaskSlots({start:from,end:to},busy,candidates.filter(t=>!autopilot.some(a=>a.id===t.id)),[],now));
+      autopilot.push(...proposeTaskSlots({start:from,end:to},combinedBusy,candidates.filter(t=>!autopilot.some(a=>a.id===t.id)),[],now));
     }
-    return NextResponse.json({ plan, autopilot: { suggestions:autopilot.map(a=>({...a,title:(tasksResult.data ?? []).find(t=>t.id===a.id)?.title ?? 'Tarefa', estimated:!((tasksResult.data ?? []).some(t=>t.id===a.id&&Number.isInteger(t.duration_minutes)&&t.duration_minutes>0&&t.duration_minutes<=1440))})), fallbackMinutes:25, scope:"undated_tasks_only", mode:"read_only" }, mode: "read_only", generatedAt: new Date(now).toISOString() }, { headers: { "Cache-Control": "no-store" } });
+    const approvalToken=autopilot.length&&process.env.MIKA_AUTOPILOT_APPROVAL_SECRET?signApprovalProposal(user.id,autopilot):null;
+    return NextResponse.json({ plan, autopilot: { suggestions:autopilot.map(a=>({...a,title:(tasksResult.data ?? []).find(t=>t.id===a.id)?.title ?? 'Tarefa', estimated:!((tasksResult.data ?? []).some(t=>t.id===a.id&&Number.isInteger(t.duration_minutes)&&t.duration_minutes>0&&t.duration_minutes<=1440))})), approvalToken, googleCalendarConnected:external.connected, timeZone:preferences.timeZone, fallbackMinutes:25, scope:"undated_tasks_only", mode:"read_only" }, mode: "read_only", generatedAt: new Date(now).toISOString() }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Não foi possível preparar seu dia." }, { status: 500 });
   }

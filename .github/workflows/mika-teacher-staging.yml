@@ -1,0 +1,61 @@
+name: MIKA Teacher staging integration
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mika-teacher-staging
+  cancel-in-progress: false
+jobs:
+  integration:
+    if: github.ref == 'refs/heads/feat/myryra-mvp3-agent-foundation'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: mika-teacher-staging
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://sdwguqyjuvuamfiingsp.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.MIKA_STAGING_SUPABASE_PUBLISHABLE_KEY }}
+      SUPABASE_SECRET_KEY: ${{ secrets.MIKA_STAGING_SUPABASE_SECRET_KEY }}
+      OPENAI_API_KEY: ${{ secrets.MIKA_STAGING_OPENAI_API_KEY }}
+      SUPABASE_ADMIN_DISABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify staging credentials
+        shell: bash
+        run: |
+          for name in NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY SUPABASE_SECRET_KEY OPENAI_API_KEY; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Missing staging credential: $name"
+              exit 1
+            fi
+          done
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run regression tests
+        run: npm test
+      - name: Start local application and run real integration tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run dev -- --hostname 127.0.0.1 --port 3000 > /tmp/mika-next.log 2>&1 &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true' EXIT
+          ready=0
+          for i in {1..60}; do
+            if curl --silent --output /dev/null --max-time 3 http://127.0.0.1:3000/; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [[ "$ready" != 1 ]]; then
+            echo "::error::Local application did not start"
+            exit 1
+          fi
+          if ! node --test tests/integration/mika-teacher-staging.cjs; then
+            grep -A 4 "MIKA Journey feedback unavailable" /tmp/mika-next.log | grep -E "MIKA Journey feedback unavailable|^[[:space:]]*(status|code|type):" || true
+            exit 1
+          fi

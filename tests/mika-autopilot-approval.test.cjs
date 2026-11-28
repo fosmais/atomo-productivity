@@ -1,0 +1,10 @@
+const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),ts=require("typescript");
+const out={};
+vm.runInNewContext(ts.transpileModule(fs.readFileSync("src/lib/mika/autopilot-approval.ts","utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports:out,require});
+const select=out.selectApprovedSlots;
+const a={id:"a",start:100,end:200,requiresApproval:true},b={id:"b",start:200,end:300,requiresApproval:true};
+test("individual selection returns only explicitly approved slot",()=>{const result=select([a,b],["b"],0);assert.equal(result.length,1);assert.equal(result[0].id,"b");assert.notEqual(result[0],b)});
+test("collective selection is chronological",()=>assert.equal(Array.from(select([a,b],["b","a"],0),s=>s.id).join(","),"a,b"));
+test("reject empty unknown duplicate and expired selections",()=>{for(const ids of [[],["missing"],["a","a"]])assert.throws(()=>select([a,b],ids,0));assert.throws(()=>select([a,b],["a"],101))});
+test("reject overlapping or unauthorized suggestions",()=>{assert.throws(()=>select([a,{...b,start:150}],["a","b"],0));assert.throws(()=>select([{...a,requiresApproval:false}],["a"],0))});
+test("reject duplicate source suggestions and invalid times",()=>{assert.throws(()=>select([a,a],["a"],0));assert.throws(()=>select([{...a,end:NaN}],["a"],0));assert.throws(()=>select([a],["a"],NaN))});
