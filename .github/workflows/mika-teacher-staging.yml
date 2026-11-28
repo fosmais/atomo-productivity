@@ -55,4 +55,7 @@ jobs:
             echo "::error::Local application did not start"
             exit 1
           fi
-          node --test tests/integration/mika-teacher-staging.cjs
+          if ! node --test tests/integration/mika-teacher-staging.cjs; then
+            grep -A 4 "MIKA Journey feedback unavailable" /tmp/mika-next.log | grep -E "MIKA Journey feedback unavailable|^[[:space:]]*(status|code|type):" || true
+            exit 1
+          fi
