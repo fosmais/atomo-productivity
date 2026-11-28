@@ -37,6 +37,19 @@ test('MIKA teacher: real grading, new session and cross-user isolation', {timeou
    const res=await fetch('http://127.0.0.1:3000/api/journeys/feedback',{method:'POST',headers:{'content-type':'application/json',cookie:actor.cookie()},body:JSON.stringify({journeyId:j.id,missionId:m.id,sessionId:session.id,exercise,answer}),signal:AbortSignal.timeout(30000)});
    return {status:res.status,body:await res.json()};
   }
+  async function complete(actor,status='completed'){
+   const res=await fetch('http://127.0.0.1:3000/api/journeys/'+j.id+'/missions/'+m.id,{method:'PATCH',headers:{'content-type':'application/json',cookie:actor.cookie()},body:JSON.stringify({status}),signal:AbortSignal.timeout(15000)});
+   return {status:res.status,body:await res.json()};
+  }
+  async function balance(actor){
+   const res=await fetch('http://127.0.0.1:3000/api/journeys/myra',{headers:{cookie:actor.cookie()},signal:AbortSignal.timeout(15000)});
+   assert.equal(res.status,200,'MYRA balance HTTP status');
+   return (await res.json()).balance;
+  }
+  const initial=await balance(a),otherInitial=await balance(b);
+  assert.equal((await complete(a)).status,409,'Completion before grading');
+  assert.equal(await balance(a),initial);
+  assert.equal((await complete(b)).status,404,'Cross-user completion');
   const wrong='IA preditiva e generativa são exatamente iguais e não usam dados nem modelos.';
   const right='IA preditiva estima a probabilidade de falha de um servidor com dados históricos. IA generativa produz um resumo textual do incidente a partir de informações verificadas.';
   for(const [answer,passed] of [[wrong,false],[right,true]]){
@@ -51,7 +64,18 @@ test('MIKA teacher: real grading, new session and cross-user isolation', {timeou
    const progress=checked(await fresh.client.from('myryra_journey_learning_progress').select('assessment_score,assessment_passed').eq('mission_id',m.id).single());
    assert.equal(progress.assessment_score,result.body.score);
    assert.equal(progress.assessment_passed,passed);
+   if(!passed){assert.equal((await complete(a)).status,409,'Completion after failed grading');assert.equal(await balance(a),initial); }
   }
+  const completed=await complete(a);
+  assert.equal(completed.status,200,'Completion after passing grade');
+  assert.equal(completed.body.mission.status,'completed');
+  assert.equal(completed.body.myraAwarded,true);
+  assert.equal(await balance(a),initial+10);
+  const repeated=await complete(a);
+  assert.equal(repeated.status,200);
+  assert.equal(repeated.body.myraAwarded,false);
+  assert.equal(await balance(a),initial+10);
+  assert.equal(await balance(b),otherInitial);
   const hidden=checked(await b.client.from('mika_teacher_sessions').select('id').eq('id',session.id));
   assert.equal(hidden.length,0);
   const denied=await grade(b,right);
