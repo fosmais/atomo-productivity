@@ -42,7 +42,8 @@ test('MIKA teacher: real grading, new session and cross-user isolation', {timeou
   for(const [answer,passed] of [[wrong,false],[right,true]]){
    checked(await admin.from('myryra_journey_learning_progress').upsert({mission_id:m.id,owner_id:a.id,answer,updated_at:new Date().toISOString()}));
    const result=await grade(a,answer);
-   assert.equal(result.status,200,'Feedback HTTP status');
+   const knownErrors=['Não foi possível verificar a aula vinculada.','Exercício oficial indisponível.','Não foi possível emitir o exercício oficial.','Não foi possível confirmar o exercício oficial.','Histórico de aprendizagem indisponível.','Serviço temporariamente indisponível.','Serviço de IA não configurado.','A avaliação retornou dados inválidos.','A avaliação retornou uma nota inconsistente.','Não foi possível verificar a versão atual da resposta.','Não foi possível confirmar o exercício atual.','A avaliação foi gerada, mas não pôde ser salva. Tente novamente antes de concluir a missão.','Não foi possível avaliar a resposta agora.'];
+   assert.equal(result.status,200,'Feedback HTTP status: '+(knownErrors.includes(result.body?.error)?result.body.error:'unclassified response'));
    assert.equal(result.body.saved,true);
    assert.equal(result.body.passed,passed);
    assert.equal(result.body.score>=70,passed);
